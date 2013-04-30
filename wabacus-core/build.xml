@@ -1,0 +1,178 @@
+<?xml version="1.0"  encoding="UTF-8" ?>
+
+<project name="Wabacus" default="build" basedir=".">
+
+	<property name="app.home" value="." />
+	<property name="app.name" value="wabacus" />
+	<property name="app.version" value="3.4" />
+	<property name="src.home" value="${app.home}/src" />
+	<property name="lib.home" value="${app.home}/WEB-INF/lib" />
+	<property name="classes.home" value="${app.home}/WEB-INF/classes" />
+	<property name="doc.home" value="${app.home}/doc" />
+	<property name="report.home" value="${app.home}/report" />
+	<property name="style.home" value="${app.home}/etc" />
+
+	<property name="javadoc.pkg.top" value="com.wabacus" />
+
+	<path id="compile.classpath">
+		<pathelement location="${classes.home}" />
+
+		<fileset dir="${lib.home}">
+			<include name="**/*.jar" />
+			<include name="**/*.zip" />
+		</fileset>
+	</path>
+
+	<target name="help">
+		<echo
+			message="请输入要要操作的命令：clean-all、init、compile、build、deploy、javadoc、all" />
+	</target>
+
+	<target name="clean-all">
+		<!--delete dir="${classes.home}"/-->
+		<!--delete dir="${deploy.home}/${app.name}" failonerror="false"/-->
+		<delete file="./${app.name}-${app.version}.jar" />
+	</target>
+
+	<target name="init" depends="clean-all">
+	</target>
+
+	<target name="compile" depends="init">
+		<delete dir="${classes.home}"/>
+		<mkdir dir="${classes.home}"/>
+		<javac fork="true" memoryMaximumSize="512M" srcdir="${src.home}"
+			destdir="${classes.home}" debug="true"   encoding="utf-8"><!--deprecation="true"-->
+			<classpath refid="compile.classpath" />
+			<exclude name="com/wabacus/unittest/"/>
+			<exclude name="com/wabacus/test/"/>
+			<exclude name="com/wabacus/release/"/>
+		</javac>
+		<!--
+			将目录src及其子目录下的xml文件拷入classes相应目录下
+		-->
+		<copy todir="${classes.home}">
+			<fileset dir="${src.home}">
+				<include name="**/*.xml" />
+				<include name="**/*.properties"/>
+				<include name="**/*.tld"/>
+				<include name="**/*.key"/>
+				<include name="**/COPYING" />
+				<include name="**/COPYING.LESSER" />
+			</fileset>
+		</copy>
+	</target>
+	<!--单元测试-->
+	<target name="junit" depends="compile">
+		<tstamp />
+		<!--delete dir="${report.home}"/-->
+		<mkdir dir="${report.home}" />
+		<junit printsummary="true">
+			<classpath refid="compile.classpath" />
+			<formatter type="xml" />
+			<batchtest todir="${report.home}">
+				<fileset dir="${src.home}">
+					<include name="**/Test_*.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+		<junitreport todir="${report.home}">
+			<fileset dir="${report.home}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report format="frames" styledir="${style.home}"
+				todir="${report.home}" />
+		</junitreport>
+	</target>
+	<!--打包-->
+	<target name="build" depends="compile">
+		<jar jarfile="${classes.home}/${app.name}-${app.version}.jar"
+			basedir="${classes.home}" />
+		<move file="${classes.home}/${app.name}-${app.version}.jar" todir="." />
+		<!--下面再把那些打包前未编译的类（比如那些测试类）编译一下，以免在eclipse中有错-->
+		<javac fork="true" memoryMaximumSize="512M" srcdir="${src.home}" encoding="utf-8"
+					destdir="${classes.home}">
+			<classpath refid="compile.classpath" />
+		</javac>
+	</target>
+
+
+	<!--直接拷贝文件到部署目录进行部署-->
+	<target name="deploy1" depends="compile">
+		<!--将根目录下的所有文件拷过去，但不拷文件夹。-->
+		<copy todir="${deploy.home}">
+			<fileset dir="${app.home}">
+				<include name="*.*" />
+			</fileset>
+		</copy>
+		<!--将WEB-INF/下的所有文件及文件夹全拷过去-->
+		<copy todir="${deploy.home}/WEB-INF">
+			<fileset dir="${app.home}/WEB-INF">
+				<!--include name="**/*.xml"/>
+					<include name="**/*.properties"/>
+					<include name="**/*.tld"/>
+					<include name="**/*.wsdd"/>
+					<include name="**/*.xsd"/-->
+				<exclude name="**/resin.jar" />
+			</fileset>
+		</copy>
+
+		<!--copy todir="${build.home}/WEB-INF/classes">
+			<fileset dir="${src.home}">
+			<include name="**/*.xml"/>
+			</fileset>
+			</copy-->
+		<!--将根目录下的main、admin、common文件夹拷过去-->
+
+		<copy todir="${deploy.home}/common/szse">
+			<fileset dir="${app.home}/common/szse" />
+		</copy>
+	</target>
+
+
+	<target name="javadoc" depends="compile">
+		<delete dir="${doc.home}/api"/>
+		<javadoc  public="true" windowtitle="Wabacus API Doc" author="true" destdir="${doc.home}/api"
+			encoding="utf-8" docencoding="utf-8" packagenames="${javadoc.pkg.top}.*">
+			<classpath refid="compile.classpath" />
+			<packageset dir="${src.home}">
+				<include name="com/wabacus/config/database/"/>
+				<exclude name="com/wabacus/config/database/datasource/"/>
+
+				<exclude name="com/wabacus/config/report/extendconfig/"/>
+
+				<include name="com/wabacus/config/resource/"/>
+				<exclude name="com/wabacus/config/resource/reportstructure/"/>
+				<exclude name="com/wabacus/config/resource/typeahead/"/>
+
+				<include name="com/wabacus/system/format/"/>
+
+				<include name="com/wabacus/system/pagetype/"/>
+				<include name="com/wabacus/system/reporttype/"/>
+
+				<include name="com/wabacus/util/"/>
+			</packageset>
+			<fileset dir="${src.home}">
+				<include name="com/wabacus/config/report/*Bean.java"/>
+				<include name="com/wabacus/config/Config.java"/>
+				<include name="com/wabacus/system/CacheDataBean.java"/>
+				<include name="com/wabacus/system/ReportRequest.java"/>
+				<include name="com/wabacus/system/WabacusResponse.java"/>
+				<include name="com/wabacus/exception/MessageCollector.java"/>
+				<include name="com/wabacus/system/inputbox/AbsInputBox.java"/>
+				<include name="com/wabacus/system/intercept/IInterceptor.java"/>
+				<include name="com/wabacus/WabacusFacade.java"/>
+				<include name="com/wabacus/system/assistant/ReportDataAssistant.java"/>
+			</fileset>
+		</javadoc>
+		<!--下面再把那些打包前未编译的类（比如那些测试类）编译一下，以免在eclipse中有错-->
+		<javac fork="true" memoryMaximumSize="512M" srcdir="${src.home}" encoding="utf-8"
+							destdir="${classes.home}">
+			<classpath refid="compile.classpath" />
+		</javac>
+	</target>
+
+
+</project>
+
+
+
