@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -74,7 +74,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
         super.doPostLoad();
         String lodopjs=Config.webroot+"/webresources/component/lodop/LodopFuncs.js";
         lodopjs=Tools.replaceAll(lodopjs,"//","/");
-        this.owner.getPageBean().addMyJavascript(lodopjs);
+        this.owner.getPageBean().addMyJavascriptFile(lodopjs,0);
     }
 
     protected void parsePrintContent(PrintSubPageBean pspagebean,String printContent)
@@ -98,7 +98,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
             }
             this.isLodopCodePrintValue=Boolean.TRUE;
             printContent=parseCertainTypeDynValueInLodopCode(pspagebean,printContent,"wx_content");
-            printContent=parseCertainTypeDynValueInLodopCode(pspagebean,printContent,"request");//解析里面request{...}格式的动态内容
+            printContent=parseCertainTypeDynValueInLodopCode(pspagebean,printContent,"request");
             printContent=parseCertainTypeDynValueInLodopCode(pspagebean,printContent,"session");
             pspagebean.setTagContent(printContent);
         }
@@ -189,7 +189,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
                 throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的打印配置失败，在wx_content{}中指定打印报表的"+lstConfigValues.get(1)+"部分不存在");
             }
             if(lstConfigValues.size()==2&&Consts.BUTTON_PART.equals(lstConfigValues.get(1)))
-            {//即this.button格式
+            {
                 throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的打印配置失败，在wx_content{"+lstConfigValues.get(0)
                         +".button}中没有指定要打印的按钮");
             }
@@ -253,7 +253,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
         for(PrintSubPageBean pspbeanTmp:this.lstPrintPageBeans)
         {
             if(pspbeanTmp.isSplitPrintPage())
-            {//如果是分页打印部分
+            {
                 String pagecountName="pagecount_"+pspbeanTmp.getPlaceholder();
                 resultBuf.append(" var "+pagecountName+"=getPrintPageCount(content,'"+pspbeanTmp.getPlaceholder()+"');");
                 resultBuf.append("for(var i=0;i<"+pagecountName+";i++){");
@@ -288,7 +288,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
             }
             pspbeanTmp.setTagContent(null);
         }
-        resultBuf.append("  if(printtype=='"+Consts.PRINTTYPE_PRINT+"'){ LODOP_OBJ.PRINT();");//直接打印
+        resultBuf.append("  if(printtype=='"+Consts.PRINTTYPE_PRINT+"'){ LODOP_OBJ.PRINT();");
         resultBuf.append("  }else if(printtype=='"+Consts.PRINTTYPE_PRINTPREVIEW+"'){ LODOP_OBJ.PREVIEW();");
         resultBuf.append("  }else if(printtype=='"+Consts.PRINTTYPE_PRINTSETTING+"'){ LODOP_OBJ.PRINT_DESIGN();}");
         resultBuf.append("}");

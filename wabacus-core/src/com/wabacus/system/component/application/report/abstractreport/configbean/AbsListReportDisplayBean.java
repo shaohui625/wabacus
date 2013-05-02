@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -45,7 +45,7 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
     
     private int defaultColumnCount;
     
-    private int rowgrouptype;//行分组的类型，1：普通行分组；2：树形行分组
+    private int rowgrouptype;
 
     private int treeborder=2;
 
@@ -62,14 +62,15 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
     private String treeleafimg;
     
     private String mouseoverbgcolor;
+    
+    private String rowgroupDatasetId;
+    
     private List<String> lstRowgroupColsColumn;
 
     private List<Map<String,String>> lstRowgroupColsAndOrders;
 
     private List<ColBean> lstRoworderValueCols;
     
-    private AbsListReportStatiBean statibean;//行统计的配置    
-
     private Map<String,AbsListReportFilterBean> mAllFilterBeans;
     
     private String treenodeid;
@@ -92,7 +93,7 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
 
 
 
-//        return containsNonConditionFilter;
+
 
 
 
@@ -138,6 +139,27 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
     public void setDefaultColumnCount(int defaultColumnCount)
     {
         this.defaultColumnCount=defaultColumnCount;
+    }
+
+    public String getRowgroupDatasetId()
+    {
+        return rowgroupDatasetId;
+    }
+
+    public void setRowgroupDatasetId(String rowgroupDatasetId)
+    {
+        if(this.lstRowgroupColsColumn==null||this.lstRowgroupColsColumn.size()==0)
+        {
+            this.rowgroupDatasetId=rowgroupDatasetId;
+        }else
+        {
+            this.rowgroupDatasetId=this.rowgroupDatasetId==null?"":this.rowgroupDatasetId.trim();
+            rowgroupDatasetId=rowgroupDatasetId==null?"":rowgroupDatasetId.trim();
+            if(!rowgroupDatasetId.equals(this.rowgroupDatasetId))
+            {
+                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"失败，此报表参与分组的列来自的数据集不同");
+            }
+        }
     }
 
     public int getRowgrouptype()
@@ -297,16 +319,6 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
         this.treenodeparentid=treenodeparentid;
     }
 
-    public AbsListReportStatiBean getStatibean()
-    {
-        return statibean;
-    }
-
-    public void setStatibean(AbsListReportStatiBean statibean)
-    {
-        this.statibean=statibean;
-    }
-    
     public String getMouseoverbgcolor()
     {
         return mouseoverbgcolor;
@@ -319,12 +331,12 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
 
 
 
-//        return mCurveColids;
 
 
 
+//    public void setMCurveColids(Map<String,List<String>> curveColids)
 
-//        mCurveColids=curveColids;
+
 
 
     public void addRowgroupCol(ColBean cbean)
@@ -367,7 +379,6 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
         this.lstRowgroupColsColumn=null;
         this.lstRowgroupColsAndOrders=null;
         this.rowgrouptype=0;
-        this.statibean=null;
 
     }
 
@@ -385,10 +396,6 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
             newBean
                     .setLstRowgroupColsAndOrders((List<Map<String,String>>)((ArrayList<Map<String,String>>)lstRowgroupColsAndOrders)
                             .clone());
-        }
-        if(this.statibean!=null)
-        {
-            newBean.setStatibean((AbsListReportStatiBean)statibean.clone(owner));
         }
         return newBean;
     }
@@ -412,7 +419,7 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
                 cbean.setValuestyleproperty(Tools.mergeHtmlTagPropertyString(cbean.getValuestyleproperty(),"style=\""+borderstyle+"\"",1));
             }
             if(!isFirstCol&&this.getRowGroupColsNum()>0&&this.getRowgrouptype()==2&&alrbean.getScrollType()==AbsListReportBean.SCROLLTYPE_VERTICAL)
-            {//对于配置了垂直滚动条的树形分组的报表，只能在第一列配置width，其它列均不能配置width，否则可能导致表头数据对不齐
+            {
                 if(Tools.getPropertyValueByName("width",cbean.getValuestyleproperty(),true)!=null
                         ||Tools.getPropertyValueByName("width",cbean.getLabelstyleproperty(),true)!=null)
                 {
@@ -422,9 +429,22 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
             }
             isFirstCol=false;
             alrcbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
-            if(alrcbean==null||alrcbean.getFilterBean()==null) continue;
-            alrcbean.getFilterBean().doPostLoad();
+            if(alrcbean==null) continue;
+            if(alrcbean.isRequireClickOrderby())
+            {
+                if(cbean.getDatasetid()!=null&&!cbean.getDatasetid().trim().equals(""))
+                {
+                    if(!dbean.getReportBean().getSbean().isIndependentDataset(cbean.getDatasetid()))
+                    {
+                        throw new WabacusConfigLoadingException("加载报表"+cbean.getReportBean().getPath()+"的列"+cbean.getLabel()
+                                +"失败，当前列是从子数据集中取数据，不能为它配置列排序功能");
+                    }
+                }
+            }
+            if(alrcbean.getFilterBean()!=null)
+            {
+                alrcbean.getFilterBean().doPostLoad();
+            }
         }
-        if(this.statibean!=null) this.statibean.doPostLoad();
     }
 }

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -40,7 +40,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
 
     private String displaytype="inputbox";
 
-    private String rooturl;//返回根URL，如果显示类型为image，则必须配置，否则无法显示图片。如果显示类型为textbox，配置时，文本框中显示访问URL，没有配置时，文本框显示存放路径
+    private String rooturl;
     
     private int deletetype=1;
 
@@ -49,10 +49,13 @@ public class FileBox extends AbsPopUpBox implements Cloneable
     public FileBox(String typename)
     {
         super(typename);
-        pagewidth=300;
-        pageheight=160;
     }
 
+    public String getInputboxInnerType()
+    {
+        return "filebox";
+    }
+    
     public long getMaxsize()
     {
         return maxsize;
@@ -91,6 +94,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
     protected String doGetDisplayStringValue(ReportRequest rrequest,String value,String style_property,boolean isReadonly)
     {
         StringBuffer resultBuf=new StringBuffer();
+        resultBuf.append(this.getBeforedescription(rrequest));
         String realinputboxid=getInputBoxId(rrequest);
         if(!isReadonly)
         {
@@ -102,15 +106,15 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         {//利用<img/>显示图片，并加上进入文件上传的超链接
             String imgurl=value;
             if(value==null||value.trim().equals("")) imgurl=Config.webroot+"webresources/skin/nopicture.gif";
-            resultBuf.append("<img  src=\"").append(imgurl).append("\" srcpath=\"").append(value).append("\"");//路径存放在srcpath属性中，以便通过javascript获取到
+            resultBuf.append("<img  src=\"").append(imgurl).append("\" srcpath=\"").append(value).append("\"");
         }else
-        {
+        {//以文本框显示文件地址
             resultBuf.append("<input  type='text'  value=\""+value+"\"");
         }
         resultBuf.append(" typename='"+typename+"' name='"+realinputboxid+"' id='"+realinputboxid+"'");
         if(style_property!=null) resultBuf.append(" ").append(style_property);
         resultBuf.append("/>");
-        resultBuf.append(this.getDescription(rrequest));
+        resultBuf.append(this.getAfterdescription(rrequest));
         return resultBuf.toString();
     }
 
@@ -135,7 +139,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         resultBuf.append("if(displaytype==null||displaytype=='') displaytype='textbox';");
         resultBuf.append("if(onclick_propertyvalue==null) onclick_propertyvalue='';");
         resultBuf.append("onclick_propertyvalue=\"popupPageByFileUploadInputbox('\"+name+\"','\"+paramsOfGetPageUrl+\"','\"+displaytype+\"');\"+onclick_propertyvalue;");
-        //开始显示
+        
         resultBuf.append("if(displaytype=='image'){");//以<img/>显示上传的图片形式
         resultBuf.append(" var imgurl=boxValue;if(imgurl==null||imgurl=='') imgurl=WXConfig.webroot+'webresources/skin/nopicture.gif';");
         resultBuf.append("  boxstr=\"<img  src=\\\"\"+imgurl+\"\\\" srcpath=\\\"\"+boxValue+\"\\\"\";");
@@ -224,7 +228,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         this.allowTypes=eleInputboxBean.attributeValue("allowedtypes");
         String savepath=eleInputboxBean.attributeValue("savepath");
         if(savepath!=null&&!savepath.trim().equals(""))
-        {//如果配置了保存路径（如果没有配置保存路径，则框架不会自动保存上传的文件，开发人员可能自己在拦截器中负责保存）
+        {
             savepath=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),savepath,true);
             if(Tools.isDefineKey("classpath",savepath))
             {
@@ -299,7 +303,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
                 }
             }
         }
-        this.poppageurl=eleInputboxBean.attributeValue("inputboxparams");
+        this.poppageurl=eleInputboxBean.attributeValue("inputboxparams");//对于文件上传，在poppageurl中存放的是inputboxparams属性配置值，即弹出文件上传的URL中传入的动态参数
         String interceptor=eleInputboxBean.attributeValue("interceptor");
         if(interceptor!=null)
         {
@@ -337,11 +341,21 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         super.doPostLoad(ownerbean);
     }
 
-    protected void processStylePropertyAfterMerged(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
+    protected String getDefaultWidth()
+    {
+        return "300";
+    }
+    
+    protected String getDefaultHeight()
+    {
+        return "160";
+    }
+    
+    protected void addJsValidateOnBlurEvent(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
     {
         if(!displaytype.equals("image"))
         {//只有不是以<img/>形式显示上传文件时才提供失去焦点时的校验功能，并加上readonly
-            super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
+            super.addJsValidateOnBlurEvent(reportTypeObj,ownerbean);
         }
     }
     

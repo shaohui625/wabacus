@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -24,32 +24,35 @@ import java.util.List;
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.util.Tools;
 
 public class InsertSqlActionBean extends AbsEditSqlActionBean
 {
-    public InsertSqlActionBean(EditableReportUpdateDataBean _owner)
+    public InsertSqlActionBean(EditActionGroupBean ownerGroupBean)
     {
-        super(_owner);
+        super(ownerGroupBean);
     }
-
-    public void parseSql(SqlBean sqlbean,String reportTypeKey,String configSql)
+    
+    public void parseActionscript(String reportTypeKey,String actionscript)
     {
-        configSql=this.parseAndRemoveReturnParamname(configSql);
-        if(this.isNormalInsertSql(configSql))
+        actionscript=this.parseAndRemoveReturnParamname(actionscript);
+        if(this.isStandardInsertSql(actionscript))
         {
-            owner.addInsertSqlActionBean(configSql,null,this.returnValueParamname);
-            return;
-        }
-        AbsDatabaseType dbtype=Config.getInstance().getDataSource(sqlbean.getDatasource()).getDbType();
-        if(dbtype==null)
+            List<EditableReportParamBean> lstDynParamsTmp=new ArrayList<EditableReportParamBean>();
+            String realsql=this.ownerGroupBean.getOwnerUpdateBean().parseStandardEditSql(actionscript,lstDynParamsTmp,
+                    reportTypeKey);
+            addInsertSqlActionBean(realsql,lstDynParamsTmp,this.returnValueParamname);
+        }else
         {
-            throw new WabacusConfigLoadingException("没有实现数据源"+sqlbean.getDatasource()+"对应数据库类型的相应实现类");
+            AbsDatabaseType dbtype=Config.getInstance().getDataSource(this.ownerGroupBean.getDatasource()).getDbType();
+            if(dbtype==null)
+            {
+                throw new WabacusConfigLoadingException("没有实现数据源"+this.ownerGroupBean.getDatasource()+"对应数据库类型的相应实现类");
+            }
+            dbtype.constructInsertSql(actionscript,this.ownerGroupBean.getOwnerUpdateBean().getOwner().getReportBean(),reportTypeKey,this);
         }
-        dbtype.constructInsertSql(configSql,sqlbean.getReportBean(),reportTypeKey,this);
     }
 
     public void constructInsertSql(String configInsertSql,ReportBean rbean,String reportTypeKey)
@@ -65,11 +68,14 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
         int idxleft=configInsertSql.indexOf("(");
         if(idxleft<0)
         {//没有指定要更新的字段，则将所有符合要求的从数据库取数据的<col/>全部更新到表中
-            sqlBuffer.append(configInsertSql).append("(");
-            List<ColBean> lstColBeans=rbean.getDbean().getLstCols();
-            for(ColBean cbean:lstColBeans)
+            if(!this.ownerGroupBean.getOwnerUpdateBean().isAutoReportdata())
             {
-                EditableReportParamBean paramBean=createEditParamBeanByColbean(cbean,reportTypeKey,false,false);
+                throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，在autoreportdata属性为false的<button/>中，不能配置insert into table这种格式的SQL语句");
+            }
+            sqlBuffer.append(configInsertSql).append("(");
+            for(ColBean cbean:rbean.getDbean().getLstCols())
+            {
+                EditableReportParamBean paramBean=createParamBeanByColbean(cbean.getProperty(),reportTypeKey,false,false);
                 if(paramBean!=null)
                 {
                     sqlBuffer.append(cbean.getColumn()+",");
@@ -97,57 +103,35 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
                 {
                     columnname=updatecol.substring(0,idxequals).trim();
                     columnvalue=updatecol.substring(idxequals+1).trim();
+                    Object paramObjTmp=this.createEditParams(columnvalue,reportTypeKey);
+                    if(paramObjTmp==null) continue;
+                    lstParams.add(paramObjTmp);
                     sqlBuffer.append(columnname+",");
-                    if(Tools.isDefineKey("sequence",columnvalue))
-                    {
-                        lstParams.add(Tools.getRealKeyByDefine("sequence",columnvalue)+".nextval");
-                    }else if(columnvalue.equals("uuid{}"))
-                    {
-                        EditableReportParamBean paramBean=new EditableReportParamBean();
-                        paramBean.setParamname("uuid{}");
-                        lstParams.add(paramBean);
-                    }else if(Tools.isDefineKey("!",columnvalue))
-                    {
-                        EditableReportParamBean paramBean=new EditableReportParamBean();
-                        paramBean.setParamname(columnvalue);
-                        lstParams.add(paramBean);
-                    }else if(Tools.isDefineKey("#",columnvalue))
-                    {//是从<external-values/>中定义的变量中取值
-                        columnvalue=Tools.getRealKeyByDefine("#",columnvalue);
-                        EditableReportExternalValueBean valuebean=owner.getValueBeanByName(columnvalue);
-                        if(valuebean==null)
-                        {
-                            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，没有定义"+columnvalue+"对应的变量值");
-                        }
-                        EditableReportParamBean paramBean=new EditableReportParamBean();
-                        paramBean.setParamname(columnvalue);
-                        paramBean.setOwner(valuebean);
-                        lstParams.add(paramBean);
-                    }else if(Tools.isDefineKey("@",columnvalue))
-                    {
-                        cb=rbean.getDbean().getColBeanByColProperty(Tools.getRealKeyByDefine("@",columnvalue));
-                        if(cb==null)
-                        {
-                            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的要更新字段"+columnvalue+"不合法，没有取到其值对应的<col/>");
-                        }
-                        lstParams.add(createEditParamBeanByColbean(cb,reportTypeKey,true,true));
-                    }else
-                    {
-                        lstParams.add(columnvalue);
-                    }
                 }else
                 {
                     if(!Tools.isDefineKey("@",updatecol))
                     {
                         throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的添加数据SQL语句"+configInsertSql+"不合法");
                     }
-                    cb=rbean.getDbean().getColBeanByColProperty(Tools.getRealKeyByDefine("@",updatecol));
-                    if(cb==null)
+                    if(this.getOwnerGroupBean().getOwnerUpdateBean().isAutoReportdata())
                     {
-                        throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的要更新字段"+updatecol+"不合法，没有取到其值对应的<col/>");
+                        updatecol=Tools.getRealKeyByDefine("@",updatecol);
+                        String realColProperty=updatecol.trim();
+                        if(realColProperty.endsWith("__old")) realColProperty=realColProperty.substring(0,realColProperty.length()-"__old".length());
+                        cb=rbean.getDbean().getColBeanByColProperty(realColProperty);
+                        if(cb==null)
+                        {
+                            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的要更新字段"+updatecol+"不合法，没有取到其值对应的<col/>");
+                        }
+                        sqlBuffer.append(cb.getColumn()+",");
+                        lstParams.add(createParamBeanByColbean(updatecol,reportTypeKey,true,true));
+                    }else
+                    {
+                        EditableReportParamBean paramBean=new EditableReportParamBean();
+                        paramBean.setParamname(updatecol);
+                        lstParams.add(paramBean);
+                        sqlBuffer.append(Tools.getRealKeyByDefine("@",updatecol)+",");
                     }
-                    sqlBuffer.append(cb.getColumn()+",");
-                    lstParams.add(createEditParamBeanByColbean(cb,reportTypeKey,true,true));
                 }
             }
         }
@@ -155,10 +139,7 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
         {
             throw new WabacusConfigLoadingException("解析报表"+rbean.getPath()+"的sql语句："+configInsertSql+"失败，SQL语句格式不对");
         }
-        if(sqlBuffer.charAt(sqlBuffer.length()-1)==',')
-        {
-            sqlBuffer.deleteCharAt(sqlBuffer.length()-1);
-        }
+        if(sqlBuffer.charAt(sqlBuffer.length()-1)==',') sqlBuffer.deleteCharAt(sqlBuffer.length()-1);
         sqlBuffer.append(") values(");
         List<EditableReportParamBean> lstParamsBeanTmp=new ArrayList<EditableReportParamBean>();
         for(int j=0;j<lstParams.size();j++)
@@ -168,32 +149,40 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
                 sqlBuffer.append("?,");
                 lstParamsBeanTmp.add((EditableReportParamBean)lstParams.get(j));
             }else
-            {//常量或直接从数据库取数据的数据库函数
+            {
                 sqlBuffer.append(lstParams.get(j)).append(",");
             }
         }
-        if(sqlBuffer.charAt(sqlBuffer.length()-1)==',')
-        {
-            sqlBuffer.deleteCharAt(sqlBuffer.length()-1);
-        }
+        if(sqlBuffer.charAt(sqlBuffer.length()-1)==',') sqlBuffer.deleteCharAt(sqlBuffer.length()-1);
         sqlBuffer.append(")");
-        owner.addInsertSqlActionBean(sqlBuffer.toString(),lstParamsBeanTmp,this.returnValueParamname);
+        addInsertSqlActionBean(sqlBuffer.toString(),lstParamsBeanTmp,this.returnValueParamname);
     }
     
-    private boolean isNormalInsertSql(String insertsql)
+    public void addInsertSqlActionBean(String sql,List<EditableReportParamBean> lstParamBeans,String returnValueParamName)
+    {
+        InsertSqlActionBean insertActionBean=new InsertSqlActionBean(this.ownerGroupBean);
+        insertActionBean.setSql(sql);
+        insertActionBean.setLstParamBeans(lstParamBeans);
+        insertActionBean.setReturnValueParamname(returnValueParamName);
+        this.ownerGroupBean.addActionBean(insertActionBean);
+    }
+    
+    private boolean isStandardInsertSql(String insertsql)
     {
         insertsql=insertsql==null?"":insertsql.toLowerCase().trim();
-        if(!insertsql.startsWith("insert")) return false;
-        if(insertsql.indexOf(" into ")<0) return false;
-        StringBuffer tmpBuf=new StringBuffer();
-        for(int i=0,len=insertsql.length();i<len;i++)
-        {
-            if(insertsql.charAt(i)==' ') continue;
-            tmpBuf.append(insertsql.charAt(i));
-        }
-        insertsql=tmpBuf.toString();
-        int idxValues=insertsql.indexOf(")values(");
-        if(idxValues<=0||insertsql.substring(0,idxValues).indexOf("(")<0||insertsql.lastIndexOf(")")<idxValues+")values(".length()) return false;
+        if(!insertsql.startsWith("insert")) return true;
+        insertsql=insertsql.substring("insert".length()).trim();
+        if(insertsql.startsWith("into ")) insertsql=insertsql.substring("into ".length()).trim();
+        if(insertsql.equals("")) return true;
+        insertsql=Tools.replaceCharacterInQuote(insertsql,'(',"$_LEFTBRACKET_$",true);
+        insertsql=Tools.replaceCharacterInQuote(insertsql,')',"$_RIGHTBRACKET_$",true);
+        int idx=insertsql.indexOf("(");
+        if(idx<=0) return false;
+        insertsql=insertsql.substring(idx+1).trim();
+        idx=insertsql.indexOf(")");
+        if(idx<=0) return true;
+        insertsql=insertsql.substring(idx+1).trim();
+        if(insertsql.equals("")||insertsql.startsWith("where ")) return false;
         return true;
     }
 }

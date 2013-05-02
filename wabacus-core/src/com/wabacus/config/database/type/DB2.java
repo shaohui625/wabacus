@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -32,7 +32,7 @@ import org.apache.commons.logging.LogFactory;
 import COM.ibm.db2.app.Blob;
 import COM.ibm.db2.app.Clob;
 
-import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
@@ -53,28 +53,38 @@ public class DB2 extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(DB2.class);
 
-    public String constructSplitPageSql(SqlBean sbean)
+    public String constructSplitPageSql(ReportDataSetBean svbean)
     {
-        String sql=sbean.getSqlWithoutOrderby();
+        String sql=svbean.getSqlWithoutOrderby();
         String orderby="";
         if(sql.indexOf("%orderby%")>0)
         {
             sql=Tools.replaceAll(sql,"%orderby%","");
-            orderby="order by "+sbean.getOrderby();
+            orderby="order by "+svbean.getOrderby();
         }
         sql="SELECT * FROM(SELECT jd_temp_tbl1.*, rownumber() OVER("+orderby+") as ROWID FROM("+sql
                 +") as jd_temp_tbl1) as jd_temp_tbl2 WHERE jd_temp_tbl2.ROWID<=%END% and jd_temp_tbl2.ROWID>%START%";
         return sql;
     }
 
-    public String constructSplitPageSql(SqlBean sbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
     {
-        String sql=sbean.getSqlWithoutOrderby();
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(sbean.getReportBean(),dynorderby);
+        String sql=svbean.getSqlWithoutOrderby();
+        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
         sql=Tools.replaceAll(sql,"%orderby%","");
         sql="select * from (select rownumber() over(order by "+dynorderby+") as ROWID,jd_temp_tbl1.* from("+sql
                 +") as jd_temp_tbl1) as jd_temp_tbl2 where ROWID > %START% AND ROWID<= %END%";
         return sql;
+    }
+
+    public String getSequenceValueByName(String sequencename)
+    {
+        return "nextval for "+sequencename;
+    }
+
+    public String getSequenceValueSql(String sequencename)
+    {
+        return "select  nextval for "+sequencename+" from sysibm.sysdummy1";
     }
 
     public String getClobValue(ResultSet rs,String column) throws SQLException
@@ -221,7 +231,7 @@ public class DB2 extends AbsDatabaseType
         }else if(columntype.equals("smallint"))
         {
             dataTypeObj=new ShortType();
-        }else if(columntype.equals("int")||columntype.equals("bigint"))
+        }else if(columntype.equals("int"))
         {
             dataTypeObj=new IntType();
         }else if(columntype.equals("bigint"))

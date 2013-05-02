@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -59,7 +59,7 @@ public class FramePanel extends AbsPanelType
             wresponse.println("<table  cellspacing=\"0\" cellpadding=\"0\" width=\""+containerwidth+"\" id=\""+containerConfigBean.getGuid()+"\"><tr><td>");
         }
         wresponse.println("<span id=\"WX_CONTENT_"+containerConfigBean.getGuid()+"\">");
-        wresponse.println(this.showHeader());//显示Header部分
+        wresponse.println(this.showHeader());
         showButtonsOnTopBottomTitle(true);
         tempBuf=new StringBuffer();
         tempBuf.append("<FIELDSET class=\"cls-"+containerConfigBean.getTagname()+"-content\"");
@@ -129,7 +129,7 @@ public class FramePanel extends AbsPanelType
         wresponse.println("</FIELDSET>");
         showButtonsOnTopBottomTitle(false);
         wresponse.println(this.showFooter());
-//        wresponse.println(this.showContextMenu());
+
         wresponse.println(this.showMetaData());
         wresponse.println("</span>");
         if(this.getParentContainerType()!=null)

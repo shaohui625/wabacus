@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -32,11 +32,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
+import com.wabacus.config.ConfigLoadAssistant;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
+import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -139,7 +141,7 @@ public class TagAssistant
         ReportBean rbean=reportTypeObj.getReportBean();
         ReportRequest rrequest=reportTypeObj.getReportRequest();
         if(type==null||type.trim().equals(""))
-        {//显示整个标题栏
+        {
             String titlestr=reportTypeObj.showTitle();
             if(titlestr==null||titlestr.trim().equals("")) return "";
             StringBuffer resultBuf=new StringBuffer();
@@ -276,7 +278,7 @@ public class TagAssistant
             return showButton(ccbean,rrequest,buttonObj,label);
         }
         if(Consts.lstDataExportTypes.contains(type))
-        {//数据导出
+        {
             String componentids=attributes.get("componentids");
             if(componentids==null||componentids.trim().equals("")) componentids=ccbean.getId();
             if(componentids.equals(ccbean.getId()))
@@ -298,12 +300,14 @@ public class TagAssistant
             {
                 throw new WabacusRuntimeException("显示组件"+ccbean.getPath()+"跳转按钮失败，这种按钮类型必定指定其pageurl属性为跳转的目标页面");
             }
+            String beforecallback=attributes.get("beforecallback");
+            beforecallback=beforecallback==null||beforecallback.trim().equals("")?null:beforecallback.trim();
             if(!rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
                     Consts.PERMISSION_TYPE_DISPLAY)) return "";//没有显示权限
             if(label==null||label.trim().equals("")) label="<input type='button' class='cls-button' value='跳转'>";
             if(rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
                     Consts.PERMISSION_TYPE_DISABLED)) return label;
-            return "<a href=\"#\" onclick=\"try{"+rrequest.forwardPageWithBack(pageurl)+"}catch(e){logErrorsAsJsFileLoad(e);}\">"+label+"</a>";
+            return "<a href=\"#\" onclick=\"try{"+rrequest.forwardPageWithBack(pageurl,beforecallback)+"}catch(e){logErrorsAsJsFileLoad(e);}\">"+label+"</a>";
         }else if(type.equals(Consts_Private.BACK_BUTTON))
         {
             BackButton buttonObj=null;
@@ -326,7 +330,7 @@ public class TagAssistant
         {
             buttonObj=rbean.getButtonsBean().getcertainTypeButton(SearchButton.class);
         }else if(type.equals(Consts_Private.SAVE_BUTTON))
-        {//保存
+        {
             if(!(reportTypeObj instanceof IEditableReportType))
             {
                 throw new WabacusRuntimeException("报表"+rbean.getPath()+"不是可编辑报表类型，不能显示保存按钮");
@@ -438,7 +442,7 @@ public class TagAssistant
         {
             String componentids=attributes.get("componentids");
             if(componentids==null||componentids.trim().equals(""))
-            {//如果没有指定要导出的报表ID
+            {
                 List<AbsButtonType> lstDataExportButtons=null;
                 if(ccbean.getButtonsBean()!=null) lstDataExportButtons=ccbean.getButtonsBean().getLstDataExportTypeButtons(type);
                 if(lstDataExportButtons!=null&&lstDataExportButtons.size()>0)
@@ -459,12 +463,14 @@ public class TagAssistant
             {
                 throw new WabacusRuntimeException("显示组件"+ccbean.getPath()+"跳转按钮失败，这种按钮类型必定指定其pageurl属性为跳转的目标页面");
             }
+            String beforecallback=attributes.get("beforecallback");
+            beforecallback=beforecallback==null||beforecallback.trim().equals("")?null:beforecallback.trim();
             if(!rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
                     Consts.PERMISSION_TYPE_DISPLAY)) return "";
             if(label==null||label.trim().equals("")) label="<input type='button' class='cls-button' value='跳转'>";
             if(rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
                     Consts.PERMISSION_TYPE_DISABLED)) return label;//没有点击权限 
-            return "<a href=\"#\" onclick=\"try{"+rrequest.forwardPageWithBack(pageurl)+"}catch(e){logErrorsAsJsFileLoad(e);}\">"+label+"</a>";
+            return "<a href=\"#\" onclick=\"try{"+rrequest.forwardPageWithBack(pageurl,beforecallback)+"}catch(e){logErrorsAsJsFileLoad(e);}\">"+label+"</a>";
         }else if(type.equals(Consts_Private.BACK_BUTTON))
         {
             BackButton buttonObj=null;
@@ -531,7 +537,7 @@ public class TagAssistant
         CacheDataBean cdb=rrequest.getCdb(rbean.getId());
         label=label==null?"":label.trim();
         if(Tools.isDefineKey("$",label))
-        {//是从资源文件中获取
+        {
             label=Config.getInstance().getResourceString(rrequest,rbean.getPageBean(),label,false);
         }
         if(Tools.isDefineKey("i18n",label))
@@ -796,7 +802,7 @@ public class TagAssistant
             startidx=pageno-count/2;
             endidx=pageno+count/2;
         }else
-        {//icount%2==0
+        {
             startidx=pageno-count/2;
             endidx=pageno+count/2-1;
         }
@@ -808,8 +814,7 @@ public class TagAssistant
         return new int[] { startidx, endidx };
     }
 
-    public String getDataImportDisplayValue(String ref,String dataimportwidth,String dataimportheight,String initsize,String maxbtn,String minbtn,
-            String label,HttpServletRequest request)
+    public String getDataImportDisplayValue(String ref,String popupparams,String initsize,String label,HttpServletRequest request)
     {
         if(ref==null||ref.trim().equals(""))
         {
@@ -841,34 +846,12 @@ public class TagAssistant
         {
             refBuf.deleteCharAt(refBuf.length()-1);
         }
-        int width=300;
-        int height=160;
-        if(dataimportwidth!=null)
-        {
-            width=Tools.getWidthHeightIntValue(dataimportwidth.trim());
-            if(width<=0) width=300;
-        }
-        if(dataimportheight!=null)
-        {
-            height=Tools.getWidthHeightIntValue(dataimportheight.trim());
-            if(height<=0) height=160;
-        }
+        popupparams=WabacusAssistant.getInstance().addDefaultPopupParams(popupparams,initsize,"300","160",null);
         String token="?";
         if(Config.showreport_url.indexOf("?")>0) token="&";
         String url=Config.showreport_url+token+"DATAIMPORT_REF="+refBuf.toString()+"&ACTIONTYPE=ShowUploadFilePage&FILEUPLOADTYPE="
                 +Consts_Private.FILEUPLOADTYPE_DATAIMPORTTAG;
-
-        String clickevent="wx_winpage('"+url+"','上传数据文件',"+width+","+height;
-        clickevent+=","+(maxbtn!=null&&maxbtn.toLowerCase().trim().equals("max"));
-        clickevent+=","+(minbtn!=null&&minbtn.toLowerCase().trim().equals("min"));
-        clickevent+=",null);";
-        if(initsize!=null&&initsize.toLowerCase().trim().equals("max"))
-        {
-            clickevent+="ymPrompt.max();";
-        }else if(initsize!=null&&initsize.toLowerCase().trim().equals("min"))
-        {
-            clickevent+="ymPrompt.min();";
-        }
+        String clickevent="wx_winpage('"+url+"',"+popupparams+");";
         StringBuffer labelBuf=new StringBuffer();
         if(label!=null&&!label.trim().equals(""))
         {
@@ -882,51 +865,15 @@ public class TagAssistant
             labelBuf.append("  onFocus=\"this.select();\" value=\""+label+"\">");
         }
         StringBuffer resultBuf=new StringBuffer();
-        String includejscss=(String)request.getAttribute("wx_has_includejscss");
-        if(includejscss==null)
-        {//还没提供必须的js/css文件
-            String systemcssfile=Config.webroot+"/webresources/skin/"+Config.getInstance().getSkin(request,"")+"/wabacus_system.css";
-            systemcssfile=Tools.replaceAll(systemcssfile,"//","/");
-            String promptCssFile=Config.webroot+"/webresources/skin/"+Config.getInstance().getSkin(request,"")+"/ymPrompt.css";
-            promptCssFile=Tools.replaceAll(promptCssFile,"//","/");
-            resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(systemcssfile).append("\"/>");
-            resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(promptCssFile).append("\"/>");
-            resultBuf.append("<script type=\"text/javascript\"  src=\"").append(
-                    Tools.replaceAll(Config.webroot+"/webresources/script/ymPrompt.js","//","/")).append("\"></script>");
-            resultBuf.append("<script language=\"javascript\"  src=\"").append(
-                    Tools.replaceAll(Config.webroot+"/webresources/script/wabacus_api.js","//","/")).append("\"></script>");
-            request.setAttribute("wx_has_includejscss","true");
-        }
+        resultBuf.append(addPopupIncludeJsCss(request));
         resultBuf.append(labelBuf.toString());
         return resultBuf.toString();
     }
 
-    public void printlnTag(JspWriter out,ReportRequest rrequest,String value) throws IOException
-    {
-        if(value==null) value="";
-        if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL||rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
-                ||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT)
-        {//如果是下载到这两类型的数据文件中，替换其中的<img/>中的路径，加上http://xxx/，以方便它们能正常显示图片
-            value=WabacusAssistant.getInstance().replaceAllImgPathInExportDataFile(rrequest.getRequest(),value);
-        }
-        out.println(value);
-    }
-
     public String getFileUploadDisplayValue(String maxsize,String allowtypes,String uploadcount,String newfilename,String savepath,String rooturl,
-            String width,String height,String initsize,String maxbtn,String minbtn,String interceptor,String label,HttpServletRequest request)
+            String popupparams,String initsize,String interceptor,String label,HttpServletRequest request)
     {
-        int winwidth=300;
-        int winheight=160;
-        if(width!=null)
-        {
-            winwidth=Tools.getWidthHeightIntValue(width.trim());
-            if(winwidth<=0) winwidth=300;
-        }
-        if(height!=null)
-        {
-            winheight=Tools.getWidthHeightIntValue(height.trim());
-            if(winheight<=0) winheight=160;
-        }
+        popupparams=WabacusAssistant.getInstance().addDefaultPopupParams(popupparams,initsize,"300","160",null);
         if(savepath==null||savepath.trim().equals(""))
         {
             throw new WabacusRuntimeException("显示文件上传标签失败，没有指定保存路径");
@@ -968,17 +915,7 @@ public class TagAssistant
         {
             url=url+"&INTERCEPTOR="+interceptor;
         }
-        String clickevent="wx_winpage('"+url+"','文件上传',"+winwidth+","+winheight;
-        clickevent+=","+(maxbtn!=null&&maxbtn.toLowerCase().trim().equals("max"));
-        clickevent+=","+(minbtn!=null&&minbtn.toLowerCase().trim().equals("min"));
-        clickevent+=",null);";
-        if(initsize!=null&&initsize.toLowerCase().trim().equals("max"))
-        {
-            clickevent+="ymPrompt.max();";
-        }else if(initsize!=null&&initsize.toLowerCase().trim().equals("min"))
-        {
-            clickevent+="ymPrompt.min();";
-        }
+        String clickevent="wx_winpage('"+url+"',"+popupparams+");";
         StringBuffer resultBuf=new StringBuffer();
         if(label!=null&&!label.trim().equals(""))
         {
@@ -991,38 +928,7 @@ public class TagAssistant
             resultBuf.append("<input type=\"button\" class=\"cls-button2\" onClick=\""+clickevent+"\"");
             resultBuf.append("  onFocus=\"this.select();\" value=\""+label+"\">");
         }
-        String includejscss=(String)request.getAttribute("wx_has_includejscss");
-        if(includejscss==null)
-        {//还没有包含必须的js/css文件
-            String promptCssFile=Config.webroot+"/webresources/skin/"+Config.getInstance().getSkin(request,"")+"/ymPrompt.css";
-            promptCssFile=Tools.replaceAll(promptCssFile,"//","/");
-            resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(promptCssFile).append("\"/>");
-            String systemcssfile=Config.webroot+"/webresources/skin/"+Config.getInstance().getSkin(request,"")+"/wabacus_system.css";
-            systemcssfile=Tools.replaceAll(systemcssfile,"//","/");
-            resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(systemcssfile).append("\"/>");
-            resultBuf.append("<script language=\"javascript\"  src=\"").append(
-                    Tools.replaceAll(Config.webroot+"/webresources/script/ymPrompt.js","//","/")).append("\"></script>");
-            resultBuf.append("<script language=\"javascript\"  src=\"").append(
-                    Tools.replaceAll(Config.webroot+"/webresources/script/wabacus_api.js","//","/")).append("\"></script>");
-            request.setAttribute("wx_has_includejscss","true");
-        }
-        return resultBuf.toString();
-    }
-
-    public String getHeaderFooterDisplayValue(AbsComponentType componentTypeObj,String top,boolean type)
-    {
-        String displaystr=null;
-        if(type)
-        {
-            displaystr=componentTypeObj.showHeader();
-        }else
-        {//显示footer
-            displaystr=componentTypeObj.showFooter();
-        }
-        if(displaystr==null||displaystr.trim().equals("")) return "";
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append(TagAssistant.getInstance().showTopSpace(top));
-        resultBuf.append(displaystr);
+        resultBuf.append(addPopupIncludeJsCss(request));
         return resultBuf.toString();
     }
 
@@ -1037,5 +943,63 @@ public class TagAssistant
             e.printStackTrace();
             return urlparam;
         }
+    }
+    
+    private String addPopupIncludeJsCss(HttpServletRequest request)
+    {
+        StringBuffer resultBuf=new StringBuffer();
+        String includejscss=(String)request.getAttribute("wx_has_includejscss");
+        if(includejscss==null)
+        {//还没提供必须的js/css文件
+            List<String> lstTmp=ConfigLoadAssistant.getInstance().getLstPopupComponentCss();
+            for(String cssTmp:lstTmp)
+            {
+                resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(cssTmp).append("\"/>");
+            }
+            String systemcssfile=Config.webroot+"/webresources/skin/"+Config.getInstance().getSkin(request,"")+"/wabacus_system.css";
+            systemcssfile=Tools.replaceAll(systemcssfile,"//","/");
+            resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(systemcssfile).append("\"/>");
+            resultBuf.append("<script language=\"javascript\"  src=\"").append(
+                    Tools.replaceAll(Config.webroot+"/webresources/script/wabacus_api.js","//","/")).append("\"></script>");
+            resultBuf.append("<script language=\"javascript\"  src=\"").append(
+                    Tools.replaceAll(Config.webroot+"/webresources/script/wabacus_util.js","//","/")).append("\"></script>");
+            resultBuf.append("<script language=\"javascript\"  src=\"").append(
+                    Tools.replaceAll(Config.webroot+"/wabacus-generatejs/generate_system.js","//","/")).append("\"></script>");
+            List<JavascriptFileBean> lstJsTmp=ConfigLoadAssistant.getInstance().getLstPopupComponentJs();
+            for(JavascriptFileBean jsBeanTmp:lstJsTmp)
+            {
+                resultBuf.append("<script language=\"javascript\"  src=\"").append(jsBeanTmp.getJsfileurl()).append("\"></script>");
+            }
+            request.setAttribute("wx_has_includejscss","true");
+        }
+        return resultBuf.toString();
+    }
+    
+    public String getHeaderFooterDisplayValue(AbsComponentType componentTypeObj,String top,boolean type)
+    {
+        String displaystr=null;
+        if(type)
+        {
+            displaystr=componentTypeObj.showHeader();
+        }else
+        {
+            displaystr=componentTypeObj.showFooter();
+        }
+        if(displaystr==null||displaystr.trim().equals("")) return "";
+        StringBuffer resultBuf=new StringBuffer();
+        resultBuf.append(TagAssistant.getInstance().showTopSpace(top));
+        resultBuf.append(displaystr);
+        return resultBuf.toString();
+    }
+
+    public void printlnTag(JspWriter out,ReportRequest rrequest,String value) throws IOException
+    {
+        if(value==null) value="";
+        if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL||rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
+                ||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT)
+        {//如果是下载到这两类型的数据文件中，替换其中的<img/>中的路径，加上http://xxx/，以方便它们能正常显示图片
+            value=WabacusAssistant.getInstance().replaceAllImgPathInExportDataFile(rrequest.getRequest(),value);
+        }
+        out.println(value);
     }
 }

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -23,8 +23,9 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
@@ -46,16 +47,16 @@ public class SQLSERVER2K extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(SQLSERVER2K.class);
 
-    public String constructSplitPageSql(SqlBean sbean)
+    public String constructSplitPageSql(ReportDataSetBean svbean)
     {
-        String sql=sbean.getSqlWithoutOrderby();
-        String orderby=sbean.getOrderby();
+        String sql=svbean.getSqlWithoutOrderby();
+        String orderby=svbean.getOrderby();
         if(orderby==null||orderby.trim().equals("")||sql==null||sql.indexOf("%orderby%")<=0)
         {
-            throw new WabacusConfigLoadingException("报表"+sbean.getReportBean().getPath()+"配置的查询数据脚本："+sbean.getValue()
+            throw new WabacusConfigLoadingException("报表"+svbean.getReportBean().getPath()+"配置的查询数据脚本："+svbean.getValue()
                     +"没有order by子句，无法在SQLSERVER2000数据库上进行分页");
         }
-        String[] orderbyarr=getPageSplitOrderByArray(sbean,orderby);
+        String[] orderbyarr=getPageSplitOrderByArray(svbean,orderby);
         sql=Tools.replaceAll(sql,"%orderby%","");
         
         sql="select * from (select top %PAGESIZE% * from (select top %END% * from ("+sql+") as jd_temp_tbl1 "+orderbyarr[0]+") as jd_temp_tbl2 "
@@ -63,11 +64,11 @@ public class SQLSERVER2K extends AbsDatabaseType
         return sql;
     }
 
-    public String constructSplitPageSql(SqlBean sbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
     {
-        String sql=sbean.getSqlWithoutOrderby();
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(sbean.getReportBean(),dynorderby);
-        String[] orderbyarr=getPageSplitOrderByArray(sbean,dynorderby);
+        String sql=svbean.getSqlWithoutOrderby();
+        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
+        String[] orderbyarr=getPageSplitOrderByArray(svbean,dynorderby);
         sql=Tools.replaceAll(sql,"%orderby%","");
         
         sql="select * from (select top %PAGESIZE% * from (select top %END% * from ("+sql+") as jd_temp_tbl1 "+orderbyarr[0]+") as jd_temp_tbl2 "
@@ -75,7 +76,7 @@ public class SQLSERVER2K extends AbsDatabaseType
         return sql;
     }
 
-    private String[] getPageSplitOrderByArray(SqlBean sbean,String orderby)
+    private String[] getPageSplitOrderByArray(ReportDataSetBean svbean,String orderby)
     {
         List<String> lstOrderByColumns=Tools.parseStringToList(orderby,",");
         StringBuffer sbufferOrder=new StringBuffer();
@@ -108,12 +109,23 @@ public class SQLSERVER2K extends AbsDatabaseType
                 }
             }else
             {
-                throw new WabacusConfigLoadingException("报表"+sbean.getReportBean().getPath()+"配置的SQL语句中order by子句"+orderby+"不合法");
+                throw new WabacusConfigLoadingException("报表"+svbean.getReportBean().getPath()+"配置的SQL语句中order by子句"+orderby+"不合法");
             }
         }
         return new String[] { "order by "+sbufferOrder.toString(), "order by "+sbufferOrder_reverse.toString() };
     }
 
+    public String getSequenceValueByName(String sequencename)
+    {
+        log.warn("SqlServer数据库不支持序列的配置");
+        return "";
+    }
+    
+    public String getSequenceValueSql(String sequencename)
+    {
+       throw new WabacusRuntimeException("SqlServer数据库不支持序列的配置");
+    }
+    
     public IDataType getWabacusDataTypeByColumnType(String columntype)
     {
         if(columntype==null||columntype.trim().equals("")) return null;

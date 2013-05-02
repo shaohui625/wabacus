@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -89,6 +89,18 @@ public class Resources
         }
         return ((String)objResult).trim();
     }
+    
+    public String getI18NStringValue(String key,String localelanguage)
+    {
+        Object objResult=getI18NObjectValue(key,localelanguage);
+        if(objResult==null) return key;
+        if(!(objResult instanceof String))
+        {
+            throw new WabacusRuntimeException("获取key:"+key+"对应的资源项失败，它不是字符串类型");
+        }
+        return ((String)objResult).trim();
+    }
+    
     public Object getI18NObjectValue(String key,ReportRequest rrequest)
     {
         if(key==null) return null;
@@ -101,17 +113,37 @@ public class Resources
         {
             return getI18nValueInClasspath(key,rrequest);
         }
+        Object result=getI18NObjectValue(key,rrequest.getLocallanguage());
+        if(result instanceof String)
+        {
+            result=Tools.replaceAll((String)result,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());
+        }
+        return result;
+    }
+    
+    public Object getI18NObjectValue(String key,String localelanguage)
+    {
+        if(key==null) return null;
+        if(this.mI18NResources==null)
+        {
+            log.warn("没有配置国际化资源文件，无法获取"+key+"对应的资源项");
+            return null;
+        }
+        if(Tools.isDefineKey("classpath",Config.configpath))
+        {
+            return getI18nValueInClasspath(key,localelanguage);
+        }
         String filename=Config.i18n_filename;
         if(Config.encode.equalsIgnoreCase("UTF-8"))
         {
-            filename=filename+"_"+rrequest.getLocallanguage();
+            filename=filename+"_"+localelanguage;
         }else
         {
             log.warn("当前应用不是UTF-8编码，不支持国际化显示");
         }
         Map<String,Object> mResources=this.mI18NResources.get(filename.toLowerCase());
         if(mResources==null)
-        {//没取到相应语言的资源项，则取英文版的
+        {
             filename=Config.i18n_filename;
             mResources=this.mI18NResources.get(filename);
         }
@@ -124,10 +156,6 @@ public class Resources
         if(result==null)
         {
             log.warn("在资源文件"+filename+".xml中没有取到"+key+"对应的资源项");
-            return null;
-        }else if(result instanceof String)
-        {
-            result=Tools.replaceAll((String)result,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin()); 
         }
         return result;
     }
@@ -135,13 +163,23 @@ public class Resources
     private Object getI18nValueInClasspath(String key,ReportRequest rrequest)
     {
         if(key==null) return null;
-        String localetype=rrequest.getLocallanguage();
-        if(localetype.equals("")) localetype="en";
-        Map<String,Object> mResources=this.mI18NResources.get(localetype);
+        Object result=getI18nValueInClasspath(key,rrequest.getLocallanguage());
+        if(result instanceof String)
+        {
+            result=Tools.replaceAll((String)result,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());
+        }
+        return result;
+    }
+    
+    private Object getI18nValueInClasspath(String key,String localelanguage)
+    {
+        if(key==null) return null;
+        if(localelanguage.equals("")) localelanguage="en";
+        Map<String,Object> mResources=this.mI18NResources.get(localelanguage);
         if(mResources==null)
         {
-            ConfigLoadManager.loadI18nResourcesInClassPath(rrequest.getLocallanguage());
-            mResources=this.mI18NResources.get(localetype);
+            ConfigLoadManager.loadI18nResourcesInClassPath(localelanguage);
+            mResources=this.mI18NResources.get(localelanguage);
         }
         if(mResources.size()==0)
         {
@@ -149,17 +187,13 @@ public class Resources
         }
         if(mResources==null||mResources.size()==0)
         {
-            log.warn("没有配置"+localetype+"对应的国际化资源文件，无法获取其中的资源项");
+            log.warn("没有配置"+localelanguage+"对应的国际化资源文件，无法获取其中的资源项");
             return null;
         }
         Object result=mResources.get(key);
         if(result==null)
         {
-            log.warn("在"+localetype+"对应的国际化资源文件中没有取到"+key+"对应的资源项");
-            return null;
-        }else if(result instanceof String)
-        {
-            result=Tools.replaceAll((String)result,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin()); 
+            log.warn("在"+localelanguage+"对应的国际化资源文件中没有取到"+key+"对应的资源项");
         }
         return result;
     }
@@ -267,7 +301,7 @@ public class Resources
             o=mTemp.get(key);
             if(rrequest!=null&&o instanceof String)
             {
-                o=Tools.replaceAll((String)o,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());//替换掉资源项中的主题风格占位符
+                o=Tools.replaceAll((String)o,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());
             }
         }
         if(o==null)

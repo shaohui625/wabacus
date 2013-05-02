@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -33,6 +33,7 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
+import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
@@ -56,11 +57,11 @@ public class PageBean extends AbsContainerConfigBean
     
     private List<String> ulstMyCss=null;
 
-    private List<String> ulstMyJavascript=null;
+    private List<JavascriptFileBean> lstMyJavascriptFiles=null;
 
-    private String jsFileUrl="";
+    private JavascriptFileBean jsFileForConfigFile;
 
-    private String jsFilePath="";//为此页面上所有报表自动生成的javascript函数所在js文件的绝对路径（即物理路径）
+    private String jsFilePath="";
 
     private String reportfile_key;
 
@@ -106,38 +107,20 @@ public class PageBean extends AbsContainerConfigBean
         return lstTemp;
     }
 
-    public List<String> getUlstMyJavascript()
+    public List<JavascriptFileBean> getLstMyJavascriptFiles()
     {
-        return ulstMyJavascript;
+        return this.lstMyJavascriptFiles;
     }
 
-    public List<String> getUlstSystemJavascript()
+    public List<JavascriptFileBean> getLstSystemJavascriptFiles()
     {
-        List<String> lstTemp=new UniqueArrayList<String>();
-        List<String> lstJs=Config.getInstance().getUlstGlobalJavascript();
-        if(lstJs!=null)
-        {
-            lstTemp.addAll(lstJs);
-        }
-        lstJs=Config.getInstance().getUlstLocalJavascript(this);
-        if(lstJs!=null)
-        {
-            lstTemp.addAll(lstJs);
-        }
-        if(shouldIncludeAutoCreatedJs&&this.jsFileUrl!=null) lstTemp.add(this.jsFileUrl);
-        return lstTemp;
-    }
-
-    public void addMyJavascript(String javascript)
-    {
-        if(ulstMyJavascript==null) ulstMyJavascript=new UniqueArrayList<String>();
-        ulstMyJavascript.add(javascript);
-    }
-
-    public void addMyJavascript(List<String> lstJavascript)
-    {
-        if(ulstMyJavascript==null) ulstMyJavascript=new UniqueArrayList<String>();
-        ulstMyJavascript.addAll(lstJavascript);
+        List<JavascriptFileBean> lstResult=new UniqueArrayList<JavascriptFileBean>();
+        List<JavascriptFileBean> lstJsTmp=Config.getInstance().getLstDefaultGlobalJavascriptFiles();
+        if(lstJsTmp!=null) lstResult.addAll(lstJsTmp);
+        lstJsTmp=Config.getInstance().getLstGlobalJavascriptFiles();
+        if(lstJsTmp!=null) lstResult.addAll(lstJsTmp);
+        if(shouldIncludeAutoCreatedJs&&this.jsFileForConfigFile!=null) lstResult.add(this.jsFileForConfigFile);
+        return lstResult;
     }
 
     public void addMyCss(String css)
@@ -152,6 +135,12 @@ public class PageBean extends AbsContainerConfigBean
         ulstMyCss.addAll(lstcss);
     }
 
+    public void addMyJavascriptFile(String jsfileUrl,int loadorder)
+    {
+        if(this.lstMyJavascriptFiles==null) this.lstMyJavascriptFiles=new UniqueArrayList<JavascriptFileBean>();
+        this.lstMyJavascriptFiles.add(new JavascriptFileBean(jsfileUrl,loadorder));
+    }
+    
     public void setShouldIncludeAutoCreatedJs(boolean shouldIncludeAutoCreatedJs)
     {
         this.shouldIncludeAutoCreatedJs=shouldIncludeAutoCreatedJs;
@@ -167,14 +156,15 @@ public class PageBean extends AbsContainerConfigBean
         this.isCheckPermission=isCheckPermission;
     }
 
-    public String getJsFileUrl()
-    {
-        return this.jsFileUrl;
-    }
-
     public void setJsFileUrl(String jsFileUrl)
     {
-        this.jsFileUrl=jsFileUrl;
+        if(jsFileUrl==null||jsFileUrl.trim().equals(""))
+        {
+            this.jsFileForConfigFile=null;
+        }else
+        {
+            this.jsFileForConfigFile=new JavascriptFileBean(jsFileUrl.trim(),0);
+        }
     }
 
     public String getJsFilePath()
@@ -305,7 +295,7 @@ public class PageBean extends AbsContainerConfigBean
         processRelateReports();
         processRelateConditions();
         if(ulstMyCss!=null&&ulstMyCss.size()==0) ulstMyCss=null;
-        if(ulstMyJavascript!=null&&ulstMyJavascript.size()==0) ulstMyJavascript=null;
+        if(this.lstMyJavascriptFiles!=null&&lstMyJavascriptFiles.size()==0) lstMyJavascriptFiles=null;
         super.doPostLoad();
     }
     
@@ -322,7 +312,7 @@ public class PageBean extends AbsContainerConfigBean
                         +rbeanSlave.getId()+"依赖的报表"+rbeanSlave.getDependParentId()+"不存在");
             }
             if(rbeanMaster.isListReportType())
-            {//如果主报表是列表报表，则子报表不能配置refreshid为其它容器，因为它们是在客户端单独加载的，不能和其它报表绑定加载
+            {
                 if(rbeanSlave.getRefreshid()!=null&&!rbeanSlave.getRefreshid().trim().equals("")
                         &&!rbeanSlave.getRefreshid().trim().equals(rbeanSlave.getId()))
                 {
@@ -396,7 +386,7 @@ public class PageBean extends AbsContainerConfigBean
         List<String> lstTemp;
         Map<String,String> mParams=new HashMap<String,String>();
         mDependParams.put(rbeanSlave.getId(),mParams);
-        if(rbeanMaster.isDetailReportType()) rbeanSlave.setMDependsDetailReportParams(mParams);//如果主报表是细览报表，则存放其所用到的参数，以便加载此从报表数据时可以知道要取哪些参数
+        if(rbeanMaster.isDetailReportType()) rbeanSlave.setMDependsDetailReportParams(mParams);
         for(String param:lstParams)
         {
             lstTemp=Tools.parseStringToList(param,"=");
@@ -444,6 +434,7 @@ public class PageBean extends AbsContainerConfigBean
                         cb.setExtendConfigDataForReportType(AbsListReportType.KEY,alrcean);
                     }
                     alrcean.setSlaveReportParamName(paramname);//将此ColBean标识为参与刷新从报表的参数，并记下对应的参数名
+                    rbeanSlave.addParamNameFromURL(paramname);
                 }
             }
         }
@@ -462,7 +453,7 @@ public class PageBean extends AbsContainerConfigBean
                 Map<String,Map<String,String>> mDependChildsTmp=rbeanMaster.getMDependChilds();
                 Map<String,String> mDynParamsValueAndName=new HashMap<String,String>();
                 for(Entry<String,Map<String,String>> entryTmp:mDependChildsTmp.entrySet())
-                {//循环所有依赖此主报表的从报表
+                {
                     Map<String,String> mParams=entryTmp.getValue();
                     if(mParams.size()==0)
                     {
@@ -525,7 +516,7 @@ public class PageBean extends AbsContainerConfigBean
         Map<String,List<ReportBean>> mRelateConReportBeans=new HashMap<String,List<ReportBean>>();
         getAllRelateConditionReportBeans(this,sRelateConditionNames,mRelateConReportBeans);
         for(Entry<String,List<ReportBean>> entryTmp:mRelateConReportBeans.entrySet())
-        {//处理每个关联查询条件对应的报表
+        {
             updateRefreshContaineridForReportBeans(entryTmp.getValue());
             updateRelateReportidsForReportBeans(entryTmp.getValue());
         }
@@ -648,7 +639,7 @@ public class PageBean extends AbsContainerConfigBean
         componentId2=componentId2==null?"":componentId2.trim();
         if(componentId2.equals("")||componentId1.equals("")) return null;
         if(componentId1.equals(componentId2))
-        {//两个id是同一个组件的ID，则refreshid就是它们的id
+        {
             if(!this.id.equals(componentId1)&&getChildComponentBean(componentId1,true)==null)
             {
                 throw new WabacusConfigLoadingException("页面"+this.id+"下面不存在id属性为"+componentId1+"的子组件");

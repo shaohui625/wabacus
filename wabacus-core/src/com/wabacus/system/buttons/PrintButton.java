@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -93,7 +93,7 @@ public class PrintButton extends WabacusButton
             String pdfdataexporturl=Config.showreport_onpdf_url;
             String token="?";
             if(pdfdataexporturl.indexOf("?")>0) token="&";
-            pdfdataexporturl=pdfdataexporturl+token+"WX_IS_PDFPRINT_ACTION=true";//在URL后面加上WX_IS_PDFPRINT_ACTION=true表示不是PDF导出，而是PDF打印
+            pdfdataexporturl=pdfdataexporturl+token+"WX_IS_PDFPRINT_ACTION=true";
             resultBuf.append("exportData('"+this.ccbean.getPageBean().getId()+"','"+this.ccbean.getId()+"','"
                     +this.ccbean.getPdfPrintBean().getIncludeApplicationids()+"','"+Config.showreport_onpage_url+"','"+pdfdataexporturl+"');");
         }

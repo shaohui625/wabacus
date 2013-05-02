@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -62,7 +62,7 @@ public class OnloadMethodBean implements Comparable<OnloadMethodBean>,Cloneable
 
         mOnloadTypeInvokeOrder.put(Consts_Private.ONlOAD_CURVETITLE,2);
         mOnloadTypeInvokeOrder.put(Consts_Private.ONlOAD_IMGSCROLL,2);
-//        mOnloadTypeInvokeOrder.put(Consts_Private.ONLOAD_AFTERSAVE,4);
+
         mOnloadTypeInvokeOrder.put(Consts_Private.ONLOAD_CONFIG,4);
         mOnloadTypeInvokeOrder.put(Consts_Private.ONLOAD_REFRESHSLAVE,5);
     }

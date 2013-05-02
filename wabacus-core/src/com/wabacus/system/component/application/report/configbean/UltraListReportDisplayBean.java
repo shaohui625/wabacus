@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -28,6 +28,7 @@ import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
+import com.wabacus.system.ReportRequest;
 
 public class UltraListReportDisplayBean extends AbsExtendConfigBean
 {
@@ -53,9 +54,12 @@ public class UltraListReportDisplayBean extends AbsExtendConfigBean
         mChildrenDefaultPositions=childrenDefaultPositions;
     }
 
-    public boolean isHasGroupConfig()
+    public boolean isHasGroupConfig(ReportRequest rrequest)
     {
-        return hasGroupConfig;
+        if(rrequest==null) return hasGroupConfig;
+        String flag=rrequest.getStringAttribute(this.getOwner().getReportBean().getId(),"WX_IS_HAS_GROUP_CONFIG",null);
+        if(flag==null||flag.trim().equals("")) return hasGroupConfig;
+        return flag.toLowerCase().trim().equals("true");
     }
 
     public void setHasGroupConfig(boolean hasGroupConfig)
@@ -144,6 +148,9 @@ public class UltraListReportDisplayBean extends AbsExtendConfigBean
                 }else if(obj instanceof AbsExtendConfigBean)
                 {
                     lstTemp.add(((AbsExtendConfigBean)obj).clone(owner));
+                }else if(obj instanceof AbsConfigBean)
+                {
+                    lstTemp.add(((AbsConfigBean)obj).clone(owner));
                 }
             }
             bean.setLstChildren(lstTemp);

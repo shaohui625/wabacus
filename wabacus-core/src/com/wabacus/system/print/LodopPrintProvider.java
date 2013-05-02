@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -55,7 +55,7 @@ public class LodopPrintProvider extends AbsPrintProvider
         {
             this.wresponse.println("<"+pspagebeanTmp.getPlaceholder()+"_pagecount>"+maxpagecnt+"</"+pspagebeanTmp.getPlaceholder()+"_pagecount>");
             for(int i=0;i<maxpagecnt;i++)
-            {//依次打印每一页的记录
+            {
                 setSubPagePageno(pspagebeanTmp,i);
                 this.wresponse.print("<"+pspagebeanTmp.getPlaceholder()+"_"+i+">");
                 for(Entry<String,PrintTemplateElementBean> entryTmp:pspagebeanTmp.getMPrintElements().entrySet())

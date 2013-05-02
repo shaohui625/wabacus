@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -24,7 +24,6 @@ import java.util.List;
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.util.Tools;
@@ -32,57 +31,69 @@ import com.wabacus.util.Tools;
 public class UpdateSqlActionBean extends AbsEditSqlActionBean
 {
 
-    public UpdateSqlActionBean(EditableReportUpdateDataBean _owner)
+    public UpdateSqlActionBean(EditActionGroupBean ownerGroupBean)
     {
-        super(_owner);
+        super(ownerGroupBean);
     }
 
-    public void parseSql(SqlBean sqlbean,String reportTypeKey,String configSql)
+    public UpdateSqlActionBean(String sql,List<EditableReportParamBean> lstParamsBean,EditActionGroupBean ownerGroupBean,String returnValueParamname)
     {
-        configSql=this.parseAndRemoveReturnParamname(configSql);
-        if(isNormalUpdateSql(configSql))
+        super(ownerGroupBean);
+        this.sql=sql;
+        this.lstParamBeans=lstParamsBean;
+        this.returnValueParamname=returnValueParamname;
+    }
+    
+    public void parseActionscript(String reportTypeKey,String actionscript)
+    {
+        actionscript=this.parseAndRemoveReturnParamname(actionscript);
+        if(this.isStandardUpdateSql(actionscript))
         {
-            UpdateSqlActionBean updateSqlBean=new UpdateSqlActionBean(owner);
-            updateSqlBean.setSql(configSql);
-            updateSqlBean.setLstParamBeans(null);
-            updateSqlBean.setReturnValueParamname(this.returnValueParamname);
-            owner.getLstSqlActionBeans().add(updateSqlBean);
-            return;
-        }
-        int idxwhere=configSql.toLowerCase().indexOf(" where ");
-        String whereclause=null;
-        if(idxwhere>0)
+            List<EditableReportParamBean> lstDynParamsTmp=new ArrayList<EditableReportParamBean>();
+            actionscript=this.ownerGroupBean.getOwnerUpdateBean().parseStandardEditSql(actionscript,lstDynParamsTmp,
+                    reportTypeKey);
+            this.ownerGroupBean.addActionBean(new UpdateSqlActionBean(actionscript,lstDynParamsTmp,this.ownerGroupBean,this.returnValueParamname));
+        }else
         {
-            whereclause=configSql.substring(idxwhere).trim();
-            configSql=configSql.substring(0,idxwhere).trim();
-        }
-        AbsDatabaseType dbtype=Config.getInstance().getDataSource(sqlbean.getDatasource()).getDbType();
-        if(dbtype==null)
-        {
-            throw new WabacusConfigLoadingException("没有实现数据源"+sqlbean.getDatasource()+"对应数据库类型的相应实现类");
-        }
-        List<UpdateSqlActionBean> lstRealUpdateSqls=dbtype.constructUpdateSql(configSql,sqlbean.getReportBean(),reportTypeKey,this);
-        List<EditableReportParamBean> lstParamsBean;
-        String updatesql;
-        for(UpdateSqlActionBean updateSqlBeanTmp:lstRealUpdateSqls)
-        {
-            updatesql=updateSqlBeanTmp.getSql();
-            lstParamsBean=updateSqlBeanTmp.getLstParamBeans();
-            if(whereclause!=null&&!whereclause.trim().equals(""))
+            int idxwhere=actionscript.toLowerCase().indexOf(" where ");
+            String whereclause=null;
+            List<EditableReportParamBean> lstParamsBeanInWhereClause=null;
+            if(idxwhere>0)
             {
-                String realwhereclause=parseUpdateWhereClause(sqlbean,reportTypeKey,lstParamsBean,whereclause);
-                if(updatesql.indexOf("%where%")>0)
-                {
-                    updatesql=Tools.replaceAll(updatesql,"%where%",realwhereclause);
-                }else
-                {
-                    updatesql=updatesql+"  "+realwhereclause;
-                }
+                lstParamsBeanInWhereClause=new ArrayList<EditableReportParamBean>();
+                whereclause=actionscript.substring(idxwhere).trim();
+                whereclause=this.ownerGroupBean.getOwnerUpdateBean().parseStandardEditSql(whereclause,
+                        lstParamsBeanInWhereClause,reportTypeKey);
+                actionscript=actionscript.substring(0,idxwhere).trim();
             }
-            updateSqlBeanTmp.setSql(updatesql);
-            updateSqlBeanTmp.setLstParamBeans(lstParamsBean);
-            updateSqlBeanTmp.setReturnValueParamname(this.returnValueParamname);
-            owner.getLstSqlActionBeans().add(updateSqlBeanTmp);
+            AbsDatabaseType dbtype=Config.getInstance().getDataSource(this.ownerGroupBean.getDatasource()).getDbType();
+            if(dbtype==null)
+            {
+                throw new WabacusConfigLoadingException("没有实现数据源"+this.ownerGroupBean.getDatasource()+"对应数据库类型的相应实现类");
+            }
+            List<UpdateSqlActionBean> lstRealUpdateSqls=dbtype.constructUpdateSql(actionscript.trim(),this.ownerGroupBean.getOwnerUpdateBean().getOwner().getReportBean(),reportTypeKey,this);
+            List<EditableReportParamBean> lstParamsBean;
+            String updatesql;
+            for(UpdateSqlActionBean updateSqlBeanTmp:lstRealUpdateSqls)
+            {
+                updatesql=updateSqlBeanTmp.getSql();
+                lstParamsBean=updateSqlBeanTmp.getLstParamBeans();
+                if(whereclause!=null&&!whereclause.trim().equals(""))
+                {
+                    if(updatesql.indexOf("%where%")>0)
+                    {
+                        updatesql=Tools.replaceAll(updatesql,"%where%",whereclause);
+                    }else
+                    {
+                        updatesql=updatesql+"  "+whereclause;
+                    }
+                    lstParamsBean.addAll(lstParamsBeanInWhereClause);
+                }
+                updateSqlBeanTmp.setSql(updatesql);
+                updateSqlBeanTmp.setLstParamBeans(lstParamsBean);
+                updateSqlBeanTmp.setReturnValueParamname(this.returnValueParamname);
+                this.ownerGroupBean.addActionBean(updateSqlBeanTmp);
+            }
         }
     }
 
@@ -93,11 +104,14 @@ public class UpdateSqlActionBean extends AbsEditSqlActionBean
         int idxleft=configUpdateSql.indexOf("(");
         if(idxleft<0)
         {//没有指定要更新的字段，则将所有从数据库取数据的<col/>（不包括hidden="1"和="2"的<col/>）全部更新到表中
-            sqlBuffer.append(configUpdateSql).append(" set ");
-            List<ColBean> lstColBeans=rbean.getDbean().getLstCols();
-            for(ColBean cbean:lstColBeans)
+            if(!this.ownerGroupBean.getOwnerUpdateBean().isAutoReportdata())
             {
-                EditableReportParamBean paramBean=createEditParamBeanByColbean(cbean,reportTypeKey,false,false);
+                throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，在autoreportdata属性为false的<button/>中，不能配置update table这种不带参数的SQL语句");
+            }
+            sqlBuffer.append(configUpdateSql).append(" set ");
+            for(ColBean cbean:rbean.getDbean().getLstCols())
+            {
+                EditableReportParamBean paramBean=createParamBeanByColbean(cbean.getProperty(),reportTypeKey,false,false);
                 if(paramBean!=null)
                 {
                     sqlBuffer.append(cbean.getColumn()+"=?,");
@@ -125,88 +139,75 @@ public class UpdateSqlActionBean extends AbsEditSqlActionBean
                 {
                     columnname=updatecol.substring(0,idxequals).trim();
                     columnvalue=updatecol.substring(idxequals+1).trim();
-                    if(Tools.isDefineKey("sequence",columnvalue))
+                    Object paramObjTmp=this.createEditParams(columnvalue,reportTypeKey);
+                    if(paramObjTmp==null) continue;
+                    sqlBuffer.append(columnname+"=");
+                    if(paramObjTmp instanceof EditableReportParamBean)
                     {
-                        sqlBuffer.append(columnname+"=").append(Tools.getRealKeyByDefine("sequence",columnvalue)).append(".nextval,");
-                    }else if(columnvalue.equals("uuid{}"))
-                    {
-                        sqlBuffer.append(columnname+"=?,");
-                        EditableReportParamBean paramBean=new EditableReportParamBean();
-                        paramBean.setParamname("uuid{}");
-                        lstParamsBean.add(paramBean);
-                    }else if(Tools.isDefineKey("!",columnvalue))
-                    {//当前列是获取自定义保存数据进行更新
-                        sqlBuffer.append(columnname+"=?,");
-                        EditableReportParamBean paramBean=new EditableReportParamBean();
-                        paramBean.setParamname(columnvalue);
-                        lstParamsBean.add(paramBean);
-                    }else if(Tools.isDefineKey("#",columnvalue))
-                    {
-                        sqlBuffer.append(columnname+"=?,");
-                        columnvalue=Tools.getRealKeyByDefine("#",columnvalue);
-                        EditableReportExternalValueBean valuebean=owner.getValueBeanByName(columnvalue);
-                        if(valuebean==null)
-                        {
-                            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，没有定义"+columnvalue+"对应的变量值");
-                        }
-                        EditableReportParamBean paramBean=new EditableReportParamBean();
-                        paramBean.setParamname(columnvalue);
-                        paramBean.setOwner(valuebean);
-                        lstParamsBean.add(paramBean);
-                    }else if(Tools.isDefineKey("@",columnvalue))
-                    {
-                        cb=rbean.getDbean().getColBeanByColProperty(Tools.getRealKeyByDefine("@",columnvalue));
-                        if(cb==null)
-                        {
-                            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的要更新字段"+columnvalue+"不合法，没有取到其值对应的<col/>");
-                        }
-                        sqlBuffer.append(columnname+"=?,");
-                        lstParamsBean.add(createEditParamBeanByColbean(cb,reportTypeKey,true,true));
+                        sqlBuffer.append("?");
+                        lstParamsBean.add((EditableReportParamBean)paramObjTmp);
                     }else
                     {
-                        sqlBuffer.append(columnname+"="+columnvalue).append(",");
+                        sqlBuffer.append(paramObjTmp);
                     }
+                    sqlBuffer.append(",");
                 }else
                 {
                     if(!Tools.isDefineKey("@",updatecol))
                     {
                         throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的修改数据SQL语句"+configUpdateSql+"不合法，更新的字段值必须采用@{}括住");
                     }
-                    cb=rbean.getDbean().getColBeanByColProperty(Tools.getRealKeyByDefine("@",updatecol));
-                    if(cb==null)
+                    if(this.ownerGroupBean.getOwnerUpdateBean().isAutoReportdata())
                     {
-                        throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的要更新字段"+updatecol+"不合法，没有取到其值对应的<col/>");
+                        updatecol=Tools.getRealKeyByDefine("@",updatecol);
+                        String realColProperty=updatecol.trim();
+                        if(realColProperty.endsWith("__old")) realColProperty=realColProperty.substring(0,realColProperty.length()-"__old".length());
+                        cb=rbean.getDbean().getColBeanByColProperty(realColProperty);
+                        if(cb==null)
+                        {
+                            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的要更新字段"+updatecol+"不合法，没有取到其值对应的<col/>");
+                        }
+                        lstParamsBean.add(createParamBeanByColbean(updatecol,reportTypeKey,true,true));
+                        sqlBuffer.append(cb.getColumn()+"=?,");
+                    }else
+                    {
+                        EditableReportParamBean paramBean=new EditableReportParamBean();
+                        paramBean.setParamname(updatecol);
+                        lstParamsBean.add(paramBean);
+                        sqlBuffer.append(Tools.getRealKeyByDefine("@",updatecol)+"=?,");
                     }
-                    sqlBuffer.append(cb.getColumn()+"=?,");
-                    lstParamsBean.add(createEditParamBeanByColbean(cb,reportTypeKey,true,true));
                 }
             }
         }
-
-
-//            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，在<update/>中没有取到要更新的字段");
-//        }
-        if(sqlBuffer.charAt(sqlBuffer.length()-1)==',')
-        {
-            sqlBuffer.deleteCharAt(sqlBuffer.length()-1);
-        }
+        if(sqlBuffer.charAt(sqlBuffer.length()-1)==',') sqlBuffer.deleteCharAt(sqlBuffer.length()-1);
         List<UpdateSqlActionBean> lstUpdateSqls=new ArrayList<UpdateSqlActionBean>();
-        UpdateSqlActionBean updateSqlBean=new UpdateSqlActionBean(owner);
-        updateSqlBean.setSql(sqlBuffer.toString());
-        updateSqlBean.setLstParamBeans(lstParamsBean);
-        lstUpdateSqls.add(updateSqlBean);
+        lstUpdateSqls.add(new UpdateSqlActionBean(sqlBuffer.toString(),lstParamsBean,this.ownerGroupBean,this.returnValueParamname));
         return lstUpdateSqls;
     }
     
-    private boolean isNormalUpdateSql(String updatesql)
+    private boolean isStandardUpdateSql(String updatesql)
     {
         updatesql=updatesql==null?"":updatesql.toLowerCase().trim();
-        if(!updatesql.startsWith("update ")) return false;
+        if(!updatesql.startsWith("update ")) return true;
         updatesql=updatesql.substring("update ".length()).trim();
-        int idxBlank=updatesql.indexOf(" ");
-        if(idxBlank<0||updatesql.substring(0,idxBlank).indexOf("(")>0) return false;
-        updatesql=updatesql.substring(idxBlank+1).trim();
-        if(updatesql.startsWith("set ")) return true;
-        return false;
+        if(updatesql.equals("")) return true;
+        updatesql=Tools.replaceCharacterInQuote(updatesql,'(',"$_LEFTBRACKET_$",true);
+        updatesql=Tools.replaceCharacterInQuote(updatesql,')',"$_RIGHTBRACKET_$",true);
+        int idxBracket1=updatesql.indexOf("(");
+        if(idxBracket1==0) return true;
+        if(idxBracket1<0)
+        {
+            if(updatesql.indexOf(" ")<0&&updatesql.indexOf(",")<0&&updatesql.indexOf("=")<0) return false;
+        }else
+        {//idxBracket1>0
+            String tablename=updatesql.substring(0,idxBracket1).trim();
+            if(tablename.indexOf(" ")>=0||tablename.indexOf(",")>=0||tablename.indexOf("=")>=0) return true;
+            updatesql=updatesql.substring(idxBracket1+1);
+            int idxBracket2=updatesql.indexOf(")");
+            if(idxBracket2<0) return true;
+            updatesql=updatesql.substring(idxBracket2+1).trim();
+            if(updatesql.equals("")||updatesql.startsWith("where ")) return false;
+        }
+        return true;
     }
 }

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.Map.Entry;
 
 import javassist.CannotCompileException;
 import javassist.ClassClassPath;
@@ -48,17 +49,17 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.condition.ConditionInSqlBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
-import com.wabacus.config.database.type.SQLSERVER2K;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.buttons.IButtonClickeventGenerate;
-import com.wabacus.system.component.application.report.CrossStatisticListReportType;
+import com.wabacus.system.component.application.report.CrossListReportType;
 import com.wabacus.system.component.application.report.EditableDetailReportType;
 import com.wabacus.system.component.application.report.EditableListFormReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
@@ -67,18 +68,17 @@ import com.wabacus.system.component.application.report.abstractreport.IEditableR
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportColBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportDisplayBean;
+import com.wabacus.system.component.application.report.configbean.crosslist.CrossListReportColBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
+import com.wabacus.system.dataset.IReportDataSet;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.system.format.IFormat;
 import com.wabacus.system.inputbox.AbsInputBox;
-import com.wabacus.system.inputbox.OptionBean;
 import com.wabacus.system.inputbox.SelectBox;
 import com.wabacus.system.inputbox.TextBox;
+import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
 import com.wabacus.system.intercept.ColDataByInterceptor;
-import com.wabacus.system.intercept.IInterceptor;
-import com.wabacus.system.resultset.GetAllResultSetByPreparedSQL;
-import com.wabacus.system.resultset.GetAllResultSetBySQL;
-import com.wabacus.system.resultset.GetResultSetByStoreProcedure;
-import com.wabacus.system.resultset.ISQLType;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
@@ -143,7 +143,7 @@ public class ReportAssistant
         return orderbybuf.toString();
     }
 
-    public String parseRuntimeSqlAndCondition(ReportRequest rrequest,ReportBean rbean,String sql,List<String> lstConditionValues,
+    public String parseRuntimeSqlAndCondition(ReportRequest rrequest,ReportBean rbean,ReportDataSetBean svbean,String sql,List<String> lstConditionValues,
             List<IDataType> lstConditionTypes)
     {
         List<ConditionBean> lstConditionBeans=rbean.getSbean().getLstConditions();
@@ -153,12 +153,12 @@ public class ReportAssistant
             {
                 sql=removeConditionPlaceHolderFromSql(rbean,sql,"{#condition#}");
             }
-            return sql;//没有动态条件
+            return sql;
         }
-        List<ConditionInSqlBean> lstConditionInSqlBeans=rbean.getSbean().getLstConditionInSqlBeans();
+        List<ConditionInSqlBean> lstConditionInSqlBeans=svbean.getLstConditionInSqlBeans();
         if(lstConditionInSqlBeans==null||lstConditionInSqlBeans.size()==0)
         {
-            sql=addDynamicConditionExpressionsToSql(rrequest,rbean,sql,rbean.getSbean().getLstConditions(),lstConditionValues,lstConditionTypes);
+            sql=addDynamicConditionExpressionsToSql(rrequest,rbean,svbean,sql,rbean.getSbean().getLstConditions(),lstConditionValues,lstConditionTypes);
         }else
         {
             for(ConditionInSqlBean conbeanInSqlTmp:lstConditionInSqlBeans)
@@ -169,14 +169,15 @@ public class ReportAssistant
         return sql;
     }
 
-    public String addDynamicConditionExpressionsToSql(ReportRequest rrequest,ReportBean rbean,String sql,List<ConditionBean> lstConditionBeans,
+    public String addDynamicConditionExpressionsToSql(ReportRequest rrequest,ReportBean rbean,ReportDataSetBean svbean,String sql,List<ConditionBean> lstConditionBeans,
             List<String> lstConditionValues,List<IDataType> lstConditionTypes)
     {
-        if(lstConditionBeans==null||lstConditionBeans.size()==0) return sql;
+        if(lstConditionBeans==null||lstConditionBeans.size()==0) return removeConditionPlaceHolderFromSql(rbean,sql,"{#condition#}");
         StringBuffer dynConditionsBuf=new StringBuffer();
         String conditionExpressionTmp;
         for(ConditionBean conbean:lstConditionBeans)
         {
+            if(svbean!=null&&!conbean.isBelongTo(svbean)) continue;
             conditionExpressionTmp=conbean.getConditionExpressionAndParams(rrequest,lstConditionValues,lstConditionTypes);
             if(conditionExpressionTmp==null||conditionExpressionTmp.trim().equals("")) continue;//没有在<condition/>中配置条件表达式（可能是通过#name#的形式直接在sql语句中指定条件）
             if(dynConditionsBuf.length()==0)
@@ -190,7 +191,7 @@ public class ReportAssistant
         String dynconditions=dynConditionsBuf.toString();
         if(dynconditions.trim().equals(""))
         {
-            
+            //            sql=Tools.replaceAll(sql,"{#condition#}"," 1=1 ");
             sql=removeConditionPlaceHolderFromSql(rbean,sql,"{#condition#}");
         }else
         {
@@ -203,7 +204,7 @@ public class ReportAssistant
     {
         int idx=sql.indexOf(placeholder);
         if(idx<0) return sql;
-        String sql1=sql.substring(0,idx).trim();//sql语句中此条件表达式占位符之前的部分
+        String sql1=sql.substring(0,idx).trim();
         String sql2=sql.substring(idx+placeholder.length()).trim();
         while(sql1.endsWith("(")&&sql2.startsWith(")"))
         {
@@ -259,7 +260,7 @@ public class ReportAssistant
             }else if(sql1.toLowerCase().endsWith(" or"))
             {//sql为select xxx where 其它条件 or {当前条件} and/or/其它非条件值或空
                 if(sql2.toLowerCase().startsWith("and "))
-                {//当前条件与后面条件表达式的关系是and，则去掉and
+                {
                     sql2=sql2.substring(3);
                 }else
                 {
@@ -270,115 +271,315 @@ public class ReportAssistant
         return sql1+" "+sql2;
     }
 
-    public List loadAllDataFromDB(ReportRequest rrequest,AbsReportType reportObj,ISQLType sqlTypeObj)
+    public List loadReportDataSet(ReportRequest rrequest,AbsReportType reportObj,boolean isLoadAllDataMandatory)
     {
+        ReportBean rbean=reportObj.getReportBean();
+        SqlBean sbean=rbean.getSbean();
+        if(sbean.getLstDatasetBeans()==null||sbean.getLstDatasetBeans().size()==0) return null;
         CacheDataBean cdb=rrequest.getCdb(reportObj.getReportBean().getId());
-        int maxrecordcount=cdb.getMaxrecordcount();
-        if(maxrecordcount<=0) maxrecordcount=-1;
-        List lstData=null;
-        try
+        Map<String,IReportDataSet> mDatasetObjs=new HashMap<String,IReportDataSet>();
+        IReportDataSet dataSetObjTmp;
+        if(!cdb.isLoadAllReportData()&&cdb.getRefreshNavigateInfoType()<=0&&!isLoadAllDataMandatory)
         {
-            Object objResult=sqlTypeObj.getResultSet(rrequest,reportObj);
-            if(objResult==null) return null;
-            if(objResult instanceof ResultSet)
+            if(cdb.getRefreshNavigateInfoType()<0)
             {
-                ResultSet rs=(ResultSet)objResult;
-                lstData=parseDataIntoBean(reportObj,rs,maxrecordcount,rrequest);
-                rs.close();
-            }else if(objResult instanceof List)
-            {
-                lstData=(List)objResult;
-                if(maxrecordcount>0&&lstData.size()>maxrecordcount)
+                int recordcount=0;
+                for(ReportDataSetBean datasetbeanTmp:sbean.getLstDatasetBeans())
                 {
-                    while(lstData.size()>maxrecordcount)
-                    {
-                        lstData.remove(lstData.size()-1);
-                    }
+                    if(!datasetbeanTmp.isIndependentDataSet()) continue;//不是独立数据集不参与统计报表记录数
+                    dataSetObjTmp=datasetbeanTmp.createDataSetObj(rrequest,reportObj);
+                    int recordcntTmp=dataSetObjTmp.getRecordcount(rrequest,reportObj,datasetbeanTmp);
+                    cdb.addRecordcount(datasetbeanTmp.getId(),recordcntTmp);
+                    if(recordcntTmp>recordcount) recordcount=recordcntTmp;
+                    String dsidTmp=datasetbeanTmp.getId();
+                    dsidTmp=dsidTmp==null||dsidTmp.trim().equals("")?"EMPTY_NULL_EMPTY":dsidTmp.trim();
+                    mDatasetObjs.put(dsidTmp,dataSetObjTmp);
                 }
+                cdb.setRecordcount(recordcount);
+            }
+            cdb.setPagecount(ReportAssistant.getInstance().calPageCount(cdb.getPagesize(),cdb.getRecordcount()));
+            if(cdb.getRecordcount()==0) return null;
+        }
+        List lstData=new ArrayList();
+        Object resultDataSetTmp;
+        for(ReportDataSetBean datasetbeanTmp:sbean.getLstDatasetBeans())
+        {
+            dataSetObjTmp=null;
+            if(mDatasetObjs.size()>0)
+            {
+                String dsidTmp=datasetbeanTmp.getId();
+                dsidTmp=dsidTmp==null||dsidTmp.trim().equals("")?"EMPTY_NULL_EMPTY":dsidTmp.trim();
+                dataSetObjTmp=mDatasetObjs.get(dsidTmp);
+            }
+            if(dataSetObjTmp==null)
+            {
+                if(isLoadAllDataMandatory)
+                {
+                    dataSetObjTmp=datasetbeanTmp.createLoadAllDataSetObj(rrequest,reportObj);
+                }else
+                {
+                    dataSetObjTmp=datasetbeanTmp.createDataSetObj(rrequest,reportObj);
+                }
+            }
+            if((lstData==null||lstData.size()==0)&&!datasetbeanTmp.isIndependentDataSet()) continue;
+            resultDataSetTmp=dataSetObjTmp.getDataSet(rrequest,reportObj,datasetbeanTmp,lstData);
+            if(resultDataSetTmp==null) continue;
+            if(!datasetbeanTmp.isIndependentDataSet())
+            {
+                parseDependentReportData(rrequest,reportObj,datasetbeanTmp,resultDataSetTmp,lstData);
+            }else if(cdb.isLoadAllReportData()||isLoadAllDataMandatory)
+            {
+                parseAllReportData(rrequest,reportObj,datasetbeanTmp,resultDataSetTmp,lstData);
             }else
             {
-                throw new WabacusRuntimeException("获取数据时，返回的结果集："+objResult.getClass().getName()+"为非法结果类型");
+                parseOnePageReportData(rrequest,reportObj,datasetbeanTmp,resultDataSetTmp,lstData);
             }
-        }catch(SQLException e)
-        {
-            throw new WabacusRuntimeException("加载报表数据失败",e);
         }
-        if(lstData!=null)
+        if(lstData.size()>0)
+        {
+            if(lstData.get(0) instanceof IFormat)
+            {
+                for(Object dataObjTmp:lstData)
+                {
+                    ((IFormat)dataObjTmp).format(rrequest,rbean);
+                }
+            }
+        }
+        if(cdb.isLoadAllReportData()&&lstData.size()>0)
         {
             cdb.setRecordcount(lstData.size());
             if(cdb.getRecordcount()>0) cdb.setPagecount(1);
         }
         return lstData;
     }
-
-    public List loadOneRowDataFromDB(ReportRequest rrequest,AbsReportType reportObj,ISQLType sqlTypeObj,int rownum)
+    
+    private void parseDependentReportData(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetBean datasetbean,Object resultDataSet,
+            List lstData)
     {
-        List lstData=null;
-        try
-        {
-            Object objResult=sqlTypeObj.getResultSet(rrequest,reportObj);
-            if(objResult==null) return null;
-            if(objResult instanceof ResultSet)
+        Map<String,Map<ColBean,Object>> mChildDatasetDataObjs=new HashMap<String,Map<ColBean,Object>>();
+        ReportBean rbean=reportObj.getReportBean();
+        List<ColBean> lstColBeans=rrequest.getCdb(rbean.getId()).getLstDynOrderColBeans();
+        if(lstColBeans==null||lstColBeans.size()==0) lstColBeans=rbean.getDbean().getLstCols();
+        List<String> lstDependMyColumns=datasetbean.getLstDependMyColumns();
+        StringBuffer allKeysBuf=new StringBuffer();
+        String keyTmp;
+        if(resultDataSet instanceof ResultSet)
+        {//本子数据集数据是从rs中获取
+            AbsDatabaseType dbtype=rrequest.getDbType(datasetbean.getDatasource());
+            ResultSet rs=(ResultSet)resultDataSet;
+            try
             {
-                ResultSet rs=(ResultSet)objResult;
-                int i=0;
-                while(i<rownum&&rs.next())
-                    i++;
-                lstData=parseDataIntoBean(reportObj,rs,1,rrequest);
+                while(rs.next())
+                {
+                    keyTmp=getRealDependsColumnsValueAsKey(datasetbean,lstDependMyColumns,rs,1,false);
+                    allKeysBuf.append(keyTmp).append(";");
+                    Map<ColBean,Object> mColData=getMColDataWithThisRelateKey(mChildDatasetDataObjs,keyTmp);
+                    for(ColBean cbTmp:lstColBeans)
+                    {
+                        if(!cbTmp.isMatchDataSet(datasetbean)) continue;
+                        Object colValObjTmp;
+                        if(!"[DYN_COL_DATA]".equals(cbTmp.getProperty()))
+                        {
+                            colValObjTmp=getColumnValueFromRs(rs,dbtype,cbTmp,rrequest);
+                        }else
+                        {
+                            colValObjTmp=cbTmp.getDatatypeObj().getColumnValue(rs,cbTmp.getColumn(),dbtype);
+                        }
+                        if(colValObjTmp==null) continue;
+                        addChildDataSetColValueToMColData(datasetbean,mColData,cbTmp,colValObjTmp);
+                    }
+                }
                 rs.close();
-            }else if(objResult instanceof List)
-            {//直接返回数据集
-                lstData=(List)objResult;
+            }catch(SQLException e)
+            {
+                throw new WabacusRuntimeException("获取报表"+rbean.getPath()+"数据失败",e);
+            }
+        }else if(resultDataSet instanceof List)
+        {
+            List lstDataLocal=(List)resultDataSet;
+            if(lstDataLocal==null||lstDataLocal.size()==0) return;
+            boolean isMapObj=lstDataLocal.get(0) instanceof Map;
+            for(Object dataObjLocalTmp:lstDataLocal)
+            {
+                if(dataObjLocalTmp==null) continue;
+                keyTmp=getRealDependsColumnsValueAsKey(datasetbean,lstDependMyColumns,dataObjLocalTmp,isMapObj?2:3,false);
+                allKeysBuf.append(keyTmp).append(";");
+                Map<ColBean,Object> mColData=getMColDataWithThisRelateKey(mChildDatasetDataObjs,keyTmp);
+                Object objColValTmp;
+                for(ColBean cbTmp:lstColBeans)
+                {
+                    if(!cbTmp.isMatchDataSet(datasetbean)) continue;
+                    if(isMapObj)
+                    {
+                        objColValTmp=((Map)dataObjLocalTmp).get(cbTmp.getProperty());
+                    }else
+                    {
+                        if(!"[DYN_COL_DATA]".equals(cbTmp.getProperty()))
+                        {
+                            objColValTmp=getPropertyValue(dataObjLocalTmp,cbTmp.getProperty());
+                        }else
+                        {
+                            objColValTmp=this.getCrossDynamicColDataFromPOJO(rbean,dataObjLocalTmp,cbTmp.getColumn());
+                        }
+                    }
+                    if(objColValTmp==null) continue;
+                    addChildDataSetColValueToMColData(datasetbean,mColData,cbTmp,objColValTmp);
+                }
+            }
+        }else
+        {
+            throw new WabacusRuntimeException("获取报表"+rbean.getPath()+"数据时，返回的结果集："+resultDataSet.getClass().getName()+"为非法结果类型");
+        }
+        log.debug("子数据集关联字段数据："+allKeysBuf.toString());
+        if(mChildDatasetDataObjs.size()==0) return;
+        List<String> lstDependParentColumns=datasetbean.getLstDependParentColumns();
+        if(lstDependParentColumns==null||lstDependParentColumns.size()==0) return;
+        ColBean cbTmp;
+        allKeysBuf=new StringBuffer();
+        for(Object dataObjTmp:lstData)
+        {//将子数据集中的数据添加到每条记录的相应列中
+            keyTmp=getRealDependsColumnsValueAsKey(datasetbean,lstDependParentColumns,dataObjTmp,3,true);
+            Map<ColBean,Object> mColData=mChildDatasetDataObjs.get(keyTmp);
+            if(mColData==null) continue;
+            for(Entry<ColBean,Object> entryTmp:mColData.entrySet())
+            {
+                cbTmp=entryTmp.getKey();
+                if(!"[DYN_COL_DATA]".equals(cbTmp.getProperty()))
+                {
+                    try
+                    {
+                        cbTmp.getSetMethod().invoke(dataObjTmp,new Object[] { entryTmp.getValue() });
+                    }catch(Exception e)
+                    {
+                        throw new WabacusRuntimeException("设置报表"+rbean.getPath()+"的列"+cbTmp.getProperty()+"上的数据失败",e);
+                    }
+                }else
+                {
+                    setCrossDynamicColDataToPOJO(rbean,dataObjTmp,cbTmp.getColumn(), entryTmp.getValue());
+                }
+            }
+            allKeysBuf.append(keyTmp).append(";");
+        }
+        log.debug("父数据集关联字段数据："+allKeysBuf.toString());
+    }
+
+    private void addChildDataSetColValueToMColData(ReportDataSetBean svbean,Map<ColBean,Object> mColData,ColBean cbean,Object colValObj)
+    {
+        if(!"multiple".equals(svbean.getDependstype()))
+        {
+            mColData.put(cbean,colValObj);
+        }else
+        {
+            if(String.valueOf(colValObj).equals("")) return;
+            String oldColValTmp=(String)mColData.get(cbean);
+            if(oldColValTmp==null||oldColValTmp.trim().equals(""))
+            {
+                mColData.put(cbean,colValObj);
             }else
             {
-                throw new WabacusRuntimeException("获取数据时，返回的结果集："+objResult.getClass().getName()+"为非法结果类型");
+                mColData.put(cbean,oldColValTmp+svbean.getSeperator()+String.valueOf(colValObj));
+            }
+        }
+    }
+
+    private Map<ColBean,Object> getMColDataWithThisRelateKey(Map<String,Map<ColBean,Object>> mChildDatasetDataObjs,String key)
+    {
+        Map<ColBean,Object> mColData=mChildDatasetDataObjs.get(key);
+        if(mColData==null)
+        {
+            mColData=new HashMap<ColBean,Object>();
+            mChildDatasetDataObjs.put(key,mColData);
+        }
+        return mColData;
+    }
+    
+    private String getRealDependsColumnsValueAsKey(ReportDataSetBean datasetbean,List<String> lstDependsColumns,Object dataSourceObj,int dataSourceType,
+            boolean isParentColumns)
+    {
+        StringBuffer keyBuf=new StringBuffer();
+        Object keyTmp;
+        for(String relateColumnTmp:lstDependsColumns)
+        {
+            if(dataSourceType==1)
+            {//resultset
+                try
+                {
+                    keyTmp=((ResultSet)dataSourceObj).getString(relateColumnTmp);
+                }catch(SQLException e)
+                {
+                    throw new WabacusRuntimeException("获取报表"+datasetbean.getReportBean().getPath()+"数据失败",e);
+                }
+            }else if(dataSourceType==2)
+            {
+                keyTmp=((Map)dataSourceObj).get(relateColumnTmp);
+            }else
+            {
+                keyTmp=this.getPropertyValue(dataSourceObj,relateColumnTmp);
+            }
+
+            if(keyTmp==null) keyTmp="";
+            if(!isParentColumns) keyTmp=datasetbean.format(relateColumnTmp,String.valueOf(keyTmp));
+            keyBuf.append(String.valueOf(keyTmp)).append("_");
+        }
+        return keyBuf.toString();
+    }
+    
+    private void parseAllReportData(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetBean svbean,Object resultDataSet,List lstData)
+    {
+        CacheDataBean cdb=rrequest.getCdb(reportObj.getReportBean().getId());
+        int maxrecordcount=cdb.getMaxrecordcount();
+        if(maxrecordcount<=0) maxrecordcount=-1;
+        try
+        {
+            if(resultDataSet instanceof ResultSet)
+            {
+                ResultSet rs=(ResultSet)resultDataSet;
+                parseDataIntoBean(reportObj,svbean,rs,maxrecordcount,rrequest,lstData,false);
+                rs.close();
+            }else if(resultDataSet instanceof List)
+            {
+                List lstDataLocal=(List)resultDataSet;
+                if(maxrecordcount>0&&lstDataLocal.size()>maxrecordcount)
+                {
+                    while(lstDataLocal.size()>maxrecordcount)
+                    {
+                        lstDataLocal.remove(lstDataLocal.size()-1);
+                    }
+                }
+                copyListDataToLstResultsData(rrequest,svbean,lstDataLocal,lstData);
+            }else
+            {
+                throw new WabacusRuntimeException("获取数据时，返回的结果集："+resultDataSet.getClass().getName()+"为非法结果类型");
             }
         }catch(SQLException e)
         {
-            throw new WabacusRuntimeException("加载报表数据失败",e);
+            throw new WabacusRuntimeException("加载报表"+reportObj.getReportBean().getPath()+"数据失败",e);
         }
-        return lstData;
     }
 
-    public List loadOnePageDataFromDB(ReportRequest rrequest,AbsReportType reportObj,ISQLType sqlTypeObj)
+    private void parseOnePageReportData(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetBean svbean,Object resultDataSet,List lstData)
     {
-        List lstData=null;
+        ReportBean rbean=reportObj.getReportBean();
+        CacheDataBean cdb=rrequest.getCdb(rbean.getId());
+        int pagesize=cdb.getPagesize();
         try
         {
-            ReportBean rbean=reportObj.getReportBean();
-            Object objResult=sqlTypeObj.getResultSet(rrequest,reportObj);
-            if(objResult==null) return null;
-            CacheDataBean cdb=rrequest.getCdb(rbean.getId());
-            int pagesize=cdb.getPagesize();
-            if(objResult instanceof ResultSet)
+            if(resultDataSet instanceof ResultSet)
             {
-                ResultSet rs=(ResultSet)objResult;
-                lstData=parseDataIntoBean(reportObj,rs,pagesize,rrequest);
+                ResultSet rs=(ResultSet)resultDataSet;
+                parseDataIntoBean(reportObj,svbean,rs,pagesize,rrequest,lstData,true);
                 rs.close();
-                if(sqlTypeObj instanceof GetResultSetByStoreProcedure) ((GetResultSetByStoreProcedure)sqlTypeObj).readAndCalNavigateData(rbean,cdb);
-                if(rrequest.getDbType(rbean.getSbean().getDatasource()) instanceof SQLSERVER2K)
+            }else if(resultDataSet instanceof List)
+            {
+                List lstTmp=(List)resultDataSet;
+                while(lstTmp!=null&&lstTmp.size()>pagesize)
                 {
-                    int pageno=cdb.getFinalPageno();
-                    int pagecount=cdb.getPagecount();
-                    int recordcount=cdb.getRecordcount();
-                    if(recordcount<=(pageno-1)*pagesize)
-                    {
-                        lstData=null;
-                    }else if(pagecount>1&&pageno==pagecount&&recordcount%pagesize>0)
-                    {
-                        int cnt=pagesize-recordcount%pagesize;
-                        while(cnt-->0)
-                        {
-                            lstData.remove(0);
-                        }
-                    }
+                    lstTmp.remove(lstTmp.size()-1);
                 }
-            }else if(objResult instanceof List)
-            {//直接返回数据集
-                lstData=(List)objResult;
+                copyListDataToLstResultsData(rrequest,svbean,lstTmp,lstData);
             }else
             {
-                throw new WabacusRuntimeException("获取数据时，返回的结果集："+objResult.getClass().getName()+"为非法结果类型");
+                throw new WabacusRuntimeException("获取数据时，返回的结果集："+resultDataSet.getClass().getName()+"为非法结果类型");
             }
             if(lstData!=null&&cdb.getMaxrecordcount()>0&&(cdb.getFinalPageno()-1)*pagesize+lstData.size()>cdb.getMaxrecordcount())
             {
@@ -390,82 +591,197 @@ public class ReportAssistant
             }
         }catch(SQLException e)
         {
-            throw new WabacusRuntimeException("加载报表数据失败",e);
+            throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"数据失败",e);
         }
-        return lstData;
     }
 
-    public int calPageCount(int ipagesize,int irecordcount)
+    private void copyListDataToLstResultsData(ReportRequest rrequest,ReportDataSetBean svbean,List lstDataLocal,List lstData)
     {
-        int ipagecount=0;
-        if(irecordcount%ipagesize==0)
+        if(lstDataLocal==null||lstDataLocal.size()==0) return;
+        boolean isMapObj=lstDataLocal.get(0) instanceof Map;
+        if(!isMapObj&&lstData.size()==0)
         {
-            ipagecount=irecordcount/ipagesize;
-        }else
-        {
-            ipagecount=irecordcount/ipagesize+1;
+            lstData.addAll(lstDataLocal);
+            return;
         }
-        return ipagecount;
+        ReportBean rbean=svbean.getReportBean();
+        Object obj=getReportDataPojoInstance(rbean);
+        if(obj==null)
+        {
+            log.error("没有取到报表"+rbean.getPath()+"存放中间数据的POJO类");
+            return;
+        }
+        Class c=obj.getClass();
+        List<ColBean> lstColBeans=rrequest.getCdb(rbean.getId()).getLstDynOrderColBeans();
+        if(lstColBeans==null||lstColBeans.size()==0) lstColBeans=rbean.getDbean().getLstCols();
+        int i=-1;
+        Object dataObjTmp;
+        try
+        {
+            for(Object dataObjLocalTmp:lstDataLocal)
+            {
+                i++;
+                if(dataObjLocalTmp==null) continue;
+                if(i>=lstData.size())
+                {
+                    if(!isMapObj)
+                    {
+                        lstData.add(dataObjLocalTmp);
+                        continue;
+                    }
+                    dataObjTmp=c.newInstance();
+                    lstData.add(dataObjTmp);
+                }else
+                {
+                    dataObjTmp=lstData.get(i);
+                }
+                setDataObjFromListData(svbean,isMapObj,rbean,lstColBeans,dataObjTmp,dataObjLocalTmp);
+            }
+        }catch(Exception e)
+        {
+            throw new WabacusRuntimeException("解析报表"+rbean.getPath()+"数据失败",e);
+        }
     }
 
-    private List parseDataIntoBean(AbsReportType reportObj,ResultSet rs,long size,ReportRequest rrequest)
+    private void parseDataIntoBean(AbsReportType reportObj,ReportDataSetBean svbean,ResultSet rs,long size,ReportRequest rrequest,List lstData,boolean isPagesplit)
     {
         ReportBean rbean=reportObj.getReportBean();
         try
         {
-            if(rs==null) return null;
-            List lstResultData=new ArrayList();
-            AbsDatabaseType dbtype=rrequest.getDbType(rbean.getSbean().getDatasource());
+            if(rs==null) return;
+            AbsDatabaseType dbtype=rrequest.getDbType(svbean.getDatasource());
             Object obj=getReportDataPojoInstance(rbean);
             if(obj==null)
             {
                 log.error("没有取到报表"+rbean.getPath()+"存放中间数据的POJO类");
-                return null;
+                return ;
             }
             Class c=obj.getClass();
+
+//            {//如果是分页显示的数据列表报表，且是SQLSERVER2000数据库
+//                /**
+//                 * 因为在SQL数据库中，如果页数大于1，且当前翻到最后一页，如果最后一页的记录数小于页大小，则仍会查询出页大小对应的记录数
+
+
+
+//                 */
+
+
+
+
+
+
+//                {//如果实际记录数已在前面页显示完，则返回空记录集。
+//                    /**
+//                     * 这种情况一般不会出现，只有一种场合会出现：
+//                     * 在可编辑数据自动列表报表类型(editablelist2)和列表表单(listform2)中配置了最小记录数（即在其<display/>中配置了minrownum）
+
+
+
+//                     */
+
+
+//                {//如果本记录集的总页数大于1且当前翻到本数据集的最后一页，则要跳过前页已经显示了的记录
+//                    int cnt=pagesize-myRecordcount%pagesize;//页大小-最后一页应该显示的记录数，就得到了多余的记录
+
+
+
+
+//                }
+
             int n=0;
             if(size==-1) size=Long.MAX_VALUE;
             List<ColBean> lstColBeans=rrequest.getCdb(rbean.getId()).getLstDynOrderColBeans();
             if(lstColBeans==null||lstColBeans.size()==0) lstColBeans=rbean.getDbean().getLstCols();
-            
-            
-            
             Object dataObj;
-            Object objVal;
             while(rs.next()&&n++<size)
             {
-                dataObj=c.newInstance();
-                for(ColBean cbTmp:lstColBeans)
+                if(n>lstData.size())
                 {
-                    if(!"[DYN_STATISTIC_DATA]".equals(cbTmp.getProperty()))
-                    {//如果当前列不是存放交叉统计数据的动态列，则每一列都在POJO中有一个名为property的值的成员变量
-                        setColumnValueToDataObj(rs,dataObj,dbtype,cbTmp,rrequest);
-                    }else
-                    {
-                        objVal=cbTmp.getDatatypeObj().getColumnValue(rs,cbTmp.getColumn(),dbtype);
-                        setCrossStatisDataToPOJO(rbean,dataObj,cbTmp.getColumn(),objVal);
-                    }
-                }
-                
-                
-                
-                //                }
-                
-                //{//显示纯数据到Excel文件时是不用格式化的
-                if(dataObj instanceof IFormat)
+                    dataObj=c.newInstance();
+                    lstData.add(dataObj);
+                }else
                 {
-                    ((IFormat)dataObj).format(rrequest,rbean);
+                    dataObj=lstData.get(n-1);
                 }
-                lstResultData.add(dataObj);
+                setDataObjValueFromResultset(svbean,rs,rrequest,rbean,dbtype,lstColBeans,dataObj);
             }
-            return lstResultData;
         }catch(Exception e)
         {
             throw new WabacusRuntimeException("将报表"+rbean.getPath()+"数据从ResultSet解析到Bean中出错",e);
         }
     }
 
+    private void setDataObjValueFromResultset(ReportDataSetBean svbean,ResultSet rs,ReportRequest rrequest,ReportBean rbean,AbsDatabaseType dbtype,
+            List<ColBean> lstColBeans,Object dataObj) throws SQLException
+    {
+        for(ColBean cbTmp:lstColBeans)
+        {
+            if(!cbTmp.isMatchDataSet(svbean)) continue;
+            if(!"[DYN_COL_DATA]".equals(cbTmp.getProperty()))
+            {
+                setColumnValueToDataObj(rs,dataObj,dbtype,cbTmp,rrequest);
+            }else
+            {
+                Object objVal=cbTmp.getDatatypeObj().getColumnValue(rs,cbTmp.getColumn(),dbtype);
+                setCrossDynamicColDataToPOJO(rbean,dataObj,cbTmp.getColumn(),objVal);
+            }
+        }
+    }
+
+    private void setDataObjFromListData(ReportDataSetBean svbean,boolean isMapObj,ReportBean rbean,List<ColBean> lstColBeans,Object dataObj,
+            Object dataObjInList)
+    {
+        Object objColValTmp;
+        for(ColBean cbTmp:lstColBeans)
+        {
+            if(!cbTmp.isMatchDataSet(svbean)) continue;
+            if(isMapObj)
+            {
+                objColValTmp=((Map)dataObjInList).get(cbTmp.getProperty());
+            }else
+            {
+                if(!"[DYN_COL_DATA]".equals(cbTmp.getProperty()))
+                {
+                    objColValTmp=getPropertyValue(dataObjInList,cbTmp.getProperty());
+                }else
+                {
+                    objColValTmp=this.getCrossDynamicColDataFromPOJO(rbean,dataObjInList,cbTmp.getColumn());
+                }
+            }
+            if(!"[DYN_COL_DATA]".equals(cbTmp.getProperty()))
+            {//如果当前列不是存放交叉统计数据的动态列，则每一列都在POJO中有一个名为property的值的成员变量
+                try
+                {
+                    cbTmp.getSetMethod().invoke(dataObj,new Object[] { objColValTmp });
+                }catch(Exception e)
+                {
+                    throw new WabacusRuntimeException("设置报表"+rbean.getPath()+"的列"+cbTmp.getProperty()+"上的数据失败",e);
+                }
+            }else
+            {
+                setCrossDynamicColDataToPOJO(rbean,dataObj,cbTmp.getColumn(),objColValTmp);
+            }
+        }
+    }
+    
     private void setColumnValueToDataObj(ResultSet rs,Object dataObj,AbsDatabaseType dbtype,ColBean colbean,ReportRequest rrequest)
+    {
+        String column=colbean.getColumn();
+        column=column==null?"":column.trim();
+        if(!column.equals("")&&!colbean.isNonFromDbCol()&&!colbean.isNonValueCol()&&!colbean.isSequenceCol()&&!colbean.isControlCol())
+        {
+            try
+            {
+                colbean.getSetMethod().invoke(dataObj,new Object[] { getColumnValueFromRs(rs,dbtype,colbean,rrequest) });
+            }catch(Exception e)
+            {
+                throw new WabacusRuntimeException("设置报表"+colbean.getReportBean().getPath()+"的列"+colbean.getColumn()+"数据到POJO对象时失败",e);
+            }
+        }
+    }
+    
+    private Object getColumnValueFromRs(ResultSet rs,AbsDatabaseType dbtype,ColBean colbean,ReportRequest rrequest)
     {
         String column=colbean.getColumn();
         column=column==null?"":column.trim();
@@ -489,20 +805,21 @@ public class ReportAssistant
                 {
                     columnvalue=colbean.getDatatypeObj().getColumnValue(rs,column,dbtype);
                 }
-                colbean.getSetMethod().invoke(dataObj,new Object[] { columnvalue });
+                return columnvalue;
             }catch(Exception e)
             {
-                throw new WabacusRuntimeException("设置报表"+colbean.getReportBean().getPath()+"的列"+colbean.getColumn()+"数据到POJO对象时失败",e);
+                throw new WabacusRuntimeException("获取报表"+colbean.getReportBean().getPath()+"的列"+colbean.getColumn()+"数据失败",e);
             }
         }
+        return null;
     }
 
-    public void setCrossStatisDataToPOJO(ReportBean rbean,Object dataObj,String datakey,Object objVal)
+    public void setCrossDynamicColDataToPOJO(ReportBean rbean,Object dataObj,String datakey,Object objVal)
     {
         if(dataObj==null) return;
         try
         {
-            Method setMDataMethodForJava=dataObj.getClass().getMethod("setStatisticData",new Class[] { String.class, Object.class });
+            Method setMDataMethodForJava=dataObj.getClass().getMethod("setDynamicColData",new Class[] { String.class, Object.class });
             setMDataMethodForJava.invoke(dataObj,new Object[] { datakey, objVal });
         }catch(Exception e)
         {
@@ -510,13 +827,13 @@ public class ReportAssistant
         }
     }
 
-    public Object getCrossStatisDataFromPOJO(ReportBean reportbean,Object dataObj,String datakey)
+    public Object getCrossDynamicColDataFromPOJO(ReportBean reportbean,Object dataObj,String datakey)
     {
         if(dataObj==null) return null;
         Object objValue=null;
         try
         {
-            Method getMethod=dataObj.getClass().getMethod("getStatisticData",new Class[] { String.class });
+            Method getMethod=dataObj.getClass().getMethod("getDynamicColData",new Class[] { String.class });
             objValue=getMethod.invoke(dataObj,new Object[] { datakey });
         }catch(Exception e)
         {
@@ -563,6 +880,19 @@ public class ReportAssistant
         }
     }
 
+    public int calPageCount(int ipagesize,int irecordcount)
+    {
+        int ipagecount=0;
+        if(irecordcount%ipagesize==0)
+        {
+            ipagecount=irecordcount/ipagesize;
+        }else
+        {
+            ipagecount=irecordcount/ipagesize+1;
+        }
+        return ipagecount;
+    }
+    
     public String formatCondition(String src,String token)
     {
         if(src==null||src.trim().length()<2||token==null||token.trim().equals(""))
@@ -668,7 +998,7 @@ public class ReportAssistant
     {
         DisplayBean dbean=rbean.getDbean();
         if(dbean==null) return;
-        if(Config.getInstance().getReportType(rbean.getType()) instanceof CrossStatisticListReportType)
+        if(Config.getInstance().getReportType(rbean.getType()) instanceof CrossListReportType)
         {
             return;
         }
@@ -682,7 +1012,7 @@ public class ReportAssistant
                 lstImports=rbean.getFbean().getLstImports();
             }
             format=format==null?"":format.trim();
-            //            ClassPool pool = ClassPool.getDefault();
+            
             ClassPool pool=ClassPoolAssistant.getInstance().createClassPool();
             
             
@@ -698,26 +1028,7 @@ public class ReportAssistant
             {
                 for(ColBean cbean:dbean.getLstCols())
                 {
-                    if(cbean==null) continue;
-                    String property=cbean.getProperty();
-                    if(property==null||property.trim().equals("")) continue;
-                    if(cbean.isNonValueCol()|| 
-                            cbean.isSequenceCol()||cbean.isControlCol())
-                    {
-                        continue;
-                    }
-                    CtField cfield=ClassPoolAssistant.getInstance().addField(cclass,property,cbean.getDatatypeObj().getCreatedClass(pool),
-                            Modifier.PRIVATE);
-                    CtMethod setMethod=ClassPoolAssistant.getInstance().addSetMethod(cclass,cfield,property);
-                    ClassPoolAssistant.getInstance().addGetMethod(cclass,cfield,property);
-                    if(isNeedOriginalColValue(rbean,cbean))
-                    {//如果运行时需要当前列的原始值，（即没有被格式化方法修改过的值）
-                        String propertyOld=property+"_old";
-                        CtField cfieldOld=ClassPoolAssistant.getInstance().addField(cclass,propertyOld,cbean.getDatatypeObj().getCreatedClass(pool),
-                                Modifier.PRIVATE);
-                        ClassPoolAssistant.getInstance().addGetMethod(cclass,cfieldOld,propertyOld);
-                        setMethod.insertBefore("if($0."+propertyOld+"==null) $0."+propertyOld+"=$1;");
-                    }
+                    buildFieldAndGetSetMethodForColBean(rbean,cbean,pool,cclass);
                 }
             }
             if(!format.equals(""))
@@ -748,10 +1059,34 @@ public class ReportAssistant
         }
     }
 
+    public void buildFieldAndGetSetMethodForColBean(ReportBean rbean,ColBean cbean,ClassPool pool,CtClass cclass) throws CannotCompileException
+    {
+        if(cbean==null) return;
+        String property=cbean.getProperty();
+        if(property==null||property.trim().equals("")) return;
+        if(cbean.isNonValueCol()|| //当前列不显示数据（目前只对detail类型的报表有效）
+                cbean.isSequenceCol()||cbean.isControlCol())
+        {
+            return;
+        }
+        CtField cfield=ClassPoolAssistant.getInstance().addField(cclass,property,cbean.getDatatypeObj().getCreatedClass(pool),Modifier.PRIVATE);
+        CtMethod setMethod=ClassPoolAssistant.getInstance().addSetMethod(cclass,cfield,property);
+        ClassPoolAssistant.getInstance().addGetMethod(cclass,cfield,property);
+        if(isNeedOriginalColValue(rbean,cbean))
+        {
+            String propertyOld=property+"_old";
+            CtField cfieldOld=ClassPoolAssistant.getInstance().addField(cclass,propertyOld,cbean.getDatatypeObj().getCreatedClass(pool),
+                    Modifier.PRIVATE);
+            ClassPoolAssistant.getInstance().addGetMethod(cclass,cfieldOld,propertyOld);
+            setMethod.insertBefore("if($0."+propertyOld+"==null) $0."+propertyOld+"=$1;");
+        }
+    }
+    
     public void setMethodInfoToColBean(DisplayBean dbean,Class pojoclass)
     {
         if(dbean.getLstCols()==null||pojoclass==null) return;
         String propertyTmp=null;
+        CrossListReportColBean clrcbeanTmp;
         for(ColBean cbeanTmp:dbean.getLstCols())
         {
             try
@@ -760,6 +1095,8 @@ public class ReportAssistant
                 propertyTmp=cbeanTmp.getProperty();
                 if(propertyTmp==null||propertyTmp.trim().equals("")) continue;
                 if(cbeanTmp.isNonValueCol()||cbeanTmp.isSequenceCol()||cbeanTmp.isControlCol()) continue;
+                clrcbeanTmp=(CrossListReportColBean)cbeanTmp.getExtendConfigDataForReportType(CrossListReportType.KEY);
+                if(clrcbeanTmp!=null&&clrcbeanTmp.isDynamicColGroup()) continue;
                 String setMethodName="set"+propertyTmp.substring(0,1).toUpperCase()+propertyTmp.substring(1);
                 Method setMethod=pojoclass.getMethod(setMethodName,new Class[] { cbeanTmp.getDatatypeObj().getJavaTypeClass() });
                 cbeanTmp.setSetMethod(setMethod);
@@ -785,14 +1122,14 @@ public class ReportAssistant
         }
         
         //        {//如果当前报表需要提供纯数据的Excel下载
-        //            return true;
+        
         
         AbsListReportColBean alrcbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
         if(alrcbean!=null&&alrcbean.isRowgroup())
         {
-            AbsListReportDisplayBean alrdbean=(AbsListReportDisplayBean)rbean.getDbean().getExtendConfigDataForReportType(AbsListReportType.KEY);
-            if(alrdbean!=null&&alrdbean.getStatibean()!=null&&alrdbean.getStatibean().getMStatiRowGroupBeans()!=null
-                    &&alrdbean.getStatibean().getMStatiRowGroupBeans().size()>0)
+            AbsListReportBean alrbean=(AbsListReportBean)rbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
+            if(alrbean!=null&&alrbean.getSubdisplaybean()!=null&&alrbean.getSubdisplaybean().getMRowGroupSubDisplayRowBeans()!=null
+                    &&alrbean.getSubdisplaybean().getMRowGroupSubDisplayRowBeans().size()>0)
             {
                 return true;
             }
@@ -827,127 +1164,96 @@ public class ReportAssistant
         }
     }
 
-    public Class buildInterceptorClass(String className,List<String> lstImports,String preaction,String postaction,String beforesave,
-            String beforesavePerrow,String beforesavePersql,String aftersavePersql,String aftersavePerrow,String aftersave,String beforeloaddata,
-            String afterloaddata,String displayperrow,String displaypercol)
+    public Class buildInterceptorClass(String className,List<String> lstImports,String preaction,String postaction,String saveaction,
+            String saverowaction,String savesqlaction,String beforeloaddata,String afterloaddata,String displayperrow,String displaypercol)
     {
         try
         {
             ClassPool pool=ClassPoolAssistant.getInstance().createClassPool();
             CtClass cclass=pool.makeClass(Consts.BASE_PACKAGE_NAME+"."+className+"_Interceptor");
-            if(lstImports==null) lstImports=new UniqueArrayList<String>();
-            lstImports.add("com.wabacus.system.intercept");
-            lstImports.add("com.wabacus.config.component.application.report");
-            ClassPoolAssistant.getInstance().addImportPackages(pool,lstImports);
-            cclass.setInterfaces(new CtClass[] { pool.get(IInterceptor.class.getName()) });
-            preaction=preaction==null?"":preaction.trim();
-            postaction=postaction==null?"":postaction.trim();
-            beforesave=beforesave==null?"":beforesave.trim();
-            beforesavePerrow=beforesavePerrow==null?"":beforesavePerrow.trim();
-            beforesavePersql=beforesavePersql==null?"":beforesavePersql.trim();
-            aftersavePersql=aftersavePersql==null?"":aftersavePersql.trim();
-            aftersavePerrow=aftersavePerrow==null?"":aftersavePerrow.trim();
-            aftersave=aftersave==null?"":aftersave.trim();
-            beforeloaddata=beforeloaddata==null?"":beforeloaddata.trim();
-            afterloaddata=afterloaddata==null?"":afterloaddata.trim();
-            displayperrow=displayperrow==null?"":displayperrow.trim();
-            displaypercol=displaypercol==null?"":displaypercol.trim();
-            
-            StringBuffer sbuffer=new StringBuffer();
-            sbuffer.append("public void doStart("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean) {")
-                    .append(preaction).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
+            List<String> lstImportsLocal=new UniqueArrayList<String>();
+            if(lstImports!=null) lstImportsLocal.addAll(lstImports);
+            lstImportsLocal.add("com.wabacus.system.intercept");
+            lstImportsLocal.add("java.sql");//因为要用到SQLException
+            lstImportsLocal.add("com.wabacus.config.component.application.report");
+            lstImportsLocal.add("com.wabacus.system.component.application.report.configbean.editablereport");
+            ClassPoolAssistant.getInstance().addImportPackages(pool,lstImportsLocal);
 
-            sbuffer=new StringBuffer();
-            sbuffer.append("public void doEnd("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean) {").append(postaction)
-                    .append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-
-            sbuffer=new StringBuffer();
-            if(beforesave.equals("")) beforesave=" return WX_CONTINUE;";
-            sbuffer.append("public int beforeSave("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean){").append(
-                    beforesave).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-
-            sbuffer=new StringBuffer();
-            if(beforesavePerrow.equals("")) beforesavePerrow=" return WX_CONTINUE;";
-            sbuffer.append(
-                    "public int beforeSavePerRow("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,"
-                            +Map.class.getName()+" mRowData,"+Map.class.getName()+" mExternalValues,int updatetype){").append(beforesavePerrow)
-                    .append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-            
-            sbuffer=new StringBuffer();
-            if(beforesavePersql.equals("")) beforesavePersql=" return WX_CONTINUE;";
-            sbuffer.append(
-                    "public int beforeSavePerSql("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,"
-                            +Map.class.getName()+" mRowData,"+Map.class.getName()+" mExternalValues,"+String.class.getName()+" sql){").append(
-                    beforesavePersql).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-            
-            sbuffer=new StringBuffer();
-            if(aftersavePersql.equals("")) aftersavePersql=" return WX_CONTINUE;";
-            sbuffer.append(
-                    "public int afterSavePerSql("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,"+Map.class.getName()
-                            +" mRowData,"+Map.class.getName()+" mExternalValues,"+String.class.getName()+" sql){").append(aftersavePersql).append(
-                    " \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-            
-            sbuffer=new StringBuffer();
-            if(aftersavePerrow.equals("")) aftersavePerrow=" return WX_CONTINUE;";
-            sbuffer.append(
-                    "public int afterSavePerRow("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,"+Map.class.getName()
-                            +" mRowData,"+Map.class.getName()+" mExternalValues,int updatetype){").append(aftersavePerrow).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-            
-            sbuffer=new StringBuffer();
-            sbuffer.append("public void afterSave("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean){").append(
-                    aftersave).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-
-            sbuffer=new StringBuffer();
-            if(beforeloaddata.equals(""))
+            cclass.setSuperclass(pool.get(AbsInterceptorDefaultAdapter.class.getName()));
+            StringBuffer tmpBuf=null;
+            if(preaction!=null&&!preaction.trim().equals(""))
             {
-                beforeloaddata=" return sql;";
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public void doStart("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean) {");
+                tmpBuf.append(preaction.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
             }
-            sbuffer.append("public Object beforeLoadData("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,").append(
-                    Object.class.getName()+" typeObj,").append(String.class.getName()).append(" sql){");
-            sbuffer.append(beforeloaddata).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-
-            sbuffer=new StringBuffer();
-            if(afterloaddata.equals(""))
+            if(saveaction!=null&&!saveaction.trim().equals(""))
             {
-                afterloaddata=" return dataObj;";
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public int doSave("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,"
+                        +AbsEditableReportEditDataBean.class.getName()+" editbean){");
+                tmpBuf.append(saveaction.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
             }
-            sbuffer.append("public Object afterLoadData("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,").append(
-                    Object.class.getName()+" typeObj,").append(Object.class.getName()).append(" dataObj){");
-            sbuffer.append(afterloaddata).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-            
-            sbuffer=new StringBuffer();
-            if(displayperrow.equals(""))
+            if(saverowaction!=null&&!saverowaction.trim().equals(""))
             {
-                displayperrow=" return null;";
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public int doSavePerRow("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,"
+                        +Map.class.getName()+" mRowData,"+Map.class.getName()+" mParamValues,"+AbsEditableReportEditDataBean.class.getName()
+                        +" editbean){");
+                tmpBuf.append(saverowaction.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
             }
-            sbuffer.append(
-                    "public RowDataByInterceptor beforeDisplayReportDataPerRow("+AbsReportType.class.getName()+" reportTypeObj,"
-                            +ReportRequest.class.getName()+" rrequest,").append(" int rowindex,int colspans, "+List.class.getName()+" lstColBeans){");
-            sbuffer.append(displayperrow).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-
-            sbuffer=new StringBuffer();
-            if(displaypercol.equals(""))
+            if(savesqlaction!=null&&!savesqlaction.trim().equals(""))
             {
-                displaypercol=" return null;";
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public int doSavePerAction ("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,"
+                        +Map.class.getName()+" mRowData,"+Map.class.getName()+" mParamValues,"+AbsEditActionBean.class.getName()+" actionbean,"
+                        +AbsEditableReportEditDataBean.class.getName()+" editbean){");
+                tmpBuf.append(savesqlaction.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
             }
-            sbuffer.append(
-                    "public ColDataByInterceptor beforeDisplayReportDataPerCol("+AbsReportType.class.getName()+" reportTypeObj,"
-                            +ReportRequest.class.getName()+" rrequest,").append(Object.class.getName()+" displayColBean,int rowindex,").append(
-                    String.class.getName()+" value").append("){");
-            sbuffer.append(displaypercol).append(" \n}");
-            ClassPoolAssistant.getInstance().addMethod(cclass,sbuffer.toString());
-
+            if(beforeloaddata!=null&&!beforeloaddata.trim().equals(""))
+            {
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public Object beforeLoadData("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,")
+                        .append(Object.class.getName()+" typeObj,").append(String.class.getName()).append(" sql){");
+                tmpBuf.append(beforeloaddata.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
+            }
+            if(afterloaddata!=null&&!afterloaddata.trim().equals(""))
+            {
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public Object afterLoadData("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean,")
+                        .append(Object.class.getName()+" typeObj,").append(Object.class.getName()).append(" dataObj){");
+                tmpBuf.append(afterloaddata.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
+            }
+            if(displayperrow!=null&&!displayperrow.trim().equals(""))
+            {
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public RowDataByInterceptor beforeDisplayReportDataPerRow("+AbsReportType.class.getName()+" reportTypeObj,"
+                        +ReportRequest.class.getName()+" rrequest,int rowindex,int colspans,"+List.class.getName()+" lstColBeans){");
+                tmpBuf.append(displayperrow.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
+            }
+            if(displaypercol!=null&&!displaypercol.trim().equals(""))
+            {
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public ColDataByInterceptor beforeDisplayReportDataPerCol("+AbsReportType.class.getName()+" reportTypeObj,"
+                        +ReportRequest.class.getName()+" rrequest,"+Object.class.getName()+" displayColBean,int rowindex,"+String.class.getName()
+                        +" value){");
+                tmpBuf.append(displaypercol.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
+            }
+            if(postaction!=null&&!postaction.equals(""))
+            {
+                tmpBuf=new StringBuffer();
+                tmpBuf.append("public void doEnd("+ReportRequest.class.getName()+" rrequest,"+ReportBean.class.getName()+" rbean) {");
+                tmpBuf.append(postaction.trim()).append(" \n}");
+                ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
+            }
             Class c=ConfigLoadManager.currentDynClassLoader.loadClass(Consts.BASE_PACKAGE_NAME+"."+className+"_Interceptor",cclass.toBytecode());
             cclass.detach();
             pool.clearImportedPackages();
@@ -967,33 +1273,30 @@ public class ReportAssistant
 
     //    /**
     
-    //     * 
+    
     
     
     
     
     //     */
-    //    public static String parseUpdateWhereClause(SqlBean sqlbean, AbsReportUpdateBean updatebean,
+    
+    
+    //    {
     
     
     
     
-    //        if (whereclause.toLowerCase().indexOf("where ") != 0)
     
     
     
     
-    //        whereBuffer.append(" where ");
+    
+    //        whereclause = formatConditionClause(whereclause);
     
     
     
     
-    //        String conname;
     
-    
-    
-    
-    //            val = lstCons.get(k).trim();
     
     
     
@@ -1003,127 +1306,71 @@ public class ReportAssistant
     
     
     
-    //                }
     
     
+    
+    
+    
+    //                if (idxequals <= 0)
     
     
     //                            + sqlbean.getReportBean().getPath() + "失败，在<update/>中配置的更新语句中条件子句不对");
-    //                }
     
     
     
     
-    //                {
+    
+    
+    
+    //                    conval = conval.substring(0,conval.length() - 1).trim();
     
     
     
     
-    //                {
     
     
     
     
-    //                        lstCbPropertytemp.add(cb.getProperty());
     
-    
+    //                            updatebean.addColPropertyInWhereClause(cb.getProperty());
     
     
     //                {//条件值为常量，则不用解决此条件子句，直接附在后面即可。
-    //                    whereBuffer.append(val);
     
     
     
     
-    //        return whereBuffer.toString();
     
-
-    
-    
-    
-    //        List<String> lst = Tools.parseStringToList(whereclause," ");
-    
-    
-    
-    
-    //        {
-    
-    
-    
-    
-    //                sbuffer.append(" ").append(tmpval).append(" ");
-    
-    
-    
-    
-    //        }
     
     
 
-    public List<String[]> getOptionListFromDB(ReportRequest rrequest,ReportBean rbean,String sql,OptionBean obean)
-    {
-        List<String[]> lstResults=new ArrayList<String[]>();
-        try
-        {
-            ISQLType ImpISQLType=null;
-            if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-            {
-                ImpISQLType=new GetAllResultSetByPreparedSQL();
-            }else
-            {
-                ImpISQLType=new GetAllResultSetBySQL();
-            }
-            Object objTmp=ImpISQLType.getResultSet(rrequest,rbean,obean,sql,obean.getLstConditions());
-            if(objTmp instanceof List)
-            {
-                for(Object itemTmp:(List)objTmp)
-                {
-                    if(itemTmp==null) continue;
-                    if(!(itemTmp instanceof String[]))
-                    {
-                        throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"下拉选项数据的拦截器返回的List对象中元素类型不对，必须为String[]类型");
-                    }
-                    if(((String[])itemTmp).length!=2)
-                    {
-                        throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"下拉选项数据的拦截器返回的List对象中String[]类型的元素长度必须为2");
-                    }
-                    lstResults.add((String[])itemTmp);
-                }
-            }else if(objTmp instanceof ResultSet)
-            {
-                ResultSet rs=(ResultSet)objTmp;
-                while(rs.next())
-                {
-                    String name_temp=rs.getString(obean.getLabel());
-                    String value_temp=rs.getString(obean.getValue());
-                    name_temp=name_temp==null?"":name_temp.trim();
-                    value_temp=value_temp==null?"":value_temp.trim();
-                    String[] items=new String[2];
-                    items[0]=name_temp;
-                    items[1]=value_temp;
-                    lstResults.add(items);
-                }
-                rs.close();
-            }else if(objTmp!=null)
-            {
-                throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"的下拉选项数据失败，在加载下拉选项数据的拦截器中返回的对象类型"+objTmp.getClass().getName()+"不合法");
-            }
-        }catch(SQLException e)
-        {
-            throw new WabacusRuntimeException("执行SQL语句："+obean.getSql()+" 从数据库中获取下拉选项失败",e);
-        }
-        if(rbean.getInterceptor()!=null)
-        {
-            lstResults=(List)rbean.getInterceptor().afterLoadData(rrequest,rbean,obean,lstResults);
-        }
-        return lstResults;
-    }
+    //    private static String formatConditionClause(String whereclause)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    //            if (tmpval == null || tmpval.trim().equals("")) continue;
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    //    }
 
     public boolean shouldShowThisApplication(IComponentConfigBean applicationBean,ReportRequest rrequest)
     {
         if(applicationBean instanceof AbsContainerConfigBean)
         {
-            //            rrequest.getWResponse().getErrors().error("显示页面失败");
+            
             throw new WabacusRuntimeException("此方法只能传入应用进行判断，不能传入容器");
         }
         if(applicationBean==null) return false;
@@ -1155,13 +1402,13 @@ public class ReportAssistant
         return defaultvalue.trim();
     }
 
-    //    public String getExportDataLinkAndLabel(ReportRequest rrequest,String exportReportids,String label,String exporttype)
     
     
     
     
+    //        ReportBean rbean=null;
     ////        CacheDataBean cdb=null;
-    //        List<String> lstExportReportids=Tools.parseStringToList(exportReportids,";",false);
+    
     
     //        {//只下载一个报表
     
@@ -1170,40 +1417,44 @@ public class ReportAssistant
     ////            if(typeObjTmp!=null) cdb=rrequest.getCdb(rbean.getId());//如果本报表参与了本次显示
     
     //        /**
-    //         * 判断本次导出的所有报表在此导出类型上的权限
+    
     //         */
     //        boolean isAllNonDisplayPermission=true;//本次导出的所有报表是否都没有相应类型的导出链接的显示权限
     
     
     
-    
+    //            if(reportidTmp==null||reportidTmp.trim().equals("")) continue;
     //            if(!rrequest.checkPermission(reportidTmp,Consts.BUTTON_PART,"type{"+exporttype+"}",Consts.PERMISSION_TYPE_DISPLAY)) continue;//没有显示权限
-    //            isAllNonDisplayPermission=false;
+    
     
     //            {//此报表的此权限不是禁用
     
     
     
     //        if(isAllNonDisplayPermission) return "";//如果本次导出的所有报表都没有显示此类型数据导出功能的权限
-    //        if(validExportReportids.endsWith(";")) validExportReportids=validExportReportids.substring(0,validExportReportids.length()-1);
+    
     
     
     //        {//不是所有报表都禁用这种类型的导出
     
-    
-    //            {
-    
+    //            if(Consts.DATAEXPORT_PLAINEXCEL.equals(exporttype.toLowerCase().trim()))
     
     
     
-    //            }else
+    
+    
+    
     //            {//Consts.DATAEXPORT_RICHEXCEL
     
     
     
     //            {//当前只下载一个参与本次显示的报表，且此报表需要提供列动态选择框
+    //                StringBuffer paramsBuf=new StringBuffer();
     
-    //                paramsBuf.append("{reportguid:\"").append(rbean.getGuid()).append("\"");
+    
+    
+    
+    
     
     
     
@@ -1213,32 +1464,32 @@ public class ReportAssistant
     
     
     
-    //                    paramsBuf.append(",width:\"").append(width).append("\"");
-    
-    
-    
     
     //                clickevent="createTreeObjHtml(this,'"+Tools.jsParamEncode(paramsBuf.toString())+"',event);";//注意这个方法的第二个参数pageid必须为空，因为在此方法中要据此判断当前是在做下载Excel还是刷新页面的操作
-    //            }else
+    
     //            {//下载多个报表，或下载的一个报表不参与本次显示，或虽参与本次显示，但不需要提供动态列选择框，直接下载当前页面显示的数据
     //                //clickevent="postlinkurl('"+url+"',true);";
     
     
     
+    //        StringBuffer resultBuf=new StringBuffer();
     
-    //        if(label!=null&&!label.trim().equals(""))
     //        {//客户端提供了显示的label
     
     
     
     //            resultBuf.append("</a>");
     
-    //        {
     
     
     
     
-    //            }else if(Consts.DATAEXPORT_RICHEXCEL.equals(exporttype.toLowerCase().trim()))
+    //                        .getString(pbean,Consts.PLAINEXCEL_LABEL,true)).trim());
+    
+    
+    
+    
+    
     
     
     
@@ -1248,45 +1499,28 @@ public class ReportAssistant
     
     
     
-    //                return "";
     
     
     
     
-    //        }
     
+    //    {
     
-    
-    
-    //        if(rbean.getLstDataImportItems()==null||rbean.getLstDataImportItems().size()==0)  return "";
     
     
     
     //        {//如果不是禁用
     
-    //            if(Config.showreport_url.indexOf("?")>0) token="&";
     
     
     
     
-    //            {
+    //            if(winwidth<=0)
     
     
     
     
-    //            {
     
-    
-    
-    
-    //        StringBuffer resultBuf=new StringBuffer();
-    
-    //        {//客户端提供了显示的label
-    
-    
-    //            resultBuf.append("</a>");
-    
-    //        {
     
     
     
@@ -1294,16 +1528,29 @@ public class ReportAssistant
     //        }
     
     
+    //        {//客户端提供了显示的label
+    
+    
+    //            resultBuf.append("</a>");
+    
+    
+    
+    
+    
+    //            resultBuf.append("  onFocus=\"this.select();\" value=\""+label+"\">");
+    
+    
+    
     //    /**
     
     
-    //     * @return
+    
     //     */
     
     
     
+    //        if(lstConditions==null||lstConditions.size()==0) return "";
     
-    //        StringBuffer resultBuf=new StringBuffer();
     //        /**
     
     //         */
@@ -1311,12 +1558,12 @@ public class ReportAssistant
     
     
     
-    //        {
     
     
     
     
-    //            resultBuf.append("inputboxtype:\"").append(cbeanTmp.getInputbox().getTypename()).append("\",");
+    //            resultBuf.append("inputboxid:\"").append(cbeanTmp.getInputBoxId()).append("\\\",");
+    
     //            /**************临时删除*************if(cbeanTmp.getLstConditionValuesBean().size()>1)
     //            {//此条件有多个条件表达式供选择
     
@@ -1324,17 +1571,17 @@ public class ReportAssistant
     //            }*********************/
     
     
-    //                resultBuf.deleteCharAt(resultBuf.length()-1);
     
     
     
     
-    //        if(!hasCondtionWithInputBox) return "";
+    //        }
     
     
     
     
-    //        resultBuf.append("]}");
+    
+    
     
     
     public Object getReportDataPojoInstance(ReportBean rbean)
@@ -1352,19 +1599,16 @@ public class ReportAssistant
                     c=rbean.getPojoclass();
                 }else
                 {
-                    c=Class.forName(Consts.BASE_PACKAGE_NAME+".Pojo_"+rbean.getPageBean().getId()+"_"+rbean.getId());
+                    c=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(Consts.BASE_PACKAGE_NAME+".Pojo_"+rbean.getPageBean().getId()+"_"+rbean.getId());
                 }
             }else
             {
-                c=Class.forName(classType);
+                c=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(classType);
             }
             resultObj=c.newInstance();
-        }catch(ClassNotFoundException e1)
+        }catch(Exception e)
         {
-            throw new WabacusRuntimeException("存放数据的类"+rbean.getStrclass()+"没有找到",e1);
-        }catch(Exception e2)
-        {
-            throw new WabacusRuntimeException("存放报表"+rbean.getPath()+"数据的类无法实例化",e2);
+            throw new WabacusRuntimeException("存放报表"+rbean.getPath()+"数据的类无法实例化",e);
         }
         return resultObj;
     }
@@ -1375,15 +1619,8 @@ public class ReportAssistant
         paramsBuf.append("{reportguid:\"").append(rbean.getGuid()).append("\"");
         paramsBuf.append(",skin:\"").append(rrequest.getPageskin()).append("\"");
         paramsBuf.append(",webroot:\"").append(Config.webroot).append("\"");
-        String width=rbean.getDbean().getColselectwidth();
-        if(width==null||width.trim().equals(""))
-        {
-            width=Config.getInstance().getSystemConfigValue("default-colselect-width","");
-        }
-        if(!width.equals(""))
-        {
-            paramsBuf.append(",width:\"").append(width).append("\"");
-        }
+        paramsBuf.append(",width:").append(rbean.getDbean().getColselectwidth());
+        paramsBuf.append(",maxheight:").append(rbean.getDbean().getColselectmaxheight());
         paramsBuf.append("}");
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("<img src=\""+Config.webroot+"webresources/skin/"+rrequest.getPageskin()+"/images/coltitle_selected/selectcols.gif\"");
@@ -1391,7 +1628,7 @@ public class ReportAssistant
         {
             resultBuf.append(" class=\"colSelectedLabel_img\"");
         }else
-        {
+        {//细览报表的列选择图片是普通显示，因此不加上面的样式，只加上手形鼠标样式
             resultBuf.append(" style=\"cursor:pointer;\"");
         }
         resultBuf.append(" onclick=\"");
@@ -1417,7 +1654,7 @@ public class ReportAssistant
          int pageno=cdb.getFinalPageno();
          boolean isReadonly=false;
          if(rrequest.checkPermission(rbean.getId(),Consts.NAVIGATE_PART,Consts_Private.NAVIGATE_PAGENO,Consts.PERMISSION_TYPE_DISABLED))
-         {//如果是禁用
+         {
              isReadonly=true;
          }
          String strpageno=String.valueOf(pagecount).trim();
@@ -1469,7 +1706,7 @@ public class ReportAssistant
                  lstOptionsResult.add(new String[] { String.valueOf(j), String.valueOf(j) });
              }
          }
-         AbsInputBox box=Config.getInstance().getInputBoxByType(SelectBox.class);//取到注册的下拉框对象
+         AbsInputBox box=Config.getInstance().getInputBoxByType(SelectBox.class);
          return box.getIndependentDisplayString(rrequest,String.valueOf(pageno),dynstyleproperty,lstOptionsResult,isDisabled);
      }
      
@@ -1502,7 +1739,7 @@ public class ReportAssistant
          List<Integer> lstPagesizeTmp=rbean.getLstPagesize();
          String alldata_label="";
          if(lstPagesizeTmp.contains(-1))
-         {
+         {//如果包括不分页选项
              alldata_label=rrequest.getI18NStringValue((Config.getInstance().getResources().getString(rrequest,rbean.getPageBean(),
                      Consts.NAVIGATE_ALLDATA_LABEL,true)).trim());
          }
@@ -1514,7 +1751,7 @@ public class ReportAssistant
              lstOptionsResult.add(new String[] { labelTmp, String.valueOf(lstPagesizeTmp.get(i)) });
              if(currentpagesize==lstPagesizeTmp.get(i)) isExistCurrentPagesizeOption=true;
          }
-         if(!isExistCurrentPagesizeOption) lstOptionsResult.add(0,new String[] { String.valueOf(currentpagesize), String.valueOf(currentpagesize) });//如果配置的选项中没有此页大小，则也把它加入下拉框显示
+         if(!isExistCurrentPagesizeOption) lstOptionsResult.add(0,new String[] { String.valueOf(currentpagesize), String.valueOf(currentpagesize) });
          AbsInputBox box=Config.getInstance().getInputBoxByType(SelectBox.class);
          return box.getIndependentDisplayString(rrequest,String.valueOf(currentpagesize),"onchange=\""+onchangeEventBuf.toString()+"\"",
                  lstOptionsResult,isDisabled);

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -42,6 +42,7 @@ import org.dom4j.Element;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.page.PageBean;
+import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.database.datasource.AbsDataSource;
 import com.wabacus.config.database.datasource.DriverManagerDataSource;
 import com.wabacus.config.resource.AbsResource;
@@ -64,7 +65,6 @@ import com.wabacus.system.datatype.IDataType;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.system.intercept.AbsPageInterceptor;
 import com.wabacus.util.Consts;
-import com.wabacus.util.Consts_Private;
 import com.wabacus.util.DesEncryptTools;
 import com.wabacus.util.Tools;
 import com.wabacus.util.UniqueArrayList;
@@ -90,13 +90,10 @@ public class ConfigLoadManager
             loadSystemItemConfig();//加载wabacus.cfg.default.xml/wabacus.cfg.xml中<system/>所有<item/>的配置
             DesEncryptTools.initEncryptKey();
             encryptDatasourcePassword();
-            loadBuildInDefaultSystemConfig();//加载内置的系统配置
+            loadBuildInDefaultSystemConfig();
             Document doc=XmlAssistant.getInstance().loadXmlDocument("wabacus.cfg.xml");
             Element root=doc.getRootElement();
-            if(root==null)
-            {
-                return 0;
-            }
+            if(root==null) return 0;
             Element eleDatasources=XmlAssistant.getInstance().getSingleElementByName(root,"datasources");
             if(eleDatasources==null)
             {
@@ -117,58 +114,21 @@ public class ConfigLoadManager
             loadGlobeResources(root);
             Config.getInstance().getResources().replacePlaceHolderInStringRes();
 
-            String systemcssfile=Config.webroot+"/webresources/skin/"+Consts_Private.SKIN_PLACEHOLDER+"/wabacus_system.css";
-            systemcssfile=Tools.replaceAll(systemcssfile,"//","/");
-            Config.getInstance().addGlobalCss(systemcssfile);
-
-            String containercssfile=Config.webroot+"/webresources/skin/"+Consts_Private.SKIN_PLACEHOLDER+"/wabacus_container.css";
-            containercssfile=Tools.replaceAll(containercssfile,"//","/");
-            Config.getInstance().addGlobalCss(containercssfile);
-
-            String promptCssFile=Config.webroot+"/webresources/skin/"+Consts_Private.SKIN_PLACEHOLDER+"/ymPrompt.css";
-            promptCssFile=Tools.replaceAll(promptCssFile,"//","/");
-            Config.getInstance().addGlobalCss(promptCssFile);
             Config.getInstance().addGlobalCss(loadCssfiles(root.element("global-cssfiles")));
-
-            String systemjsfile=null;
-            String utiljsfile=null;
-            String apijsfile=null;
-            if(Config.encode.toLowerCase().trim().equals("utf-8"))
-            {
-                systemjsfile="/webresources/script/wabacus_system.js";
-                utiljsfile="/webresources/script/wabacus_util.js";
-                apijsfile="/webresources/script/wabacus_api.js";
-            }else
-            {
-                String encode=Config.encode;
-                if(encode.trim().equalsIgnoreCase("gb2312"))
-                {
-                    encode="gbk";
-                }
-                systemjsfile="/webresources/script/"+encode.toLowerCase()+"/wabacus_system.js";
-                utiljsfile="/webresources/script/"+encode.toLowerCase()+"/wabacus_util.js";
-                apijsfile="/webresources/script/"+encode.toLowerCase()+"/wabacus_api.js";
-            }
-            systemjsfile=Config.webroot+"/"+systemjsfile;
-            systemjsfile=Tools.replaceAll(systemjsfile,"//","/");
-            utiljsfile=Config.webroot+"/"+utiljsfile;
-            utiljsfile=Tools.replaceAll(utiljsfile,"//","/");
-            apijsfile=Config.webroot+"/"+apijsfile;
-            apijsfile=Tools.replaceAll(apijsfile,"//","/");
-            Config.getInstance().addGlobalJavascript(systemjsfile);
-            Config.getInstance().addGlobalJavascript(utiljsfile);
-            Config.getInstance().addGlobalJavascript(apijsfile);
-            Config.getInstance().addGlobalJavascript(loadJsfiles(root.element("global-jsfiles")));
-
+            List<JavascriptFileBean> lstJsFiles=new UniqueArrayList<JavascriptFileBean>();
+            lstJsFiles.addAll(loadJsfiles(root.element("global-jsfiles")));
+            lstJsFiles.addAll(ConfigLoadAssistant.getInstance().getLstPopupComponentJs());
+            lstJsFiles.add(new JavascriptFileBean(Tools.replaceAll(Config.webroot+"/wabacus-generatejs/generate_system.js","//","/"),0));
+            Config.getInstance().setLstGlobalJavascriptFiles(lstJsFiles);
+            Config.getInstance().addGlobalCss(ConfigLoadAssistant.getInstance().getLstPopupComponentCss());
             Config.getInstance().setMLocalCss(new HashMap<String,List<String>>());
-            Config.getInstance().setMLocalJavascript(new HashMap<String,List<String>>());
+            Config.getInstance().setMLocalJavascriptFiles(new HashMap<String,List<JavascriptFileBean>>());
+            
             loadInputBoxTypesConfig(root);
             loadDataTypesConfig(root);
             loadContainerTypesConfig(root);
             loadReportTypesConfig(root);//加载报表配置文件
-
             createSystemJS();
-
             mAllPagesConfig=new HashMap<String,PageBean>();
             mAllPageChildIds=new HashMap<String,List<String>>();
             lstExtendReports=new ArrayList<ReportBean>();
@@ -231,6 +191,19 @@ public class ConfigLoadManager
                         return -1;
                     }
                 }
+                
+                for(Entry<String,PageBean> entryTmp:mAllPagesConfig.entrySet())
+                {
+                    if(entryTmp.getValue()==null) continue;
+                    try
+                    {
+                        entryTmp.getValue().doPostLoadFinally();
+                    }catch(Exception e)
+                    {
+                        log.error("执行页面"+entryTmp.getValue().getPath()+"加载后置动作失败",e);
+                        return -1;
+                    }
+                }
             }
             loadAllSkinConfigProperties();
             mAllPagesConfig=null;
@@ -253,7 +226,7 @@ public class ConfigLoadManager
             throw new WabacusConfigLoadingException("没有配置报表配置文件");
         }
         List lstReport=eleReport.elements("report-file");
-        List<String> lstReportConfigFiles=getListConfigFilePaths(lstReport);//获取到所有配置文件路径
+        List<String> lstReportConfigFiles=getListConfigFilePaths(lstReport);
         if(lstReportConfigFiles==null||lstReportConfigFiles.size()<=0)
         {
             throw new WabacusConfigLoadingException("没有配置报表配置文件");
@@ -431,9 +404,6 @@ public class ConfigLoadManager
 
     private static void createSystemJS()
     {
-        String jsurl=Config.webroot+"/wabacus-generatejs/generate_system.js";
-        jsurl=Tools.replaceAll(jsurl,"//","/");
-        Config.getInstance().addGlobalJavascript(jsurl);
         if(!Config.should_createjs) return;
         String jsFilePath=Tools.standardFilePath(Config.webroot_abspath+"\\wabacus-generatejs\\generate_system.js");
         String rowselectbgcolor=Config.getInstance().getSystemConfigValue("selectedrow-bgcolor","");
@@ -449,6 +419,11 @@ public class ConfigLoadManager
         scriptBuf.append("WXConfig.showreport_url='"+Config.showreport_url+"';");
         scriptBuf.append("WXConfig.showreport_onpage_url='"+Config.showreport_onpage_url+"';");
         scriptBuf.append("WXConfig.webroot='").append(Config.webroot).append("';");
+        scriptBuf.append("WXConfig.prompt_dialog_type='").append(Config.getInstance().getSystemConfigValue("prompt-dialog-type","artdialog")).append(
+                "';");
+        String loadErrorMessage=Config.getInstance().getResourceString(null,null,"${load.error.mess}",false);
+        scriptBuf.append("WXConfig.load_error_message=").append(
+                loadErrorMessage==null||loadErrorMessage.trim().equals("")?"null":"'"+loadErrorMessage+"'").append(";");
         JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(jsFilePath,scriptBuf.toString());
         
         if(Config.getInstance().getMInputBoxTypes()!=null&&Config.getInstance().getMInputBoxTypes().size()>0)
@@ -473,6 +448,23 @@ public class ConfigLoadManager
             JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(jsFilePath,scriptBuf.toString());
 
             scriptBuf=new StringBuffer();
+            scriptBuf.append("function getInputBoxLabel(id,type){");
+            scriptBuf.append("if(id==null||id==''||type==null||type=='') return null;");
+            itTypes=Config.getInstance().getMInputBoxTypes().keySet().iterator();
+            while(itTypes.hasNext())
+            {
+                name=itTypes.next();
+                if(name.equals(Consts.DEFAULT_KEY)) continue;
+                inputbox=Config.getInstance().getInputBoxTypeByName(name);
+                if(inputbox==null) continue;
+                scriptBuf.append("  if(type=='"+name+"')  {    ");
+                scriptBuf.append(inputbox.createGetLabelByIdJs());
+                scriptBuf.append("  }");
+            }
+            scriptBuf.append("return null;}");
+            JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(jsFilePath,scriptBuf.toString());
+            
+            scriptBuf=new StringBuffer();
             scriptBuf.append("function setInputBoxValue(id,type,newvalue){");
             scriptBuf.append("if(id==null||id==''||type==null||type=='') return;if(newvalue==null) newvalue='';");
             itTypes=Config.getInstance().getMInputBoxTypes().keySet().iterator();
@@ -493,9 +485,14 @@ public class ConfigLoadManager
             scriptBuf.append("function fillInputBoxToTd(pageid,reportguid,reportfamily,tdObj,type,name,fillmode,displaymode){");
             scriptBuf.append("   var boxstr='';");
             scriptBuf.append("   var textalign=tdObj.style.textAlign||tdObj.getAttribute('align'); if(textalign==null) textalign='left';");
-            scriptBuf.append("   var wid=tdObj.clientWidth-2;");//如果某列配置的列宽为百分比，则它的输入框宽度不能用这个百分比
-            scriptBuf.append("   var boxValue=tdObj.getAttribute('value');  if(boxValue==null){boxValue='';}");
-            scriptBuf.append("   var boxId=name;if(boxId.lastIndexOf('__')>0) boxId=boxId.substring(0,boxId.lastIndexOf('__'));");
+            scriptBuf.append("   var wid=tdObj.clientWidth-2;");
+            scriptBuf.append("   var updateDestTdObj=getUpdateColDestObj(tdObj,reportguid,reportfamily,tdObj);");
+            scriptBuf.append("   var boxValue=updateDestTdObj.getAttribute('value');");
+            scriptBuf.append("   if(boxValue==null){");
+            scriptBuf.append("      boxValue='';");
+            scriptBuf.append("   }else{");
+            scriptBuf.append("      boxValue=boxValue.replace(/</g,'&lt;');boxValue=boxValue.replace(/>/g,'&gt;');boxValue=boxValue.replace(/\\\'/g,'&#039;');boxValue=boxValue.replace(/\\\"/g,'&quot;');");
+            scriptBuf.append("   }var boxId=name;if(boxId.lastIndexOf('__')>0) boxId=boxId.substring(0,boxId.lastIndexOf('__'));");
             scriptBuf.append("   var inputboxSpanObj=document.getElementById('span_'+boxId+'_span');");
             scriptBuf.append("   var styleproperty=null;var parentid=null;var childid=null;var onfocusmethod=null;var onblurmethod=null;");
             scriptBuf.append("   var jsvalidateOnblurMethod=null;");
@@ -544,10 +541,10 @@ public class ConfigLoadManager
             scriptBuf.append("function fillInputBoxValueToParentTd(boxObj,type,reportguid,reportfamily,fillmode){");
             scriptBuf.append("   var parentTdObj=null;");
             scriptBuf.append("   if(fillmode==1){parentTdObj=getParentElementObj(boxObj,'TD');}else if(fillmode==2){parentTdObj=boxObj.dataObj.parentTdObj;}");
-            scriptBuf.append("   if(parentTdObj==null) {wx_alert('没有取到输入框所属<td/>对象，设置其值失败');return;}");
+            scriptBuf.append("   if(parentTdObj==null) {wx_warn('没有取到输入框所属<td/>对象，设置其值失败');return;}");
             /*scriptBuf.append("   var oldValueName=parentTdObj.getAttribute('oldvalue_name');");
             scriptBuf.append("   if(oldValueName!=null&&oldValueName.indexOf(COL_NONDISPLAY_PERMISSION_PREX)==0){");
-            
+            //如果此输入框不在前台显示明文（目前只有密码框是这种输入框），则不能将此输入框的值设置到value属性中，保存的时候会直接从输入框中取
             scriptBuf.append("       if(reportfamily==ReportFamily.EDITABLELIST2||reportfamily==ReportFamily.LISTFORM){");
             scriptBuf.append("           addDataForSaving(reportguid,parentTdObj.parentNode);");
             scriptBuf.append("       }else if(reportfamily==ReportFamily.EDITABLEDETAIL2){");
@@ -567,27 +564,34 @@ public class ConfigLoadManager
                 scriptBuf.append(inputbox.createGetValueByInputBoxObjJs());
                 scriptBuf.append("  }");
             }
-            scriptBuf
-                    .append("   if(label==null){label='';}else{ label=label.replace(/</g,'&lt;');label=label.replace(/>/g,'&gt;');label=label.replace(/\\\'/g,'&#039;');label=label.replace(/\\\"/g,'&quot;');}");
-            scriptBuf.append("   if(fillmode==2) setColDisplayValueToEditable2Td(parentTdObj,label);");//如果是点击时填充，则赋完值到所属<td/>的value属性后，将它的label也填充到<td/>的innerHTML中。
-            scriptBuf
-                    .append("   if(value==null){value='';}else{ value=value.replace(/</g,'&lt;');value=value.replace(/>/g,'&gt;');value=value.replace(/\\\'/g,'&#039;');value=value.replace(/\\\"/g,'&quot;');}");
-            scriptBuf.append("   var oldvalue=parentTdObj.getAttribute('value');if(oldvalue==null) oldvalue='';");
-            scriptBuf.append("   if(value!=oldvalue){");//编辑后的值与<td/>中原有的值不同，则要更新它
-            scriptBuf.append("       parentTdObj.setAttribute('value',value);");
-            scriptBuf.append("       if(reportfamily==ReportFamily.EDITABLELIST2||reportfamily==ReportFamily.LISTFORM){");
-            scriptBuf.append("           var childids=parentTdObj.getAttribute('childDataIdSuffixes');");
-            scriptBuf.append("           if(childids!=null&&childids!=''){");//是树形分组节点或普通分组节点对应的列，则更新它所包括的所有数据行的相应分组列的值，以便保存时用上
-            scriptBuf.append("               updateGroupValueInAllChildTrs(reportguid,parentTdObj,childids);");
-            scriptBuf.append("           }else{");
-            scriptBuf.append("               addDataForSaving(reportguid,parentTdObj.parentNode);");
-            scriptBuf.append("           }");
-            scriptBuf.append("       }else if(reportfamily==ReportFamily.EDITABLEDETAIL2){");
-            scriptBuf.append("           addDataForSaving(reportguid,'true');");
-            scriptBuf.append("       }else{");
-            scriptBuf.append("           wx_alert('错误的报表类型');");
-            scriptBuf.append("       }");
-            scriptBuf.append("   }");
+            scriptBuf.append("   if(label==null){label='';}");
+            //scriptBuf.append("else{ label=label.replace(/</g,'&lt;');label=label.replace(/>/g,'&gt;');label=label.replace(/\\\'/g,'&#039;');label=label.replace(/\\\"/g,'&quot;');}");
+            scriptBuf.append("  if(fillmode==2) setColDisplayValueToEditable2Td(parentTdObj,label);");//如果是点击时填充，则赋完值到所属<td/>的value属性后，将它的label也填充到<td/>的innerHTML中。
+            scriptBuf.append("  parentTdObj.setAttribute('value',label);");
+            scriptBuf.append("   if(value==null){value='';}");
+            //scriptBuf.append("  else{ value=value.replace(/</g,'&lt;');value=value.replace(/>/g,'&gt;');value=value.replace(/\\\'/g,'&#039;');value=value.replace(/\\\"/g,'&quot;');}");
+            scriptBuf.append("  var updateDestTdObj=getUpdateColDestObj(parentTdObj,reportguid,reportfamily,parentTdObj);");
+            scriptBuf.append("  updateDestTdObj.setAttribute('value',value);");
+//            /**
+//             * 注意下面的oldvalue变量不能从<td/>的oldvalue属性中取，而必须从存放新值的value属性中取，因为假设第一次编辑新值时，与oldvalue不同，将此记录数据放入待保存队列中，并将新值设置到value属性中，
+
+//             */
+
+//            scriptBuf.append("   if(value!=oldvalue){");//编辑后的值与<td/>中原有的值不同，则要更新它
+
+
+
+//            scriptBuf.append("           if(childids!=null&&childids!=''){");//是树形分组节点或普通分组节点对应的列，则更新它所包括的所有数据行的相应分组列的值，以便保存时用上
+
+
+
+
+//            scriptBuf.append("       }else if(reportfamily==ReportFamily.EDITABLEDETAIL2){");
+
+
+
+
+
             scriptBuf.append("}");
             JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(jsFilePath,scriptBuf.toString());
         }
@@ -757,33 +761,52 @@ public class ConfigLoadManager
                 if(eleCssFile==null) continue;
                 String cssfile=eleCssFile.getTextTrim();
                 if(cssfile==null||cssfile.trim().equals("")) continue;
-                cssfile=Config.webroot+"/"+cssfile.trim();
-                cssfile=Tools.replaceAll(cssfile,"\\","/");
-                cssfile=Tools.replaceAll(cssfile,"//","/");
+                
+                if(!cssfile.toLowerCase().trim().startsWith("http://"))
+                {
+                    cssfile=Config.webroot+"/"+cssfile.trim();
+                    cssfile=Tools.replaceAll(cssfile,"\\","/");
+                    cssfile=Tools.replaceAll(cssfile,"//","/");
+                }
                 lstCssFiles.add(cssfile);
             }
         }
         return lstCssFiles;
     }
 
-    public static List<String> loadJsfiles(Element root)
+    public static List<JavascriptFileBean> loadJsfiles(Element root)
     {
-        List<String> lstJsFiles=new UniqueArrayList<String>();
+        List<JavascriptFileBean> lstJsFiles=new ArrayList<JavascriptFileBean>();
         if(root==null) return lstJsFiles;
         List lstJsFileElements=root.elements("js-file");
         if(lstJsFileElements!=null&&lstJsFileElements.size()>0)
         {
+            String encodetype=Config.encode.toLowerCase().trim();
+            if(encodetype.equalsIgnoreCase("gb2312"))
+            {
+                encodetype="gbk";
+            }else if(encodetype.equals("utf-8"))
+            {
+                encodetype="";
+            }
             Element eleJsFile;
+            String loadorderTmp;
             for(int i=0;i<lstJsFileElements.size();i++)
             {
                 eleJsFile=(Element)lstJsFileElements.get(i);
                 if(eleJsFile==null) continue;
                 String jsfile=eleJsFile.getTextTrim();
                 if(jsfile==null||jsfile.trim().equals("")) continue;
-                jsfile=Config.webroot+"/"+jsfile.trim();
-                jsfile=Tools.replaceAll(jsfile,"\\","/");
-                jsfile=Tools.replaceAll(jsfile,"//","/");
-                lstJsFiles.add(jsfile);
+                jsfile=Tools.replaceAll(jsfile,"%ENCODING%",encodetype);
+                if(!jsfile.trim().startsWith(Config.webroot)&&!jsfile.toLowerCase().trim().startsWith("http://"))
+                {
+                    jsfile=Config.webroot+"/"+jsfile.trim();
+                    jsfile=Tools.replaceAll(jsfile,"\\","/");
+                    jsfile=Tools.replaceAll(jsfile,"//","/");
+                }
+                loadorderTmp=eleJsFile.attributeValue("loadorder");
+                lstJsFiles.add(new JavascriptFileBean(jsfile.trim(),loadorderTmp==null||loadorderTmp.trim().equals("")?0:Integer
+                        .parseInt(loadorderTmp.trim())));
             }
         }
         return lstJsFiles;
@@ -873,7 +896,7 @@ public class ConfigLoadManager
             Object obj=null;
             try
             {
-                obj=Class.forName(default_roworderclass).newInstance();
+                obj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(default_roworderclass).newInstance();
             }catch(Exception e)
             {
                 throw new WabacusConfigLoadingException("在wabacus.cfg.xml通过default-roworderclass配置的"+default_roworderclass+"类对象实例化失败",e);
@@ -891,7 +914,7 @@ public class ConfigLoadManager
             Object obj=null;
             try
             {
-                obj=Class.forName(default_pagepersonalizeclass).newInstance();
+                obj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(default_pagepersonalizeclass).newInstance();
             }catch(Exception e)
             {
                 throw new WabacusConfigLoadingException("在wabacus.cfg.xml通过default-pagepersonalizeclass配置的"+default_pagepersonalizeclass+"类对象实例化失败",e);
@@ -909,7 +932,7 @@ public class ConfigLoadManager
             Object obj=null;
             try
             {
-                obj=Class.forName(default_reportpersonalizeclass).newInstance();
+                obj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(default_reportpersonalizeclass).newInstance();
             }catch(Exception e)
             {
                 throw new WabacusConfigLoadingException("在wabacus.cfg.xml通过default-reportpersonalizeclass配置的"+default_reportpersonalizeclass+"类对象无例化失败",e);
@@ -939,7 +962,7 @@ public class ConfigLoadManager
                 loadInputBoxTypesConfig(eleRoot);
                 loadDataTypesConfig(eleRoot);
                 Config.getInstance().addGlobalCss(loadCssfiles(eleRoot.element("global-cssfiles")));
-                Config.getInstance().addGlobalJavascript(loadJsfiles(eleRoot.element("global-jsfiles")));
+                Config.getInstance().setLstDefaultGlobalJavascriptFiles(loadJsfiles(eleRoot.element("global-jsfiles")));
                 loadGlobalPageInterceptors(eleRoot.element("global-interceptors"));
             }
         }catch(Exception e)
@@ -980,13 +1003,7 @@ public class ConfigLoadManager
             {
                 throw new WabacusConfigLoadingException("加载全局拦截器失败，存在没有配置class属性的拦截器");
             }
-            try
-            {
-                clsTmp=Class.forName(classTmp);
-            }catch(ClassNotFoundException e)
-            {
-                throw new WabacusConfigLoadingException("初始化全局拦截器"+classTmp+"失败",e);
-            }
+            clsTmp=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(classTmp);
             try
             {
                 objTmp=clsTmp.newInstance();
@@ -1002,8 +1019,8 @@ public class ConfigLoadManager
             {
                 try
                 {
-                    Method method=clsTmp.getMethod("setMatchpageids",new Class[]{String.class});
-                    method.invoke(objTmp,new Object[]{pageidTmp.trim()});
+                    Method method=clsTmp.getMethod("setMatchpageids",new Class[] { String.class });
+                    method.invoke(objTmp,new Object[] { pageidTmp.trim() });
                 }catch(Exception e)
                 {
                     throw new WabacusConfigLoadingException("全局拦截器"+classTmp+"的类中没有setMatchpageids(String)方法",e);
@@ -1013,8 +1030,8 @@ public class ConfigLoadManager
             {
                 try
                 {
-                    Method method=clsTmp.getMethod("setMatchmode",new Class[]{String.class});
-                    method.invoke(objTmp,new Object[]{matchmodeTmp.trim()});
+                    Method method=clsTmp.getMethod("setMatchmode",new Class[] { String.class });
+                    method.invoke(objTmp,new Object[] { matchmodeTmp.trim() });
                 }catch(Exception e)
                 {
                     throw new WabacusConfigLoadingException("全局拦截器"+classTmp+"的类中没有setMatchmode(String)方法",e);
@@ -1058,7 +1075,7 @@ public class ConfigLoadManager
                     }
                     try
                     {
-                        Class c=Class.forName(strclass);
+                        Class c=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclass);
                         Object o=c.getConstructor(new Class[] { String.class }).newInstance(new Object[] { name });
                         if(!(o instanceof AbsInputBox))
                         {
@@ -1128,7 +1145,7 @@ public class ConfigLoadManager
                     }
                     try
                     {
-                        Class c=Class.forName(strclass);
+                        Class c=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclass);
                         Object o=c.newInstance();
                         if(!(o instanceof IDataType))
                         {
@@ -1265,7 +1282,7 @@ public class ConfigLoadManager
         if(isClasspath)
         {
             if(filepath.startsWith("/")) filepath=filepath.substring(1);
-            bisResult=new BufferedInputStream(ConfigLoadManager.currentDynClassLoader.getResourceAsStream(filepath));//必须用ConfigLoadManager.currentDynClassLoader，否则无法实现热部署
+            bisResult=new BufferedInputStream(ConfigLoadManager.currentDynClassLoader.getResourceAsStream(filepath));
         }else
         {
             bisResult=new BufferedInputStream(new FileInputStream(filepath));
@@ -1289,7 +1306,7 @@ public class ConfigLoadManager
             {
                 boolean isClasspathType=false;
                 if(Tools.isDefineKey("classpath",filepathTmp))
-                {
+                {//配置为完整的classpath路径
                     filepathTmp=Tools.getRealKeyByDefine("classpath",filepathTmp).trim();
                     while(filepathTmp.startsWith("/"))
                     {
@@ -1301,7 +1318,7 @@ public class ConfigLoadManager
                     filepathTmp=Tools.getRealKeyByDefine("absolute",filepathTmp).trim();
                     filepathTmp=Tools.standardFilePath(filepathTmp);
                 }else if(Tools.isDefineKey("relative",filepathTmp))
-                {//配置为相对应用根路径的相对路径
+                {
                     filepathTmp=Tools.getRealKeyByDefine("relative",filepathTmp).trim();
                     filepathTmp=WabacusAssistant.getInstance().getRealFilePath(Config.webroot_abspath,filepathTmp);
                 }else
@@ -1321,7 +1338,7 @@ public class ConfigLoadManager
                     {
                         filepathTmp=filepathTmp.substring(1).trim();
                     }
-                    filepathTmp="classpath{"+filepathTmp+"}";//标识是classpath的路径
+                    filepathTmp="classpath{"+filepathTmp+"}";
                 }else if(Tools.isDefineKey("absolute",filepathTmp))
                 {
                     filepathTmp=Tools.getRealKeyByDefine("absolute",filepathTmp).trim();
@@ -1331,7 +1348,7 @@ public class ConfigLoadManager
                     filepathTmp=Tools.getRealKeyByDefine("relative",filepathTmp).trim();
                     filepathTmp=WabacusAssistant.getInstance().getRealFilePath(Config.webroot_abspath,filepathTmp);
                 }else
-                {
+                {//相对wabacus.cfg.xml的路径
                     filepathTmp=WabacusAssistant.getInstance().getRealFilePath(Config.configpath,filepathTmp);
                     if(Tools.isDefineKey("classpath",Config.configpath))
                     {
@@ -1375,11 +1392,8 @@ public class ConfigLoadManager
             Object providerObj=null;
             try
             {
-                Class c_provider=Class.forName(provider);
+                Class c_provider=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(provider);
                 providerObj=c_provider.newInstance();
-            }catch(ClassNotFoundException e1)
-            {
-                throw new WabacusConfigLoadingException("无法加载数据源类："+provider,e1);
             }catch(Exception e)
             {
                 throw new WabacusConfigLoadingException("数据源类："+provider+"无法实例化",e);
@@ -1406,6 +1420,10 @@ public class ConfigLoadManager
                 throw new WabacusConfigLoadingException("配置的默认数据源："+eleDataSources.attributeValue("default")+"不存在");
             }
             mDataSources.put(Consts.DEFAULT_KEY,mDataSources.get(defaultname2));
+            Config.getInstance().setDefault_datasourcename(defaultname.trim());
+        }else
+        {
+            Config.getInstance().setDefault_datasourcename(null);
         }
         Config.getInstance().setMDataSources(mDataSources);
     }
@@ -1415,7 +1433,7 @@ public class ConfigLoadManager
         Map mResult=new HashMap();
         if(rootTemp!=null)
         {
-            List lstResources=XmlAssistant.getInstance().getElementsByName(rootTemp,"resource");//rootTemp.elements("resource");
+            List lstResources=XmlAssistant.getInstance().getElementsByName(rootTemp,"resource");
             if(lstResources!=null&&lstResources.size()>0)
             {
                 for(int k=0;k<lstResources.size();k++)
@@ -1440,7 +1458,7 @@ public class ConfigLoadManager
                         }
                         type=type.trim();
 
-                        Object o=Class.forName(type).newInstance();
+                        Object o=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(type).newInstance();
                         if(!(o instanceof AbsResource))
                         {
                             throw new WabacusConfigLoadingException("在resource文件中，为"+key+"资源项配置的type，没有继承AbsResource类");
@@ -1480,18 +1498,13 @@ public class ConfigLoadManager
             {
                 throw new WabacusConfigLoadingException("系统配置文件中配置的name属性为"+name+"的容器类型没有配置class属性");
             }
-            try
+            Object containerObj=AbsComponentType.createComponentTypeObj(ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclass),
+                    null,null,null);
+            if(!(containerObj instanceof AbsContainerType))
             {
-                Object containerObj=AbsComponentType.createComponentTypeObj(Class.forName(strclass),null,null,null);
-                if(!(containerObj instanceof AbsContainerType))
-                {
-                    throw new WabacusConfigLoadingException("配置报表的容器类型的class："+strclass+"没有继承"+AbsContainerType.class.getName()+"类");
-                }
-                mContainertypes.put(name,(AbsContainerType)containerObj);
-            }catch(ClassNotFoundException e1)
-            {
-                throw new WabacusConfigLoadingException("配置报表的容器类型的class："+strclass+"不存在",e1);
+                throw new WabacusConfigLoadingException("配置报表的容器类型的class："+strclass+"没有继承"+AbsContainerType.class.getName()+"类");
             }
+            mContainertypes.put(name,(AbsContainerType)containerObj);
         }
         if(Config.getInstance().getMContainertypes()==null)
         {
@@ -1531,18 +1544,13 @@ public class ConfigLoadManager
             {
                 throw new WabacusConfigLoadingException("配置报表类型的class属性不能为空");
             }
-            try
+            Object reportObj=AbsComponentType.createComponentTypeObj(ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclass),null,
+                    null,null);
+            if(!(reportObj instanceof AbsReportType))
             {
-                Object reportObj=AbsComponentType.createComponentTypeObj(Class.forName(strclass),null,null,null);
-                if(!(reportObj instanceof AbsReportType))
-                {
-                    throw new WabacusConfigLoadingException("配置报表类型的class："+strclass+"没有继承"+AbsReportType.class.getName()+"类");
-                }
-                mReportTypes.put(name,(IReportType)reportObj);
-            }catch(ClassNotFoundException e1)
-            {
-                throw new WabacusConfigLoadingException("配置的报表类型的class："+strclass+"不存在",e1);
+                throw new WabacusConfigLoadingException("配置报表类型的class："+strclass+"没有继承"+AbsReportType.class.getName()+"类");
             }
+            mReportTypes.put(name,(IReportType)reportObj);
 
         }
         if(Config.getInstance().getMReporttypes()==null)
@@ -1574,12 +1582,12 @@ public class ConfigLoadManager
             String value=(String)props.get(key);
             
             
-            //                try
             
             
             
+            //                } catch (UnsupportedEncodingException e)
             
-            //                    e.printStackTrace();
+            
             
             
             if(mResults.containsKey(key))

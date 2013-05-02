@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -23,9 +23,9 @@ import java.util.List;
 
 import org.dom4j.Element;
 
+import com.wabacus.config.xml.XmlAssistant;
+import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
-import com.wabacus.system.inputbox.OptionBean;
-import com.wabacus.util.Tools;
 
 public class OptionRes extends AbsResource
 {
@@ -44,30 +44,17 @@ public class OptionRes extends AbsResource
         List lstOptionElements=eleOptions.elements("option");
         if(lstOptionElements==null||lstOptionElements.size()==0)
         {
-            return new ArrayList<OptionBean>();
+            return new ArrayList<XmlElementBean>();
         }
-        List<OptionBean> lstOptions=new ArrayList<OptionBean>();
+        List<XmlElementBean> lstOptions=new ArrayList<XmlElementBean>();
+        XmlElementBean xeleOptionTmp;
         Element eleOption;
-        String label;
-        String value;
         for(int i=0;i<lstOptionElements.size();i++)
         {
             eleOption=(Element)lstOptionElements.get(i);
             if(eleOption==null) continue;
-            OptionBean oBean=new OptionBean();
-            label=eleOption.attributeValue("label");
-            label=label==null?"":label.trim();
-            oBean.setLabel(label);
-            value=eleOption.attributeValue("value");
-            value=value==null?"":value.trim();
-            oBean.setValue(value);
-            String type=eleOption.attributeValue("type");
-            if(type!=null)
-            {
-                String[] typearray=Tools.parseStringToArray(type,'[',']');
-                oBean.setType(typearray);
-            }
-            lstOptions.add(oBean);
+            xeleOptionTmp=XmlAssistant.getInstance().parseXmlValueToXmlBean(eleOption);
+            lstOptions.add(xeleOptionTmp);
         }
         return lstOptions;
     }

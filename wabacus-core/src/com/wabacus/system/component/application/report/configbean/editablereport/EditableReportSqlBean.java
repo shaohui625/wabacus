@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -27,16 +27,14 @@ import com.wabacus.config.component.application.report.extendconfig.AbsExtendCon
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.JavaScriptAssistant;
 
-public final class EditableReportSqlBean extends AbsExtendConfigBean
+public final class EditableReportSqlBean extends AbsExtendConfigBean implements IEditableReportEditGroupOwnerBean
 {
     private EditableReportUpdateDataBean updatebean;
 
-    private EditableReportUpdateDataBean insertbean;
+    private EditableReportInsertDataBean insertbean;
 
-    private EditableReportUpdateDataBean deletebean;
+    private EditableReportDeleteDataBean deletebean;
 
-    private String transactionLever;
-    
     private String beforeSaveAction;
     
     private String[] afterSaveAction;
@@ -47,7 +45,7 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean
     
     private List<String> lstDeleteBindingReportIds;
     
-    private List<ReportBean> lstDeleteBindingReportBeans;//绑定保存的报表配置对象，在doPostLoad()方法中由lstDeleteBindingReportIds生成，生成完后会清空lstDeleteBindingReportIds
+    private List<ReportBean> lstDeleteBindingReportBeans;
     
     private String validateSaveAddingMethod;//保存添加记录时的JS校验方法名，只对editabledetail/form两种报表类型有效
     
@@ -72,36 +70,26 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean
         this.updatebean=updatebean;
     }
 
-    public EditableReportUpdateDataBean getInsertbean()
+    public EditableReportInsertDataBean getInsertbean()
     {
         return insertbean;
     }
 
-    public void setInsertbean(EditableReportUpdateDataBean insertbean)
+    public void setInsertbean(EditableReportInsertDataBean insertbean)
     {
         this.insertbean=insertbean;
     }
 
-    public EditableReportUpdateDataBean getDeletebean()
+    public EditableReportDeleteDataBean getDeletebean()
     {
         return deletebean;
     }
 
-    public void setDeletebean(EditableReportUpdateDataBean deletebean)
+    public void setDeletebean(EditableReportDeleteDataBean deletebean)
     {
         this.deletebean=deletebean;
     }
 
-    public String getTransactionLever()
-    {
-        return transactionLever;
-    }
-
-    public void setTransactionLever(String transactionLever)
-    {
-        this.transactionLever=transactionLever;
-    }
-    
     public List<String> getLstSaveBindingReportIds()
     {
         return lstSaveBindingReportIds;
@@ -210,6 +198,11 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean
         this.lstValidateSavingUpdateDynParams=lstValidateSavingUpdateDynParams;
     }
 
+    public ReportBean getReportBean()
+    {
+        return this.getOwner().getReportBean();
+    }
+
     public String getValidateSaveMethodAndParams(ReportRequest rrequest,boolean isSaveAdd)
     {
         String validateSaveMethod=null;
@@ -252,7 +245,7 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean
         EditableReportSqlBean newsqlbean=(EditableReportSqlBean)super.clone(owner);
         if(this.insertbean!=null)
         {
-            newsqlbean.setInsertbean((EditableReportUpdateDataBean)insertbean.clone(newsqlbean));
+            newsqlbean.setInsertbean((EditableReportInsertDataBean)insertbean.clone(newsqlbean));
         }
         if(this.updatebean!=null)
         {
@@ -260,7 +253,7 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean
         }
         if(this.deletebean!=null)
         {
-            newsqlbean.setDeletebean((EditableReportUpdateDataBean)deletebean.clone(newsqlbean));
+            newsqlbean.setDeletebean((EditableReportDeleteDataBean)deletebean.clone(newsqlbean));
         }
         return newsqlbean;
     }
@@ -270,7 +263,6 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean
         final int prime=31;
         int result=1;
         result=prime*result+((this.getOwner()==null)?0:this.getOwner().getReportBean().hashCode());
-        result=prime*result+((transactionLever==null)?0:transactionLever.hashCode());
         return result;
     }
 
@@ -287,10 +279,6 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean
         {
             return false;
         }
-        if(transactionLever==null)
-        {
-            if(other.transactionLever!=null) return false;
-        }else if(!transactionLever.equals(other.transactionLever)) return false;
         return true;
     }
 }

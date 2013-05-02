@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -115,7 +115,7 @@ public abstract class AbsJspHtmlComponentBean extends AbsComponentConfigBean imp
                     tpbeanTmp=(TabsPanelBean)parentContainerBean;
                     if(tpbeanTmp.getChildComponentBean(this.id,true)==null||!tpbeanTmp.isInSameTabItem(belongToCcbean,this))
                     {
-                        tpbeanTmp.setAsyn(false);//强制设置为在客户端切换
+                        tpbeanTmp.setAsyn(false);
                     }
                 }
                 if(parentContainerBean.getChildComponentBean(this.id,true)!=null) break;//当前容器已经是它们的父容器了，则不用再向上找父<tabpanel/>了

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -21,8 +21,9 @@ package com.wabacus.config.database.type;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
@@ -45,13 +46,13 @@ public class SQLSERVER2K5 extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(SQLSERVER2K5.class);
 
-    public String constructSplitPageSql(SqlBean sbean)
+    public String constructSplitPageSql(ReportDataSetBean svbean)
     {
-        String sql=sbean.getSqlWithoutOrderby();
-        String orderby=sbean.getOrderby();
+        String sql=svbean.getSqlWithoutOrderby();
+        String orderby=svbean.getOrderby();
         if(orderby==null||orderby.trim().equals("")||sql==null||sql.indexOf("%orderby%")<=0)
         {
-            throw new WabacusConfigLoadingException("配置的SQL语句："+sbean.getValue()+"没有order by子句，无法在sqlserver2005数据库中进行分页");
+            throw new WabacusConfigLoadingException("配置的SQL语句："+svbean.getValue()+"没有order by子句，无法在sqlserver2005数据库中进行分页");
         }
         sql=Tools.replaceAll(sql,"%orderby%","");
         boolean hasFilterCondition=false;
@@ -69,10 +70,10 @@ public class SQLSERVER2K5 extends AbsDatabaseType
         return sql;
     }
 
-    public String constructSplitPageSql(SqlBean sbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
     {
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(sbean.getReportBean(),dynorderby);
-        String sql=sbean.getSqlWithoutOrderby();
+        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
+        String sql=svbean.getSqlWithoutOrderby();
         sql=Tools.replaceAll(sql,"%orderby%","");
         boolean hasFilterCondition=false;
         if(sql.indexOf(Consts_Private.PLACEHODER_FILTERCONDITION)>0)
@@ -91,15 +92,26 @@ public class SQLSERVER2K5 extends AbsDatabaseType
 
     private String removeOuterWrap(String sql)
     {
-        int idxprex=sql.indexOf(SqlBean.sqlprex);
-        int idxpostsuffix=sql.indexOf(SqlBean.sqlsuffix);
+        int idxprex=sql.indexOf(ReportDataSetBean.sqlprex);
+        int idxpostsuffix=sql.indexOf(ReportDataSetBean.sqlsuffix);
         if(idxprex==0&&idxpostsuffix>0)
         {
-            sql=sql.substring(SqlBean.sqlprex.length(),idxpostsuffix);
+            sql=sql.substring(ReportDataSetBean.sqlprex.length(),idxpostsuffix);
         }
         return sql;
     }
 
+    public String getSequenceValueByName(String sequencename)
+    {
+        log.warn("SqlServer数据库不支持序列的配置");
+        return "";
+    }
+    
+    public String getSequenceValueSql(String sequencename)
+    {
+       throw new WabacusRuntimeException("SqlServer数据库不支持序列的配置");
+    }
+    
     public IDataType getWabacusDataTypeByColumnType(String columntype)
     {
         if(columntype==null||columntype.trim().equals("")) return null;

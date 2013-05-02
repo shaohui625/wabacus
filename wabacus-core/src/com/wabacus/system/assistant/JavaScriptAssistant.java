@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -91,7 +91,7 @@ public class JavaScriptAssistant
         scriptBuf.append("          for(var k=0,len=trChilds.length;k<len;k++){");//从上到下循环所有<tr/>对象，找出第一条记录的<tr/>，将它选中，并刷新从报表(之所以要循环，是因为要去掉报表头部的<tr/>)
         scriptBuf.append("              trObjTmp=trChilds[k];");
         scriptBuf.append("              if(!isListReportDataTrObj(trObjTmp)){continue;}");
-        scriptBuf.append("              var trtype=trObjTmp.getAttribute('EDIT_TYPE');if(trtype==null||trtype!='add'){trObj=trObjTmp;break;}");//不是新增的行
+        scriptBuf.append("              var trtype=trObjTmp.getAttribute('EDIT_TYPE');if(trtype==null||trtype!='add'){trObj=trObjTmp;break;}");
         scriptBuf.append("          }");
         scriptBuf.append("          if(trObj!=null){");
         AbsListReportBean alrbean=(AbsListReportBean)rbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
@@ -132,9 +132,9 @@ public class JavaScriptAssistant
     private String refreshAllSlaveReports(ReportBean rbean)
     {
         StringBuffer scriptBuf=new StringBuffer();
-        scriptBuf.append("if(!shouldRefreshSlaveReportsForThisRow(trObj)) return false;");//如果当前行已经是显示从报表数据的行对象（即当前从报表数据就对应此行），则不用再去刷新从报表数据
+        scriptBuf.append("if(!shouldRefreshSlaveReportsForThisRow(trObj)) return false;");
         scriptBuf.append("var linkparams=getRefreshSlaveReportsHrefParams(trObj);");
-        scriptBuf.append("if(linkparams==null||linkparams==''){wx_alert('没有取到刷新从报表数据的动态参数，刷新失败');return false;}");
+        scriptBuf.append("if(linkparams==null||linkparams==''){wx_warn('没有取到刷新从报表数据的动态参数，刷新失败');return false;}");
         scriptBuf.append("var serverurl='"+Config.showreport_onpage_url+"&'+linkparams+'&PAGEID='+pageid;");
         scriptBuf.append("var staticlinkparams;");
         for(Entry<String,Map<String,String>> reportEntries:rbean.getMDependChilds().entrySet())
@@ -155,7 +155,7 @@ public class JavaScriptAssistant
             {
                 throw new WabacusConfigLoadingException("为报表"+rbean.getPath()+"生成刷新从报表数据的javascript函数失败，没有取到"+slaveid+"对应的从报表");
             }
-            scriptBuf.append("refreshComponent(serverurl+'&SLAVE_REPORTID="+slaveid+"'+staticlinkparams);");
+            scriptBuf.append("refreshComponent(serverurl+'&WX_ISREFRESH_BY_MASTER=true&SLAVE_REPORTID="+slaveid+"'+staticlinkparams);");
         }
         return scriptBuf.toString();
     }
@@ -191,7 +191,7 @@ public class JavaScriptAssistant
                                 .append("staticlinkparams=staticlinkparams+'&"+paramEntry.getKey()+"='+encodeURIComponent('"+paramEntry.getValue()+"');");
                     }
                 }
-                scriptBuf.append("refreshComponent(serverurl+'&"+slaveidTmp+"_PARENTREPORT_NODATA=true&SLAVE_REPORTID="+slaveidTmp+"'+staticlinkparams);");//以不显示数据的模式刷新从报表的显示
+                scriptBuf.append("refreshComponent(serverurl+'&WX_ISREFRESH_BY_MASTER=true&"+slaveidTmp+"_PARENTREPORT_NODATA=true&SLAVE_REPORTID="+slaveidTmp+"'+staticlinkparams);");
             }
             if(rbeanTmp.getMDependChilds()!=null) scriptBuf.append(hideAllSlaveReports(rbeanTmp,mydisplayWhenNoData));
         }
@@ -240,7 +240,7 @@ public class JavaScriptAssistant
         resultBuf.append("for(var i=0,len=fontChilds.length;i<len;i=i+1){if(fontChilds[i]==null) continue;");
         resultBuf.append("boxObj=fontChilds[i];");//在这种报表类型中，传入客户端校验函数的输入框对象不是真正的输入框对象，而是其所在的<font/>对象
         resultBuf.append("value_name=boxObj.getAttribute('value_name');if(value_name==null||value_name=='') continue;");
-        resultBuf.append("boxValue=getInputboxValueByParentFont(boxObj);");//从<font/>中获取到此输入框的值
+        resultBuf.append("boxValue=getColConditionValueByParentElementObj(boxObj);");//从<font/>中获取到此输入框的值
         resultBuf.append("if(boxValue==null) boxValue='';");
         List<SubmitFunctionParamBean> lstValidateSearchParams=new ArrayList<SubmitFunctionParamBean>();
         boolean hasValidateCondition=false;
@@ -277,7 +277,7 @@ public class JavaScriptAssistant
     {
         if(!cbean.isConditionWithInputbox()) return "";
         AbsInputBox inputbox=cbean.getInputbox();
-        if(inputbox.getJsvalidate()==null||inputbox.getJsvalidate().trim().equals("")) return "";//没有配置客户端校验
+        if(inputbox.getJsvalidate()==null||inputbox.getJsvalidate().trim().equals("")) return "";
         List<String> lstJs=Tools.parseStringToList(inputbox.getJsvalidate().trim(),',','\"');
         StringBuffer labelScriptBuf=new StringBuffer();
         List<SubmitFunctionParamBean> lstLabelParams=new ArrayList<SubmitFunctionParamBean>();
@@ -403,14 +403,14 @@ public class JavaScriptAssistant
                 if(sfpbean!=null)
                 {
                     scriptBuffer.append(errormsg+"=").append(errormsg).append(".replace(").append("/%").append(ownerBean.getInputBoxId()).append(
-                            "_value%/g,").append("boxValue);");//将出错提示中当前输入框数据的占位符替换成真正数据
+                            "_value%/g,").append("boxValue);");
                 }
                 if(onblur)
                 {
                     scriptBuffer.append("boxObj.errorPromptObj.show("+errormsg+");");
                 }else
                 {
-                    scriptBuffer.append("wx_alert("+errormsg+");");
+                    scriptBuffer.append("wx_warn("+errormsg+");");
                 }
             }
             scriptBuffer.append("return false;"+"}");

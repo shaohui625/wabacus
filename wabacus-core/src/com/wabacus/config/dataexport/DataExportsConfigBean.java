@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -50,7 +50,7 @@ public class DataExportsConfigBean implements Cloneable
 
     private Map<String,AbsDataExportBean> mDataExportBeans;
 
-    private IComponentConfigBean owner;//此数据导出所属的组件对象
+    private IComponentConfigBean owner;
 
     public int getBatchselectcount()
     {

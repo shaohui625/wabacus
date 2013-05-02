@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -24,6 +24,8 @@ public class RowDataByInterceptor
     private String dynTrStyleproperty;//显示当前行时的<tr/>样式字符串，比如设置为 bgcolor='red' height='30px'。这样显示当前行的<tr/>时就会有<tr bgcolor='red' height='30px'.../>
     
     private boolean shouldDisplayThisRow=true;
+    
+    private boolean readonly;
 
     public String getInsertDisplayRowHtml()
     {
@@ -53,6 +55,16 @@ public class RowDataByInterceptor
     public void setShouldDisplayThisRow(boolean shouldDisplayThisRow)
     {
         this.shouldDisplayThisRow=shouldDisplayThisRow;
-    }    
+    }
+
+    public boolean isReadonly()
+    {
+        return readonly;
+    }
+
+    public void setReadonly(boolean readonly)
+    {
+        this.readonly=readonly;
+    }   
 }
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -45,10 +45,6 @@ public class SaveButton extends AbsEditableReportButton
         paramsBuf.append("{pageid:'").append(ccbean.getPageBean().getId()).append("'");
         EditableReportSqlBean ersqlbean=(EditableReportSqlBean)rbean.getSbean().getExtendConfigDataForReportType(EditableReportSqlBean.class);
         if(ersqlbean==null) return "";
-        if(ersqlbean.getTransactionLever()!=null&&!ersqlbean.getTransactionLever().trim().equals(""))
-        {
-            paramsBuf.append(",transaction:'").append(ersqlbean.getTransactionLever()).append("'");
-        }
         paramsBuf.append(",savingReportIds:[");
         paramsBuf.append("{reportid:'").append(ccbean.getId()).append("',updatetype:'save'}");
         List<ReportBean> lstBindedReportBeans=(List<ReportBean>)rrequest.getAttribute(ccbean.getId()+"_DYN_BINDED_REPORTS");

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -21,7 +21,8 @@ package com.wabacus.config.database.type;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
@@ -43,18 +44,18 @@ public class MySql extends AbsDatabaseType
 {
     private final static Log log=LogFactory.getLog(MySql.class);
 
-    public String constructSplitPageSql(SqlBean sbean)
+    public String constructSplitPageSql(ReportDataSetBean svbean)
     {
         
-        String sql=sbean.getSqlWithoutOrderby();
+        String sql=svbean.getSqlWithoutOrderby();
         if(sql.indexOf("%orderby%")>0)
         {
-            sql=Tools.replaceAll(sql,"%orderby%"," order by "+sbean.getOrderby());
+            sql=Tools.replaceAll(sql,"%orderby%"," order by "+svbean.getOrderby());
         }
         
         
         
-        //            throw new ReportFilesLoadingException("配置的sql语句：" + sql + "不合法，左右括号没有配对");
+        
         
         
         
@@ -64,7 +65,7 @@ public class MySql extends AbsDatabaseType
         
         
         
-        //            alrsbean.setSql(sql.substring(0,idxOrd) + " %orderby% " + sql.substring(idxLi));
+        
         
         /**alrsbean.setSqlCount("select count(*) from ("+sql+") as jd_temp_tblcnt ");*/
         /**alrsbean.setFilterdata_sql("select distinct %FILTERCOLUMN%  from ("+sql
@@ -75,11 +76,11 @@ public class MySql extends AbsDatabaseType
         return sql;
     }
 
-    public String constructSplitPageSql(SqlBean sbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
     {
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(sbean.getReportBean(),dynorderby);
+        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
         dynorderby=" order by "+dynorderby;
-        String sql=sbean.getSqlWithoutOrderby();
+        String sql=svbean.getSqlWithoutOrderby();
         if(sql.indexOf("%orderby%")<0)
         {
             sql=sql+dynorderby;
@@ -94,6 +95,17 @@ public class MySql extends AbsDatabaseType
         return sql;
     }
 
+    public String getSequenceValueByName(String sequencename)
+    {
+        log.warn("MySql数据库不支持序列的配置");
+        return "";
+    }
+
+    public String getSequenceValueSql(String sequencename)
+    {
+       throw new WabacusRuntimeException("MySql数据库不支持序列");
+    }
+    
     public IDataType getWabacusDataTypeByColumnType(String columntype)
     {
         if(columntype==null||columntype.trim().equals("")) return null;

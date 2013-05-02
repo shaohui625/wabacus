@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -124,7 +124,7 @@ public abstract class AbsFileUpload
         {
             return "没有提供数据导入功能，不能上传数据导入文件";
         }
-        String filepath=lstDiBeans.get(0).getFilepath();//同一次上传的所有数据导入项的上传文件路径必须是一致的，所以这里只取第一个。
+        String filepath=lstDiBeans.get(0).getFilepath();
         File f=new File(Tools.standardFilePath(filepath));
         if(!f.exists()||!f.isDirectory())
         {
@@ -169,7 +169,7 @@ public abstract class AbsFileUpload
     
     
     
-    //        String fileNameTmp;
+    
     
     
     //        {//将每个上传的数据文件写入相应目录中
@@ -181,7 +181,7 @@ public abstract class AbsFileUpload
     
     
     //                    if(lstTmp.contains(filepath)) continue;//已经处理了此文件及路径
-    //                    mUploadFileItems.put(new File(filepath),entryTmp.getValue());
+    
     
     
     
@@ -223,7 +223,7 @@ public abstract class AbsFileUpload
             if(lstTmpFile.size()==0)
             {
                 log.warn("本次上传没有上传与数据导入项"+dibeanTmp.getReskey()+"匹配的数据文件");
-                //                return "上传数据文件失败，没有上传"+dibeanTmp.getFilename()+"匹配的数据文件";
+                
             }else if(lstTmpFile.size()>1)
             {
                 log.warn("数据文件上传失败，数据导入项"+dibeanTmp.getReskey()+"与本次上传的多个数据文件名"+lstTmpFile+"匹配");

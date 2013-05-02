@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -19,7 +19,9 @@
 package com.wabacus.system.component.application.report.abstractreport.configbean;
 
 import com.wabacus.config.component.application.report.AbsConfigBean;
+import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
+import com.wabacus.system.ReportRequest;
 
 public class AbsListReportColBean extends AbsExtendConfigBean
 {
@@ -36,7 +38,7 @@ public class AbsListReportColBean extends AbsExtendConfigBean
 //    private String curvelabelup;//如果当前列标题是显示成折线，则此处存放当前列的折线上面的标题。
 
 //    private String curvelabeldown;//如果当前列标题是显示成折线，则此处存放当前列的折线上面的标题。
-//    
+
 //    private String curvecolor;//折线标题中折线的颜色
 
 //    private boolean isCurveLabel;//当前列是否参与了显示折线标题
@@ -110,12 +112,7 @@ public class AbsListReportColBean extends AbsExtendConfigBean
 
 
 
-//    {
 
-
-
-
-//    {
 
 
 
@@ -125,12 +122,7 @@ public class AbsListReportColBean extends AbsExtendConfigBean
 
 
 
-//    {
 
-
-
-
-//    {
 
 
 
@@ -140,18 +132,37 @@ public class AbsListReportColBean extends AbsExtendConfigBean
 
 
 
+
+
+
+
+
 //    {
 
 
 
-    public boolean isFixedCol()
+
+
+
+
+
+    public boolean isFixedCol(ReportRequest rrequest)
     {
-        return isFixedCol;
+        if(rrequest==null) return isFixedCol;
+        Object objVal=rrequest.getAttribute(this.getOwner().getReportBean().getId(),((ColBean)this.getOwner()).getColid()+"_IS_FIXED");
+        if(objVal==null) return this.isFixedCol;
+        return ((Boolean)objVal).booleanValue();
     }
 
-    public void setFixedCol(boolean isFixedCol)
+    public void setFixedCol(ReportRequest rrequest,boolean isFixedCol)
     {
-        this.isFixedCol=isFixedCol;
+        if(rrequest==null)
+        {
+            this.isFixedCol=isFixedCol;
+        }else
+        {
+            rrequest.setAttribute(this.getOwner().getReportBean().getId(),((ColBean)this.getOwner()).getColid()+"_IS_FIXED",isFixedCol);
+        }
     }
 
     public boolean isRoworderValue()
@@ -187,8 +198,8 @@ public class AbsListReportColBean extends AbsExtendConfigBean
     public boolean isDragable(AbsListReportDisplayBean alrdbean)
     {
         if(this.isFixedCol) return false;
-        if(alrdbean==null||alrdbean.getRowgrouptype()<=0||alrdbean.getRowGroupColsNum()<=0) return true;
-        if(this.isRowgroup()) return false;//当前列参与了行分组或树形分组
+        if(alrdbean==null||alrdbean.getRowgrouptype()<=0||alrdbean.getRowGroupColsNum()<=0) return true;//不是行分组或树形分组报表
+        if(this.isRowgroup()) return false;
         return true;
     }
     
@@ -203,7 +214,7 @@ public class AbsListReportColBean extends AbsExtendConfigBean
     {
         if(this.slaveReportParamName!=null&&!this.slaveReportParamName.trim().equals("")) return true;
         if(this.isRowSelectValue) return true;
-        if(this.isRoworderValue) return true;//当前在需要在行排序时用到
+        if(this.isRoworderValue) return true;
         
         return false;
     }

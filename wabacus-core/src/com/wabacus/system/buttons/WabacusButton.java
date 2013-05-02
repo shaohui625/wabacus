@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -59,13 +59,10 @@ public class WabacusButton extends AbsButtonType
             {
                 if(clickevent==null) clickevent="";
                 log.warn("为组件"+this.ccbean.getPath()+"配置的按钮："+this.name+"没有配置点击事件");
-            }else
-            {
-                clickevent="try{"+clickevent+"}catch(e){logErrorsAsJsFileLoad(e);}";
             }
             mystyleproperty=this.styleproperty;
         }else
-        {//禁用
+        {
             if(this.disabledstyleproperty!=null&&!this.disabledstyleproperty.trim().equals(""))
             {
                 mystyleproperty=disabledstyleproperty;
@@ -81,30 +78,36 @@ public class WabacusButton extends AbsButtonType
             labeltemp=Config.getInstance().getResourceString(rrequest,ccbean.getPageBean(),labeltemp,false);
         }
         labeltemp=rrequest.getI18NStringValue(labeltemp);
-        if(Tools.isDefineKey("image",labeltemp))
+        if(Tools.isDefineKey("image",labeltemp)||Tools.isDefineKey("button",labeltemp))
         {
             if(!isDisabled)
             {
-                resultBuf.append("<a  onMouseOver=\"this.style.cursor='pointer'\" ");
-                resultBuf.append(" onclick=\""+clickevent+"\">");
+                resultBuf.append("<span  onMouseOver=\"this.style.cursor='pointer'\" ");
+                resultBuf.append(" onclick=\""+getRealClickEvent(rrequest,clickevent)+"\">");
             }
-            labeltemp=Tools.getRealKeyByDefine("image",labeltemp);
-            if(!labeltemp.startsWith(Config.webroot)&&!labeltemp.toLowerCase().startsWith("http://"))
-            {//如果配置的是相对路径
-                labeltemp=Config.webroot+"/"+labeltemp;
-                labeltemp=Tools.replaceAll(labeltemp,"//","/");
+            if(Tools.isDefineKey("image",labeltemp))
+            {
+                labeltemp=Tools.getRealKeyByDefine("image",labeltemp);
+                if(!labeltemp.startsWith(Config.webroot)&&!labeltemp.toLowerCase().startsWith("http://"))
+                {//如果配置的是相对路径
+                    labeltemp=Config.webroot+"/"+labeltemp;
+                    labeltemp=Tools.replaceAll(labeltemp,"//","/");
+                }
+                resultBuf.append("<img src=\"").append(labeltemp).append("\" ").append(mystyleproperty);
+                resultBuf.append(" align=\"absMiddle\" border=\"0\">");
+            }else
+            {
+                resultBuf.append(Tools.getRealKeyByDefine("button",labeltemp));
             }
-            resultBuf.append("<img src=\"").append(labeltemp).append("\" ").append(mystyleproperty);
-            resultBuf.append(" align=\"absMiddle\" border=\"0\">");
             if(!isDisabled)
             {
-                resultBuf.append("</a>");
+                resultBuf.append("</span>");
             }
         }else
         {
             resultBuf.append("<input type=\"button\" value=\""+labeltemp+"\" ");
             resultBuf.append(mystyleproperty);
-            resultBuf.append(" onclick=\""+clickevent+"\"").append(">");
+            resultBuf.append(" onclick=\""+getRealClickEvent(rrequest,clickevent)+"\"").append(">");
         }
         return resultBuf.toString();
     }
@@ -131,24 +134,21 @@ public class WabacusButton extends AbsButtonType
             {
                 if(clickevent==null) clickevent="";
                 log.warn("为组件"+this.ccbean+"配置的按钮："+this.name+"没有配置点击事件");
-            }else
-            {
-                clickevent="try{"+clickevent+"}catch(e){logErrorsAsJsFileLoad(e);}";
             }
-            resultBuf.append("<a  onMouseOver=\"this.style.cursor='pointer'\" ");
-            resultBuf.append(" onclick=\""+clickevent+"\">");
+            resultBuf.append("<span  onMouseOver=\"this.style.cursor='pointer'\" ");
+            resultBuf.append(" onclick=\""+getRealClickEvent(rrequest,clickevent)+"\">");
         }
         resultBuf.append(button);
         if(!isDisabled)
         {
-            resultBuf.append("</a>");
+            resultBuf.append("</span>");
         }
         return resultBuf.toString();
     }
     
     public String showMenu(ReportRequest rrequest,String dynclickevent)
     {
-        //if(shouldStopDisplayAsRefered(rrequest)) return "";
+        
         if(menulabel==null||menulabel.trim().equals("")) return "";
         if(!checkDisplayPermission(rrequest)) return "";
         String clickevent="";
@@ -166,21 +166,36 @@ public class WabacusButton extends AbsButtonType
             {
                 if(clickevent==null) clickevent="";
                 log.warn("为报表："+this.ccbean.getPath()+"配置的按钮："+this.name+"没有配置点击事件");
-            }else
-            {
-                clickevent="try{"+clickevent+"}catch(e){logErrorsAsJsFileLoad(e);}";
             }
             menuItemCls="contextmenuitems_enabled";
         }
         StringBuffer menuBuffer=new StringBuffer();
-        menuBuffer.append("<DIV class=\"").append(menuItemCls).append("\" onclick=\"").append(clickevent).append("\">");
+        menuBuffer.append("<DIV class=\"").append(menuItemCls).append("\" onclick=\"").append(getRealClickEvent(rrequest,clickevent)).append("\">");
         menuBuffer.append(rrequest.getI18NStringValue(this.menulabel));
         menuBuffer.append("</DIV>");
         return menuBuffer.toString();
     }
     
+    private String getRealClickEvent(ReportRequest rrequest,String clickevent)
+    {
+        if(clickevent==null||clickevent.trim().equals("")) return "";
+        if(this.confirmessage!=null&&!this.confirmessage.trim().equals(""))
+        {
+            String realConfirmmess=rrequest.getI18NStringValue(this.confirmessage);
+            if(realConfirmmess!=null&&!realConfirmmess.trim().equals(""))
+            {
+                if(!clickevent.trim().endsWith(";")) clickevent=clickevent+";";
+                String realconfirmTitle=rrequest.getI18NStringValue(this.confirmtitle);
+                realconfirmTitle=realconfirmTitle==null?"":realconfirmTitle.trim();
+                return "wx_confirm('"+realConfirmmess+"','"+realconfirmTitle+"',null,null,function(input){if(wx_isOkConfirm(input)){try{"+clickevent
+                        +"}catch(e){logErrorsAsJsFileLoad(e);}}},"+this.cancelmethod+");";
+            }
+        }
+        return "try{"+clickevent+"}catch(e){logErrorsAsJsFileLoad(e);}";
+    }
+    
+//    private boolean shouldStopDisplayAsRefered(ReportRequest rrequest)
 
-//    {
 
 //        {//当前按钮被容器引用显示，且不在原位置显示
 
@@ -189,11 +204,11 @@ public class WabacusButton extends AbsButtonType
 //                return false;//如果当前不是在源报表上显示，则显示出来
 
 
-//        }else
 
 
 
 
+//    }
     
     public void loadExtendConfig(XmlElementBean eleButtonBean)
     {

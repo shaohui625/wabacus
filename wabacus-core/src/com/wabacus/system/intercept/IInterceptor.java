@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -21,46 +21,45 @@ package com.wabacus.system.intercept;
 import java.util.List;
 import java.util.Map;
 
-import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 import com.wabacus.util.Consts;
 
 public interface IInterceptor
 {
-    public final int WX_TERMINATE=Consts.RETURNVALUE_TERMINAGE;
+    public final int WX_RETURNVAL_SUCCESS=2;
 
-    public final int WX_IGNORE=Consts.RETURNVALUE_IGNORE;
+    public final int WX_RETURNVAL_SUCCESS_NOTREFRESH=1;
 
-    public final int WX_CONTINUE=Consts.RETURNVALUE_CONTINUE;
+    public final int WX_RETURNVAL_SKIP=0;
+
+    public final int WX_RETURNVAL_TERMINATE=-1;
 
     public final int WX_INSERT=Consts.UPDATETYPE_INSERT;
 
-    public final int WX_UPDATE=Consts.UPDATETYPE_UPDATE;//修改记录的操作
+    public final int WX_UPDATE=Consts.UPDATETYPE_UPDATE;
 
     public final int WX_DELETE=Consts.UPDATETYPE_DELETE;
 
     public void doStart(ReportRequest rrequest,ReportBean rbean);
 
-    public int beforeSave(ReportRequest rrequest,ReportBean rbean);
+    public int doSave(ReportRequest rrequest,ReportBean rbean,AbsEditableReportEditDataBean editbean);
 
-    public int beforeSavePerRow(ReportRequest rrequest,ReportBean rbean,Map mRowData,Map mExternalValues,int updatetype);
+    public int doSavePerRow(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues,
+            AbsEditableReportEditDataBean editbean);
 
-    public int beforeSavePerSql(ReportRequest rrequest,ReportBean rbean,Map mRowData,Map mExternalValues,String sql);
-
-    public int afterSavePerSql(ReportRequest rrequest,ReportBean rbean,Map mRowData,Map mExternalValues,String sql);
-
-    public int afterSavePerRow(ReportRequest rrequest,ReportBean rbean,Map mRowData,Map mExternalValues,int updatetype);
-
-    public void afterSave(ReportRequest rrequest,ReportBean rbean);
+    public int doSavePerAction(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues,
+            AbsEditActionBean actionbean,AbsEditableReportEditDataBean editbean);
 
     public Object beforeLoadData(ReportRequest rrequest,ReportBean rbean,Object typeObj,String sql);
 
     public Object afterLoadData(ReportRequest rrequest,ReportBean rbean,Object typeObj,Object dataObj);
 
-    public RowDataByInterceptor beforeDisplayReportDataPerRow(AbsReportType reportTypeObj,ReportRequest rrequest,int rowindex,int colspans,List lstColBeans);
+    public RowDataByInterceptor beforeDisplayReportDataPerRow(AbsReportType reportTypeObj,ReportRequest rrequest,int rowindex,int colspans,
+            List lstColBeans);
 
     public ColDataByInterceptor beforeDisplayReportDataPerCol(AbsReportType reportTypeObj,ReportRequest rrequest,Object displayColBean,int rowindex,
             String value);

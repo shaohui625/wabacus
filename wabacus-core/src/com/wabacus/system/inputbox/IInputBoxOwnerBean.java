@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -19,7 +19,6 @@
 package com.wabacus.system.inputbox;
 
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.system.ReportRequest;
 
 public interface IInputBoxOwnerBean
 {
@@ -28,8 +27,6 @@ public interface IInputBoxOwnerBean
     public ReportBean getReportBean();
 
     public AbsInputBox getSiblingInputBoxByOwnerId(String ownerid);
-
-    public String getInputBoxValue(ReportRequest rrequest,int rowidx);
 
     public String getLabel();
 }

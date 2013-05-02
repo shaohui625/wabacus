@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -41,7 +41,7 @@ public class Consts_Private
 
     public final static String NON_FROMDB="{non-fromdb}";
 
-    public final static String SEQUENCE="{sequence}";//对于数据自动列表报表，当前列用于显示序列，此时格式为{sequence:startnum}，其中startnum表示起始序列号。此时可以不配置property
+    public final static String SEQUENCE="{sequence}";
 
     public final static String COL_ROWSELECT="{col-rowselect}";
     
@@ -61,7 +61,7 @@ public class Consts_Private
 
     public final static String SEARCH_BUTTON="search";
 
-    public final static String ADD_BUTTON="add";//添加按钮
+    public final static String ADD_BUTTON="add";
 
     public final static String MODIFY_BUTTON="modify";
 
@@ -79,7 +79,7 @@ public class Consts_Private
 
     
     
-    //    public final static String TAGNAME_REPORT="report";
+    
     
     public final static String TAGNAME_DATA="data";
 
@@ -101,7 +101,6 @@ public class Consts_Private
     
     public final static String TAGNAME_FILEUPLOAD="fileupload";
     
-    public final static String TAGNAME_CONTEXT="context";
     public final static String TAGNAME_OUTPUT="output";
     
     public final static String NAVIGATE_FIRST="first";
@@ -122,7 +121,7 @@ public class Consts_Private
 
     public final static String NAVIGATE_PAGECOUNT="pagecount";
 
-    public final static String DATAIMPORT_LOCKFILENAME="dataimport.lck";//数据导入的文件锁名
+    public final static String DATAIMPORT_LOCKFILENAME="dataimport.lck";
     
     public final static String DATAIMPORTTYPE_OVERWRITE="overwrite";
 
@@ -148,7 +147,7 @@ public class Consts_Private
 
     public final static String FILEUPLOADTYPE_FILETAG="filetag";
 
-    public final static String FILEUPLOADTYPE_DATAIMPORTREPORT="dataimportreport";//为某个报表配置的数据导入功能的数据文件上传
+    public final static String FILEUPLOADTYPE_DATAIMPORTREPORT="dataimportreport";
 
     public final static String FILEUPLOADTYPE_DATAIMPORTTAG="dataimporttag";
     
@@ -193,7 +192,7 @@ public class Consts_Private
     public final static String REPORT_TEMPLATE_NONE="none";
     
     
-    public final static String REPORT_FAMILY_LIST="list";//所有只读的数据列表报表，包括simplelist、list、crosslist等报表类型
+    public final static String REPORT_FAMILY_LIST="list";
 
     public final static String REPORT_FAMILY_DETAIL="detail";
 
@@ -236,7 +235,7 @@ public class Consts_Private
         lstAllReportBorderTypes.add(REPORT_BORDER_ALL);
     } 
     
-    public final static String SCROLLSTYLE_NORMAL="normal";//普通滚动条
+    public final static String SCROLLSTYLE_NORMAL="normal";
     
     public final static String SCROLLSTYLE_IMAGE="image";
     

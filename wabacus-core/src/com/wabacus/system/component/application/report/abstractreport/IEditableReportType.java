@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -18,14 +18,23 @@
  */
 package com.wabacus.system.component.application.report.abstractreport;
 
-import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.system.buttons.AbsButtonType;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 
 public interface IEditableReportType
 {
+    public int IS_ADD_DATA=1;
+    
+    public int IS_UPDATE_DATA=2;
+    
+    public int IS_ADD_UPDATE_DATA=3;
+    
+    public int IS_DELETE_DATA=4;
+    
     public boolean needCertainTypeButton(AbsButtonType buttonType);
 
     public String getDefaultAccessMode();
@@ -34,7 +43,9 @@ public interface IEditableReportType
     
     public String getColOriginalValue(Object object,ColBean cbean);
 
-    public int[] doSaveAction(Connection conn) throws SQLException;
+    public int[] doSaveAction() throws SQLException;
     
     public void setNewAccessMode(String newaccessmode);
+
+    public void collectEditActionGroupBeans(List<EditActionGroupBean> lstAllEditActionGroupBeans);
 }

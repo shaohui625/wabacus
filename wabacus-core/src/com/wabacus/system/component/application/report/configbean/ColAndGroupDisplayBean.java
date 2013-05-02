@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -34,7 +34,7 @@ public class ColAndGroupDisplayBean
     
     private boolean isAlways;
     
-    private String title;//列标题
+    private String title;
     
     private int layer=0;
 

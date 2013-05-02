@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -94,7 +94,7 @@ public class HtmlTemplateApp extends AbsApplicationType
     {
         String parenttitle=htmlConfigBean.getParenttitle(rrequest);
         if(parenttitle==null) return "";
-        return parenttitle.trim();//这种组件没有title属性，所以不调用htmlConfigBean.getTitle(rrequest);
+        return parenttitle.trim();
     }
 
     protected String getComponentTypeName()

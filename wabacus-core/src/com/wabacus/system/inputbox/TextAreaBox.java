@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -29,15 +29,21 @@ public class TextAreaBox extends AbsInputBox
         super(typename);
     }
 
+    public String getInputboxInnerType()
+    {
+        return "textarea";
+    }
+    
     protected String doGetDisplayStringValue(ReportRequest rrequest,String value,String style_property,boolean isReadonly)
     {
         if(isReadonly) style_property=addReadonlyToStyleProperty1(style_property);
         StringBuffer resultBuf=new StringBuffer();
+        resultBuf.append(this.getBeforedescription(rrequest));
         String inputboxid=getInputBoxId(rrequest);
         resultBuf.append("<textarea typename='"+typename+"' name='"+inputboxid+"'  id='"+inputboxid+"' ");
         if(style_property!=null) resultBuf.append(" ").append(style_property);
         resultBuf.append(">").append(getInputBoxValue(rrequest,value)).append("</textarea>");
-        resultBuf.append(this.getDescription(rrequest));
+        resultBuf.append(this.getAfterdescription(rrequest));
         return resultBuf.toString();
     }
 
@@ -50,10 +56,11 @@ public class TextAreaBox extends AbsInputBox
         resultBuf.append("      textAreabox=document.createElement('textarea');");
         resultBuf.append("      textAreabox.className='cls-inputbox-textareabox2';textAreabox.setAttribute('typename','"+this.typename+"');");
         resultBuf.append("      textAreabox.setAttribute('id','WX_TEXTAREA_BOX');");
+        resultBuf.append("      textAreabox.setAttribute('isStoreOldValue','true');");
         resultBuf.append("      textAreabox.errorPromptObj=createJsValidateTipObj(textAreabox);");
         resultBuf.append("      document.body.appendChild(textAreabox);");
         resultBuf.append("  }");
-        String onblur2=Tools.replaceAll(onblur,"'\"+reportguid+\"'","reportguid");//因为这里不像别的输入框，这里是直接将onblur字符串直接做为一段javascript代码
+        String onblur2=Tools.replaceAll(onblur,"'\"+reportguid+\"'","reportguid");
         onblur2=Tools.replaceAll(onblur2,"'\"+reportfamily+\"'","reportfamily");
         onblur2=Tools.replaceAll(onblur2,"\"+fillmode+\"","fillmode");
         resultBuf.append("  textAreabox.onblur=function(){if(onblurmethod!=''){eval(onblurmethod);}"+onblur2+";};");
@@ -79,23 +86,30 @@ public class TextAreaBox extends AbsInputBox
     public String createGetValueByInputBoxObjJs()
     {
         StringBuffer sbuffer=new StringBuffer();
-        sbuffer.append("if(fillmode==2){");
+        sbuffer.append("if(fillmode==2){");//点击时填充
         sbuffer
                 .append("var textareaObj=document.getElementById('WX_TEXTAREA_BOX');value=textareaObj.value; label=textareaObj.value;textareaObj.style.display='none';");
-        sbuffer.append("}else if(fillmode==1){");//显示时即填充输入框
+        sbuffer.append("}else if(fillmode==1){");
         sbuffer.append("value=boxObj.value; label=boxObj.value;");
         sbuffer.append("}");
         return sbuffer.toString();
     }
 
+    protected void processStylePropertyAfterMerged(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
+    {
+        super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
+        this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,"isStoreOldValue=\"true\"  onfocus=\"try{storeInputboxOldValue('"
+                +this.getOwner().getReportBean().getGuid()+"',this);}catch(e){logErrorsAsJsFileLoad(e);}\"",1);
+    }
+    
+    protected void addJsValidateOnBlurEvent(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
+    {
+        if(this.fillmode==2) return;
+        super.addJsValidateOnBlurEvent(reportTypeObj,ownerbean);
+    }
+    
     protected String getDefaultStylePropertyForDisplayMode2()
     {
         return "";
-    }
-    
-    protected void processStylePropertyAfterMerged(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
-    {
-        if(this.fillmode==2) return;
-        super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
-    }
+    }    
 }

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.util.RegexTools;
@@ -102,7 +103,7 @@ public class FilePathAssistant
         File parentDirObj=new File(parentFilePath);
         if(!parentDirObj.exists()||!parentDirObj.isDirectory()) return;
         File[] childFiles=parentDirObj.listFiles(new FileFilter()
-        {// 自定义过滤规则 如果可以循环(包含子目录)
+        {
             public boolean accept(File file)
             {
                 if(file.isDirectory()) return recursive;
@@ -144,8 +145,17 @@ public class FilePathAssistant
             {
                 urlTmp=(URL)rootUrls.nextElement();
                 protocolTmp=urlTmp.getProtocol();
-                if("file".equals(protocolTmp))
-                {//是目录
+                if("vfs".equals(protocolTmp))
+                {//jboss的目录
+                    String filePath=URLDecoder.decode(urlTmp.getFile(),"UTF-8");
+                    int indexOf=filePath.indexOf("/WEB-INF");
+                    if(indexOf>0&&!new File(filePath).exists())
+                    {
+                        filePath=Config.webroot_abspath+filePath.substring(indexOf);
+                    }
+                    getFileFromClasspathDir(rootpath,filePath,regex,isRecursive,lstResults);
+                }else if("file".equals(protocolTmp))
+                {
                     String filePath=URLDecoder.decode(urlTmp.getFile(),"UTF-8");
                     getFileFromClasspathDir(rootpath,filePath,regex,isRecursive,lstResults);
                 }else if("jar".equals(protocolTmp))
@@ -155,13 +165,13 @@ public class FilePathAssistant
                     JarEntry jarEntryTmp;
                     while(entries.hasMoreElements())
                     {
-                        jarEntryTmp=entries.nextElement();// 获取jar里的一个实体 可以是目录 和一些jar包里的其他文件 如META-INF等文件 
+                        jarEntryTmp=entries.nextElement();
                         if(jarEntryTmp.isDirectory()) continue;
                         String name=jarEntryTmp.getName();
                         if(name.charAt(0)=='/') name=name.substring(1);// 如果是以/开头的
                         
                         if(isValidFileInJar(rootpath,name,isRecursive))
-                        {
+                        {//如果是根目录，或者不是根目录，且当前包在此目录中
                             String filenameTmp=name;
                             int idx=name.lastIndexOf('/');
                             if(idx>0) filenameTmp=filenameTmp.substring(idx+1).trim();
@@ -185,7 +195,7 @@ public class FilePathAssistant
         if(rootpath==null||rootpath.trim().equals(""))
         {
             if(recursive)
-            {//如果是递归获取根目录下面的文件，则无条件返回true
+            {
                 return true;
             }else
             {
@@ -212,7 +222,7 @@ public class FilePathAssistant
             public boolean accept(File file)
             {
                 if(file.isDirectory()) return recursive;
-                if(regex==null||regex.trim().equals("")||regex.trim().equals("*")) return true;//如果没有指定正则表达式，或指定为*，则匹配所有文件
+                if(regex==null||regex.trim().equals("")||regex.trim().equals("*")) return true;
                 return RegexTools.isMatch(file.getName(),regex);
             }
         });
@@ -222,7 +232,7 @@ public class FilePathAssistant
         for(File fileTmp:childFiles)
         {
             if(fileTmp.isDirectory())
-            {
+            {// 如果是目录 则继续扫描，这里不用考虑是否递归，因为在上面的listFiles()方法中已经考虑了
                 getFileFromClasspathDir(rootpackage+fileTmp.getName(),fileTmp.getAbsolutePath(),regex,recursive,lstResults);
             }else
             {

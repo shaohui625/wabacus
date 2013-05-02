@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -25,7 +25,7 @@ public interface IReportType extends IComponentType
 {
     public void init();
 
-    public void loadReportData();
+    public void loadReportData(boolean shouldInvokePostaction);
 
     public String showHeader();
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -67,7 +67,7 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
     
     protected String title;
     
-    protected Map<String,String> mDynTitleParts;//标题title中的动态部分，key为此动态值的在title中的占位符，值为request{xxx}、session{key}、url{key}等等形式，用于运行时得到真正值
+    protected Map<String,String> mDynTitleParts;
 
     protected String titlealign="left";
     
@@ -95,7 +95,7 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
     
     protected AbsPrintProviderConfigBean printBean;
     
-    private PDFExportBean pdfPrintBean;//PDF打印配置，与pdf导出配置完全一样，但与其它打印方式不同，所以单独做为一个成员变量存放
+    private PDFExportBean pdfPrintBean;
     
     protected List<OnloadMethodBean> lstOnloadMethods;
     
@@ -499,8 +499,14 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
         if(this.dataExportsBean!=null) this.dataExportsBean.doPostLoad();
         if(this.printBean!=null) this.printBean.doPostLoad();
         if(pdfPrintBean!=null) pdfPrintBean.doPostLoad();
+        if(this.buttonsBean!=null) this.buttonsBean.doPostLoad();
     }
 
+    public void doPostLoadFinally()
+    {
+        
+    }
+    
     public IComponentConfigBean clone(AbsContainerConfigBean parentContainer)
     {
         try

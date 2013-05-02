@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -64,7 +64,7 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
 
 //            URL baseURL=context.getResource("/");
 
-//        }catch(MalformedURLException e)
+
 
 
 
@@ -125,7 +125,7 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
             {
                 WabacusFacade.downloadFile(request,response);
             }else if(action.equalsIgnoreCase("GetFilterDataList"))
-            {//获取某个字段的所有数据列表
+            {
                 response.reset();
                 response.setContentType("text/xml;charset="+Config.encode);
                 StringBuffer sbuffer=new StringBuffer("<?xml version=\"1.0\" encoding=\""+Config.encode+"\"?><items>");

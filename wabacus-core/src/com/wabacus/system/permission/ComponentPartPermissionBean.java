@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -77,7 +77,7 @@ public class ComponentPartPermissionBean extends AbsPermissionBean
                 return Consts.CHKPERMISSION_NO;
             }
         }else
-        {//当前需要判断子元素的子元素权限
+        {
             ComponentPartPermissionBean cpauthBean=this.getChildPermissionBean(partid,false);
             if(cpauthBean==null)
             {

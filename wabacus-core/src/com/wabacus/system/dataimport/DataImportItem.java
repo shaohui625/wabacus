@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -136,7 +136,7 @@ public class DataImportItem
             conn=Config.getInstance().getDataSource(configBean.getDatasource()).getConnection();
             AbsDatabaseType dbtype=Config.getInstance().getDataSource(configBean.getDatasource()).getDbType();
             if(dynimportype==null||dynimportype.trim().equals("")||dynimportype.trim().equals(configBean.getImporttype()))
-            {//如果没有动态指定导入类型，或者动态指定的与静态配置的一致
+            {
                 doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
             }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_APPEND)
                     ||dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_OVERWRITE))
@@ -223,7 +223,7 @@ public class DataImportItem
                 boolean matchFileIndex=configBean.getColMapBean().getFileMapType().equals("index");
                 List<String> lstColNames=getLstColNames(matchFileIndex);
                 this.lstColNamesTrace=lstColNames;
-                boolean hasUnCommitData=false;//是否存在没有提交的数据
+                boolean hasUnCommitData=false;
                 List lstDataColValuesPerRow;
                 Map<String,Object> mDataColValues=null;
                 int i=fileProcessor.getStartrecordindex();
@@ -306,7 +306,7 @@ public class DataImportItem
                 DataImportSqlBean disqlbeanDelete=null;
                 DataImportSqlBean disqlbeanInsert=null;
                 if(lstDisqlbean.size()==2)
-                {//配置了keyfields，需要先删除旧数据
+                {
                     disqlbeanDelete=lstDisqlbean.get(0);
                     log.debug(disqlbeanDelete.getSql());
                     pstmtDelete=conn.prepareStatement(disqlbeanDelete.getSql());
@@ -380,7 +380,7 @@ public class DataImportItem
             }
         }
         if(hasUnCommitData)
-        {//上面循环中还存在没有提交的pstmt
+        {
             if(pstmtDelete!=null)
             {
                 this.errorSqlTrace=disqlbeanDelete.getSql();
@@ -524,7 +524,7 @@ public class DataImportItem
                 {
                     ((AbsDateTimeType)lstColType.get(i)).setPreparedStatementValue(i+1,(Date)objDataVal,pstmt);
                 }else
-                {//当作字符串处理
+                {
                     varcharTypeObj.setPreparedStatementValue(i+1,String.valueOf(objDataVal),pstmt,dbtype);
                 }
             }else

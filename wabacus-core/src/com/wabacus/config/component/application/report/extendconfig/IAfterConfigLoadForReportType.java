@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -23,4 +23,6 @@ import com.wabacus.config.component.application.report.ReportBean;
 public interface IAfterConfigLoadForReportType
 {
     public int doPostLoad(ReportBean reportbean);
+    
+    public int doPostLoadFinally(ReportBean reportbean);
 }

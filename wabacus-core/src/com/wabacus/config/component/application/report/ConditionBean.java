@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -57,7 +57,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
 
     private String name="";
 
-    private String label="";//这个条件输入框的显示标签
+    private String label="";
 
     private int labelstyle=1;
 
@@ -76,7 +76,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
 
     private boolean br;
 
-    private int left=3;//距离左边元素是一个像素
+    private int left=3;
     
     private int right=0;
 
@@ -103,6 +103,8 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
     
     private List<String> lstChildDisplayOrder;//当前查询条件如果要显示这几个子元素时，它们的显示顺序，由它们配置在<condition/>中的次序决定
     
+    private List<String> lstBelongto;
+    
     public ConditionBean(AbsConfigBean parent)
     {
         super(parent);
@@ -126,7 +128,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
     }
 
 
-//    {
+
 
 
 
@@ -400,13 +402,38 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         this.lstChildDisplayOrder=lstChildDisplayOrder;
     }
 
+    public void setBelongto(String belongto)
+    {
+        if(belongto!=null)
+        {
+            belongto=belongto.trim();
+            if(belongto.equals(""))
+            {
+                this.lstBelongto=null;
+            }else
+            {
+                this.lstBelongto=Tools.parseStringToList(belongto,";",false);
+            }
+        }
+    }
+
+    public boolean isBelongTo(ReportDataSetBean svbean)
+    {
+        if(this.lstBelongto==null||this.lstBelongto.size()==0) return true;
+        for(String belongtoDatasetIdTmp:this.lstBelongto)
+        {
+            if(belongtoDatasetIdTmp.equals(svbean.getId())) return true;
+        }
+        return false;
+    }
+    
     public boolean isExistConditionExpression(boolean inherit)
     {
         if(this.conditionExpression!=null&&this.conditionExpression.getValue()!=null&&!this.conditionExpression.getValue().trim().equals(""))
             return true;
         if(!inherit) return false;
         if(this.cvaluesbean==null||this.cvaluesbean.isEmpty()) return false;
-        ConditionValueSelectItemBean cvbTmp=(ConditionValueSelectItemBean)this.cvaluesbean.getLstSelectItemBeans().get(0);
+        ConditionValueSelectItemBean cvbTmp=(ConditionValueSelectItemBean)this.cvaluesbean.getLstSelectItemBeans().get(0);//如果有多个ConditionValueBean，只要判断一个就可以了
         if(cvbTmp.getConditionExpression()!=null&&cvbTmp.getConditionExpression().getValue()!=null
                 &&!cvbTmp.getConditionExpression().getValue().trim().equals(""))
         {
@@ -431,17 +458,12 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         return cbean.getInputbox();
     }
 
-    public String getInputBoxValue(ReportRequest rrequest,int rowidx)
-    {
-        return rrequest.getStringAttribute(this.name,"");
-    }
-
     public void initConditionValueByInitUrlMethod(ReportRequest rrequest)
     {
         if(!this.isConditionValueFromUrl()) return;
         if(this.conditionExpression!=null)
         {
-            rrequest.addParamToUrl(name,"rrequest{"+name+"}",false);//因为可能当前报表不参与显示，别的报表类型参与显示，且存在此name对应的查询条件，因此不能在这里覆盖掉后者
+            rrequest.addParamToUrl(name,"rrequest{"+name+"}",false);
         }else
         {
             String colselectedInputboxidTmp;
@@ -503,7 +525,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if((this.labelstyle==1&&conditionvalue.equals(rrequest.getI18NStringValue(this.label)))
                 ||conditionvalue.equals("(ALL_DATA)"))
         {
-            //如果是标签显示在输入框中，当取出的数据是标签时，不能做为查询条件，而应该当作空值处理
+            
             conditionvalue="";
         }
         if(conditionvalue.equals("")&&this.defaultvalue!=null)
@@ -511,9 +533,9 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
             conditionvalue=ReportAssistant.getInstance().getColAndConditionDefaultValue(rrequest,this.defaultvalue);
         }
 
+//        {
 
 
-//        }
         rrequest.getAttributes().put(conditionname,conditionvalue);
         rrequest.addParamToUrl(conditionname,conditionvalue,true);
         return conditionvalue;
@@ -581,7 +603,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         {
             String conditionvalueTmp;
             for(int i=0;i<this.iterator;i++)
-            {//依次循环此查询条件每一套输入框
+            {
                 conditionvalueTmp=getDynamicConditionvalueForSql(rrequest,i);
                 if(conditionvalueTmp.equals("")) continue;
                 conditionValueBuf.append(getRuntimeConditionExpressionForSP(rrequest,i));
@@ -598,7 +620,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         StringBuffer conditionValueBuf=new StringBuffer();
         if(this.cvaluesbean!=null)
         {
-            String valueid=rrequest.getStringAttribute(this.cvaluesbean.getSelectedInputboxId(index),"");
+            String valueid=rrequest.getStringAttribute(this.cvaluesbean.getSelectedInputboxId(index),"");//选中的表达式ID
             ConditionSelectItemBean cvbean=this.cvaluesbean.getSelectItemBeanById(valueid);
             if(cvbean==null)
             {
@@ -640,7 +662,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if(!this.isExistConditionExpression(true)) return null;//如果当前查询条件没有在<condition/>中的任意层级子标签中配置条件表达式，则说明它可能是直接通过#name#的形式在sql语句中指定条件，所以不在这里为它构造条件表达式
         if(this.isConstant()) return conditionExpression.getValue();
         if(this.iterator<2)
-        {//只需为此查询条件显示一套输入框
+        {
             String conditionvalue=getDynamicConditionvalueForSql(rrequest,-1);
             if(conditionvalue.equals("")) return "";
             ConditionExpressionBean cexpressionbean=getConditionRuntimeExpressionBean(rrequest,-1);
@@ -662,7 +684,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                 lstOrConditionsType=new ArrayList<IDataType>();
             }
             for(int i=0;i<this.iterator;i++)
-            {//依次循环此查询条件每一套输入框
+            {
                 conditionvalueTmp=getDynamicConditionvalueForSql(rrequest,i);
                 if(conditionvalueTmp.equals("")) continue;
                 String innerlogicTmp=getInnerLogicValue(rrequest,i);
@@ -690,7 +712,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
             if(andExpressionBuf.length()==0&&orExpressionBuf.length()==0) return "";
             if(lstConditions!=null&&lstConditionsTypes!=null)
             {
-                
+                //先and
                 if(lstAndConditions.size()>0) lstConditions.addAll(lstAndConditions);
                 if(lstAndConditionsType.size()>0) lstConditionsTypes.addAll(lstAndConditionsType);
                 
@@ -698,7 +720,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                 if(lstOrConditionsType.size()>0) lstConditionsTypes.addAll(lstOrConditionsType);
             }
             String conditionexpression="";
-            //先and
+            
             if(!andExpressionBuf.toString().trim().equals(""))
             {
                 conditionexpression="("+andExpressionBuf.toString()+")";
@@ -743,13 +765,6 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
     
     public String getConditionValue(ReportRequest rrequest,int iteratorindex)
     {
-        if(Consts.GETAUTOCOMPLETEDATA_ACTION.equalsIgnoreCase(rrequest.getActiontype()))
-        {
-            if(!rrequest.getAutoCompleteSourceInputBoxObj().getAutocompleteBean().isConstainsCondition(name))
-            {//如果查询自动填充数据过程中没有引用此条件，则直接返回空条件值
-                return "";
-            }
-        }
         if(this.isConstant())
         {
             if(this.getConditionExpression()==null) return "";
@@ -833,7 +848,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
             if(this.cinnerlogicbean!=null&&!this.cinnerlogicbean.isEmpty()&&this.cinnerlogicbean.getLstSelectItemBeans().size()>1)
             {
                 resultBuf.append(" innerlogicid=\"").append(this.cinnerlogicbean.getSelectedInputboxId(iteratorindex)).append("\"");
-                resultBuf.append(" innerlogicinputboxtype=\"").append(cinnerlogicbean.getInputbox()==null?"":cinnerlogicbean.getInputbox()).append("\"");//逻辑关系选择框类型
+                resultBuf.append(" innerlogicinputboxtype=\"").append(cinnerlogicbean.getInputbox()==null?"":cinnerlogicbean.getInputbox()).append("\"");
             }
             if(iteratorindex>=0)
             {
@@ -870,7 +885,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         StringBuffer resultBuf=new StringBuffer();
         boolean isReadonlyPermission=rrequest.checkPermission(this.getReportBean().getId(),Consts.SEARCH_PART,this.name,Consts.PERMISSION_TYPE_READONLY);
         for(String childtype:this.lstChildDisplayOrder)
-        {//按照配置顺序依次显示本查询条件的各类型输入框
+        {
             if(childtype.equals("values")&&this.cvaluesbean!=null)
             {
                 resultBuf.append(this.cvaluesbean.showSelectedInputbox(rrequest,isReadonlyPermission,iteratorindex));
@@ -915,7 +930,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if(reallabel!=null&&!reallabel.trim().equals(""))
         {
             if(this.labelstyle==2)
-            {//如果是标题显示在输入框外面
+            {
                 resultBuf.append("<span class=\"cls-search-label\">"+reallabel+"</span> ");
             }else if(conditionvalue.equals(""))
             {
@@ -954,16 +969,32 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         SqlBean sbean=(SqlBean)this.getParent();
         validateConfig(sbean);
         processInnerlogic();
-        if(sbean.isPreparedstatementSql())
+        for(ReportDataSetBean svbTmp:sbean.getLstDatasetBeans())
         {
-            processConditionExpression();
+            if(svbTmp.isPreparedstatementSql()&&this.isBelongTo(svbTmp))
+            {
+                processConditionExpression();
+                break;
+            }
         }
         if(this.isConditionWithInputbox()&&this.iterator>1)
-        {
+        {//如果当前查询条件需要显示多个输入框
             if(this.conditionExpression!=null)
             {
                 throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的name属性为"+this.name
                         +"的查询条件失败，只为它配置了一个条件表达式，不能将iterator属性配置为大于1的数");
+            }
+        }
+        if(this.lstBelongto!=null&&this.lstBelongto.size()>0)
+        {
+            for(String belongtoIdTmp:this.lstBelongto)
+            {
+                if(belongtoIdTmp==null||belongtoIdTmp.trim().equals("")) continue;
+                if(sbean.getDatasetBeanById(belongtoIdTmp.trim())==null)
+                {
+                    throw new WabacusConfigLoadingException("报表 "+this.getReportBean().getPath()+"的name为"+this.name
+                            +"的查询条件配置的belongto错误，没有找到其所属的<value/>的id："+belongtoIdTmp);
+                }
             }
         }
         if(this.inputbox!=null) this.inputbox.doPostLoad(this);
@@ -1009,7 +1040,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if(this.ccolumnsbean!=null&&this.ccolumnsbean.isEmpty()) this.ccolumnsbean=null;
         if(this.cvaluesbean!=null&&this.cvaluesbean.isEmpty()) this.cvaluesbean=null;
         if(!isConditionWithInputbox())
-        {//不需提供输入框
+        {
             if(this.ccolumnsbean!=null||this.cvaluesbean!=null)
             {
                 throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的name属性为"+this.name
@@ -1028,7 +1059,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
             }
         }else
         {
-            if(!sbean.isStoreProcedure())
+            /*if(!sbean.isStoreProcedure())
             {
                 if(this.ccolumnsbean!=null&&this.cvaluesbean==null)
                 {//配置了<columns/>，但没有为它们在<value/>中配置条件表达式
@@ -1040,7 +1071,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                     throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的name为"+this.name
                             +"的查询条件失败，此查询条件没有提供比较列选择功能和条件表达式选择功能，不能将其iterator属性配置为大于1的数");
                 }
-            }
+            }*/
             if(cvaluesbean!=null)
             {
                 List<ConditionSelectItemBean> lstValueBeans=cvaluesbean.getLstSelectItemBeans();
@@ -1048,14 +1079,14 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                 {//当前<values/>下只有一个<value/>，此<value/>只有一个条件表达式，则相当于直接在<condition/>下配置<value/>
                     this.cvaluesbean=null;
                     this.conditionExpression=lstValueBeans.get(0).getConditionExpression();
-                    if(this.ccolumnsbean!=null&&!sbean.isStoreProcedure())
+                    /*if(this.ccolumnsbean!=null&&!sbean.isStoreProcedure())
                     {
                         throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的name为"+this.name
                                 +"的查询条件失败，没有为<columns/>中配置的<column/>在<value/>标签中配置条件表达式");
-                    }
+                    }*/
                     return;
                 }
-                int valuecolumncnt=-1;
+                /*int valuecolumncnt=-1;
                 ConditionValueSelectItemBean cvsibeanTmp;
                 for(ConditionSelectItemBean csibeanTmp:lstValueBeans)
                 {//依次处理每个<value/>
@@ -1118,7 +1149,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                         log.warn("报表"+this.getReportBean().getPath()+"的查询条件<condition/>配置的<columns/>子标签无效，因为没有在<values/>标签中使用它们");
                         this.ccolumnsbean=null;
                     }
-                }
+                }*/
             }
         }
     }

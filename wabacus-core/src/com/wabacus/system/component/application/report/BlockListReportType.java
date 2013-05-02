@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -59,13 +59,14 @@ public class BlockListReportType extends AbsListReportType
         resultBuf.append(showReportScrollStartTag());
         resultBuf.append("<ul id=\""+rbean.getGuid()+"_data\" class=\"cls-blocklist\"");
         resultBuf.append(" style=\"");
-        if(rbean.getWidth()!=null&&!rbean.getWidth().trim().equals(""))
-        {
-            resultBuf.append("width:"+rbean.getWidth()+";");
-        }else
-        {
-            resultBuf.append("width:100%;");
-        }
+
+//        {//配置了横向滚动条
+
+
+
+
+
+        resultBuf.append(" width:"+getReportDataWidthOnPage()+";");
         if(rbean.getHeight()!=null&&!rbean.getHeight().trim().equals(""))
         {
             resultBuf.append("height:").append(rbean.getHeight()).append(";");
@@ -251,7 +252,7 @@ public class BlockListReportType extends AbsListReportType
             if(!style.equals("")&&!style.endsWith(";")) style=style+";";
             style=style+"width:"+blockwidth+";";
         }
-        String heightinstyle=Tools.getPropertyValueFromStyle("height",style);//从style中取到height属性值
+        String heightinstyle=Tools.getPropertyValueFromStyle("height",style);
         if((heightinstyle==null||heightinstyle.trim().equals(""))&&blockheight!=null&&!blockheight.trim().equals(""))
         {//没有在blockstyleproperty的style中指定height，但在<display/>中配置了blockheight
             if(!style.equals("")&&!style.endsWith(";")) style=style+";";
@@ -288,7 +289,7 @@ public class BlockListReportType extends AbsListReportType
     {
         AbsListReportBean alrbean=(AbsListReportBean)reportbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
         
-        alrbean.setFixedcols(0);
+        alrbean.setFixedcols(null,0);
         alrbean.setFixedrows(0);
         boolean isShowScrollX=reportbean.getScrollwidth()!=null&&!reportbean.getScrollwidth().trim().equals("");
         boolean isShowScrollY=reportbean.getScrollheight()!=null&&!reportbean.getScrollheight().trim().equals("");

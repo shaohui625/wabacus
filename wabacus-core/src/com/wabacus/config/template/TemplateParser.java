@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -60,7 +60,7 @@ public class TemplateParser
         StringBuffer fullContentBuf=new StringBuffer();
         StringBuffer propBuf=null;
         AbsTagInTemplate tagbean=null;
-        String endtag=null;//当前正在分析的标签的结束标签
+        String endtag=null;
         List<String> lstEndChildTags=null;
         List<AbsTagInTemplate> lstResults=new ArrayList<AbsTagInTemplate>();
         for(int i=0;i<length;i++)
@@ -132,7 +132,7 @@ public class TemplateParser
                                             +endtag);
                                 }
                                 if(content.substring(i,i+endTag.length()).equals(endTag))
-                                {//碰到了此子标签的结束标签
+                                {
                                     lstEndChildTags.remove(0);
                                 }
                             }
@@ -217,7 +217,7 @@ public class TemplateParser
         int i=0;
         for(;i<content.length();i++)
         {
-            if(content.charAt(i)==' ') break;//标签名必须是紧跟在<wx:后面的，所以碰到空格或>说明标签名循环结束
+            if(content.charAt(i)==' ') break;
             if(content.charAt(i)=='>')
             {
                 i--;

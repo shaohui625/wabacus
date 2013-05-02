@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -286,7 +286,7 @@ public class XmlAssistant
         }
         if((xebean1.getContent()==null||xebean1.getContent().trim().equals(""))
                 &&(xebean1.getLstChildElements()==null||xebean1.getLstChildElements().size()==0))
-        {//如果没有在xebean1中配置标签内容，且没有配置子标签
+        {
             xebean1.setContent(xebean2.getContent());
             xebean1.setLstChildElements(xebean2.getLstChildElementsClone(xebean1));
         }

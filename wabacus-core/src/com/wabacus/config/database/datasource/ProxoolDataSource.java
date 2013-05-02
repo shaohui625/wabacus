@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -202,7 +202,7 @@ public class ProxoolDataSource extends AbsDataSource
         boolean shouldsave=false;
         if(actiontype)
         {
-            if(DesEncryptTools.KEY_OBJ==null) return;//没有在wabacus.cfg.xml中指定密钥，则不加密
+            if(DesEncryptTools.KEY_OBJ==null) return;
             if(password.startsWith("{3DES}"))
             {
                 if(DesEncryptTools.IS_NEWKEY)

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -40,11 +40,12 @@ public class RichTextBox extends AbsInputBox
     protected String doGetDisplayStringValue(ReportRequest rrequest,String value,String style_property,boolean isReadonly)
     {
         StringBuffer resultBuf=new StringBuffer();
+        resultBuf.append(this.getBeforedescription(rrequest));
         String inputboxid=getInputBoxId(rrequest);
         resultBuf.append("<textarea typename='"+typename+"' name='"+inputboxid+"'  id='"+inputboxid+"' ");
         if(style_property!=null) resultBuf.append(" ").append(style_property);
         resultBuf.append(">").append(getInputBoxValue(rrequest,value)).append("</textarea>");
-        resultBuf.append(this.getDescription(rrequest));
+        resultBuf.append(this.getAfterdescription(rrequest));
         String params=Tools.replaceAll(this.inputboxparams,"#INPUTBOXID#",inputboxid);
         if(isReadonly)
         {
@@ -72,6 +73,11 @@ public class RichTextBox extends AbsInputBox
        return "return tinyMCE.get(id).getContent();";
     }
     
+    public String getInputboxInnerType()
+    {
+        return "richtextbox";
+    }
+    
     public String createGetValueByInputBoxObjJs()
     {
         StringBuffer resultBuf=new StringBuffer();
@@ -91,10 +97,6 @@ public class RichTextBox extends AbsInputBox
     public void loadInputBoxConfig(IInputBoxOwnerBean ownerbean,XmlElementBean eleInputboxBean)
     {
         super.loadInputBoxConfig(ownerbean,eleInputboxBean);
-        String tinymcejs=Config.webroot+"/webresources/component/tiny_mce/tiny_mce.js";
-        tinymcejs=Tools.replaceAll(tinymcejs,"//","/");
-        ownerbean.getReportBean().addMyJavascript(tinymcejs);
-        
         if(this.language!=null&&!this.language.trim().equals(""))
         {
             String dynparams=null;
@@ -117,7 +119,7 @@ public class RichTextBox extends AbsInputBox
     public void doPostLoad(IInputBoxOwnerBean ownerbean)
     {
         super.doPostLoad(ownerbean);
-        this.inputboxparams=Tools.mergeJsonValue("elements:'#INPUTBOXID#',readonly:#READONLY#",this.inputboxparams);//输入框ID和只读属性的占位符
+        this.inputboxparams=Tools.mergeJsonValue("elements:'#INPUTBOXID#',readonly:#READONLY#,init_instance_callback:\"initTinymce\"",this.inputboxparams);
         String defaultparams=Config.getInstance().getResourceString(null,null,"${richtextbox.params.default}",false);
         if(defaultparams!=null&&!defaultparams.trim().equals(""))
         {
@@ -126,6 +128,9 @@ public class RichTextBox extends AbsInputBox
         }
         this.inputboxparams=Tools.replaceAll(this.inputboxparams,"\"","'");//因为稍后要把它们显示在<span/>的一个属性中，因此出现了"号会有问题，对于json字符串，用"和用'意义一样，所以这里做替换
         this.inputboxparams="{"+this.inputboxparams+"}";
+        String tinymcejs=Config.webroot+"/webresources/component/tiny_mce/tiny_mce.js";
+        tinymcejs=Tools.replaceAll(tinymcejs,"//","/");
+        ownerbean.getReportBean().getPageBean().addMyJavascriptFile(tinymcejs,0);
         processRichTextBoxCssFiles(ownerbean);
     }
     
@@ -145,14 +150,14 @@ public class RichTextBox extends AbsInputBox
         if(themename.equals("")||skinname.equals("")) return;
         String cssprex=Config.webroot+"/webresources/component/tiny_mce/themes/"+themename+"/skins/"+skinname+"/";
         cssprex=Tools.replaceAll(cssprex,"//","/");
-        ownerbean.getReportBean().addMyCss(cssprex+"ui.css");
-        ownerbean.getReportBean().addMyCss(cssprex+"content.css");
+        ownerbean.getReportBean().getPageBean().addMyCss(cssprex+"ui.css");
+        ownerbean.getReportBean().getPageBean().addMyCss(cssprex+"content.css");
     }
-
-    protected void processStylePropertyAfterMerged(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
+    
+    protected void addJsValidateOnBlurEvent(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
     {
         if(this.fillmode==2) return;
-        super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
+        super.addJsValidateOnBlurEvent(reportTypeObj,ownerbean);
     }
 
     protected void processStylePropertyForFillInContainer()

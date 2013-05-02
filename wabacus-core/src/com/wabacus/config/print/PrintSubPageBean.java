@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -143,7 +143,7 @@ public class PrintSubPageBean
         if(reportid==null||reportid.trim().equals("")) return;
         if(this.lstIncludeSplitPrintReportIds==null) this.lstIncludeSplitPrintReportIds=new ArrayList<String>();
         if(parent.getPrintPageSize(reportid)>0&&!this.lstIncludeSplitPrintReportIds.contains(reportid))
-        {//只有当前报表是分页打印的，才加入lstIncludeSplitPrintReportIds中
+        {
             this.lstIncludeSplitPrintReportIds.add(reportid);
         }
         if(this.lstIncludeSplitPrintReportIds.size()==0) this.lstIncludeSplitPrintReportIds=null;

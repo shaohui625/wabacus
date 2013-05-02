@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -47,7 +47,7 @@ public class DisplayPermissionType extends AbsPermissionType
         }else
         {
             if(parentPermission)
-            {//如果父组是display为false，则所有子元素的display都为false，不用再判断
+            {
                 return true;
             }else
             {

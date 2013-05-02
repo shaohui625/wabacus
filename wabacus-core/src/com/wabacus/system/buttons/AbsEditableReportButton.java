@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -71,7 +71,7 @@ public abstract class AbsEditableReportButton extends WabacusButton
     {
         AbsReportType reportObj=(AbsReportType)rrequest.getComponentTypeObj(ccbean,null,true);
         if(!(reportObj instanceof IEditableReportType)) return false;
-        if(!((IEditableReportType)reportObj).needCertainTypeButton(this)) return false;//在此可编辑报表中不需要显示此按钮
+        if(!((IEditableReportType)reportObj).needCertainTypeButton(this)) return false;
         return true;
     }
     

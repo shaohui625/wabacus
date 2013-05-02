@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -124,7 +124,7 @@ public class DefaultPrintProviderConfigBean extends AbsPrintProviderConfigBean
             styleproperty=Tools.getPropertyValueByName("style",this.paperstyleproperty,false);
         }
         String widthInStyle=Tools.getPropertyValueFromStyle("width",styleproperty);
-        //String heightInStyle=Tools.getPropertyValueFromStyle("height",styleproperty);
+        
         String pagewidth=null;
         if(this.lstPrintPagesizes!=null&&this.lstPrintPagesizes.size()>0)
         {
@@ -159,7 +159,7 @@ public class DefaultPrintProviderConfigBean extends AbsPrintProviderConfigBean
             if(styleproperty==null) styleproperty="";
             if(!styleproperty.equals("")&&!styleproperty.endsWith(";")) styleproperty=styleproperty+";";
             if(pagewidth!=null&&!pagewidth.trim().equals(""))
-            {//需要加默认宽度
+            {
                 styleproperty=styleproperty+"width:"+pagewidth+";";
             }
             if(defaultborder!=null&&!defaultborder.trim().equals(""))

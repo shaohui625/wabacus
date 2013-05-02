@@ -121,7 +121,11 @@
     			<xs:element name="global-jsfiles"  minOccurs="0">
     				<xs:complexType>
     					<xs:sequence>
-    						<xs:element name="js-file" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    						<xs:element name="js-file" minOccurs="0" maxOccurs="unbounded">
+    							<xs:complexType mixed="true">
+									<xs:attribute name="loadorder" type="xs:integer"/>
+								</xs:complexType>
+    						</xs:element>
     					</xs:sequence>
     				</xs:complexType>
     			</xs:element>

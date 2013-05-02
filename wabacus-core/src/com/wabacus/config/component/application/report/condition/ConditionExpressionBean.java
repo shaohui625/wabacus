@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -112,7 +112,7 @@ public class ConditionExpressionBean implements Cloneable
             List<IDataType> lstConditionTypes)
     {
         if(lstConditionValues!=null&&lstConditionTypes!=null)
-        {//当前是采用preparedstatement方式执行sql语句
+        {
             if(pattern!=null&&pattern.indexOf("#data#")>=0) conditionvalue=Tools.replaceAll(pattern,"#data#",conditionvalue);
             for(int i=0;i<this.index_count;i++)
             {

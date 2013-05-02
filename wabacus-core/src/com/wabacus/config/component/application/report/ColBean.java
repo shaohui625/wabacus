@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -39,9 +39,11 @@ public class ColBean extends AbsConfigBean
 
     private String column;
 
+    private String datasetid;
+    
     private String label=null;
 
-    private String displaytype=Consts.COL_DISPLAYTYPE_INITIAL;//显示类型
+    private String displaytype=Consts.COL_DISPLAYTYPE_INITIAL;
     
     private String tagcontent;
     
@@ -49,9 +51,9 @@ public class ColBean extends AbsConfigBean
 
     private IDataType datatypeObj;
 
-    private String labelstyleproperty="";
+    private String labelstyleproperty="";//如果当前label列要以某种样式显示，则在这个属性中配置，生成报表时，会将这里配置的内容原封不动的拼凑到当前label的<td...>里面。
 
-    private String valuestyleproperty="";//如果当前value列要以某种样式显示，则在这个属性中配置，生成报表时，会将这里配置的内容原封不动的拼凑到当前value的<td...>里面。
+    private String valuestyleproperty="";
  
     private String labelalign;
     
@@ -61,7 +63,7 @@ public class ColBean extends AbsConfigBean
     
     private float pdfwidth;
     
-    private String printwidth;//打印时的宽度
+    private String printwidth;
     
     private String printlabelstyleproperty;
     
@@ -72,8 +74,8 @@ public class ColBean extends AbsConfigBean
     private Method getMethod=null;
 
 
+//
 
-//    private List<FormatPropertyBean> formatProperties;
 
 //    private Map<String,String> mFormatParamsColProperties;//存放当前列的所有格式化方法参数中用到的其它<col/>的定义property(即@{}格式)和真正property
     
@@ -97,6 +99,16 @@ public class ColBean extends AbsConfigBean
     public void setColid(String colid)
     {
         this.colid=colid;
+    }
+
+    public String getDatasetid()
+    {
+        return datasetid;
+    }
+
+    public void setDatasetid(String datasetid)
+    {
+        this.datasetid=datasetid;
     }
 
     public float getPlainexcelwidth()
@@ -341,6 +353,13 @@ public class ColBean extends AbsConfigBean
         this.valuealign=valuealign;
     }
 
+    public boolean isMatchDataSet(ReportDataSetBean svbean)
+    {
+        if(this.isControlCol()||this.isSequenceCol()||this.isNonFromDbCol()||this.isNonValueCol()) return false;
+        if((this.datasetid==null||this.datasetid.trim().equals(""))&&svbean.isIndependentDataSet()) return true;
+        return this.datasetid.equals(svbean.getId());
+    }
+    
     public boolean checkDisplayPermission(ReportRequest rrequest)
     {
         if(!rrequest.checkPermission(this.getReportBean().getId(),Consts.DATA_PART,this.column,Consts.PERMISSION_TYPE_DISPLAY)) return false;
@@ -371,7 +390,7 @@ public class ColBean extends AbsConfigBean
         if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(displaytype)) return 0;
         if(Consts.COL_DISPLAYTYPE_ALWAYS.equals(displaytype)) return 2;
         DisplayBean dbean=(DisplayBean)this.getParent();
-        if(!dbean.isColselect()) return 1;//不允许列选择，则只要displaytype不是never的列都显示出来
+        if(!dbean.isColselect()) return 1;
         if(lstDisplayColIds==null||lstDisplayColIds.size()==0)
         {
             if(Consts.COL_DISPLAYTYPE_INITIAL.equals(displaytype)) return 1;
@@ -444,7 +463,7 @@ public class ColBean extends AbsConfigBean
     public boolean isControlCol()
     {
         if(isRowSelectCol()||isRoworderCol()||isEditableListEditCol())
-        {
+        {//如果是行选中的列，或行排序列
             return true;
         }
         return false;
@@ -466,7 +485,7 @@ public class ColBean extends AbsConfigBean
                 borderstyle="border-color:"+bordercolor+";";
             }
            if(Consts_Private.REPORT_BORDER_HORIZONTAL0.equals(border)||Consts_Private.REPORT_BORDER_HORIZONTAL1.equals(border))
-           {//只显示横向border
+           {
                borderstyle=borderstyle+"border-left:none;border-right:none;";
            }else if(Consts_Private.REPORT_BORDER_VERTICAL.equals(border))
            {
@@ -519,7 +538,7 @@ public class ColBean extends AbsConfigBean
         if(this.isNonValueCol()||this.isSequenceCol()||this.isControlCol()) return null;
         if(dataObj==null) return null;
         Object objValue=null;
-        if(!"[DYN_STATISTIC_DATA]".equals(this.getProperty()))
+        if(!"[DYN_COL_DATA]".equals(this.getProperty()))
         {
             if(this.getMethod==null) return null;
             try
@@ -531,12 +550,54 @@ public class ColBean extends AbsConfigBean
                         +this.column+"时失败",e);
             }
         }else
-        {//如果当前列是存放交叉统计数据的动态列，则这种列的数据都存放在一HashMap成员变量中
-            objValue=ReportAssistant.getInstance().getCrossStatisDataFromPOJO(this.getReportBean(),dataObj,this.column);
+        {
+            objValue=ReportAssistant.getInstance().getCrossDynamicColDataFromPOJO(this.getReportBean(),dataObj,this.column);
         }
         return objValue;
     }
     
+    public ColBean getUpdateColBeanDest(boolean isMust)
+    {
+        EditableReportColBean ercbean=(EditableReportColBean)this.getExtendConfigDataForReportType(EditableReportColBean.class);
+        if(ercbean==null||ercbean.getUpdatecolDest()==null||ercbean.getUpdatecolDest().trim().equals(""))
+        {
+            if(!isMust) return null;
+            throw new WabacusConfigLoadingException("报表"+this.getReportBean().getPath()+"的column属性为"+this.getColumn()+"的<col/>没有配置updatecol更新其它列");
+        }
+        ColBean cbTemp=this.getReportBean().getDbean().getColBeanByColProperty(ercbean.getUpdatecolDest());
+        if(cbTemp==null)
+        {
+            throw new WabacusConfigLoadingException("报表"+this.getReportBean().getPath()+"的column属性为"+this.getColumn()+"的<col/>通过updatecol为"
+                    +ercbean.getUpdatecolDest()+"引用的列不存在");
+        }
+        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbTemp.getDisplaytype()))
+        {
+            throw new WabacusConfigLoadingException("报表"+this.getReportBean().getPath()+"的column属性为"+this.getColumn()+"的<col/>通过updatecol为"
+                    +ercbean.getUpdatecolDest()+"引用的列不是displaytype为hidden的列");
+        }
+        if(cbTemp.getProperty()==null||cbTemp.getProperty().trim().equals("")||cbTemp.isNonValueCol()||cbTemp.isSequenceCol()||cbTemp.isControlCol())
+        {
+            throw new WabacusConfigLoadingException("报表"+this.getReportBean().getPath()+"的column属性为"+this.getColumn()+"的<col/>通过updatecol为"
+                    +ercbean.getUpdatecolDest()+"引用的列不是从数据库中获取数据，不能被引用");
+        }
+        return cbTemp;
+    }
+    
+    public ColBean getUpdateColBeanSrc(boolean isMust)
+    {
+        EditableReportColBean ercbean=(EditableReportColBean)this.getExtendConfigDataForReportType(EditableReportColBean.class);
+        if(ercbean==null||ercbean.getUpdatecolSrc()==null||ercbean.getUpdatecolSrc().trim().equals(""))
+        {
+            if(!isMust) return null;
+            throw new WabacusConfigLoadingException("报表"+this.getReportBean().getPath()+"的column属性为"+this.getColumn()+"的<col/>没有被其它列通过updatecol属性引用");
+        }
+        ColBean cbTemp=this.getReportBean().getDbean().getColBeanByColProperty(ercbean.getUpdatecolSrc());
+        if(cbTemp==null)
+        {
+            throw new WabacusConfigLoadingException("在报表"+this.getReportBean().getPath()+"中没有取到property为"+ercbean.getUpdatecolSrc()+"的列");
+        }
+        return cbTemp;
+    }
     
     public AbsConfigBean clone(AbsConfigBean parent)
     {

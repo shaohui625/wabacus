@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -27,6 +27,10 @@ public class TypePromptColBean implements Cloneable
     private String title;
     
     private int matchmode=0;
+    
+    private String matchexpression;
+    
+    private boolean hidden;
 
     public String getLabel()
     {
@@ -66,6 +70,26 @@ public class TypePromptColBean implements Cloneable
     public void setMatchmode(int matchmode)
     {
         this.matchmode=matchmode;
+    }
+
+    public String getMatchexpression()
+    {
+        return matchexpression;
+    }
+
+    public void setMatchexpression(String matchexpression)
+    {
+        this.matchexpression=matchexpression;
+    }
+
+    public boolean isHidden()
+    {
+        return hidden;
+    }
+
+    public void setHidden(boolean hidden)
+    {
+        this.hidden=hidden;
     }
 
     public Object clone() throws CloneNotSupportedException

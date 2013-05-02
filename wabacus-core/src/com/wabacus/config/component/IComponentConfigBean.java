@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -151,4 +151,6 @@ public interface IComponentConfigBean
     public IComponentType createComponentTypeObj(ReportRequest rrequest,AbsContainerType parentContainer);
     
     public void doPostLoad();
+    
+    public void doPostLoadFinally();
 }

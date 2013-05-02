@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -20,6 +20,7 @@ package com.wabacus.system.intercept;
 
 import java.util.List;
 
+import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.util.RegexTools;
 import com.wabacus.util.Tools;
@@ -31,7 +32,7 @@ public abstract class AbsPageInterceptor
     private String matchmode;
 
     private List<String> lstMatchPageids;
-    
+
     public String getMatchpageids()
     {
         return matchpageids;
@@ -51,14 +52,13 @@ public abstract class AbsPageInterceptor
     {
         this.matchmode=matchmode;
     }
-    
-    
+
     public boolean isMatch(String pageid)
     {
         if(pageid==null||pageid.trim().equals("")) return false;
         if(this.matchpageids==null||this.matchpageids.trim().equals("")) return true;
         if(matchmode!=null&&matchmode.trim().equalsIgnoreCase("regex"))
-        {//正则表达式匹配
+        {
             return RegexTools.isMatch(pageid,this.matchpageids);
         }else
         {
@@ -72,8 +72,26 @@ public abstract class AbsPageInterceptor
             return lstMatchPageids.contains(pageid);
         }
     }
-    
-    public abstract void doStart(ReportRequest rrequest);
 
-    public abstract void doEnd(ReportRequest rrequest);
+    public void doStart(ReportRequest rrequest)
+    {
+
+    }
+
+    public void doStartSave(ReportRequest rrequest,List<ReportBean> lstSaveReportBeans)
+    {
+
+    }
+
+    public void doEndSave(ReportRequest rrequest,List<ReportBean> lstSaveReportBeans)
+    {
+
+    }
+
+    public void doEnd(ReportRequest rrequest)
+    {
+
+    }
+
+    
 }

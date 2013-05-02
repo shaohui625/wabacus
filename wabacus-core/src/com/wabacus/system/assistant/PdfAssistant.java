@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -95,7 +95,7 @@ public class PdfAssistant
         AbsReportType reportTypeObjTmp;
         int maxrowcount=0;
         for(String appidTmp:pdfbean.getLstIncludeApplicationids())
-        {//取到本组件导出PDF时所需的所有报表类型对象
+        {
             if(mReportTypeObjs.containsKey(appidTmp)) continue;
             cctypeObj=rrequest.getComponentTypeObj(appidTmp,null,false);
             if(cctypeObj==null||!(cctypeObj instanceof AbsReportType)) continue;
@@ -218,7 +218,7 @@ public class PdfAssistant
         if(part==null||part.trim().equals("")) return null;
         if(part.equals("title"))
         {
-            if(!rrequest.checkPermission(reportid,Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return null;//如果本报表不显示标题
+            if(!rrequest.checkPermission(reportid,Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return null;
             if(lstParts.size()==2||!"subtitle".equals(lstParts.get(2)))
             {
                 return reportTypeObjTmp.getReportBean().getTitle(rrequest);

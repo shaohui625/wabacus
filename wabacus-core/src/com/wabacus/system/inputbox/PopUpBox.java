@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -40,13 +40,17 @@ public class PopUpBox extends AbsPopUpBox
     public PopUpBox(String typename)
     {
         super(typename);
-        pagewidth=500;
-        pageheight=300;
     }
 
+    public String getInputboxInnerType()
+    {
+        return "popupbox";
+    }
+    
     protected String doGetDisplayStringValue(ReportRequest rrequest,String value,String style_property,boolean isReadonly)
     {
         StringBuffer resultBuf=new StringBuffer();
+        resultBuf.append(this.getBeforedescription(rrequest));
         String inputboxid=getInputBoxId(rrequest);
         if("textareabox".equals(this.sourcebox))
         {
@@ -64,8 +68,7 @@ public class PopUpBox extends AbsPopUpBox
             {
                 String pageurl=getPopupPageUrlInCondition(rrequest);
                 myonclick="var oldvalue=encodeURIComponent(getInputBoxValue('"+inputboxid+"','"+typename+"'));";
-                myonclick=myonclick+"wx_winpage('"+pageurl+"&INPUTBOXID="+inputboxid+"&OLDVALUE='+oldvalue,'选择',"+pagewidth+","+pageheight
-                        +",false,false,closePopUpPageEvent);";
+                myonclick=myonclick+"wx_winpage('"+pageurl+"&INPUTBOXID="+inputboxid+"&OLDVALUE='+oldvalue,"+this.popupparams+");";
             }else
             {
                 myonclick="popupPageByPopupInputbox('"+inputboxid+"','"+getPopupUrlJsonString()+"')";
@@ -78,7 +81,7 @@ public class PopUpBox extends AbsPopUpBox
         {
             resultBuf.append(getInputBoxValue(rrequest,value)).append("</textarea>");
         }
-        resultBuf.append(this.getDescription(rrequest));
+        resultBuf.append(this.getAfterdescription(rrequest));
         return resultBuf.toString();
     }
 
@@ -90,7 +93,7 @@ public class PopUpBox extends AbsPopUpBox
             AbsReportType reportObj=Config.getInstance().getReportType(owner.getReportBean().getType());
             Object dataObj=rrequest.getReportDataObj(owner.getReportBean().getId(),0);
             if(dataObj==null)
-            {//没有数据对象，则所有动态参数都替换成空字符串
+            {
                 for(Entry<String,String> entryParamTmp:this.mDynParamColumns.entrySet())
                 {
                     newpageurl=Tools.replaceAll(newpageurl,"@{"+entryParamTmp.getValue()+"}","");
@@ -142,12 +145,12 @@ public class PopUpBox extends AbsPopUpBox
     public String filledInContainer(String onblur)
     {
         StringBuffer resultBuf=new StringBuffer();
-        
-        resultBuf.append("if(inputboxSpanObj==null){wx_alert('显示弹出窗口输入框失败，没有取到弹出窗口页面所需的参数'); return false;}");
+        //从inputboxSpanObj中得到所需的参数
+        resultBuf.append("if(inputboxSpanObj==null){wx_warn('显示弹出窗口输入框失败，没有取到弹出窗口页面所需的参数'); return false;}");
         resultBuf.append("var paramsOfGetPageUrl=inputboxSpanObj.getAttribute('paramsOfGetPageUrl');");
         resultBuf.append("var onclick_propertyvalue=inputboxSpanObj.getAttribute('onclick_propertyvalue');");
         resultBuf.append("if(onclick_propertyvalue==null) onclick_propertyvalue='';");
-        resultBuf.append("onclick_propertyvalue=\"popupPageByPopupInputbox('\"+name+\"','\"+paramsOfGetPageUrl+\"');\"+onclick_propertyvalue;");//在原有的onclick事件中加上弹出窗口事件
+        resultBuf.append("onclick_propertyvalue=\"popupPageByPopupInputbox('\"+name+\"','\"+paramsOfGetPageUrl+\"');\"+onclick_propertyvalue;");
         
         resultBuf.append("if(inputboxSpanObj.getAttribute('sourcebox')=='textareabox'){boxstr=\"<textarea\";}else{boxstr=\"<input type='text' value=\\\"\"+boxValue+\"\\\"\";}");
         resultBuf.append(getInputBoxCommonFilledProperties());
@@ -176,6 +179,16 @@ public class PopUpBox extends AbsPopUpBox
         ownerbean.getReportBean().addPopUpBox(this);
     }
 
+    protected String getDefaultWidth()
+    {
+        return "500";
+    }
+    
+    protected String getDefaultHeight()
+    {
+        return "300";
+    }
+    
     public Object clone(IInputBoxOwnerBean owner)
     {
         PopUpBox popbNew=(PopUpBox)super.clone(owner);

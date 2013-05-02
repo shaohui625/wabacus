@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -27,8 +27,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.wabacus.exception.WabacusConfigLoadingException;
+
 public class WabacusClassLoader extends ClassLoader
 {
+    private static Log log=LogFactory.getLog(WabacusClassLoader.class);
+    
     private ClassLoader parentLoader;
 
     private List<String> classRepository=new ArrayList<String>();
@@ -137,5 +144,28 @@ public class WabacusClassLoader extends ClassLoader
             }
         }
         return this.defineClass(className,classBytes,0,classBytes.length);
+    }
+    
+    public Class loadClassByCurrentLoader(String classname)
+    {
+        if(classname==null||classname.trim().equals("")) return null;
+       /* ClassLoader contextClassLoader=Thread.currentThread().getContextClassLoader();
+        if(contextClassLoader==null)  contextClassLoader=WabacusClassLoader.class.getClassLoader();
+        try
+        {
+            
+            return contextClassLoader.loadClass(classname);
+        }catch(ClassNotFoundException e)
+        {
+            throw new WabacusConfigLoadingException("装载类"+classname+"失败，没有找到此类!",e);
+        }*/
+        try
+        {
+            return this.loadClass(classname);
+        }catch(ClassNotFoundException e)
+        {
+            throw new WabacusConfigLoadingException("装载类"+classname+"失败，没有找到此类!",e);
+        }
+        
     }
 }

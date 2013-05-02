@@ -233,6 +233,11 @@
     	<required>false</required>
     	<rtexprvalue>true</rtexprvalue>
     </attribute>
+    <attribute>
+    	<name>beforecallback</name><!-- 'forwardwithback' button requires this attribute  -->
+    	<required>false</required>
+    	<rtexprvalue>true</rtexprvalue>
+    </attribute>
   </tag>
   
   <!--tag>
@@ -300,12 +305,7 @@
     	<rtexprvalue>true</rtexprvalue>
    </attribute>
    <attribute>
-    	<name>width</name>
-    	<required>false</required>
-    	<rtexprvalue>true</rtexprvalue>
-   </attribute>
-   <attribute>
-    	<name>height</name>
+    	<name>popupparams</name>
     	<required>false</required>
     	<rtexprvalue>true</rtexprvalue>
    </attribute>
@@ -315,25 +315,10 @@
     	<rtexprvalue>true</rtexprvalue>
    </attribute>
    <attribute>
-    	<name>minbtn</name>
-    	<required>false</required>
-    	<rtexprvalue>true</rtexprvalue>
-   </attribute>
-   <attribute>
-    	<name>maxbtn</name>
-    	<required>false</required>
-    	<rtexprvalue>true</rtexprvalue>
-   </attribute>
-   <attribute>
     	<name>interceptor</name>
     	<required>false</required>
     	<rtexprvalue>true</rtexprvalue>
    </attribute>
-   <!-- attribute>
-    	<name>includejscss</name>
-    	<required>false</required>
-    	<rtexprvalue>true</rtexprvalue>
-   </attribute-->
   </tag>
   
   <tag>
@@ -347,12 +332,7 @@
     	<rtexprvalue>true</rtexprvalue>
    </attribute>
 	<attribute>
-    	<name>dataimportwidth</name>
-    	<required>false</required>
-    	<rtexprvalue>true</rtexprvalue>
-   </attribute>
-   <attribute>
-    	<name>dataimportheight</name>
+    	<name>popupparams</name>
     	<required>false</required>
     	<rtexprvalue>true</rtexprvalue>
    </attribute>
@@ -361,20 +341,5 @@
     	<required>false</required>
     	<rtexprvalue>true</rtexprvalue>
    </attribute>
-   <attribute>
-    	<name>dataimportminbtn</name>
-    	<required>false</required>
-    	<rtexprvalue>true</rtexprvalue>
-   </attribute>
-   <attribute>
-    	<name>dataimportmaxbtn</name>
-    	<required>false</required>
-    	<rtexprvalue>true</rtexprvalue>
-   </attribute>
-   <!--attribute>
-    	<name>includejscss</name>
-    	<required>false</required>
-    	<rtexprvalue>true</rtexprvalue>
-   </attribute-->
   </tag>
 </taglib>

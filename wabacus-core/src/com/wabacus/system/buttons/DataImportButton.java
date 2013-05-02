@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -22,6 +22,8 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.assistant.TagAssistant;
+import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
 
@@ -54,22 +56,9 @@ public class DataImportButton extends WabacusButton
         String serverurl=Config.showreport_url+token+"PAGEID="+ccbean.getPageBean().getId()+"&REPORTID="+ccbean.getId()
                 +"&ACTIONTYPE=ShowUploadFilePage&FILEUPLOADTYPE="+Consts_Private.FILEUPLOADTYPE_DATAIMPORTREPORT;
         ReportBean rbean=(ReportBean)ccbean;
-        int winwidth=rbean.getDataimportwidth();
-        if(winwidth<=0) winwidth=300;
-        int winheight=rbean.getDataimportheight();
-        winheight=160;
-        String clickevent="wx_winpage('"+serverurl+"','上传数据文件',"+winwidth+","+winheight;
-        clickevent+=","+(rbean.getDataimportmaxbtn()!=null&&rbean.getDataimportmaxbtn().toLowerCase().trim().equals("true"));
-        clickevent+=","+(rbean.getDataimportminbtn()!=null&&rbean.getDataimportminbtn().toLowerCase().trim().equals("true"));
-        clickevent+=",null);";
-        if(rbean.getDataimportinitsize()!=null&&rbean.getDataimportinitsize().toLowerCase().trim().equals("max"))
-        {
-            clickevent+="ymPrompt.max();";
-        }else if(rbean.getDataimportinitsize()!=null&&rbean.getDataimportinitsize().toLowerCase().trim().equals("min"))
-        {
-            clickevent+="ymPrompt.min();";
-        }
-        return clickevent;
+        String popupparams=WabacusAssistant.getInstance().addDefaultPopupParams(rbean.getDataimportpopupparams(),rbean.getDataimportinitsize(),"300",
+                "160",null);
+        return "wx_winpage('"+serverurl+"',"+popupparams+");";
     }
 
 }

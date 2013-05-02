@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -19,54 +19,36 @@
 package com.wabacus.system.inputbox;
 
 import com.wabacus.config.xml.XmlElementBean;
-import com.wabacus.system.ReportRequest;
-import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
-import com.wabacus.util.Tools;
+
 
 public class CheckBox extends AbsRadioCheckBox
 {
-    private String separator;
-    
     public CheckBox(String typename)
     {
         super(typename);
     }
-
-    protected String getBoxType()
-    {
-        return "checkbox";
-    }
     
-    protected boolean isSelectedValue(String selectedvalues,String optionvalue)
+    protected boolean isMultipleSelect()
     {
-        return SelectedBoxAssistant.getInstance().isSelectedValueOfMultiSelectBox(selectedvalues,optionvalue,this.separator);
-    }
-
-    public String getDefaultlabel(ReportRequest rrequest)
-    {
-        if(this.defaultvalue==null) return null;
-        return SelectedBoxAssistant.getInstance().getSelectedLabelByValuesOfMultiSelectedBox(
-                getOptionNameAndValueList(rrequest,owner.getReportBean()),this.getDefaultvalue(rrequest),this.separator);
-    }
-    
-    protected String checkSelectedValueInClient()
-    {
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append("var separator=null;if(inputboxSpanObj!=null) separator=inputboxSpanObj.getAttribute('separator');");
-        resultBuf.append("if(separator==null||separator=='') separator=' ';");
-        resultBuf.append("if(isSelectedValueForMultiSelectedBox(boxValue,optionvalue,separator))");
-        return resultBuf.toString();
-    }
-    
-    protected String initDisplaySpanStart(ReportRequest rrequest)
-    {
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append(super.initDisplaySpanStart(rrequest));
-        resultBuf.append(" separator=\"").append(this.separator).append("\"");
-        return resultBuf.toString();
+        return true;
     }
     
     public String createGetValueByIdJs()
+    {
+        return createGetContentByIdJs(true);
+    }
+
+    public String createGetLabelByIdJs()
+    {
+        return createGetContentByIdJs(false);
+    }
+    
+    public String getInputboxInnerType()
+    {
+        return "checkbox";
+    }
+
+    private String createGetContentByIdJs(boolean isGetValue)
     {
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("var chkObjs=document.getElementsByName(id);");
@@ -74,14 +56,20 @@ public class CheckBox extends AbsRadioCheckBox
         resultBuf.append("var value=''; var separator=chkObjs[0].getAttribute('separator');if(separator==null||separator=='') separator=' ';");
         resultBuf.append("for(i=0,len=chkObjs.length;i<len;i=i+1){");
         resultBuf.append("    if(chkObjs[i].checked){");
-        resultBuf.append("        value=value+chkObjs[i].value+separator;");
+        if(isGetValue)
+        {
+            resultBuf.append("        value=value+chkObjs[i].value+separator;");
+        }else
+        {
+            resultBuf.append("        value=value+chkObjs[i].getAttribute('label')+separator;");
+        }
         resultBuf.append("    }");
         resultBuf.append("}");
         resultBuf.append("value=wx_rtrim(value,separator);");
         resultBuf.append("return value;");
         return resultBuf.toString();
     }
-
+    
     public String createGetValueByInputBoxObjJs()
     {
         StringBuffer resultBuf=new StringBuffer();
@@ -95,7 +83,7 @@ public class CheckBox extends AbsRadioCheckBox
         resultBuf.append("        label=label+chkObjs[i].getAttribute('label')+separator;value=value+chkObjs[i].value+separator;");
         resultBuf.append("    }");
         resultBuf.append("}");
-        resultBuf.append("label=wx_rtrim(label,separator);");//去掉label结尾部分的separator
+        resultBuf.append("label=wx_rtrim(label,separator);");
         resultBuf.append("value=wx_rtrim(value,separator);");
         return resultBuf.toString();
     }
@@ -105,24 +93,17 @@ public class CheckBox extends AbsRadioCheckBox
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("var chkObjs=document.getElementsByName(id);");
         resultBuf.append("if(chkObjs==null||chkObjs.length==0) return;");
-        resultBuf.append("var separator=chkObjs[0].getAttribute('separator');if(separator==null||separator=='') separator=' ';");
         resultBuf.append("for(var i=0,len=chkObjs.length;i<len;i=i+1){");
-        resultBuf.append("  if(isSelectedValueForMultiSelectedBox(newvalue,chkObjs[i].value,separator)){chkObjs[i].checked=true;}");
+        resultBuf.append("  if(isSelectedValueForSelectedBox(newvalue,chkObjs[i].value,chkObjs[0])){chkObjs[i].checked=true;}");
         resultBuf.append("}");
         return resultBuf.toString();
     }
     
-    protected void processStylePropertyAfterMerged(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
-    {
-        super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
-        this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,"separator=\""+this.separator+"\"",1);
-    }
-
     public void loadInputBoxConfig(IInputBoxOwnerBean ownerbean,XmlElementBean eleInputboxBean)
     {
-        super.loadInputBoxConfig(ownerbean,eleInputboxBean);
-        if(eleInputboxBean==null) return;
+        this.isMultiply=true;
         this.separator=eleInputboxBean.attributeValue("separator");
-        if(separator==null||separator.equals("")) this.separator=" ";
+        if(this.separator==null||this.separator.equals("")) this.separator=" ";
+        super.loadInputBoxConfig(ownerbean,eleInputboxBean);
     }
 }

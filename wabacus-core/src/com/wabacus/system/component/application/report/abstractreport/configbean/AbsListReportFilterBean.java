@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -32,7 +32,9 @@ public class AbsListReportFilterBean extends AbsExtendConfigBean
 {
     private String filterColumnExpression;//如果不能通过直接用<col/>的column in(...)进行过滤，而需对column进行转换后再过滤，则配置对column进行转换的表达式，比如to_char(字段名,'yyyy-MM-dd')
     
-    private String filterwidth;//列过滤下拉提示宽度，不配置或配置为空字符串时，与相应<td/>相同的宽度
+    private int filterwidth;//列过滤下拉提示宽度，不配置或配置为空字符串时，与相应<td/>相同的宽度
+    
+    private int filtermaxheight=350;
     
     private String conditionname;//如果不为空，则存放关联的查询条件<condition/>的name属性
 
@@ -63,14 +65,24 @@ public class AbsListReportFilterBean extends AbsExtendConfigBean
         this.filterColumnExpression=filterColumnExpression;
     }
 
-    public String getFilterwidth()
+    public int getFilterwidth()
     {
         return filterwidth;
     }
 
-    public void setFilterwidth(String filterwidth)
+    public void setFilterwidth(int filterwidth)
     {
         this.filterwidth=filterwidth;
+    }
+
+    public int getFiltermaxheight()
+    {
+        return filtermaxheight;
+    }
+
+    public void setFiltermaxheight(int filtermaxheight)
+    {
+        this.filtermaxheight=filtermaxheight;
     }
 
     public String getConditionname()
@@ -124,7 +136,15 @@ public class AbsListReportFilterBean extends AbsExtendConfigBean
     
     public void doPostLoad()
     {
-        SqlBean sqlbean=this.getOwner().getReportBean().getSbean();
+        ColBean cbean=(ColBean)this.getOwner();
+        SqlBean sqlbean=cbean.getReportBean().getSbean();
+        if(cbean.getDatasetid()!=null&&!cbean.getDatasetid().trim().equals(""))
+        {
+            if(!sqlbean.isIndependentDataset(cbean.getDatasetid()))
+            {
+                throw new WabacusConfigLoadingException("加载报表"+cbean.getReportBean().getPath()+"的列"+cbean.getLabel()+"失败，当前列是从子数据集中取数据，不能为它配置列过滤功能");
+            }
+        }
         if(isConditionRelate())
         {
             ConditionBean cbTmp=sqlbean.getConditionBeanByName(conditionname);

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -49,7 +49,7 @@ public class FileLockTools
             try
             {
                 Thread.sleep(random.nextInt(waitsec)*1000);
-            }catch(InterruptedException e)
+            }catch(Exception e)
             {
                 e.printStackTrace();
             }
@@ -80,7 +80,7 @@ public class FileLockTools
                 islocked=false;
                 return null;
             }
-        }catch(IOException e)
+        }catch(Exception e)
         {
             log.error("获取文件"+lockfile+"锁失败",e);
             return null;
@@ -129,7 +129,7 @@ public class FileLockTools
                 raf=null;
             }
             return true;
-        }catch(IOException e)
+        }catch(Exception e)
         {
             System.out.println("关闭RandomAccessFile对象失败");
             e.printStackTrace();
@@ -182,7 +182,7 @@ public class FileLockTools
                 fc=null;
             }
             return true;
-        }catch(IOException e)
+        }catch(Exception e)
         {
             System.out.println("关闭FileChannel对象失败");
             e.printStackTrace();
@@ -200,7 +200,7 @@ public class FileLockTools
                 fl=null;
             }
             return true;
-        }catch(IOException e)
+        }catch(Exception e)
         {
             System.out.println("释放FileLock对象时失败");
             e.printStackTrace();

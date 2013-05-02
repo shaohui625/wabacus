@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -90,22 +90,22 @@ public class ComponentAssistant
         if(!Consts_Private.SCROLLSTYLE_IMAGE.equals(scrollstyle)) return;
         if(!showScrollX&&!showScrollY) return;
         
-        String scrolljs=null;
-        if(Config.encode.toLowerCase().trim().equals("utf-8"))
-        {
-            scrolljs="/webresources/script/wabacus_scroll.js";
-        }else
-        {
-            String encode=Config.encode;
-            if(encode.trim().equalsIgnoreCase("gb2312"))
-            {
-                encode="gbk";
-            }
-            scrolljs="/webresources/script/"+encode.toLowerCase()+"/wabacus_scroll.js";
-        }
+        String scrolljs="/webresources/script/wabacus_scroll.js";
+
+
+//            scrolljs="/webresources/script/wabacus_scroll.js";
+
+
+
+
+//            {
+
+
+//            scrolljs="/webresources/script/"+encode.toLowerCase()+"/wabacus_scroll.js";
+
         scrolljs=Config.webroot+"/"+scrolljs;
         scrolljs=Tools.replaceAll(scrolljs,"//","/");
-        ccbean.getPageBean().addMyJavascript(scrolljs);
+        ccbean.getPageBean().addMyJavascriptFile(scrolljs,-1);
         String css=Config.webroot+"/webresources/skin/"+Consts_Private.SKIN_PLACEHOLDER+"/wabacus_scroll.css";
         css=Tools.replaceAll(css,"//","/");
         ccbean.getPageBean().addMyCss(css);
@@ -115,7 +115,7 @@ public class ComponentAssistant
             ccbean.addOnloadMethod(new OnloadMethodBean(Consts_Private.ONlOAD_IMGSCROLL,"showComponentScroll('"+ccbean.getGuid()+"','"+scrollHeight
                     +"',23)"));
         }else if(showScrollX)
-        {//只显示横向滚动条
+        {
             ccbean.addOnloadMethod(new OnloadMethodBean(Consts_Private.ONlOAD_IMGSCROLL,"showComponentScroll('"+ccbean.getGuid()+"','-1',22)"));
         }else if(showScrollY)
         {
@@ -133,14 +133,14 @@ public class ComponentAssistant
         {
             resultBuf.append("<div style=\"margin:0;");
             if(showScrollX)
-            {
+            {//要显示横向滚动条
                 resultBuf.append("width:").append(scrollWidth).append(";overflow-x:auto;");
             }else
             {
                 resultBuf.append("width:100%;overflow-x:hidden;");
             }
             if(showScrollY)
-            {//要显示纵向滚动条
+            {
                 resultBuf.append("max-height:").append(scrollHeight).append(";overflow-y:auto;");
                 resultBuf.append("height:expression(this.scrollHeight>parseInt('").append(scrollHeight).append("')?'").append(scrollHeight).append(
                         "':'auto');");
@@ -168,7 +168,7 @@ public class ComponentAssistant
         return "</div>";
     }
     
-    public Class buildPageInterceptorClass(PageBean pbean,List<String> lstImports,String preaction,String postaction)
+    public Class buildPageInterceptorClass(PageBean pbean,List<String> lstImports,String preaction,String beforesaveaction,String aftersaveaction,String postaction)
     {
         try
         {
@@ -183,12 +183,24 @@ public class ComponentAssistant
             pt.setSuperclass(pool.get(AbsPageInterceptor.class.getName()));
             preaction=preaction==null?"":preaction.trim();
             postaction=postaction==null?"":postaction.trim();
-
+            beforesaveaction=beforesaveaction==null?"":beforesaveaction.trim();
+            aftersaveaction=aftersaveaction==null?"":aftersaveaction.trim();
+            
             StringBuffer sbuffer=new StringBuffer();
             sbuffer.append("public void doStart("+ReportRequest.class.getName()+" rrequest) {").append(preaction).append(" \n}");
             CtMethod preMethod=CtNewMethod.make(sbuffer.toString(),pt);
             pt.addMethod(preMethod);
 
+            sbuffer=new StringBuffer();
+            sbuffer.append("public void doStartSave("+ReportRequest.class.getName()+" rrequest,"+List.class.getName()+" lstSaveReportBeans) {").append(beforesaveaction).append(" \n}");
+            CtMethod beforeSaveMethod=CtNewMethod.make(sbuffer.toString(),pt);
+            pt.addMethod(beforeSaveMethod);
+            
+            sbuffer=new StringBuffer();
+            sbuffer.append("public void doEndSave("+ReportRequest.class.getName()+" rrequest,"+List.class.getName()+" lstSaveReportBeans) {").append(aftersaveaction).append(" \n}");
+            CtMethod afterSaveMethod=CtNewMethod.make(sbuffer.toString(),pt);
+            pt.addMethod(afterSaveMethod);
+            
             sbuffer=new StringBuffer();
             sbuffer.append("public void doEnd("+ReportRequest.class.getName()+" rrequest) {").append(postaction).append(" \n}");
             CtMethod postMethod=CtNewMethod.make(sbuffer.toString(),pt);
@@ -228,7 +240,7 @@ public class ComponentAssistant
             }
         }
         if(lstCsses.size()==0&&rrequest.getPagebean().getUlstMyCss()!=null)
-        {//没有通过URL传入CSS
+        {
             for(String cssTmp:rrequest.getPagebean().getUlstMyCss())
             {
                 lstCsses.add(Tools.replaceAll(cssTmp,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin())); 
@@ -255,13 +267,13 @@ public class ComponentAssistant
     public String showButton(IComponentConfigBean ccbean,AbsButtonType buttonObj,ReportRequest rrequest,String dynclickevent,String button)
     {
         if(ccbean instanceof ReportBean && buttonObj.isReferedHiddenButton()) return "";
-        if(buttonObj.getReferedButtonObj()==null) return buttonObj.showButton(rrequest,dynclickevent,button);
+        if(buttonObj.getReferedButtonObj()==null) return buttonObj.showButton(rrequest,dynclickevent,button);//如果没有引用其它按钮，则直接自己显示就可以了
         return buttonObj.getReferedButtonObj().showButton(rrequest,dynclickevent,button);
     }
     
     public String showButtonMenu(IComponentConfigBean ccbean,AbsButtonType buttonObj,ReportRequest rrequest,String dynclickevent)
     {
-        if(ccbean instanceof ReportBean && buttonObj.isReferedHiddenButton()) return "";//如果当前按钮属于报表，且被容器引用显示，并不在源报表处显示
+        if(ccbean instanceof ReportBean && buttonObj.isReferedHiddenButton()) return "";
         if(buttonObj.getReferedButtonObj()==null) return buttonObj.showMenu(rrequest,dynclickevent);
         return buttonObj.getReferedButtonObj().showMenu(rrequest,dynclickevent);
     }

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -34,6 +34,11 @@ public class DatePickerBox2 extends TextBox
         super(typename);
     }
 
+    public String getInputboxInnerType()
+    {
+        return "datepicker2";
+    }
+    
     protected String getTextBoxExtraStyleProperty(ReportRequest rrequest,boolean isReadonly)
     {
         if(isReadonly) return super.getTextBoxExtraStyleProperty(rrequest,isReadonly);
@@ -73,27 +78,6 @@ public class DatePickerBox2 extends TextBox
     {
         super.loadInputBoxConfig(ownerbean,eleInputboxBean);
         this.setTypePromptBean(null);
-        String jspick=Config.webroot+"/webresources/component/datepicker/js/calendar.js";
-        jspick=Tools.replaceAll(jspick,"//","/");
-        ownerbean.getReportBean().addMyJavascript(jspick);
-        jspick=Config.webroot+"/webresources/component/datepicker/js/calendar-setup.js";
-        jspick=Tools.replaceAll(jspick,"//","/");
-        ownerbean.getReportBean().addMyJavascript(jspick);
-
-        jspick=Config.webroot+"/webresources/component/datepicker/js/";
-        if(this.language==null||this.language.trim().equals("")||this.language.trim().equals(Consts_Private.LANGUAGE_ZH))
-        {
-            jspick=jspick+"calendar-zh.js";
-        }else
-        {
-            jspick=jspick+"calendar-en.js";
-        }
-        jspick=Tools.replaceAll(jspick,"//","/");
-        ownerbean.getReportBean().addMyJavascript(jspick);
-
-        String csspick=Config.webroot+"/webresources/component/datepicker/css/calendar.css";
-        csspick=Tools.replaceAll(csspick,"//","/");
-        ownerbean.getReportBean().addMyCss(csspick);
         if(eleInputboxBean!=null)
         {
             String dateformat=eleInputboxBean.attributeValue("dateformat");
@@ -103,11 +87,42 @@ public class DatePickerBox2 extends TextBox
 
     protected String getDefaultStylePropertyForDisplayMode2()
     {
-        return "onkeypress='return onKeyEvent(event);' class='cls-inputbox2'";
+        String resultStr="onkeypress='return onKeyEvent(event);'";
+        if(this.hasDescription())
+        {
+            resultStr+=" class='cls-inputbox2' ";
+        }else
+        {
+            resultStr+=" class='cls-inputbox2-full' ";
+        }
+        return resultStr;
     }
     
     public void setDefaultFillmode(AbsReportType reportTypeObj)
     {
         this.fillmode=1;
     }
+
+    public void doPostLoad(IInputBoxOwnerBean ownerbean)
+    {
+        super.doPostLoad(ownerbean);
+        String jspick=Tools.replaceAll(Config.webroot+"/webresources/component/datepicker/js/calendar.js","//","/");
+        ownerbean.getReportBean().getPageBean().addMyJavascriptFile(jspick,0);
+        jspick=Tools.replaceAll(Config.webroot+"/webresources/component/datepicker/js/calendar-setup.js","//","/");
+        ownerbean.getReportBean().getPageBean().addMyJavascriptFile(jspick,0);
+        jspick=Config.webroot+"/webresources/component/datepicker/js/";
+        if(this.language==null||this.language.trim().equals("")||this.language.trim().equals(Consts_Private.LANGUAGE_ZH))
+        {
+            jspick=jspick+"calendar-zh.js";
+        }else
+        {
+            jspick=jspick+"calendar-en.js";
+        }
+        jspick=Tools.replaceAll(jspick,"//","/");
+        ownerbean.getReportBean().getPageBean().addMyJavascriptFile(jspick,0);
+        String csspick=Config.webroot+"/webresources/component/datepicker/css/calendar.css";
+        csspick=Tools.replaceAll(csspick,"//","/");
+        ownerbean.getReportBean().getPageBean().addMyCss(csspick);
+    }
+    
 }

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -23,7 +23,9 @@ package com.wabacus.config.database.type;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
@@ -44,23 +46,23 @@ public class Postgresql extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(Postgresql.class);
 
-    public String constructSplitPageSql(SqlBean sbean)
+    public String constructSplitPageSql(ReportDataSetBean svbean)
     {
 
-        String sql=sbean.getSqlWithoutOrderby();
+        String sql=svbean.getSqlWithoutOrderby();
         if(sql.indexOf("%orderby%")>0)
         {
-            sql=Tools.replaceAll(sql,"%orderby%"," order by "+sbean.getOrderby());
+            sql=Tools.replaceAll(sql,"%orderby%"," order by "+svbean.getOrderby());
         }
         sql=sql+"   limit  %PAGESIZE%   OFFSET   %START% ";
         return sql;
     }
 
-    public String constructSplitPageSql(SqlBean sbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
     {
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(sbean.getReportBean(),dynorderby);
+        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
         dynorderby=" order by "+dynorderby;
-        String sql=sbean.getSqlWithoutOrderby();
+        String sql=svbean.getSqlWithoutOrderby();
         if(sql.indexOf("%orderby%")<0)
         {
             sql=sql+dynorderby;
@@ -72,6 +74,17 @@ public class Postgresql extends AbsDatabaseType
         return sql;
     }
 
+    public String getSequenceValueByName(String sequencename)
+    {
+        log.warn("Postgresql数据库不支持序列的配置");
+        return "";
+    }
+    
+    public String getSequenceValueSql(String sequencename)
+    {
+       throw new WabacusRuntimeException("Postgresql数据库不支持序列");
+    }
+    
     public IDataType getWabacusDataTypeByColumnType(String columntype)
     {
         if(columntype==null||columntype.trim().equals("")) return null;

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -24,6 +24,7 @@ import java.util.List;
 import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
+import com.wabacus.system.ReportRequest;
 import com.wabacus.system.commoninterface.IListReportRoworderPersistence;
 import com.wabacus.util.Consts;
 
@@ -37,7 +38,7 @@ public class AbsListReportBean extends AbsExtendConfigBean
     
     public final static int SCROLLTYPE_HORIZONTAL=3;
     
-    public final static int SCROLLTYPE_ALL=4;//不固定行列的纵横滚动条
+    public final static int SCROLLTYPE_ALL=4;
     
     private String rowSelectType;
 
@@ -50,6 +51,8 @@ public class AbsListReportBean extends AbsExtendConfigBean
     private int fixedrows;//被冻结的行数，如果值为Integer.MAX_VALUE，则表示fixedrows配置为title。即表示冻结整个标题行，如果指定为大于0的数，则表示指定要冻结的行数
     
     private int fixedcols;
+    
+    private AbsListReportSubDisplayBean subdisplaybean;
     
     public AbsListReportBean(AbsConfigBean owner)
     {
@@ -120,14 +123,33 @@ public class AbsListReportBean extends AbsExtendConfigBean
         this.fixedrows=fixedrows;
     }
 
-    public int getFixedcols()
+    public int getFixedcols(ReportRequest rrequest)
     {
-        return fixedcols;
+        if(rrequest==null) return fixedcols;
+        Object objVal=rrequest.getAttribute(this.getOwner().getReportBean().getId(),"DYNAMIC_FIXED_COLSCOUNT");
+        if(objVal==null) return fixedcols;
+        return ((Integer)objVal).intValue();
     }
 
-    public void setFixedcols(int fixedcols)
+    public void setFixedcols(ReportRequest rrequest,int fixedcols)
     {
-        this.fixedcols=fixedcols;
+        if(rrequest==null)
+        {
+            this.fixedcols=fixedcols;
+        }else
+        {
+            rrequest.setAttribute(this.getOwner().getReportBean().getId(),"DYNAMIC_FIXED_COLSCOUNT",fixedcols);
+        }
+    }
+
+    public AbsListReportSubDisplayBean getSubdisplaybean()
+    {
+        return subdisplaybean;
+    }
+
+    public void setSubdisplaybean(AbsListReportSubDisplayBean subdisplaybean)
+    {
+        this.subdisplaybean=subdisplaybean;
     }
 
     public int getScrollType()
@@ -158,6 +180,10 @@ public class AbsListReportBean extends AbsExtendConfigBean
             mynewrbean
                     .setLstRowSelectCallBackFuncs((List<String>)((ArrayList<String>)lstRowSelectCallBackFuncs)
                             .clone());
+        }
+        if(this.subdisplaybean!=null)
+        {
+            mynewrbean.setSubdisplaybean((AbsListReportSubDisplayBean)subdisplaybean.clone(owner));
         }
         
         return mynewrbean;

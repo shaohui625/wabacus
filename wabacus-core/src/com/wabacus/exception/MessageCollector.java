@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -36,7 +36,7 @@ public class MessageCollector
     
     private List<String> lstJsAlertMessages;
     
-    private List<String> lstJsSuccessMessages;//存放通过success()提示到前台的信息列表
+    private List<String> lstJsSuccessMessages;
     
     private List<String> lstJsErrorMessages;
     

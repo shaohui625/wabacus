@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -58,7 +58,7 @@ public class ColumnMapBean
     
     private List lstExclusiveColumns;
 
-    private List<Map> lstMapColumns;//当映射类型为3、4、5、6时，匹配字段名或字段序号的映射关系
+    private List<Map> lstMapColumns;
 
     private AbsDataImportConfigBean diconfigbean;
     
@@ -197,7 +197,7 @@ public class ColumnMapBean
                 {
                     importSbean.setSql("delete from "+diconfigbean.getTablename());
                 }else
-                {//append模式，且配置了keyfields，且数据文件中有数据，则删除数据文件中对应数据的记录（数据文件没数据时，客户端不会调用这个方法来构造删除SQL语句）
+                {
                     importSbean=createDelOldRecordsSql(mAllColAndTypes,lstAllColsAndTypes,dbtype,
                             Consts_Private.DATAIMPORTTYPE_APPEND);
                 }
@@ -320,7 +320,7 @@ public class ColumnMapBean
         Map<String,String> mColTmp;
         for(int i=0;i<lstAllColsAndTypes.size();i++)
         {
-            if(colmaptype.equals("index")&&lstExclusiveColumns!=null&&lstExclusiveColumns.contains(i)) continue;//如果是按序号自动匹配，且排除了当前列序号
+            if(colmaptype.equals("index")&&lstExclusiveColumns!=null&&lstExclusiveColumns.contains(i)) continue;
             mColTmp=lstAllColsAndTypes.get(i);
             String colNameTmp=mColTmp.keySet().iterator().next();
             if(colmaptype.equals("name")&&lstExclusiveColumns!=null&&lstExclusiveColumns.contains(colNameTmp)) continue;

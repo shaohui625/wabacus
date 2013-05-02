@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
 
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
 
 public abstract class AbsFileUploadInterceptor
@@ -38,7 +39,7 @@ public abstract class AbsFileUploadInterceptor
     
     public final static String ALLOWTYPES_KEY="ALLOWTYPES";
     
-    public final static String PAGEID_KEY="PAGEID";//上传输入框所在页面的ID
+    public final static String PAGEID_KEY="PAGEID";
     
     public final static String REPORTID_KEY="REPORTID";
     
@@ -68,7 +69,7 @@ public abstract class AbsFileUploadInterceptor
         Object interObj=null;
         try
         {
-            interObj=Class.forName(interceptor.trim()).newInstance();
+            interObj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(interceptor.trim()).newInstance();
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("文件上传拦截器"+interceptor+"类无法实例化",e);

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -31,7 +32,6 @@ import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
 import com.wabacus.system.buttons.AbsButtonType;
 import com.wabacus.system.buttons.ServerSQLActionButton;
-import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportSecretColValueBean;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
@@ -48,7 +48,9 @@ public class UpdateComponentDataServerActionBean
 
     private String serverClassName;
 
-    private List<Map<String,String>> lstParams;//客户端传给被调用服务器端的参数
+    private List<Map<String,String>> lstParams;
+    
+    private Map<String,String> mCustomizedParams;
 
     private IServerAction serverActionObj;
     
@@ -112,6 +114,16 @@ public class UpdateComponentDataServerActionBean
         return lstParams;
     }
 
+    public Map<String,String> getMCustomizedParams()
+    {
+        return mCustomizedParams;
+    }
+
+    public void setMCustomizedParams(Map<String,String> customizedParams)
+    {
+        mCustomizedParams=customizedParams;
+    }
+
     public static void initServerActionBean(ReportRequest rrequest)
     {
         String componetid=rrequest.getStringAttribute("WX_SERVERACTION_COMPONENTID","");
@@ -143,27 +155,32 @@ public class UpdateComponentDataServerActionBean
                 serverActionBean.setLstParams(lstParams);
             }
         }
+        String customizedparams=rrequest.getStringAttribute("WX_SERVERACTION_CUSTOMIZEDPARAMS","");
+        if(!customizedparams.trim().equals(""))
+        {
+            List<Map<String,String>> lstCustomizedParams=EditableReportAssistant.getInstance().parseSaveDataStringToList(customizedparams);
+            if(lstCustomizedParams!=null&&lstCustomizedParams.size()>0)
+            {
+                serverActionBean.setMCustomizedParams(lstCustomizedParams.get(0));
+            }
+        }
         serverActionBean.setCallbackMethod(rrequest.getStringAttribute("WX_SERVERACTION_CALLBACKMETHOD",""));
         serverActionBean.setShouldRefreshPage(rrequest.getStringAttribute("WX_SERVERACTION_SHOULDREFRESH","true").equalsIgnoreCase("true"));
         if(Tools.isDefineKey("button",serverClassName))
-        {
-            ServerSQLActionButton sbuttonObj=getSqlActionButtonObj(ccbean,serverClassName);
-            serverActionBean.setServerActionObj(sbuttonObj);
+        {//如果是配置的ServerSQLActionButton按钮
+            serverActionBean.setServerActionObj(getSqlActionButtonObj(ccbean,serverClassName));
         }else
         {
             Object obj=null;
             try
             {
-                obj=Class.forName(serverClassName.trim()).newInstance();
+                obj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(serverClassName.trim()).newInstance();
             }catch(InstantiationException e)
             {
                 throw new WabacusRuntimeException("调用的服务器端类"+serverClassName+"无法实例化",e);
             }catch(IllegalAccessException e)
             {
                 throw new WabacusRuntimeException("调用的服务器端类"+serverClassName+"无法访问",e);
-            }catch(ClassNotFoundException e)
-            {
-                throw new WabacusRuntimeException("没有找到要调用的服务器端类"+serverClassName,e);
             }
             if(!(obj instanceof IServerAction))
             {
@@ -178,7 +195,7 @@ public class UpdateComponentDataServerActionBean
         if(lstParams==null||lstParams.size()==0) return lstParams;
         List<Map<String,String>> lstResult=new ArrayList<Map<String,String>>();
         for(Map<String,String> mParamsTmp:lstParams)
-        {//循环每条记录
+        {
             if(mParamsTmp==null||mParamsTmp.size()==0) continue;
             Map<String,String> mParamsNew=new HashMap<String,String>();
             String paramnameTmp;
@@ -223,9 +240,9 @@ public class UpdateComponentDataServerActionBean
     public void executeServerAction(IComponentConfigBean ccbean)
     {
         if(!ccbean.getId().equals(this.componentid.trim())) return;
-        String returnVal=this.serverActionObj.executeSeverAction(rrequest,ccbean,this.lstParams);
+        String returnVal=this.serverActionObj.executeSeverAction(rrequest,ccbean,this.lstParams,this.mCustomizedParams);
         if(this.callbackMethod!=null&&!this.callbackMethod.trim().equals(""))
-        {//有客户端回调函数
+        {
             StringBuffer paramsBuf=new StringBuffer("{");
             paramsBuf.append("pageid:\""+rrequest.getPagebean().getId()+"\"");
             paramsBuf.append(",componentid:\""+ccbean.getId()+"\"");

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -121,7 +121,7 @@ public class FileInputBoxUpload extends AbsFileUpload
         for(String paramnameTmp:mDynParams.keySet())
         {
             if(mFormFieldValues!=null)
-            {//当前是因为上传失败后再次显示界面，则要将第一次弹出时URL中带的参数放在表单中以免丢失
+            {
                 paramvalueTmp=mFormFieldValues.get(paramnameTmp);
             }else
             {
@@ -221,7 +221,7 @@ public class FileInputBoxUpload extends AbsFileUpload
         }
         if(!existUploadFile)
         {
-            return "上传失败，没有取到要上传的文件";
+            return "请选择要上传的文件!";
         }
         return null;
     }

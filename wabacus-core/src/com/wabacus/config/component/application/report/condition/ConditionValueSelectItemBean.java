@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -68,7 +68,7 @@ public class ConditionValueSelectItemBean extends ConditionSelectItemBean
     void loadConfig(XmlElementBean eleSelectItemBean)
     {
         super.loadConfig(eleSelectItemBean);
-        if(((SqlBean)this.cbean.getParent()).isStoreProcedure()) return;//存储过程的<values/>下面的<value/>不用配置条件表达式，因为它们的条件表达式在存储过程中
+        /*if(((SqlBean)this.cbean.getParent()).isStoreProcedure()) return;*///存储过程的<values/>下面的<value/>不用配置条件表达式，因为它们的条件表达式在存储过程中
         Object valueObj=ComponentConfigLoadManager.loadConditionValueConfig(cbean,eleSelectItemBean);
         if(valueObj instanceof ConditionExpressionBean)
         {//<value/>下面直接是条件表达式

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -41,7 +41,7 @@ public class Consts
 
     public final static int DISPLAY_ON_WORD=4;
     
-    public final static int DISPLAY_ON_PDF=5;//显示在PDF中
+    public final static int DISPLAY_ON_PDF=5;
     
     public final static int DISPLAY_ON_PRINT=6;
 
@@ -112,7 +112,7 @@ public class Consts
     /***************************************************************************
      * 报表系统级资源项约定好的KEY
      **************************************************************************/
-    public final static String SEARCHBOX_PREX_KEY="searchbox.prex";//查询框前导
+    public final static String SEARCHBOX_PREX_KEY="searchbox.prex";
 
     public final static String NODATA_PROMPT_KEY="nodata.mess";
 
@@ -132,7 +132,7 @@ public class Consts
 
     public final static String SUBMIT_SEARCH_BUTTON="submit.search.button";
     
-    public final static String NAVIGATE_ALLDATA_LABEL="navigate.alldata.label";// 翻页导航栏中切换页大小的下拉框中，不分页显示的label
+    public final static String NAVIGATE_ALLDATA_LABEL="navigate.alldata.label";
 
     /***************************************************************************
      * 定义GridPageType页面类型的各列中所定义内容的类型
@@ -173,7 +173,7 @@ public class Consts
 
     public final static String UPDATE_MODE="update";
 
-    public final static String ADD_MODE="add";//插入模式
+    public final static String ADD_MODE="add";
 
     /***************************************************************************
      * 系统级默认资源项的KEY
@@ -196,7 +196,7 @@ public class Consts
 
     public final static String DELETE_BUTTON_DEFAULT="delete.button.default";
 
-    public final static String SAVE_BUTTON_DEFAULT="save.button.default";//默认保存按钮资源项的KEY
+    public final static String SAVE_BUTTON_DEFAULT="save.button.default";
 
     public final static String CANCEL_BUTTON_DEFAULT="cancel.button.default";
 
@@ -215,7 +215,7 @@ public class Consts
         M_DATAEXPORT_DEFAULTBUTTONS.put(DATAEXPORT_PDF,"pdf.button.default");
     }
 
-    public final static String PRINTTYPE_PRINT="print";//打印
+    public final static String PRINTTYPE_PRINT="print";
     
     public final static String PRINTTYPE_PRINTPREVIEW="printpreview";
     
@@ -262,7 +262,7 @@ public class Consts
      ***********************************************************************************/
     public final static String ROWSELECT_NONE="none";
 
-    public final static String ROWSELECT_SINGLE="single";//提供单行选中功能
+    public final static String ROWSELECT_SINGLE="single";
 
     public final static String ROWSELECT_MULTIPLY="multiply";
 
@@ -305,7 +305,7 @@ public class Consts
     /**********************************************************************************
      * 权限类型
      *********************************************************************************/
-    public final static String PERMISSION_TYPE_DISPLAY="display";//是否显示
+    public final static String PERMISSION_TYPE_DISPLAY="display";
     
     public final static String PERMISSION_TYPE_DISABLED="disabled";
     
@@ -337,7 +337,7 @@ public class Consts
      *************************************************************************************/
     public final static int STATECODE_NONREFRESHPAGE=0;
     
-    public final static int STATECODE_FAILED=-1;//请求失败，保留页面状态，也不刷新页面显示
+    public final static int STATECODE_FAILED=-1;
     
     public final static int STATECODE_SUCCESS=1;
     
@@ -349,13 +349,4 @@ public class Consts
     public final static int UPDATETYPE_UPDATE=2;
 
     public final static int UPDATETYPE_DELETE=3;
-    
-    /***************************************************************************************
-     * 定义常用返回值类型
-     **************************************************************************************/
-    public final static int RETURNVALUE_TERMINAGE=-1;//中断后续操作
-    
-    public final static int RETURNVALUE_IGNORE=0;
-    
-    public final static int RETURNVALUE_CONTINUE=1;
 }

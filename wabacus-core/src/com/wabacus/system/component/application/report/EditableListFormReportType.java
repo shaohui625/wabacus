@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -74,7 +74,7 @@ public class EditableListFormReportType extends EditableListReportType2
                 rrequest,ercdatabean.getValue(),
                 " onblur=\"try{fillInputBoxValueToParentTd(this,'"+ercbean.getInputbox().getTypename()+"','"+rbean.getGuid()+"','"
                         +this.getReportFamily()+"',1);}catch(e){logErrorsAsJsFileLoad(e);}\"",isReadonlyPermission);
-        rrequest.getAttributes().remove("DYN_INPUTBOX_ID");//用完一定要清掉，否则可能会被同一页面的其它报表用上。
+        rrequest.getAttributes().remove("DYN_INPUTBOX_ID");
         return strvalue;
     }
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -48,7 +48,7 @@ public abstract class AbsDataImportConfigBean
 
     protected String importtype=Consts_Private.DATAIMPORTTYPE_OVERWRITE;//导入类型，可取值为overwrite/append，如果是append，则必须配置keyfields 
 
-    protected String tablename;//导入的表名
+    protected String tablename;
 
     protected List<String> lstKeyfields;
 
@@ -168,7 +168,7 @@ public abstract class AbsDataImportConfigBean
                 }
                 return lstDataImportDataSqls;
             }else if(colMapBean.getMatchmode().equals(Consts_Private.DATAIMPORT_MATCHMODE_EVERYTIME))
-            {//每次导数据时建立SQL语句
+            {
                 log.debug("正在为数据导入资源项"+this.getReskey()+"建立数据文件和数据表映射...");
                 return colMapBean.createImportDataSqls(null);
             }else

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -40,7 +40,7 @@ public class PasswordBox extends TextBox
         return encodelength;
     }
 
-    protected String getTextBoxType()
+    public String getInputboxInnerType()
     {
         return "password";
     }

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -29,7 +29,7 @@ import com.wabacus.system.ReportRequest;
 
 public interface IServerAction
 {
-    public String executeSeverAction(ReportRequest rrequest,IComponentConfigBean ccbean,List<Map<String,String>> lstData);
+    public String executeSeverAction(ReportRequest rrequest,IComponentConfigBean ccbean,List<Map<String,String>> lstData,Map<String,String> mCustomizedData);
     
     public String executeServerAction(HttpServletRequest request,HttpServletResponse response,List<Map<String,String>> lstData);
 }

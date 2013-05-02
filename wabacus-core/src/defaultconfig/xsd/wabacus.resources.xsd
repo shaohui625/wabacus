@@ -64,12 +64,9 @@
    			<xs:element ref="wxs:imports" minOccurs="0"/>
    			<xs:element name="preaction" minOccurs="0" type="xs:string"/>
    			<xs:element name="postaction" minOccurs="0" type="xs:string"/>
-   			<xs:element name="beforesave" minOccurs="0" type="xs:string"/>
-   			<xs:element name="beforesave-perrow" minOccurs="0" type="xs:string"/>
-   			<xs:element name="beforesave-persql" minOccurs="0" type="xs:string"/>
-   			<xs:element name="aftersave-persql" minOccurs="0" type="xs:string"/>
-   			<xs:element name="aftersave-perrow" minOccurs="0" type="xs:string"/>
-   			<xs:element name="aftersave" minOccurs="0" type="xs:string"/>
+   			<xs:element name="saveaction" minOccurs="0" type="xs:string"/>
+   			<xs:element name="saveaction-perrow" minOccurs="0" type="xs:string"/>
+   			<xs:element name="saveaction-peraction" minOccurs="0" type="xs:string"/>
    			<xs:element name="beforeloaddata" minOccurs="0" type="xs:string"/>
    			<xs:element name="afterloaddata" minOccurs="0" type="xs:string"/>
    			<xs:element name="beforedisplay-perrow" minOccurs="0" type="xs:string"/>
@@ -148,6 +145,28 @@
 			<xs:sequence>
 				<xs:element ref="wxs:imports" minOccurs="0"/>
 				<xs:element name="dynevent" type="xs:string" minOccurs="0"/>
+				<xs:element name="params" minOccurs="0">
+   			<xs:complexType>
+   				<xs:sequence>
+   					<xs:element name="param" maxOccurs="unbounded">
+   						<xs:complexType>
+   							<xs:attribute name="name" type="xs:string" use="required"/>
+   							<xs:attribute name="value" type="xs:string" use="required"/>
+   							<xs:attribute name="datatype" type="xs:string"/>
+   						</xs:complexType>
+   					</xs:element>
+   				</xs:sequence>
+   			</xs:complexType>
+   		</xs:element>
+   		<xs:element name="value" minOccurs="0" maxOccurs="unbounded">
+   			<xs:complexType>
+	   			<xs:simpleContent>
+						<xs:extension base="xs:string">
+							<xs:attribute name="datasource" type="xs:string"/>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+   		</xs:element>
 			</xs:sequence>
 			<xs:attribute name="name" type="wxs:keyType"/>
 			<xs:attribute name="position" type="xs:string"/>
@@ -172,10 +191,12 @@
 			<xs:attribute name="refreshpage" type="wxs:booleanType"/>
 			<xs:attribute name="beforecallbackmethod" type="xs:string"/>
 			<xs:attribute name="aftercallbackmethod" type="xs:string"/>
-			<xs:attribute name="datasource" type="xs:string"/>
 			<xs:attribute name="successprompt" type="xs:string"/>
 			<xs:attribute name="failedprompt" type="xs:string"/>
 			<xs:attribute name="conditions" type="xs:string"/>
+			<xs:attribute name="autoreportdata" type="wxs:booleanType"/>
+			<xs:attribute name="confirmessage" type="xs:string"/>
+			<xs:attribute name="cancelmethod" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
 	
@@ -192,7 +213,6 @@
    			<xs:element ref="wxs:col" minOccurs="0" maxOccurs="unbounded"/>
    			<xs:element ref="wxs:ref" minOccurs="0" maxOccurs="unbounded"/>
    		</xs:choice-->
-   		<xs:element ref="wxs:statistic" minOccurs="0"/>
    	</xs:sequence>
    	<xs:attribute name="ref" type="xs:string"/>
    	<xs:attribute name="dataheader" type="xs:string"/>
@@ -207,6 +227,7 @@
    	<xs:attribute name="mouseoverbgcolor" type="xs:string"/>
    	<xs:attribute name="colselect" type="wxs:booleanType"/>
    	<xs:attribute name="colselectwidth" type="xs:string"/>
+   	<xs:attribute name="colselectmaxheight" type="xs:string"/>
    	<xs:attribute name="maxrownum">
    		<xs:simpleType>
     			<xs:restriction base="xs:integer">
@@ -226,14 +247,7 @@
     		</xs:simpleType>
    	</xs:attribute>
    	<xs:attribute name="treecloseable" type="wxs:booleanType"/>
-   	<xs:attribute name="initstate">
-   		<xs:simpleType>
-    			<xs:restriction base="xs:string">
-    				<xs:enumeration value="open"/>
-    				<xs:enumeration value="close"/>
-  				</xs:restriction>
-    		</xs:simpleType>
-   	</xs:attribute>
+   	<xs:attribute name="treexpandlayer" type="xs:integer"/>
    	<xs:attribute name="blockwidth" type="xs:string"/>
    	<xs:attribute name="blockheight" type="xs:string"/>
    	<xs:attribute name="blockstyleproperty" type="xs:string"/>
@@ -245,15 +259,17 @@
    		<xs:choice minOccurs="0"  maxOccurs="unbounded">
    			<xs:element ref="wxs:col" minOccurs="0" maxOccurs="unbounded"/>
    			<xs:element name="group" type="wxs:groupType" minOccurs="0" maxOccurs="unbounded"/>
-   			<xs:element ref="wxs:tableconditions" minOccurs="0"/>
+   			<xs:element name="datasetconditions" type="wxs:conditionsType" minOccurs="0"/>
+   			<xs:element name="staticonditions" type="wxs:conditionsType" minOccurs="0"/>
+   			<xs:element name="format" type="wxs:formatType" minOccurs="0"/>
    		</xs:choice>
    	</xs:sequence>
    	<xs:attribute name="label" type="xs:string"/>
    	<xs:attribute name="labelstyleproperty" type="xs:string"/>
    	<!-- 交叉统计时需要用 -->
    	<xs:attribute name="column" type="xs:string"/>
-   	<xs:attribute name="condition" type="xs:string"/>
-   	<xs:attribute name="tablename" type="xs:string"/>
+   	<xs:attribute name="staticondition" type="xs:string"/>
+   	<xs:attribute name="dataset" type="xs:string"/>
    	<xs:attribute name="realvalue" type="xs:string"/>
    </xs:complexType>
    
@@ -267,7 +283,8 @@
    	<xs:complexType mixed="true">
    		<xs:sequence>
    			<xs:element ref="wxs:inputbox" minOccurs="0"/>
-   			<xs:element ref="wxs:tableconditions" minOccurs="0"/>
+   			<xs:element name="datasetconditions" type="wxs:conditionsType" minOccurs="0"/>
+   			<xs:element name="staticonditions" type="wxs:conditionsType" minOccurs="0"/>
    			<xs:element name="statistic" minOccurs="0" maxOccurs="unbounded"><!-- 交叉统计配置 -->
    				<xs:complexType>
    					<xs:simpleContent>
@@ -283,6 +300,7 @@
    					</xs:simpleContent>
    				</xs:complexType>
    			</xs:element>
+   			<xs:element name="format" type="wxs:formatType" minOccurs="0"/>
    		</xs:sequence>
    		<xs:attribute name="property" type="xs:string"/>
    		<xs:attribute name="column" type="xs:string" use="required"/>
@@ -319,8 +337,8 @@
    		<xs:attribute name="verticalstatistic" type="wxs:booleanType"/>
    		<xs:attribute name="verticallabel" type="xs:string"/>
    		<xs:attribute name="verticallabelstyleproperty" type="xs:string"/>
-   		<xs:attribute name="condition" type="xs:string"/>
-   		<xs:attribute name="tablename" type="xs:string"/>
+   		<xs:attribute name="staticondition" type="xs:string"/>
+   		<xs:attribute name="dataset" type="xs:string"/>
    		<xs:attribute name="realvalue" type="xs:string"/>
    		<xs:attribute name="description" type="xs:string"/>
    		<xs:attribute name="inlinecount" type="xs:string"/>
@@ -329,18 +347,17 @@
    	</xs:complexType>
    </xs:element>
    
-   <xs:element name="tableconditions"><!-- 针对交叉统计报表中动态表头的查询条件配置 -->
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="wxs:condition" minOccurs="0" maxOccurs="unbounded"/>
-			</xs:sequence>
-		</xs:complexType>
-   </xs:element>
+   <!-- 各种查询条件的定义 -->
+   <xs:complexType name="conditionsType">
+   	<xs:sequence>
+			<xs:element ref="wxs:condition" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+   </xs:complexType>
    
-   <xs:element name="statistic"><!-- 针对整个报表的统计配置 -->
+   <xs:element name="subdisplay">
    	<xs:complexType> 
    		<xs:sequence>
-   			<xs:element name="statitems">
+   			<xs:element name="statitems"  minOccurs="0">
    				<xs:complexType>
    					<xs:sequence>
    						<xs:element name="statitem" maxOccurs="unbounded">
@@ -350,39 +367,78 @@
    								</xs:sequence>
    								<xs:attribute name="property" type="xs:string" use="required"/>
    								<xs:attribute name="value" type="xs:string" use="required"/>
+   								<xs:attribute name="dataset" type="xs:string"/>
    								<xs:attribute name="datatype" type="xs:string"/>
+   								<xs:attribute name="statiscope">
+   									<xs:simpleType>
+						    				<xs:restriction base="xs:string">
+						    					<xs:enumeration value="page"/>
+						    					<xs:enumeration value="report"/>
+						    					<xs:enumeration value="page|report"/>
+						    					<xs:enumeration value="report|page"/>
+						  					</xs:restriction>
+						    			</xs:simpleType>
+   								</xs:attribute>
    							</xs:complexType>
    						</xs:element>
    					</xs:sequence>
    				</xs:complexType>
    			</xs:element>
    			<xs:choice minOccurs="0" maxOccurs="unbounded">
-   				<xs:element name="rowgroup" type="wxs:staticRowGroupType" minOccurs="0"/>
-					<xs:element name="treerowgroup" type="wxs:staticRowGroupType" minOccurs="0"/>
-					<xs:element name="scol" type="wxs:staticCol" minOccurs="0" maxOccurs="unbounded"/>
+   				<xs:element name="rowgroup-subrow" type="wxs:rowgroupSubrowType" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="treerowgroup-subrow" type="wxs:rowgroupSubrowType" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="subrow" minOccurs="0" maxOccurs="unbounded">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element ref="wxs:subcol" maxOccurs="unbounded"/>
+							</xs:sequence>
+							<xs:attribute name="displaytype">
+								<xs:simpleType>
+				    				<xs:restriction base="xs:string">
+				    					<xs:enumeration value="page"/>
+				    					<xs:enumeration value="report"/>
+				    					<xs:enumeration value="page|report"/>
+				    					<xs:enumeration value="report|page"/>
+				  					</xs:restriction>
+				    			</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="displayposition">
+								<xs:simpleType>
+				    				<xs:restriction base="xs:string">
+				    					<xs:enumeration value="top"/>
+				    					<xs:enumeration value="bottom"/>
+				    					<xs:enumeration value="top|bottom"/>
+				    					<xs:enumeration value="bottom|top"/>
+				  					</xs:restriction>
+				    			</xs:simpleType>
+							</xs:attribute>
+						</xs:complexType>
+					</xs:element>
    			</xs:choice>
    			<xs:element name="format" type="wxs:formatType"/>
    		</xs:sequence>
    	</xs:complexType>
    </xs:element>
    
-   <xs:complexType name="staticRowGroupType">
+   <xs:complexType name="rowgroupSubrowType">
    	<xs:sequence>
-   		<xs:element name="scol" type="wxs:staticCol" maxOccurs="unbounded"/>
+   		<xs:element ref="wxs:subcol" maxOccurs="unbounded"/>
    	</xs:sequence>
    	<xs:attribute name="column" type="xs:string" use="required"/>
    	<xs:attribute name="condition" type="xs:string"/>
    </xs:complexType>
    
-   <xs:complexType name="staticCol">
-   	<xs:simpleContent>
-   		<xs:extension base="xs:string">
-   			<xs:attribute name="property" type="xs:string" use="required"/>
-   			<xs:attribute name="colspan" type="xs:positiveInteger"/>
-   			<xs:attribute name="valuestyleproperty" type="xs:string"/>
-   		</xs:extension>
-   	</xs:simpleContent>
-   </xs:complexType>
+   <xs:element name="subcol">
+   	<xs:complexType>
+	   	<xs:simpleContent>
+	   		<xs:extension base="xs:string">
+	   			<xs:attribute name="property" type="xs:string" use="required"/>
+	   			<xs:attribute name="colspan" type="xs:positiveInteger"/>
+	   			<xs:attribute name="valuestyleproperty" type="xs:string"/>
+	   		</xs:extension>
+	   	</xs:simpleContent>
+   	</xs:complexType>
+   </xs:element>
    
    <!-- <sql/>的定义 -->
    <xs:element name="sql">
@@ -392,12 +448,12 @@
    			<xs:element name="select" minOccurs="0">
    				<xs:complexType>
    					<xs:sequence>
-   						<xs:element name="value" type="xs:string" minOccurs="0"/>
+   						<xs:element name="value" type="wxs:sqlValue" minOccurs="0" maxOccurs="unbounded"/>
    						<xs:element ref="wxs:condition" minOccurs="0" maxOccurs="unbounded"/>
    					</xs:sequence>
    				</xs:complexType>
    			</xs:element>
-   			<xs:element name="value" type="xs:string" minOccurs="0"/>
+   			<xs:element name="value" type="wxs:sqlValue" minOccurs="0" maxOccurs="unbounded"/>
    			<xs:element ref="wxs:condition" minOccurs="0" maxOccurs="unbounded"/>
    			<xs:element name="insert" minOccurs="0">
    				<xs:complexType>
@@ -423,11 +479,38 @@
    		<xs:attribute name="beforesearch" type="xs:string"/>
    		<xs:attribute name="beforesave" type="xs:string"/>
    		<xs:attribute name="aftersave" type="xs:string"/>
-   		<xs:attribute name="transaction" type="xs:string"/>
    		<xs:attribute name="savebinding" type="xs:string"/>
    		<xs:attribute name="ref" type="xs:string"/>
    	</xs:complexType>
    </xs:element>
+   
+  	<xs:complexType name="sqlValue"><!-- <sql/>中<value/>的定义 -->
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="id" type="wxs:idType"/>
+				<xs:attribute name="depends" type="xs:string"/>
+				<xs:attribute name="dependscondition" type="xs:string"/>
+				<xs:attribute name="dependstype">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="single"/>
+    						<xs:enumeration value="multiple"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+				<xs:attribute name="seperator" type="xs:string"/>
+				<xs:attribute name="datasource" type="xs:string"/>
+				<xs:attribute name="type">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="statement"/>
+    						<xs:enumeration value="preparedstatement"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
    
    <xs:element name="condition"><!-- <sql/>中的<condition/>配置值 -->
    	<xs:complexType>
@@ -536,6 +619,7 @@
    		<xs:attribute name="splitlike" type="xs:string"/>
    		<xs:attribute name="keepkeywords" type="wxs:booleanType"/>
    		<xs:attribute name="defaultvalue" type="xs:string"/>
+   		<xs:attribute name="belongto" type="xs:string"/>
    	</xs:complexType>
    </xs:element>
    
@@ -561,11 +645,11 @@
    </xs:attributeGroup>
    
    <xs:complexType name="updateType" mixed="true">
-   	<xs:all>
-   		<xs:element name="external-values" minOccurs="0">
+   	<xs:sequence>
+   		<xs:element name="params" minOccurs="0">
    			<xs:complexType>
    				<xs:sequence>
-   					<xs:element name="value" maxOccurs="unbounded">
+   					<xs:element name="param" maxOccurs="unbounded">
    						<xs:complexType>
    							<xs:attribute name="name" type="xs:string" use="required"/>
    							<xs:attribute name="value" type="xs:string" use="required"/>
@@ -575,13 +659,20 @@
    				</xs:sequence>
    			</xs:complexType>
    		</xs:element>
-   		<xs:element name="value" type="xs:string" minOccurs="0"/>
-   	</xs:all>
+   		<xs:element name="value" minOccurs="0" maxOccurs="unbounded">
+   			<xs:complexType>
+	   			<xs:simpleContent>
+						<xs:extension base="xs:string">
+							<xs:attribute name="datasource" type="xs:string"/>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+   		</xs:element>
+   	</xs:sequence>
    	<xs:attribute name="confirmessage" type="xs:string"/>
    	<xs:attribute name="pageurl" type="xs:string"/>
    	<xs:attribute name="urlparams" type="xs:string"/>
-   	<xs:attribute name="pagewidth" type="xs:string"/>
-   	<xs:attribute name="pageheight" type="xs:string"/>
+   	<xs:attribute name="popupparams" type="xs:string"/>
    	<xs:attribute name="pageinitsize">
   			<xs:simpleType>
   				<xs:restriction base="xs:string">
@@ -591,8 +682,6 @@
 				</xs:restriction>
   			</xs:simpleType>
   		</xs:attribute>
-  		<xs:attribute name="pagemaxbtn" type="wxs:booleanType"/>
-  		<xs:attribute name="pageminbtn" type="wxs:booleanType"/>
    </xs:complexType>
    
    <!-- 格式化代码的定义 -->
@@ -619,6 +708,14 @@
    		</xs:sequence>
    		<xs:attribute name="align" type="wxs:alignType"/>
    		<xs:attribute name="buttonspacing" type="xs:nonNegativeInteger"/>
+   		<xs:attribute name="titleposition">
+   			<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="left"/>
+						<xs:enumeration value="right"/>
+				</xs:restriction>
+				</xs:simpleType>
+   		</xs:attribute>
    		<xs:attribute name="ref" type="xs:string"/>
    	</xs:complexType>
    </xs:element>
@@ -627,63 +724,77 @@
    <xs:element name="inputbox">
    	<xs:complexType mixed="true">
    		<xs:sequence>
-   			<xs:choice>
-   				<xs:element name="typeprompt" minOccurs="0"><!-- 文本框可能的配置 -->
-   					<xs:complexType>
-   						<xs:sequence>
-   							<xs:element name="promptcol" maxOccurs="unbounded">
-   								<xs:complexType mixed="true">
-   									<xs:attribute name="label" type="xs:string" use="required"/>
-   									<xs:attribute name="value" type="xs:string"/>
-   									<xs:attribute name="title" type="xs:string"/>
-   									<xs:attribute name="matchmode">
-   										<xs:simpleType>
-    											<xs:restriction base="xs:integer">
-    												<xs:enumeration value="0"/>
-    												<xs:enumeration value="1"/>
-    												<xs:enumeration value="2"/>
-  												</xs:restriction>
-    										</xs:simpleType>
-   									</xs:attribute>
-   								</xs:complexType>
-   							</xs:element>
-   							<xs:element name="datasource">
-   								<xs:complexType mixed="true">
-   									<xs:sequence>
-   										<xs:element name="value" type="xs:string" minOccurs="0"/>
-   										<xs:element ref="wxs:condition" minOccurs="0" maxOccurs="unbounded"/>
-   									</xs:sequence>
-   									<xs:attribute name="type" type="xs:string"/>
-   								</xs:complexType>
-   							</xs:element>
-   						</xs:sequence>
-   						<xs:attribute name="count" type="xs:positiveInteger" use="required"/>
-   						<xs:attribute name="callbackmethod" type="xs:string"/>
-   						<xs:attribute name="width" type="xs:string"/>
-   					</xs:complexType>
-   				</xs:element> 
-   				<xs:element name="option" minOccurs="0" maxOccurs="unbounded"><!-- 下拉框/单选框等可能的配置 -->
-   					<xs:complexType>
-   						<xs:sequence>
-   							<xs:element name="condition" minOccurs="0" maxOccurs="unbounded">
-   								<xs:complexType>
-   									<xs:sequence>
-   										<xs:element name="value" type="xs:string"/>
-   									</xs:sequence>
-   									<xs:attribute name="name" type="xs:string" use="required"/>
-   									<xs:attribute name="source" type="xs:string"/>
-   								</xs:complexType>
-   							</xs:element>
-   						</xs:sequence>
-   						<xs:attribute name="label" type="xs:string"/>
-   						<xs:attribute name="value" type="xs:string"/>
-   						<xs:attribute name="source" type="xs:string"/>
-   						<xs:attribute name="type" type="xs:string"/>
-   					</xs:complexType>
-   				</xs:element>
-   			</xs:choice>
+   			<xs:element name="autocomplete" minOccurs="0">
+  					<xs:complexType>
+  						<xs:sequence>
+	  						<xs:element name="condition" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="value" type="xs:string"/>
+									</xs:sequence>
+									<xs:attribute name="name" type="xs:string" use="required"/>
+									<xs:attribute name="source" type="xs:string"/>
+								</xs:complexType>
+							</xs:element>
+	  					</xs:sequence>
+	  					<xs:attribute name="dataset" type="xs:string"/>
+	  					<xs:attribute name="columns" type="xs:string"/>
+	  					<xs:attribute name="colvaluecondition" type="xs:string"/>
+	  					<xs:attribute name="multiple">
+	  						<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="none"/>
+									<xs:enumeration value="first"/>
+									<xs:enumeration value="last"/>
+								</xs:restriction>
+							</xs:simpleType>
+	  					</xs:attribute>
+  					</xs:complexType>
+  				</xs:element>
+  				<xs:element name="typeprompt" minOccurs="0"><!-- 文本框可能的配置 -->
+  					<xs:complexType>
+  						<xs:sequence>
+  							<xs:element name="promptcol" maxOccurs="unbounded">
+  								<xs:complexType mixed="true">
+  									<xs:attribute name="label" type="xs:string" use="required"/>
+  									<xs:attribute name="value" type="xs:string"/>
+  									<xs:attribute name="title" type="xs:string"/>
+  									<xs:attribute name="matchmode">
+  										<xs:simpleType>
+   											<xs:restriction base="xs:string">
+   												<xs:enumeration value="none"/>
+   												<xs:enumeration value="start"/>
+   												<xs:enumeration value="anywhere"/>
+ 												</xs:restriction>
+   										</xs:simpleType>
+  									</xs:attribute>
+  									<xs:attribute name="hidden" type="wxs:booleanType"/>
+  									<xs:attribute name="casesensitive" type="wxs:booleanType"/>
+  									<xs:attribute name="matchexpression" type="xs:string"/>
+  								</xs:complexType>
+  							</xs:element>
+  							<xs:element name="datasource">
+  								<xs:complexType>
+  									<xs:sequence>
+  										<xs:element ref="wxs:option" minOccurs="1" maxOccurs="unbounded"/>
+  									</xs:sequence>
+  								</xs:complexType>
+  							</xs:element>
+  						</xs:sequence>
+  						<xs:attribute name="count" type="xs:integer"/>
+  						<xs:attribute name="timeout" type="xs:integer"/>
+  						<xs:attribute name="callbackmethod" type="xs:string"/>
+  						<xs:attribute name="clientmatcher" type="xs:string"/>
+  						<xs:attribute name="servermatcher" type="xs:string"/>
+  						<xs:attribute name="width" type="xs:string"/>
+  						<xs:attribute name="maxheight" type="xs:string"/>
+  						<xs:attribute name="selectbox" type="wxs:booleanType"/>
+  					</xs:complexType>
+  				</xs:element> 
+  				<xs:element ref="wxs:option" minOccurs="0" maxOccurs="unbounded"/><!-- 下拉框/单选框等可能的配置 -->
    		</xs:sequence>
    		<xs:attribute name="type" type="wxs:wabacusInputboxType"/>
+   		<xs:attribute name="displayon" type="xs:string"/>
    		<xs:attribute name="depends" type="xs:string"/>
    		<xs:attribute name="styleproperty" type="xs:string"/>
    		<xs:attribute name="defaultvalue" type="xs:string"/>
@@ -704,9 +815,33 @@
    				</xs:restriction>
    			</xs:simpleType>
    		</xs:attribute>
+   		<xs:attribute name="beforedescription" type="xs:string"/>
+   		<xs:attribute name="afterdescription" type="xs:string"/>
    		<xs:anyAttribute processContents="skip"/>
    	</xs:complexType>
    </xs:element>
+	
+	<xs:element name="option"><!-- 下拉框/单选框/输入联想等选项的配置 -->
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="condition" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="value" type="xs:string"/>
+						</xs:sequence>
+						<xs:attribute name="name" type="xs:string" use="required"/>
+						<xs:attribute name="source" type="xs:string"/>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="label" type="xs:string"/>
+			<xs:attribute name="value" type="xs:string"/>
+			<xs:attribute name="source" type="xs:string"/>
+			<xs:attribute name="datasource" type="xs:string"/>
+			<xs:attribute name="type" type="xs:string"/>
+			<xs:anyAttribute processContents="skip"/>
+		</xs:complexType>
+	</xs:element>
 	
 	<!-- 对用户扩展的资源项中定义的子标签和属性不做校验，可以任意 -->
 	<xs:element name="extension">

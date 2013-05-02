@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -107,7 +107,7 @@ public class FileUpDataImportThread extends AbsDataImportThread
                         try
                         {
                             for(DataImportItem diitemTmp:lstDiitems)
-                            {//确保按用户配置的顺序进行数据导入
+                            {
                                 diitemTmp.backupOrDeleteDataFile();
                             }
                         }catch(Exception e)

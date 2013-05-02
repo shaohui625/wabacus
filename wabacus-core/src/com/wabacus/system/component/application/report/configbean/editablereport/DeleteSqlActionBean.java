@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -29,7 +29,6 @@ import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.WabacusAssistant;
@@ -38,34 +37,25 @@ public class DeleteSqlActionBean extends AbsEditSqlActionBean
 {
     private static Log log=LogFactory.getLog(DeleteSqlActionBean.class);
 
-    public DeleteSqlActionBean(EditableReportUpdateDataBean _owner)
+    public DeleteSqlActionBean(EditActionGroupBean ownerGroupBean)
     {
-        super(_owner);
+        super(ownerGroupBean);
     }
 
-    public void parseSql(SqlBean sqlbean,String reportTypeKey,String configSql)
+    public void parseActionscript(String reportTypeKey,String actionscript)
     {
-        configSql=this.parseAndRemoveReturnParamname(configSql);
-        int idxwhere=configSql.toLowerCase().indexOf(" where ");
-        if(idxwhere<=0)
-        {
-            this.sql=configSql;
-        }else
-        {
-            this.lstParamBeans=new ArrayList<EditableReportParamBean>();
-            StringBuffer sqlBuffer=new StringBuffer();
-            sqlBuffer.append(configSql.substring(0,idxwhere));
-            sqlBuffer.append(parseUpdateWhereClause(sqlbean,reportTypeKey,lstParamBeans,configSql.substring(idxwhere)));
-            this.sql=sqlBuffer.toString();
-        }
-        owner.getLstSqlActionBeans().add(this);
+        actionscript=this.parseAndRemoveReturnParamname(actionscript);
+        this.lstParamBeans=new ArrayList<EditableReportParamBean>();
+        this.sql=this.ownerGroupBean.getOwnerUpdateBean().parseStandardEditSql(actionscript,lstParamBeans,reportTypeKey);
+        this.ownerGroupBean.addActionBean(this);
     }
 
-    public void updateDBData(Map<String,String> mParamsValue,Map<String,String> mExternalParamsValue,Connection conn,ReportBean rbean,
-            ReportRequest rrequest) throws SQLException
+    public void updateData(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues)
+            throws SQLException
     {
         PreparedStatement pstmt=null;
-        AbsDatabaseType dbtype=rrequest.getDbType(rbean.getSbean().getDatasource());
+        AbsDatabaseType dbtype=rrequest.getDbType(this.ownerGroupBean.getDatasource());
+        Connection conn=rrequest.getConnection(this.ownerGroupBean.getDatasource());
         try
         {
             if(Config.show_sql)
@@ -80,11 +70,11 @@ public class DeleteSqlActionBean extends AbsEditSqlActionBean
                 {
                     paramBean=lstParamBeans.get(j);
                     paramBean.getDataTypeObj().setPreparedStatementValue(j+1,
-                            getParamValue(mParamsValue,mExternalParamsValue,rbean,rrequest,paramBean),pstmt,dbtype);
+                            getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean),pstmt,dbtype);
                 }
             }
             int rtnVal=pstmt.executeUpdate();
-            storeReturnValue(rrequest,mExternalParamsValue,String.valueOf(rtnVal));
+            storeReturnValue(rrequest,mParamValues,String.valueOf(rtnVal));
         }finally
         {
             WabacusAssistant.getInstance().release(null,pstmt);

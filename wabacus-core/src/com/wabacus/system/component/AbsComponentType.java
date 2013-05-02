@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -21,11 +21,13 @@ package com.wabacus.system.component;
 import java.util.List;
 
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.template.TemplateBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.WabacusResponse;
 import com.wabacus.system.assistant.ComponentAssistant;
+import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.buttons.AbsButtonType;
 import com.wabacus.system.component.container.AbsContainerType;
 import com.wabacus.util.Consts;
@@ -69,6 +71,19 @@ public abstract class AbsComponentType implements IComponentType
         return this.comCfgBean;
     }
     
+    protected boolean shouldDisplayMe()
+    {
+        if(!rrequest.checkPermission(this.comCfgBean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY)) return false;
+        AbsContainerConfigBean parentConfigBean=this.comCfgBean.getParentContainer();
+        while(parentConfigBean!=null)
+        {
+            if(!rrequest.checkPermission(parentConfigBean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY)) return false;
+            if(!rrequest.checkPermission(parentConfigBean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return false;
+            parentConfigBean=parentConfigBean.getParentContainer();
+        }
+        return true;
+    }
+    
     protected String getTitleDisplayValue(String realtitle,String buttonsOnTitle)
     {
         realtitle=realtitle==null?"":realtitle.trim();
@@ -80,7 +95,7 @@ public abstract class AbsComponentType implements IComponentType
             titlealign=comCfgBean.getTitlealign();
             titlealign=titlealign==null||titlealign.trim().equals("")?"left":titlealign.toLowerCase().trim();
         }
-        String buttonalign=null;//标题栏上按钮对齐方式
+        String buttonalign=null;
         if(!buttonsOnTitle.trim().equals(""))
         {
             buttonsOnTitle="<span style=\"vertical-align:bottom;\">"+buttonsOnTitle+"</span>";
@@ -90,54 +105,45 @@ public abstract class AbsComponentType implements IComponentType
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("<table class='cls-title-table' cellpadding='0' cellspacing='0' width='100%'>");
         resultBuf.append("<tr class='cls-title-tr'>");
-        if(titlealign!=null&&buttonalign!=null&&!titlealign.equals(buttonalign))
+        if(titlealign==null||buttonalign==null||titlealign.equals(buttonalign))
         {
-            resultBuf.append("<td align='left' width='50%' nowrap>");
-            if(titlealign.equals("left"))
+            resultBuf.append("<td align='"+titlealign+"'>");
+            if(buttonalign==null)
             {
                 resultBuf.append(realtitle);
-            }else if(buttonalign.equals("left"))
+            }else if(titlealign==null)
             {
                 resultBuf.append(buttonsOnTitle);
             }else
-            {
-                resultBuf.append("&nbsp;");
-            }
-            resultBuf.append("</td>");
-            if(titlealign.equals("center"))
-            {
-                resultBuf.append("<td align='center' nowrap>").append(realtitle).append("</td>");
-            }else if(buttonalign.equals("center"))
-            {
-                resultBuf.append("<td align='center' nowrap>").append(buttonsOnTitle).append("</td>");
-            }
-            resultBuf.append("<td align='right' width='50%' nowrap>");
-            if(titlealign.equals("right"))
-            {
+            {//本次同时显示两者，但对齐方式一致
+                if("left".equals(this.comCfgBean.getButtonsBean().getTitleposition()))
+                {
+                    resultBuf.append(buttonsOnTitle);
+                    resultBuf.append(WabacusAssistant.getInstance().getSpacingDisplayString(this.comCfgBean.getButtonsBean().getButtonspacing()));
+                }
                 resultBuf.append(realtitle);
-            }else if(buttonalign.equals("right"))
-            {
-                resultBuf.append(buttonsOnTitle);
-            }else
-            {
-                resultBuf.append("&nbsp;");
+                if(!"left".equals(this.comCfgBean.getButtonsBean().getTitleposition()))
+                {
+                    resultBuf.append(WabacusAssistant.getInstance().getSpacingDisplayString(this.comCfgBean.getButtonsBean().getButtonspacing()));
+                    resultBuf.append(buttonsOnTitle);
+                }
             }
             resultBuf.append("</td>");
         }else
         {
-            if(buttonalign==null)
+            if(titlealign.equals("left"))
             {
-                resultBuf.append("<td align='"+titlealign+"'>").append(realtitle).append("</td>");
-            }else if(titlealign==null)
+                resultBuf.append("<td align='left' width='1%' nowrap>").append(realtitle).append("</td>");
+                resultBuf.append("<td align='"+buttonalign+"' nowrap>").append(buttonsOnTitle).append("</td>");
+            }else if(titlealign.equals("right"))
             {
-                resultBuf.append("<td align='"+buttonalign+"'>").append(buttonsOnTitle).append("</td>");
+                resultBuf.append("<td align='"+buttonalign+"' nowrap>").append(buttonsOnTitle).append("</td>");
+                resultBuf.append("<td align='left' width='1%' nowrap>").append(realtitle).append("</td>");
             }else
             {
-                resultBuf.append("<td align='"+titlealign+"'>");
-                resultBuf.append(realtitle);
-                resultBuf.append("<span  style=\"margin-left:2px;\">&nbsp;</span>");
-                resultBuf.append(buttonsOnTitle);
-                resultBuf.append("</td>");
+                if(buttonalign.equals("left")) resultBuf.append("<td align='left' width='1%' nowrap>").append(buttonsOnTitle).append("</td>");
+                resultBuf.append("<td align='"+titlealign+"' nowrap>").append(realtitle).append("</td>");
+                if(buttonalign.equals("right")) resultBuf.append("<td align='right' width='1%' nowrap>").append(buttonsOnTitle).append("</td>");
             }
         }
         resultBuf.append("</tr></table>");
@@ -151,7 +157,7 @@ public abstract class AbsComponentType implements IComponentType
         {
             String title=comCfgBean.getTitle(rrequest);
             if(title!=null&&!title.trim().equals(""))
-            {//需要显示title
+            {
                 //resultBuf.append("<span class=\"cls-title\">").append(Tools.htmlEncode(title.trim())).append("</span>");
                 resultBuf.append("<span class=\"cls-title\">").append(title.trim()).append("</span>");
             }
@@ -279,7 +285,7 @@ public abstract class AbsComponentType implements IComponentType
         resultBuf.append(showMetaDataDisplayStringStart()).append(">");
         resultBuf.append(showMetaDataContentDisplayString());
         resultBuf.append("</span>");
-        resultBuf.append(showContextMenu());//显示右键菜单
+        resultBuf.append(showContextMenu());
         return resultBuf.toString();
     }
     

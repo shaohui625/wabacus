@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -32,6 +32,7 @@ import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
+import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.EditableListReportType2;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
@@ -45,16 +46,10 @@ public abstract class AbsPopUpBox extends AbsInputBox
 
     protected Map<String,String> mDynParamConditions;
     
-    protected int pagewidth;
+    protected String popupparams;
 
-    protected int pageheight;
-    
     protected String initsize;//初始大小，可配置值包括min/max/normal，分别表示最大化、最小化、正常窗口大小（即上面pagewidth/pageheight配置的大小）
     
-    protected boolean maxbtn;
-    
-    protected boolean minbtn;
-
     public AbsPopUpBox(String typename)
     {
         super(typename);
@@ -65,29 +60,27 @@ public abstract class AbsPopUpBox extends AbsInputBox
         return poppageurl;
     }
 
-    public int getPagewidth()
+    public String getPopupparams()
     {
-        return pagewidth;
+        return popupparams;
     }
 
-    public void setPagewidth(int pagewidth)
+    public void setPopupparams(String popupparams)
     {
-        this.pagewidth=pagewidth;
+        this.popupparams=popupparams;
     }
 
-    public int getPageheight()
-    {
-        return pageheight;
-    }
-
-    public void setPageheight(int pageheight)
-    {
-        this.pageheight=pageheight;
-    }
-    
     protected String getDefaultStylePropertyForDisplayMode2()
     {
-        return "onfocus='this.select();' onkeypress='return onKeyEvent(event);' class='cls-inputbox2' onmouseover=\"this.style.cursor='pointer';\" readonly";
+        String resultStr="onfocus='this.select();' onkeypress='return onKeyEvent(event);' onmouseover=\"this.style.cursor='pointer';\" readonly";
+        if(this.hasDescription())
+        {
+            resultStr+=" class='cls-inputbox2' ";
+        }else
+        {
+            resultStr+=" class='cls-inputbox2-full' ";
+        }
+        return resultStr;
     }
     
     public Map<String,String> getMDynParamColumns()
@@ -119,11 +112,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
         {
             resultBuf.append(",paramConditions:\"").append(getDynParamsAsJsonString(this.mDynParamConditions)).append("\"");
         }
-        resultBuf.append(",pagewidth:\"").append(this.pagewidth).append("\"");
-        resultBuf.append(",pageheight:\"").append(this.pageheight).append("\"");
-        if(this.initsize!=null) resultBuf.append(",initsize:\"").append(this.initsize).append("\"");
-        resultBuf.append(",maxbtn:\"").append(this.maxbtn).append("\"");
-        resultBuf.append(",minbtn:\"").append(this.minbtn).append("\"");
+        resultBuf.append(",popupparams:\"").append(this.popupparams).append("\"");
         resultBuf.append("}");
         return Tools.jsParamEncode(resultBuf.toString());
     }
@@ -152,22 +141,10 @@ public abstract class AbsPopUpBox extends AbsInputBox
     public void loadInputBoxConfig(IInputBoxOwnerBean ownerbean,XmlElementBean eleInputboxBean)
     {
         super.loadInputBoxConfig(ownerbean,eleInputboxBean);
-        String width=eleInputboxBean.attributeValue("width");
-        if(width!=null&&!width.trim().equals(""))
-        {
-            this.pagewidth=Tools.getWidthHeightIntValue(width);
-        }
-        String height=eleInputboxBean.attributeValue("height");
-        if(height!=null&&!height.trim().equals(""))
-        {
-            this.pageheight=Tools.getWidthHeightIntValue(height);
-        }
+        String popupparams=eleInputboxBean.attributeValue("popupparams");
+        if(popupparams!=null)  this.popupparams=popupparams.trim();
         String initsize=eleInputboxBean.attributeValue("initsize");
         if(initsize!=null) this.initsize=initsize.trim().toLowerCase();
-        String maxbtn=eleInputboxBean.attributeValue("maxbtn");
-        if(maxbtn!=null) this.maxbtn=maxbtn.toLowerCase().trim().equals("true");
-        String minbtn=eleInputboxBean.attributeValue("minbtn");
-        if(minbtn!=null) this.minbtn=minbtn.toLowerCase().trim().equals("true");
         parseDynParamsInUrl();
     }
     
@@ -189,7 +166,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
             paramNameTmp=paramTmp.substring(0,idxTmp).trim();
             paramValueTmp=paramTmp.substring(idxTmp+1).trim();
             if(Tools.isDefineKey("@",paramValueTmp))
-            {//从某列中取数据的动态参数
+            {
                 this.mDynParamColumns.put(paramNameTmp,Tools.getRealKeyByDefine("@",paramValueTmp));
             }else if(Tools.isDefineKey("condition",paramValueTmp))
             {
@@ -234,7 +211,12 @@ public abstract class AbsPopUpBox extends AbsInputBox
                 }
             }
         }
+        popupparams=WabacusAssistant.getInstance().addDefaultPopupParams(popupparams,this.initsize,getDefaultWidth(),getDefaultHeight(),"closePopUpPageEvent");
     }
+    
+    protected abstract String getDefaultWidth();
+    
+    protected abstract String getDefaultHeight();
     
     protected void processStylePropertyAfterMerged(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
     {
@@ -271,11 +253,11 @@ public abstract class AbsPopUpBox extends AbsInputBox
         }
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("<script language=\"javascript\">");
-        resultBuf.append("function selectOK(value,name,label,nonclose){");
+        resultBuf.append("function selectOK(value,name,label,closeme){");
         resultBuf.append("if(name==null||name==''||name=='"+paramname+"'){");
         resultBuf.append("parent.setPopUpBoxValueToParent(value,'").append(realinputboxid).append("','").append(fillmode);
         resultBuf.append("','").append(this.owner.getReportBean().getGuid()).append("','").append(this.getTypename()).append("');");
-        resultBuf.append("}else{");//指定了要设置的参数名
+        resultBuf.append("}else{");
         if(isConditionBox)
         {
             resultBuf.append("parent.setReportInputBoxValue(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
@@ -287,7 +269,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
             resultBuf.append("newvalues=newvalues+\"}\";");
             AbsReportType reportTypeObj=Config.getInstance().getReportType(this.owner.getReportBean().getType());
             if(reportTypeObj instanceof EditableListReportType2)
-            {
+            {//如果是editablelist2或listform
                 resultBuf.append("var srcboxObj=parent.document.getElementById('"+realinputboxid+"');");//取到弹出窗口对应的源输入框对象，以便下面设置其它列的值时，可以取到其<tr/>对象
                 resultBuf
                         .append("parent.setEditableListReportColValueInRow(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
@@ -300,7 +282,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
             }
         }
         resultBuf.append("}");
-        resultBuf.append("if(nonclose!==false) parent.ymPrompt.doHandler('close',null);}");
+        resultBuf.append("if(closeme!==false) parent.closePopupWin();}");
         resultBuf.append("</script>");
         return resultBuf.toString();
     }

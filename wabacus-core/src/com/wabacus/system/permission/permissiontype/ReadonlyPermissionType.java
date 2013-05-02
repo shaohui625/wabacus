@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -47,7 +47,7 @@ public class ReadonlyPermissionType extends AbsPermissionType
         }else
         {
             if(parentPermission)
-            {//如果父组是readonly为false，则需要判断子元素的权限是否readonly权限
+            {
                 return false;
             }else
             {

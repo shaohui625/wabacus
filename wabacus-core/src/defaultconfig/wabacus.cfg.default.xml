@@ -10,6 +10,7 @@
 		<item name="show-sql" value="false"/><!-- 是否显示执行的SQL语句或存储过程 -->
 		<item name="classcache" value="true"/><!--是否将动态生成的字节码缓存在应用的内存中-->
 		<item name="encode" value="utf-8"/>
+		<item name="prompt-dialog-type" value="artdialog"/><!-- 提示组件类型 -->
 		<item name="default-jsvalidatetype" value="0"/><!-- 客户端校验类型。0：点击搜索或保存按钮时进行校验；1：焦点离开输入框时马上校验 -->
 		<item name="default-cellresize" value="1"/><!-- 指定整个项目中所有数据自动列表报表的表格单元格默认可移动性 -->
 		<item name="default-celldrag" value="1"/><!-- 指定整个项目中所有数据自动列表报表的表格单元格默认可拖动性 -->
@@ -31,6 +32,7 @@
 		<item name="default-checkpermission" value="true"/><!-- 本应用是否要检查权限，如果在不需要检查权限的应用中关闭它，可以改善性能 -->
 		<item name="default-pagepersonalizeclass" value="com.wabacus.system.commoninterface.DefaultPagePersonalizePersistenceImpl"/><!-- 默认保存页面个性化信息的类 -->
 		<item name="default-reportpersonalizeclass" value="com.wabacus.system.commoninterface.DefaultReportPersonalizePersistenceImpl"/><!-- 默认保存报表/表单个性化信息的类 -->
+		<item name="default-tabpanel-titlewidth" value="150px"/><!-- <tabpanel/>容器默认标题宽度 -->
 	</system>
 	<!-- 配置所有内置的输入框类型 -->
 	<inputbox-types default="textbox">
@@ -60,18 +62,18 @@
 		<inputbox-type name="radiobox" class="com.wabacus.system.inputbox.RadioBox"
 			defaultstyleproperty="onkeypress=&quot;return onInputBoxKeyPress(event);&quot;"/><!-- 单选框 -->
 		<inputbox-type name="datepicker" class="com.wabacus.system.inputbox.DatePickerBox"
-			defaultstyleproperty="class=&quot;cls-inputbox-normal&quot;
-										 onfocus=&quot;this.isOnFocus=true;this.className='cls-inputbox-focus';&quot; 
-										 onblur=&quot;this.isOnFocus=false;this.className='cls-inputbox-normal';&quot;
-										 onmouseover=&quot;if(!this.isOnFocus){this.className='cls-inputbox-mouseover';}&quot; 
-										 onmouseout=&quot;if(!this.isOnFocus){this.className='cls-inputbox-normal';}&quot;
+			defaultstyleproperty="class=&quot;cls-inputbox-normal cls-inputbox-datepicker&quot;
+										 onfocus=&quot;this.isOnFocus=true;this.className='cls-inputbox-focus cls-inputbox-datepicker';&quot; 
+										 onblur=&quot;this.isOnFocus=false;this.className='cls-inputbox-normal cls-inputbox-datepicker';&quot;
+										 onmouseover=&quot;if(!this.isOnFocus){this.className='cls-inputbox-mouseover cls-inputbox-datepicker';}&quot; 
+										 onmouseout=&quot;if(!this.isOnFocus){this.className='cls-inputbox-normal cls-inputbox-datepicker';}&quot;
 										 onkeypress=&quot;return onInputBoxKeyPress(event);&quot;"/><!-- 日期选择框 -->
 		<inputbox-type name="datepicker2" class="com.wabacus.system.inputbox.DatePickerBox2"
-			defaultstyleproperty="class=&quot;cls-inputbox-normal&quot;
-										 onfocus=&quot;this.isOnFocus=true;this.className='cls-inputbox-focus';&quot; 
-										 onblur=&quot;this.isOnFocus=false;this.className='cls-inputbox-normal';&quot;
-										 onmouseover=&quot;if(!this.isOnFocus){this.className='cls-inputbox-mouseover';}&quot; 
-										 onmouseout=&quot;if(!this.isOnFocus){this.className='cls-inputbox-normal';}&quot;
+			defaultstyleproperty="class=&quot;cls-inputbox-normal cls-inputbox-datepicker&quot;
+										 onfocus=&quot;this.isOnFocus=true;this.className='cls-inputbox-focus cls-inputbox-datepicker';&quot; 
+										 onblur=&quot;this.isOnFocus=false;this.className='cls-inputbox-normal cls-inputbox-datepicker';&quot;
+										 onmouseover=&quot;if(!this.isOnFocus){this.className='cls-inputbox-mouseover cls-inputbox-datepicker';}&quot; 
+										 onmouseout=&quot;if(!this.isOnFocus){this.className='cls-inputbox-normal cls-inputbox-datepicker';}&quot;
 										 onkeypress=&quot;return onInputBoxKeyPress(event);&quot;"/><!-- 日期选择框2 -->
 		<inputbox-type name="passwordbox" class="com.wabacus.system.inputbox.PasswordBox"
 			defaultstyleproperty="class=&quot;cls-inputbox-normal&quot;
@@ -129,7 +131,7 @@
 	  <report-type name="simplelist" class="com.wabacus.system.component.application.report.ListReportType"/>
 	  <report-type name="list" class="com.wabacus.system.component.application.report.UltraListReportType"/>
 	  <report-type name="blocklist" class="com.wabacus.system.component.application.report.BlockListReportType"/>
-	  <report-type name="crosslist" class="com.wabacus.system.component.application.report.CrossStatisticListReportType"/>
+	  <report-type name="crosslist" class="com.wabacus.system.component.application.report.CrossListReportType"/>
 	  <report-type name="detail" class="com.wabacus.system.component.application.report.DetailReportType"/>
 	  <report-type name="form" class="com.wabacus.system.component.application.report.EditableFormReportType"/>
 	  <report-type name="listform" class="com.wabacus.system.component.application.report.EditableListFormReportType"/>
@@ -138,12 +140,15 @@
 	  <report-type name="editablelist2" class="com.wabacus.system.component.application.report.EditableListReportType2"/>
 	  <report-type name="editabledetail2" class="com.wabacus.system.component.application.report.EditableDetailReportType2"/>
 	</report-types>
-	<!-- 配置本项目中所有报表页面都必须包含的js文件 -->
+	<!-- 配置本项目中所有报表页面都必须包含的js文件 %ENCODING%表示当前所使用的编码类型（即在wabacus.cfg.xml中encoding中的配置值）的占位符-->
 	<global-jsfiles>
-		<js-file>/webresources/script/ymPrompt.js</js-file>
+		<js-file>/webresources/script/wabacus_system.js</js-file>
+		<js-file>/webresources/script/wabacus_util.js</js-file>
+		<js-file>/webresources/script/%ENCODING%/wabacus_api.js</js-file>
 	</global-jsfiles>
-	<!-- 配置本项目中所有报表页面都必须包含的css文件 -->
+	<!-- 配置本项目中所有报表页面都必须包含的css文件，%SKIN%为所选主题风格的占位符 -->
 	<global-cssfiles>
-		<css-file></css-file>
+		<css-file>/webresources/skin/%SKIN%/wabacus_system.css</css-file>
+		<css-file>/webresources/skin/%SKIN%/wabacus_container.css</css-file>
 	</global-cssfiles>
 </wabacus-config>

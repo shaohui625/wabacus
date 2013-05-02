@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -26,6 +26,7 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
@@ -42,20 +43,6 @@ public abstract class AbsDetailReportType extends AbsReportType
     public AbsDetailReportType(AbsContainerType parentContainerType,IComponentConfigBean comCfgBean,ReportRequest rrequest)
     {
         super(parentContainerType,comCfgBean,rrequest);
-    }
-
-    protected String showMetaDataDisplayStringStart()
-    {
-        if(rbean.getMDependChilds()==null||rbean.getMDependChilds().size()==0) return super.showMetaDataDisplayStringStart();
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append(super.showMetaDataDisplayStringStart());
-        StringBuffer childReportidsBuf=new StringBuffer();
-        for(String childReportidTmp:rbean.getMDependChilds().keySet())
-        {
-            childReportidsBuf.append(childReportidTmp).append(";");
-        }
-        resultBuf.append(" dependingChildReportIds=\"").append(childReportidsBuf.toString()).append("\"");
-        return resultBuf.toString();
     }
 
     protected String showReportScrollStartTag()
@@ -148,7 +135,7 @@ public abstract class AbsDetailReportType extends AbsReportType
                 }
             }
         }
-        if(dbean.getColselect()==null) dbean.setColselect(false);//这种报表类型默认不支持列选择功能
+        if(dbean.getColselect()==null) dbean.setColselect(false);
         
         boolean isShowScrollX=reportbean.getScrollwidth()!=null&&!reportbean.getScrollwidth().trim().equals("");
         boolean isShowScrollY=reportbean.getScrollheight()!=null&&!reportbean.getScrollheight().trim().equals("");
@@ -159,11 +146,14 @@ public abstract class AbsDetailReportType extends AbsReportType
 
     private void constructSqlForDetailType(SqlBean sqlbean)
     {
-        if(sqlbean==null) return;
-        String value=sqlbean.getValue();
-        if(value==null||value.trim().equals("")||sqlbean.isStoreProcedure()) return;
-        sqlbean.doPostLoadSql(false);
-        sqlbean.buildPageSplitSql();
+        if(sqlbean==null||sqlbean.getLstDatasetBeans()==null) return;
+        for(ReportDataSetBean svbeanTmp:sqlbean.getLstDatasetBeans())
+        {
+            String value=svbeanTmp.getValue();
+            if(value==null||value.trim().equals("")||svbeanTmp.isStoreProcedure()||svbeanTmp.getCustomizeDatasetObj()!=null) continue;
+            svbeanTmp.doPostLoadSql(false);
+            if(svbeanTmp.isIndependentDataSet()) svbeanTmp.buildPageSplitSql();
+        }
     }
     
     public String getReportFamily()

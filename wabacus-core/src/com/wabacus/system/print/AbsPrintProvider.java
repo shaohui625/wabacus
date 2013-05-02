@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -64,7 +64,7 @@ public abstract class AbsPrintProvider
 
 
 //                {//是报表
-//                    rrequest.getCdb(appidTmp).setPrintPagesize(this.ppcbean.getPrintPageSize(appidTmp));
+
 
 
 
@@ -90,7 +90,7 @@ public abstract class AbsPrintProvider
                     if(pagecntTmp>maxpagecnt) maxpagecnt=pagecntTmp;
                 }
                 if(maxpagecnt<pspagebeanTmp.getMinpagecount()) maxpagecnt=pspagebeanTmp.getMinpagecount();
-                if(pspagebeanTmp.getMaxpagecount()>0&&maxpagecnt>pspagebeanTmp.getMaxpagecount()) maxpagecnt=pspagebeanTmp.getMaxpagecount();//大于本页面配置的最大页数
+                if(pspagebeanTmp.getMaxpagecount()>0&&maxpagecnt>pspagebeanTmp.getMaxpagecount()) maxpagecnt=pspagebeanTmp.getMaxpagecount();
                 if(maxpagecnt==0) continue;
                 if(pspagebeanTmp.isMergeUp()&&totalpagecnt>0)
                 {
@@ -156,7 +156,7 @@ public abstract class AbsPrintProvider
 
     protected void printApplication(String appid)
     {
-        IApplicationConfigBean appConfigBean=this.ppcbean.getOwner().getPageBean().getApplicationChild(appid,true);//要打印内容所属的应用对象
+        IApplicationConfigBean appConfigBean=this.ppcbean.getOwner().getPageBean().getApplicationChild(appid,true);
         AbsApplicationType appTypeObjTmp=(AbsApplicationType)rrequest.getComponentTypeObj(appConfigBean,null,true);
         List<PrintSubPageBean> lstPrintPagebean=null;
         if(appTypeObjTmp instanceof AbsReportType&&appConfigBean.getPrintBean()!=null
@@ -232,7 +232,7 @@ public abstract class AbsPrintProvider
             {
                 this.wresponse.print(((AbsListReportType)reportTypeObj).showReportData(true));
             }else
-            {//reportid.data.col.xxx格式
+            {
                 ColBean cbean=reportTypeObj.getReportBean().getDbean().getColBeanByColProperty(lstParts.get(2));
                 if(lstParts.size()==3)
                 {

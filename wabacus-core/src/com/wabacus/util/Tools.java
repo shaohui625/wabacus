@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -18,7 +18,6 @@
  */
 package com.wabacus.util;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -41,7 +40,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.system.assistant.WabacusAssistant;
 
 public class Tools
 {
@@ -75,12 +76,10 @@ public class Tools
     {
         if(value==null||value.trim().equals("")) return 0;
         value=value.toLowerCase().trim();
-        if(value.endsWith("px")||value.endsWith("pt"))
-        {
-            value=value.substring(0,value.length()-2).trim();
-        }
-        if(value.equals("")) return 0;
-        return Integer.parseInt(value);
+        String[] arr=WabacusAssistant.getInstance().parseHtmlElementSizeValueAndType(value);
+        if(arr==null||arr.length==0) return 0;
+        if(arr[0]==null||arr[0].trim().equals("")) return 0;
+        return Integer.parseInt(arr[0]);
     }
     
     public static String getStrDatetime(String dateformat,Date date)
@@ -90,7 +89,7 @@ public class Tools
         
         
         
-        //        }
+        
         SimpleDateFormat format=new SimpleDateFormat(dateformat);
         String strDate=format.format(date);
         return strDate;
@@ -555,7 +554,7 @@ public class Tools
         xmlvalue=xmlvalue.trim();
         startTag=startTag.trim();
         endTag=endTag.trim();
-        //      if (!xmlvalue.toLowerCase().startsWith(startTag.toLowerCase())
+        
         
         
         
@@ -577,9 +576,10 @@ public class Tools
         return value.trim();
     }
 
-    public static String removeBracketAndContentInside(String str)
+    public static String removeBracketAndContentInside(String str,boolean throwExceptionIfNotMatch)
     {
         if(str==null||str.trim().equals("")) return str;
+        String strOld=str;
         str=replaceCharacterInQuote(str,'(',"WX_QUOTE_LEFT",true);
         str=replaceCharacterInQuote(str,')',"WX_QUOTE_RIGHT",true);//替换掉引号中的右括号
         boolean flag=false;
@@ -601,7 +601,11 @@ public class Tools
                 resultBuf.append(str.charAt(i));
             }
         }
-        if(countleft==0&&i==str.length()) str=resultBuf.toString();//处理完所有字符，且不存在左右括号不配对的情况
+        if(countleft==0&&i==str.length()) str=resultBuf.toString();
+        if(throwExceptionIfNotMatch&&(str.indexOf("(")>=0||str.indexOf(")")>=0))
+        {
+            throw new WabacusConfigLoadingException("解析字符串"+strOld+"失败，左右括号不匹配");
+        }
         str=Tools.replaceAll(str,"WX_QUOTE_LEFT","(");
         str=Tools.replaceAll(str,"WX_QUOTE_RIGHT",")");
         return str;
@@ -814,7 +818,7 @@ public class Tools
         return resultBuf.toString();
     }
 
-    private static List<String> lstJsPropertyNames=new ArrayList<String>();//输入框中js方法属性名列表
+    private static List<String> lstJsPropertyNames=new ArrayList<String>();
     static
     {
         lstJsPropertyNames.add("onblur");
@@ -912,7 +916,7 @@ public class Tools
             resultBuf.append(propNameTmp).append(":").append(propValTmp.trim()).append(";");
         }
         for(Entry<String,String> attrEntryTmp:mAttributes2.entrySet())
-        {//将mAttributes2剩下的属性加入结果样式字符串中
+        {
             propNameTmp=attrEntryTmp.getKey().trim();
             propValTmp=attrEntryTmp.getValue();
             if(propValTmp==null||propValTmp.trim().equals("")) continue;
@@ -1025,7 +1029,7 @@ public class Tools
                         {
                             quotetype='\"';
                         }else if(propString.charAt(j)=='\'')
-                        {//第一个碰到的非空字符是单引号，说明本属性值是以单引号括住
+                        {
                             quotetype='\'';
                         }
                         
@@ -1162,7 +1166,7 @@ public class Tools
     
     public static String urlDecode(String url)
     {
-        if(url==null||url.trim().equals("")||url.indexOf("?")<=0) return url;//此url没有参数
+        if(url==null||url.trim().equals("")||url.indexOf("?")<=0) return url;
         int idx=url.indexOf("?");
         StringBuffer urlBuf=new StringBuffer();
         urlBuf.append(url.substring(0,idx)).append("?");
@@ -1274,7 +1278,7 @@ public class Tools
                 str=lst.get(1);
                 if(str.length()==4)
                 {
-                    if(hasYear) return null;//上面已经存在year
+                    if(hasYear) return null;
                     resultBuf.append(seperate).append("yyyy");
                     hasYear=true;
                 }else if(str.length()==2||str.length()==1)
@@ -1377,5 +1381,11 @@ public class Tools
             resultBuf.append((int)(Math.random()*10));
         }
         return resultBuf.toString();
+    }
+    
+    public static boolean isEmpty(String string,boolean ignoreWhiteSpace)
+    {
+        if(string==null) return true;
+        return ignoreWhiteSpace?string.trim().equals(""):string.equals("");
     }
 }

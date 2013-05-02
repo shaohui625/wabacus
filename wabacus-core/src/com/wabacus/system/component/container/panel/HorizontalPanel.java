@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -66,6 +66,80 @@ public class HorizontalPanel extends AbsPanelType
         wresponse.println(showContainerEndPart());
     }
 
+
+
+
+
+
+//        /**
+//         * 挑出本次要显示的所有子组件
+//         */
+
+
+
+
+
+
+
+
+
+//        {//如果只有一个要显示的元素，则只要在子组件本身的<table/>中控制宽度即可，不需在当前容器对应<td/>中指定宽度
+//            IComponentConfigBean childCcbeanTmp=lstChildrenDisplayBeans.get(0).getChildConfigBean();
+
+
+
+
+
+
+
+
+
+//
+//        /**
+
+//         */
+//        boolean isAllSetWidthInParentTd=true;//最后一子组件前面所有子组件是否都在其对应的本容器的<td/>中控制宽度，如果是的话，则最后一个组件将不能在其对应的父容器中的<td/>中指定宽度，它必须占据剩余空间
+
+
+
+
+
+
+
+
+//            }else
+
+
+
+
+
+//            {//没有配置width，或配置的width无效
+//                isAllSetWidthInParentTd=false;//最后一个子组件前面的子组件存在没有配置width的
+
+
+
+
+//            {//如果配置宽度大于等于100%，则不在<td/>中控制它的宽度，因为这样没有意义
+//                isAllSetWidthInParentTd=false;
+
+
+
+
+//            {//当前是最后一个子组件，且前面的子组件都是在其所属<td/>中控制宽度，则不管此子组件的width配置成什么值，其对应的此容器的<td/>都不能指定宽度（因为它必须占据剩余的所有空间）
+//                if(!childWidthArrTmp[1].equals("%")) cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);//如果此子组件配置的宽度不是百分比，则由报表自己控制宽度，如果为百分比，则就显示为100%
+
+
+
+//                {//配置的宽度是百分比，则宽度在对应此容器<td/>中控制
+
+
+//                {//如果配置的是像素，则只要子组件自己显示width
+//                    cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);
+
+
+
+
+    
     private void initChildrenDisplay()
     {
         lstChildrenDisplayBeans=new ArrayList<ChildDisplayBean>();
@@ -79,19 +153,6 @@ public class HorizontalPanel extends AbsPanelType
             cdbeanTmp.setChildConfigBean(childConfigBeanTmp);
             lstChildrenDisplayBeans.add(cdbeanTmp);
         }
-        if(lstChildrenDisplayBeans.size()==1)
-        {//如果只有一个要显示的元素，则只要在子组件本身的<table/>中控制宽度即可，不需在当前容器对应<td/>中指定宽度
-            IComponentConfigBean childCcbeanTmp=lstChildrenDisplayBeans.get(0).getChildConfigBean();
-            if(childCcbeanTmp instanceof ReportBean)
-            {
-                lstChildrenDisplayBeans.get(0).setChildDisplayWidth(((ReportBean)childCcbeanTmp).getDisplayWidth());
-            }else
-            {
-                lstChildrenDisplayBeans.get(0).setChildDisplayWidth(childCcbeanTmp.getWidth());
-            }
-        }
-
-        boolean isAllSetWidthInParentTd=true;//最后一子组件前面所有子组件是否都在其对应的本容器的<td/>中控制宽度，如果是的话，则最后一个组件将不能在其对应的父容器中的<td/>中指定宽度，它必须占据剩余空间
         String childWidthTmp;
         String[] childWidthArrTmp;
         for(int i=0,len=lstChildrenDisplayBeans.size()-1;i<=len;i++)     
@@ -106,29 +167,22 @@ public class HorizontalPanel extends AbsPanelType
             }
             childWidthArrTmp=WabacusAssistant.getInstance().parseHtmlElementSizeValueAndType(childWidthTmp);
             if(childWidthArrTmp==null||childWidthArrTmp[0].equals("0"))
-            {//没有配置width，或配置的width无效
-                isAllSetWidthInParentTd=false;
+            {
                 continue;
             }
             int iwidthvalue=Integer.parseInt(childWidthArrTmp[0]);
-            if(childWidthArrTmp[1].equals("%")&&iwidthvalue>=100)
-            {//如果配置宽度大于等于100%，则不在<td/>中控制它的宽度，因为这样没有意义
-                isAllSetWidthInParentTd=false;
-                cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);
-                continue;
-            }
-            if(i==len&&isAllSetWidthInParentTd)
-            {//当前是最后一个子组件，且前面的子组件都是在其所属<td/>中控制宽度，则不管此子组件的width配置成什么值，其对应的此容器的<td/>都不能指定宽度（因为它必须占据剩余的所有空间）
-                if(!childWidthArrTmp[1].equals("%")) cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);
-            }else
+            if(childWidthArrTmp[1].equals("%"))
             {
-                if(childWidthArrTmp[1].equals("%"))
-                {//配置的宽度是百分比，则宽度在对应此容器<td/>中控制
-                    cdbeanTmp.setParentTdWidth(iwidthvalue+childWidthArrTmp[1]);
-                }else
-                {
+                if(lstChildrenDisplayBeans.size()==1)
+                {//只有一个元素，则不在父容器<td/>中控制它的百分比，而是让报表自己显示百分比
+                    cdbeanTmp.setParentTdWidth(null);
                     cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);
                 }
+                if(iwidthvalue>=100) cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);//如果配置宽度大于等于100%，则不在<td/>中控制它的宽度，因为这样没有意义
+            }else
+            {
+                cdbeanTmp.setParentTdWidth(iwidthvalue+childWidthArrTmp[1]);
+                cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);
             }
         }
     }
@@ -144,7 +198,7 @@ public class HorizontalPanel extends AbsPanelType
                 tdwidth=childConfigBean.getWidth().toLowerCase().trim();
                 if(tdwidth.indexOf("%")<0&&(childConfigBean.getLeft()!=null&&!childConfigBean.getLeft().trim().equals("")&&childConfigBean.getLeft().indexOf("%")<0||
                         childConfigBean.getRight()!=null&&!childConfigBean.getRight().trim().equals("")&&childConfigBean.getRight().indexOf("%")<0))
-                {//配置的宽度不是百分比，且配置了left或right，且不是百分比，则所在父容器的宽度为组件width+组件left+组件right
+                {
                     int itdwidth=getRealIntSizeByString(tdwidth);
                     if(itdwidth<0) itdwidth=0;
                     int ileft=0;
@@ -178,7 +232,7 @@ public class HorizontalPanel extends AbsPanelType
      * 比如传入"30px" 得到30等。
      * @param size
      * @return
-     *
+     *//*
     private int getRealIntSizeByString(String size)
     {
         if(size==null||size.trim().equals("")) return 0;

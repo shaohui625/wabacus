@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -52,7 +52,7 @@ public class ComponentPermissionBean extends AbsPermissionBean
         if(!AuthorizationAssistant.getInstance().isExistPermissiontype(permissiontype)) return Consts.CHKPERMISSION_UNSUPPORTEDTYPE;
         if(!AuthorizationAssistant.getInstance().isExistValueOfPermissiontype(permissiontype,permissionvalue))
             return Consts.CHKPERMISSION_UNSUPPORTEDVALUE;
-        //如果本次是判断当前组件的权限
+        
         if(parttype==null||parttype.trim().equals(""))
         {
             permissiontype=permissiontype.trim();

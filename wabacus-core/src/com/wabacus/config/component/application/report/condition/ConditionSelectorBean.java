@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -51,7 +51,7 @@ public class ConditionSelectorBean implements Cloneable
 
     private ConditionBean cbean;
 
-    private List<ConditionSelectItemBean> lstSelectItemBeans;//当前条件选择器的选项列表
+    private List<ConditionSelectItemBean> lstSelectItemBeans;
 
     private Map<String,ConditionSelectItemBean> mSelectItemBeans;
 
@@ -274,7 +274,7 @@ public class ConditionSelectorBean implements Cloneable
         }
         if(inputbox!=null) this.setInputbox(inputbox.trim());
         
-        List<XmlElementBean> lstEleSelectorItemElements=eleConditionSelectorBean.getLstChildElementsByName(selectItemTagname);//获取所有选择器选项的配置信息
+        List<XmlElementBean> lstEleSelectorItemElements=eleConditionSelectorBean.getLstChildElementsByName(selectItemTagname);
         if(lstEleSelectorItemElements==null||lstEleSelectorItemElements.size()==0) return;
         List<ConditionSelectItemBean> lstSelectItemBeans=new ArrayList<ConditionSelectItemBean>();
         List<String> lstSelectItemIds=new ArrayList<String>();

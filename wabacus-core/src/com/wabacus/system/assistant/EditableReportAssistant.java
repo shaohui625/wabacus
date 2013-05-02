@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -38,6 +38,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
+import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.exception.WabacusRuntimeWarningException;
 import com.wabacus.system.CacheDataBean;
@@ -45,13 +46,17 @@ import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.IEditableReportType;
 import com.wabacus.system.component.application.report.abstractreport.SaveInfoDataBean;
-import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportExternalValueBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportParamBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportSecretColValueBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportSqlBean;
-import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportUpdateDataBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.transaction.DefaultTransactionType;
 import com.wabacus.system.datatype.AbsDateTimeType;
+import com.wabacus.system.intercept.AbsPageInterceptor;
+import com.wabacus.system.intercept.IInterceptor;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
@@ -95,7 +100,7 @@ public class EditableReportAssistant
     
     public String getColParamValue(ReportRequest rrequest,ReportBean rbean,Map<String,String> mColParamsValue,String paramname)
     {
-        if(mColParamsValue==null) return "";
+        if(mColParamsValue==null) return null;
         String paramvalue=null;
         if(mColParamsValue.containsKey(Consts_Private.COL_NONDISPLAY_PERMISSION_PREX+paramname))
         {
@@ -105,7 +110,7 @@ public class EditableReportAssistant
                 rrequest.getWResponse().getMessageCollector().warn("session过期，没有取到保存数据，请刷新后重试",null,true,Consts.STATECODE_FAILED);
             }
             String colkey=mColParamsValue.get(Consts_Private.COL_NONDISPLAY_PERMISSION_PREX+paramname);
-            if(colkey==null||colkey.trim().equals("")) return "";
+            if(colkey==null||colkey.trim().equals("")) return null;
             if(!secretColvalueBean.containsColkey(colkey))
             {
                 paramvalue=colkey;
@@ -114,10 +119,10 @@ public class EditableReportAssistant
                 paramvalue=secretColvalueBean.getParamValue(colkey);
             }
         }else
-        {//直接从客户端
+        {
             paramvalue=mColParamsValue.get(paramname);
         }
-        if(paramvalue==null) paramvalue="";
+        
         return paramvalue;
     }
     
@@ -146,12 +151,12 @@ public class EditableReportAssistant
             String accessmode=rrequest.getStringAttribute(rbean.getId()+"_ACCESSMODE",reportTypeObj.getDefaultAccessMode()).toLowerCase();
             if(accessmode.equals(Consts.READONLY_MODE)||rrequest.checkPermission(rbean.getId(),null,null,"readonly")||rbean.getSbean()==null)
             {
-                isReadonlyAccessmode="true";
+                isReadonlyAccessmode="true";//当前是以只读模式访问此编辑报表
             }else
             {
                 EditableReportSqlBean ersqlbean=(EditableReportSqlBean)rbean.getSbean().getExtendConfigDataForReportType(EditableReportSqlBean.class);
                 if(ersqlbean==null||(ersqlbean.getDeletebean()==null&&ersqlbean.getInsertbean()==null&&ersqlbean.getUpdatebean()==null))
-                {//没有配置任何编辑功能
+                {
                     isReadonlyAccessmode="true";
                 }else
                 {
@@ -170,11 +175,9 @@ public class EditableReportAssistant
         rrequest.setAttribute("WX_HAS_SAVING_DATA_"+rrequest.getPagebean().getId(),"true");
         Map<Object,Object> mAtts=new HashMap<Object,Object>();
         mAtts.putAll(rrequest.getAttributes());
-        Object objKeyTmp;
-        Object objValueTmp;
-        String keyTmp;
-        String valueTmp;
-        Map<String,ReportBean> mSavingReportBeans=new HashMap<String,ReportBean>();
+        Object objKeyTmp,objValueTmp;
+        String keyTmp,valueTmp;
+        //Map<String,ReportBean> mSavingReportBeans=new HashMap<String,ReportBean>();//存放待保存报表的ReportBean对象
         Map<String,IEditableReportType> mSavingReportObjs=new HashMap<String,IEditableReportType>();
         String reportidTmp;
         for(Entry<Object,Object> entryTmp:mAtts.entrySet())
@@ -205,9 +208,9 @@ public class EditableReportAssistant
             valueTmp=(String)objValueTmp;
             if(valueTmp.trim().equals("")) continue;
             Object objTmp=rrequest.getComponentTypeObj(rbeanTmp,null,true);
-            if(!(objTmp instanceof IEditableReportType)) continue;//当前报表不是可编辑报表
+            if(!(objTmp instanceof IEditableReportType)) continue;
             if(isReadonlyAccessMode((IEditableReportType)objTmp)) continue;
-            mSavingReportBeans.put(reportidTmp,rbeanTmp);
+            
             mSavingReportObjs.put(reportidTmp,(IEditableReportType)objTmp);
             initEditedParams(rrequest,rbeanTmp);
         }
@@ -218,14 +221,14 @@ public class EditableReportAssistant
     {
         EditableReportSqlBean ersqlbean=(EditableReportSqlBean)reportbean.getSbean().getExtendConfigDataForReportType(EditableReportSqlBean.class);
         CacheDataBean cdb=rrequest.getCdb(reportbean.getId());
-        boolean[] shouldDoSave=new boolean[4];
+        boolean[] shouldDoSave=new boolean[4];//下标为0的存放是否有添加数据，下标为1的存放是否有修改数据，下标为2的存放是否有删除数据，下标为3的存放是否有用户自定义的保存数据
         SaveInfoDataBean sidbean=new SaveInfoDataBean();
         sidbean.setShouldDoSave(shouldDoSave);
         List<Map<String,String>> lstParamsValue=parseSaveDataStringToList(rrequest.getStringAttribute(reportbean.getId()+"_CUSTOMIZEDATAS",""));
         if(lstParamsValue!=null&&lstParamsValue.size()>0)
         {
             Map<String,String> mCustomizeData=lstParamsValue.get(0);
-            cdb.getAttributes().put("WX_UPDATE_CUSTOMIZEDATAS",mCustomizeData);//对于用户自定义的数据，都会存放在一个Map中，键为参数名；值为参数值
+            cdb.getAttributes().put("WX_UPDATE_CUSTOMIZEDATAS",mCustomizeData);
             shouldDoSave[3]=true;
             if(mCustomizeData!=null&&mCustomizeData.containsKey("WX_UPDATETYPE"))
             {
@@ -247,15 +250,15 @@ public class EditableReportAssistant
         rrequest.setAttribute(reportbean.getId(),"SAVEINFO_DATABEAN",sidbean);
     }
 
-    private boolean initEditedParams(String strParams,ReportRequest rrequest,ReportBean reportbean,EditableReportUpdateDataBean updatebean)
+    private boolean initEditedParams(String strParams,ReportRequest rrequest,ReportBean reportbean,AbsEditableReportEditDataBean editbean)
     {
-        if(strParams.equals("")||updatebean==null) return false;
+        if(strParams.equals("")||editbean==null) return false;
         log.debug(strParams);
         List<Map<String,String>> lstParamsValue=parseSaveDataStringToList(strParams);
         if(lstParamsValue==null||lstParamsValue.size()==0) return false;
         CacheDataBean cdb=rrequest.getCdb(reportbean.getId());
-        cdb.setLstEditedData(updatebean,lstParamsValue);
-        cdb.setLstEditedExternalValues(updatebean,getExternalValues(updatebean,lstParamsValue,reportbean,rrequest));
+        cdb.setLstEditedData(editbean,lstParamsValue);
+        cdb.setLstEditedParamValues(editbean,getExternalValues(editbean,lstParamsValue,reportbean,rrequest));
         return true;
     }
 
@@ -265,7 +268,7 @@ public class EditableReportAssistant
         List<String> lstRowDatas=Tools.parseStringToList(strSavedata.trim(),Consts_Private.SAVE_ROWDATA_SEPERATOR);
         List<Map<String,String>> lstResults=new ArrayList<Map<String,String>>();
         for(String rowdataTmp:lstRowDatas)
-        {//解析每条记录
+        {
             if(rowdataTmp==null||rowdataTmp.trim().equals("")) continue;
             Map<String,String> mRowData=new HashMap<String,String>();
             List<String> lstColsData=Tools.parseStringToList(rowdataTmp,Consts_Private.SAVE_COLDATA_SEPERATOR);
@@ -289,72 +292,91 @@ public class EditableReportAssistant
     private void doSaveAction(ReportRequest rrequest,Map<String,IEditableReportType> mSavingReportObjs)
     {
         if(mSavingReportObjs==null||mSavingReportObjs.size()==0) return;
-        Map<String,Connection> mConnections=new HashMap<String,Connection>();
-        IEditableReportType reportTypeObjTmp;
-        ReportBean rbeanTmp;
-        Connection connTmp;
-        boolean hasSaveReport=false;
-        boolean shouldStopRefreshDisplay=true;
-        String transactionLevel=rrequest.getStringAttribute(rrequest.getPagebean().getId()+"_TRANSACTION_LEVEL","").toLowerCase();
-        if(!transactionLevel.equals("")&&!Consts_Private.M_ALL_TRANSACTION_LEVELS.containsKey(transactionLevel))
+        rrequest.setTransactionObj(new DefaultTransactionType());
+        List<ReportBean> lstSaveReportBeans=new ArrayList<ReportBean>();
+        for(Entry<String,IEditableReportType> entryTmp:mSavingReportObjs.entrySet())
         {
-            log.warn("保存页面"+rrequest.getPagebean().getId()+"上的报表时，传入的事务属性"+transactionLevel+"无效，将启用默认事务");
-            transactionLevel="";
+            lstSaveReportBeans.add(((AbsReportType)entryTmp.getValue()).getReportBean());
         }
-        boolean hasInsertData=false;//本次是否有添加数据
-        boolean hasUpdateData=false;
-        boolean hasDeleteData=false;
+        List<AbsPageInterceptor> lstPageInterceptors=rrequest.getLstPageInterceptors();
+        if(lstPageInterceptors!=null&&lstPageInterceptors.size()>0)
+        {//页面拦截器
+            for(AbsPageInterceptor pageInterceptorObjTmp:lstPageInterceptors)
+            {
+                pageInterceptorObjTmp.doStartSave(rrequest,lstSaveReportBeans);
+            }
+        }
+        List<EditActionGroupBean> lstAllEditActionGroupBeans=new ArrayList<EditActionGroupBean>();
+        for(Entry<String,IEditableReportType> entryTmp:mSavingReportObjs.entrySet())
+        {
+            entryTmp.getValue().collectEditActionGroupBeans(lstAllEditActionGroupBeans);
+        }
+        if(rrequest.getTransactionWrapper()!=null) rrequest.getTransactionWrapper().beginTransaction(rrequest,lstAllEditActionGroupBeans);
+        boolean hasInsertData=false,hasUpdateData=false,hasDeleteData=false;
+        boolean isFailed=false,hasSaveReport=false;
+        boolean shouldStopRefreshDisplay=false;
         int[] resultTmp=null;
-        boolean isFailed=false;
         try
         {
+            IEditableReportType reportTypeObjTmp;
+            ReportBean rbeanTmp;
             for(Entry<String,IEditableReportType> entryTmp:mSavingReportObjs.entrySet())
             {
                 reportTypeObjTmp=entryTmp.getValue();
                 rbeanTmp=((AbsReportType)reportTypeObjTmp).getReportBean();
-                String datasource=rbeanTmp.getSbean().getDatasource();
-                if(datasource==null||datasource.trim().equals("")) datasource=Consts.DEFAULT_KEY;
-                connTmp=mConnections.get(datasource);
-                if(connTmp==null)
+                resultTmp=reportTypeObjTmp.doSaveAction();
+                if(resultTmp==null||resultTmp.length!=2||resultTmp[0]==IInterceptor.WX_RETURNVAL_SKIP) continue;
+                if(resultTmp[0]==IInterceptor.WX_RETURNVAL_TERMINATE)
                 {
-                    connTmp=rrequest.getConnection(datasource);
-                    if(!transactionLevel.equals(Consts.TRANS_NONE))
-                    {//本次保存是放在事务中的
-                        connTmp.setAutoCommit(false);
-                        if(!transactionLevel.equals(""))
-                            connTmp.setTransactionIsolation(Consts_Private.M_ALL_TRANSACTION_LEVELS.get(transactionLevel));
-                    }
-                    mConnections.put(datasource,connTmp);
+                    rrequest.getTransactionWrapper().rollbackTransaction(rrequest,lstAllEditActionGroupBeans);
+                    rrequest.getWResponse().terminateResponse(Consts.STATECODE_FAILED);
+                    return;
                 }
-                resultTmp=reportTypeObjTmp.doSaveAction(connTmp);
-                if(resultTmp==null||resultTmp.length!=2||resultTmp[0]==0) continue;
-                rrequest.getWResponse().addUpdateReportGuid(rbeanTmp.getGuid());
-                if(resultTmp[0]==-1) shouldStopRefreshDisplay=false;
-                if(resultTmp[1]==1)
+                rrequest.getWResponse().addUpdateReportGuid(rbeanTmp.getGuid());//将此报表的guid加到本次更新的报表guid列表中（因为加的过程中会判断重复，所以这里不用判断）
+                if(resultTmp[0]==IInterceptor.WX_RETURNVAL_SUCCESS_NOTREFRESH) shouldStopRefreshDisplay=true;
+                if(resultTmp[1]==IEditableReportType.IS_ADD_DATA)
                 {
                     hasInsertData=true;
-                }else if(resultTmp[1]==2)
+                }else if(resultTmp[1]==IEditableReportType.IS_UPDATE_DATA)
                 {
                     hasUpdateData=true;
-                }else if(resultTmp[1]==3)
-                {//对此报表同时有添加和修改操作
+                }else if(resultTmp[1]==IEditableReportType.IS_ADD_UPDATE_DATA)
+                {
                     hasInsertData=true;
                     hasUpdateData=true;
-                }else if(resultTmp[1]==4)
+                }else if(resultTmp[1]==IEditableReportType.IS_DELETE_DATA)
                 {
                     hasDeleteData=true;
                 }
                 hasSaveReport=true;
             }
-            commitRollBackAllTranses(mConnections,transactionLevel,true);
+            if(lstPageInterceptors!=null&&lstPageInterceptors.size()>0)
+            {
+                AbsPageInterceptor pageInterceptorObjTmp;
+                for(int i=lstPageInterceptors.size()-1;i>=0;i--)
+                {
+                    pageInterceptorObjTmp=lstPageInterceptors.get(i);
+                    pageInterceptorObjTmp.doEndSave(rrequest,lstSaveReportBeans);
+                }
+            }
+            if(rrequest.getTransactionWrapper()!=null) rrequest.getTransactionWrapper().commitTransaction(rrequest,lstAllEditActionGroupBeans);
         }catch(WabacusRuntimeWarningException wrwe)
         {
-            commitRollBackAllTranses(mConnections,transactionLevel,rrequest.getWResponse().getStatecode()!=Consts.STATECODE_FAILED);
+            if(rrequest.getTransactionWrapper()!=null)
+            {
+                if(rrequest.getWResponse().getStatecode()!=Consts.STATECODE_FAILED)
+                {
+                    rrequest.getTransactionWrapper().commitTransaction(rrequest,lstAllEditActionGroupBeans);
+                }else
+                {
+                    rrequest.getTransactionWrapper().rollbackTransaction(rrequest,lstAllEditActionGroupBeans);
+                }
+            }
             throw new WabacusRuntimeWarningException();
         }catch(Exception e)
         {
             isFailed=true;
-            commitRollBackAllTranses(mConnections,transactionLevel,false);
+            if(rrequest.getTransactionWrapper()!=null) rrequest.getTransactionWrapper().rollbackTransaction(rrequest,lstAllEditActionGroupBeans);
             log.error("保存页面"+rrequest.getPagebean().getId()+"上的报表数据失败",e);
             if(resultTmp!=null&&resultTmp.length==2)
             {
@@ -374,6 +396,9 @@ public class EditableReportAssistant
                 }
             }
             if(!rrequest.isDisableAutoFailedPrompt()) promptFailedMessage(rrequest,hasInsertData,hasUpdateData,hasDeleteData);
+        }finally
+        {
+            rrequest.setTransactionObj(null);
         }
         if(hasSaveReport&&!isFailed)
         {
@@ -388,43 +413,17 @@ public class EditableReportAssistant
         }
     }
 
-    private void commitRollBackAllTranses(Map<String,Connection> mConnections,String transactionLevel,boolean isSuccess)
-    {
-        Connection connTmp;
-        for(Entry<String,Connection> entryTmp:mConnections.entrySet())
-        {
-            try
-            {
-                connTmp=entryTmp.getValue();
-                if(!transactionLevel.equals(Consts.TRANS_NONE))
-                {
-                    if(isSuccess)
-                    {
-                        connTmp.commit();
-                    }else
-                    {
-                        connTmp.rollback();
-                    }
-                }
-                connTmp.setAutoCommit(true);
-            }catch(SQLException e1)
-            {
-                log.error("保存数据时事务"+(isSuccess?"提交":"回滚")+"失败",e1);
-            }
-        }
-    }
-    
     private void promptFailedMessage(ReportRequest rrequest,boolean hasInsertData,boolean hasUpdateData,boolean hasDeleteData)
     {
         String errorprompt=null;
         if((hasInsertData&&hasDeleteData)||(hasUpdateData&&hasDeleteData))
-        {//如果同时有增、删或同时有改、删操作
+        {
             errorprompt=rrequest.getI18NStringValue(Config.getInstance().getResourceString(rrequest,rrequest.getPagebean(),"${operate.failed.prompt}",false));
         }else if(hasInsertData&&hasUpdateData)
         {
             errorprompt=rrequest.getI18NStringValue(Config.getInstance().getResourceString(rrequest,rrequest.getPagebean(),"${save.failed.prompt}",false));
         }else if(hasInsertData)
-        {
+        {//只有添加操作
             errorprompt=rrequest.getI18NStringValue(Config.getInstance().getResourceString(rrequest,rrequest.getPagebean(),"${insert.failed.prompt}",false));
         }else if(hasUpdateData)
         {
@@ -443,7 +442,7 @@ public class EditableReportAssistant
     {
         String successprompt=null;
         if((hasInsertData&&hasDeleteData)||(hasUpdateData&&hasDeleteData))
-        {//如果同时有增、删或同时有改、删操作
+        {
             successprompt=rrequest.getI18NStringValue(Config.getInstance().getResourceString(rrequest,rrequest.getPagebean(),"${operate.success.prompt}",false));
         }else if(hasInsertData&&hasUpdateData)
         {
@@ -464,23 +463,26 @@ public class EditableReportAssistant
         rrequest.getWResponse().getMessageCollector().success(successprompt,false);
     }
     
-    public int processAfterSaveAction(ReportRequest rrequest,ReportBean rbean,String updatetype)
+    public int processAfterSaveAction(ReportRequest rrequest,ReportBean rbean,String updatetype,int originalRtnVal)
     {
         EditableReportSqlBean ersqlbean=(EditableReportSqlBean)rbean.getSbean().getExtendConfigDataForReportType(EditableReportSqlBean.class);
         if(ersqlbean.getAfterSaveAction()!=null&&ersqlbean.getAfterSaveAction().length>0)
         {
             String afterSaveActionMethod=ersqlbean.getAfterSaveActionMethod();
             if(!afterSaveActionMethod.equals(""))
-            {//如果配置了保存后回调函数，则将它们加入本次的onload函数中执行。
+            {
                 StringBuffer paramsBuf=new StringBuffer();
                 paramsBuf.append("{pageid:\""+rbean.getPageBean().getId()+"\"");
                 paramsBuf.append(",reportid:\""+rbean.getId()+"\"");
                 paramsBuf.append(",updatetype:\""+updatetype+"\"}");
                 rrequest.getWResponse().addOnloadMethod(afterSaveActionMethod,paramsBuf.toString(),true);
             }
-            if(ersqlbean.getAfterSaveAction().length==2&&"true".equals(ersqlbean.getAfterSaveAction()[1])) return 1;
+            if(ersqlbean.getAfterSaveAction().length==2&&"true".equals(ersqlbean.getAfterSaveAction()[1]))
+            {
+                return IInterceptor.WX_RETURNVAL_SUCCESS_NOTREFRESH;
+            }
         }
-        return -1;
+        return originalRtnVal;
     }
     
     public String getEditableMetaData(IEditableReportType editableReportTypeObj)
@@ -495,7 +497,7 @@ public class EditableReportAssistant
             resultBuf.append(" current_accessmode=\"").append(editableReportTypeObj.getRealAccessMode()).append("\"");
             EditableReportSqlBean ersqlbean=(EditableReportSqlBean)rbean.getSbean().getExtendConfigDataForReportType(EditableReportSqlBean.class);
             if(ersqlbean.getBeforeSaveAction()!=null&&!ersqlbean.getBeforeSaveAction().trim().equals(""))
-            {
+            {//如果有保存前客户端回调函数
                 resultBuf.append(" beforeSaveAction=\"{method:").append(ersqlbean.getBeforeSaveAction()).append("}\"");
             }
             if(ersqlbean.getDeletebean()!=null)
@@ -515,67 +517,91 @@ public class EditableReportAssistant
         return resultBuf.toString();
     }
 
-    public int updateDBData(ReportBean rbean,ReportRequest rrequest,Connection conn,EditableReportUpdateDataBean updatebean) throws SQLException
+    public int doSaveReport(ReportBean rbean,ReportRequest rrequest,AbsEditableReportEditDataBean editbean)
     {
         CacheDataBean cdb=rrequest.getCdb(rbean.getId());
-        List<Map<String,String>> lstParamsValue=cdb.getLstEditedData(updatebean);
-        List<Map<String,String>> lstExternalValue=cdb.getLstEditedExternalValues(updatebean);
-        Map<String,String> mParamsValue;
-        Map<String,String> mExternalValues;//存放要插入的记录对应的<external-values/>配置的所有参数值
-        int rtnVal=Consts.RETURNVALUE_CONTINUE;
-        outer:
-        for(int i=0;i<lstParamsValue.size();i++)
+        List<Map<String,String>> lstRowData=cdb.getLstEditedData(editbean);
+        List<Map<String,String>> lstParamValues=cdb.getLstEditedParamValues(editbean);
+        Map<String,String> mRowData, mParamValues;//分别存放要操作的各列数据以及<params/>中定义的变量的数据
+        boolean hasSaveData=false, hasNonRefreshReport=false;
+        for(int i=0;i<lstRowData.size();i++)
         {
-            mParamsValue=lstParamsValue.get(i);
-            mExternalValues=null;
-            if(lstExternalValue!=null) mExternalValues=lstExternalValue.get(i);
+            mRowData=lstRowData.get(i);
+            mParamValues=lstParamValues!=null?lstParamValues.get(i):null;
+            int rtnVal;
             if(rbean.getInterceptor()!=null)
             {
-                rtnVal=rbean.getInterceptor().beforeSavePerRow(rrequest,rbean,mParamsValue,mExternalValues,updatebean.getEdittype());
-                if(rtnVal==Consts.RETURNVALUE_TERMINAGE) break;
-                if(rtnVal==Consts.RETURNVALUE_IGNORE) continue;
-            }
-            List<AbsEditSqlActionBean> lstSqlActions=updatebean.getLstSqlActionBeans();
-            for(AbsEditSqlActionBean sqlActionBean:lstSqlActions)
+                rtnVal=rbean.getInterceptor().doSavePerRow(rrequest,rbean,mRowData,mParamValues,editbean);
+            }else
             {
-                if(rbean.getInterceptor()!=null)
-                {
-                    rtnVal=rbean.getInterceptor().beforeSavePerSql(rrequest,rbean,mParamsValue,mExternalValues,sqlActionBean.getSql());
-                    if(rtnVal==Consts.RETURNVALUE_TERMINAGE) break outer;
-                    if(rtnVal==Consts.RETURNVALUE_IGNORE) continue;
-                }
-                sqlActionBean.updateDBData(mParamsValue,mExternalValues,conn,rbean,rrequest);
-                if(rbean.getInterceptor()!=null)
-                {
-                    rtnVal=rbean.getInterceptor().afterSavePerSql(rrequest,rbean,mParamsValue,mExternalValues,sqlActionBean.getSql());
-                    if(rtnVal==Consts.RETURNVALUE_TERMINAGE) break outer;
-                }
+                rtnVal=doSaveRow(rrequest,rbean,mRowData,mParamValues,editbean);
             }
-            if(rbean.getInterceptor()!=null)
-            {
-                rtnVal=rbean.getInterceptor().afterSavePerRow(rrequest,rbean,mParamsValue,mExternalValues,updatebean.getEdittype());
-                if(rtnVal==Consts.RETURNVALUE_TERMINAGE) break;
-            }
+            if(rtnVal==IInterceptor.WX_RETURNVAL_TERMINATE) return rtnVal;
+            if(rtnVal==IInterceptor.WX_RETURNVAL_SKIP) continue;
+            hasSaveData=true;
+            if(rtnVal==IInterceptor.WX_RETURNVAL_SUCCESS_NOTREFRESH) hasNonRefreshReport=true;
         }
-        return rtnVal;
+        if(!hasSaveData) return IInterceptor.WX_RETURNVAL_SKIP;
+        if(hasNonRefreshReport) return IInterceptor.WX_RETURNVAL_SUCCESS_NOTREFRESH;
+        return IInterceptor.WX_RETURNVAL_SUCCESS;
     }
 
-    public List<Map<String,String>> getExternalValues(EditableReportUpdateDataBean updatebean,List<Map<String,String>> lstColParamsValue,
+    public int doSaveRow(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues,
+            AbsEditableReportEditDataBean editbean)
+    {
+        boolean hasSaveData=false, hasNonRefreshReport=false;
+        for(EditActionGroupBean actionGroupBean:editbean.getLstEditActionGroupBeans())
+        {
+            for(AbsEditActionBean actionBeanTmp:actionGroupBean.getLstEditActionBeans())
+            {
+                int rtnVal;
+                if(rbean.getInterceptor()!=null)
+                {
+                    rtnVal=rbean.getInterceptor().doSavePerAction(rrequest,rbean,mRowData,mParamValues,actionBeanTmp,editbean);
+                }else
+                {
+                    rtnVal=doSavePerAction(rrequest,rbean,mRowData,mParamValues,actionBeanTmp,editbean);
+                }
+                if(rtnVal==IInterceptor.WX_RETURNVAL_TERMINATE) return rtnVal;
+                if(rtnVal==IInterceptor.WX_RETURNVAL_SKIP) continue;
+                hasSaveData=true;
+                if(rtnVal==IInterceptor.WX_RETURNVAL_SUCCESS_NOTREFRESH) hasNonRefreshReport=true;
+            }
+        }
+        if(!hasSaveData) return IInterceptor.WX_RETURNVAL_SKIP;
+        if(hasNonRefreshReport) return IInterceptor.WX_RETURNVAL_SUCCESS_NOTREFRESH;
+        return IInterceptor.WX_RETURNVAL_SUCCESS;
+    }
+    
+    public int doSavePerAction(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues,
+            AbsEditActionBean actionBean,AbsEditableReportEditDataBean editbean)
+    {
+        try
+        {
+            actionBean.updateData(rrequest,rbean,mRowData,mParamValues);
+        }catch(SQLException e)
+        {
+            throw new WabacusRuntimeException("保存报表"+rbean.getPath()+"数据失败",e);
+        }
+        return IInterceptor.WX_RETURNVAL_SUCCESS;
+    }
+    
+    public List<Map<String,String>> getExternalValues(AbsEditableReportEditDataBean editbean,List<Map<String,String>> lstColParamsValue,
             ReportBean rbean,ReportRequest rrequest)
     {
-        if(lstColParamsValue==null||lstColParamsValue.size()==0||updatebean.getLstExternalValues()==null) return null;
+        if(lstColParamsValue==null||lstColParamsValue.size()==0||editbean.getLstExternalValues()==null) return null;
         List<Map<String,String>> lstExternalValues=new ArrayList<Map<String,String>>();
         try
         {
-            Map<String,String> mCustomizedValues=rrequest.getMCustomizeEditData(rbean);//用户传过来的自定义保存数据
+            Map<String,String> mCustomizedValues=rrequest.getMCustomizeEditData(rbean);
             Map<String,String> mExternalValue;
             Connection conn=rrequest.getConnection(rbean.getSbean().getDatasource());
             AbsDatabaseType dbtype=rrequest.getDbType(rbean.getSbean().getDatasource());
             for(Map<String,String> mColParamsValue:lstColParamsValue)
-            {//保存的每一条记录都要计算一次与它相应的所有在<external-values/>中定义的参数值。
+            {//保存的每一条记录都要计算一次与它相应的所有在<params/>中定义的参数值。
                 mExternalValue=new HashMap<String,String>();
                 lstExternalValues.add(mExternalValue);
-                for(EditableReportExternalValueBean valuebean:updatebean.getLstExternalValues())
+                for(EditableReportExternalValueBean valuebean:editbean.getLstExternalValues())
                 {
                     if(valuebean.getValue().equals("uuid{}"))
                     {
@@ -589,6 +615,11 @@ public class EditableReportAssistant
                     {
                         SimpleDateFormat sdf=new SimpleDateFormat(((AbsDateTimeType)valuebean.getTypeObj()).getDateformat());
                         mExternalValue.put(valuebean.getName(),sdf.format(new Date()));
+                    }else if(Tools.isDefineKey("@",valuebean.getValue()))
+                    {
+                        String valueTmp=mColParamsValue.get(Tools.getRealKeyByDefine("@",valuebean.getValue()));
+                        if(valueTmp==null) valueTmp="";
+                        mExternalValue.put(valuebean.getName(),valueTmp);
                     }else if(Tools.isDefineKey("!",valuebean.getValue()))
                     {
                         String customizeParamName=Tools.getRealKeyByDefine("!",valuebean.getValue());
@@ -601,15 +632,14 @@ public class EditableReportAssistant
                         }
                     }else if(Tools.isDefineKey("sequence",valuebean.getValue()))
                     {
-                        String sql="select "+Tools.getRealKeyByDefine("sequence",valuebean.getValue())+".nextval from dual";
                         Statement stmt=conn.createStatement();
-                        ResultSet rs=stmt.executeQuery(sql);
+                        ResultSet rs=stmt.executeQuery(dbtype.getSequenceValueSql(Tools.getRealKeyByDefine("sequence",valuebean.getValue())));
                         rs.next();
                         mExternalValue.put(valuebean.getName(),String.valueOf(rs.getInt(1)));
                         rs.close();
                         stmt.close();
                     }else if(valuebean.getValue().toLowerCase().trim().startsWith("select ")&&valuebean.getLstParamsBean()!=null)
-                    {
+                    {//查询其它表的某个字段的值
                         PreparedStatement pstmtTemp=conn.prepareStatement(valuebean.getValue());
                         if(valuebean.getLstParamsBean().size()>0)
                         {
@@ -650,8 +680,92 @@ public class EditableReportAssistant
             }
         }catch(SQLException sqle)
         {
-            throw new WabacusRuntimeException("获取报表"+rbean.getPath()+"配置的<external-values/>值失败",sqle);
+            throw new WabacusRuntimeException("获取报表"+rbean.getPath()+"配置的<params/>值失败",sqle);
         }
         return lstExternalValues;
+    }
+    
+    public String parseStandardEditSql(ReportBean rbean,String sql,List<EditableReportParamBean> lstDynParams)
+    {
+        if(sql==null||sql.trim().equals("")) return "";
+        sql=sql.trim();
+        sql=Tools.replaceCharacterInQuote(sql,'{',"$_LEFTBRACKET_$",true);
+        sql=Tools.replaceCharacterInQuote(sql,'}',"$_RIGHTBRACKET_$",true);
+        Map<String,EditableReportParamBean> mDynParamsAndPlaceHolder=new HashMap<String,EditableReportParamBean>();
+        sql=parseCertainTypeDynParamsInStandardSql(rbean,sql,mDynParamsAndPlaceHolder,"url");
+        sql=parseCertainTypeDynParamsInStandardSql(rbean,sql,mDynParamsAndPlaceHolder,"request");
+        sql=parseCertainTypeDynParamsInStandardSql(rbean,sql,mDynParamsAndPlaceHolder,"session");
+        sql=parseCertainTypeDynParamsInStandardSql(rbean,sql,mDynParamsAndPlaceHolder,"@");
+        sql=parseCertainTypeDynParamsInStandardSql(rbean,sql,mDynParamsAndPlaceHolder,"!");
+        sql=parseCertainTypeDynParamsInStandardSql(rbean,sql,mDynParamsAndPlaceHolder,"#");
+        sql=convertPlaceHolderToRealParams(sql,mDynParamsAndPlaceHolder,lstDynParams);
+        
+        sql=Tools.replaceAll(sql,"$_LEFTBRACKET_$","{");
+        sql=Tools.replaceAll(sql,"$_RIGHTBRACKET_$","}");
+        return sql;
+    }
+    
+    private String parseCertainTypeDynParamsInStandardSql(ReportBean rbean,String sql,Map<String,EditableReportParamBean> mDynParamsAndPlaceHolder,String paramtype)
+    {
+        String strStart,strDynValue,strEnd,placeHolderTmp;
+        EditableReportParamBean paramBeanTmp;
+        int placeholderIdxTmp=0;
+        int idx=sql.indexOf(paramtype+"{");
+        while(idx>=0)
+        {
+            strStart=sql.substring(0,idx).trim();//type{...}前面的部分
+            strEnd=sql.substring(idx);
+            idx=strEnd.indexOf("}");
+            if(idx<0)
+            {
+                throw new WabacusConfigLoadingException("加载组件"+rbean.getPath()+"下的SQL语句"+sql+"失败，其中动态参数没有闭合的}");
+            }
+            strDynValue=strEnd.substring(0,idx+1);
+            strEnd=strEnd.substring(idx+1).trim();
+            paramBeanTmp=new EditableReportParamBean();
+            paramBeanTmp.setParamname(strDynValue);
+            if((strStart.endsWith("%")&&strStart.substring(0,strStart.length()-1).trim().toLowerCase().endsWith(" like"))
+                    ||strStart.toLowerCase().endsWith(" like"))
+            {
+                if(strStart.endsWith("%"))
+                {
+                    strStart=strStart.substring(0,strStart.length()-1);
+                    paramBeanTmp.setHasLeftPercent(true);
+                }
+                if(strEnd.startsWith("%"))
+                {
+                    strEnd=strEnd.substring(1);
+                    paramBeanTmp.setHasRightPercent(true);
+                }
+            }
+            placeHolderTmp="[PLACE_HOLDER_"+paramtype+"_"+placeholderIdxTmp+"]";
+            mDynParamsAndPlaceHolder.put(placeHolderTmp,paramBeanTmp);
+            sql=strStart+placeHolderTmp+strEnd;
+            idx=sql.indexOf(paramtype+"{");
+            placeholderIdxTmp++;
+        }
+        return sql;
+    }
+    
+    private String convertPlaceHolderToRealParams(String sql,Map<String,EditableReportParamBean> mDynParamsAndPlaceHolder,
+            List<EditableReportParamBean> lstDynParams)
+    {
+        if(mDynParamsAndPlaceHolder==null||mDynParamsAndPlaceHolder.size()==0) return sql;
+        int idxPlaceHolderStart=sql.indexOf("[PLACE_HOLDER_");
+        String strStart=null;
+        String strEnd=null;
+        String placeHolderTmp;
+        while(idxPlaceHolderStart>=0)
+        {
+            strStart=sql.substring(0,idxPlaceHolderStart);
+            strEnd=sql.substring(idxPlaceHolderStart);
+            int idxPlaceHolderEnd=strEnd.indexOf("]");
+            placeHolderTmp=strEnd.substring(0,idxPlaceHolderEnd+1);
+            strEnd=strEnd.substring(idxPlaceHolderEnd+1);
+            lstDynParams.add(mDynParamsAndPlaceHolder.get(placeHolderTmp));
+            sql=strStart+" ? "+strEnd;//将占位符变成?
+            idxPlaceHolderStart=sql.indexOf("[PLACE_HOLDER_");
+        }
+        return sql;
     }
 }

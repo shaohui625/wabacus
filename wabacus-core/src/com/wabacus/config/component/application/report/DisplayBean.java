@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -27,7 +27,9 @@ public class DisplayBean extends AbsConfigBean
 {
     private Boolean colselect=null;
     
-    private String colselectwidth;
+    private int colselectwidth;
+    
+    private int colselectmaxheight=350;
     
     private String dataheader;
 
@@ -72,14 +74,24 @@ public class DisplayBean extends AbsConfigBean
         this.colselect=colselect;
     }
 
-    public String getColselectwidth()
+    public int getColselectwidth()
     {
         return colselectwidth;
     }
 
-    public void setColselectwidth(String colselectwidth)
+    public void setColselectwidth(int colselectwidth)
     {
         this.colselectwidth=colselectwidth;
+    }
+
+    public int getColselectmaxheight()
+    {
+        return colselectmaxheight;
+    }
+
+    public void setColselectmaxheight(int colselectmaxheight)
+    {
+        this.colselectmaxheight=colselectmaxheight;
     }
 
     public void clearChildrenInfo()

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -22,17 +22,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.ListReportAssistant;
+import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportDisplayBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
-import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportUpdateDataBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportDeleteDataBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportInsertDataBean;
 import com.wabacus.util.Consts;
 
 public class CacheDataBean
@@ -40,12 +44,14 @@ public class CacheDataBean
     private int pagecount=0;
 
     private int recordcount=0;
+    
+    private Map<String,Integer> mRecordcountOfDatasets;
 
     private int maxrecordcount=-1;
     
     private int dynpageno;
     
-    private int pageno=1;//当前页码
+    private int pageno=1;
 
     private int pagesize=10;
     
@@ -53,9 +59,9 @@ public class CacheDataBean
     
     private int printPagesize;
     
-    private int printPagecount;
+    private int printPagecount;//本报表打印的总页数
     
-    private int printRecordcount;//本报表打印的总记录数
+    private int printRecordcount;
     
     private int configDataexportRecordcount;
     
@@ -65,7 +71,7 @@ public class CacheDataBean
     
     private int refreshNavigateInfoType;
 
-    private String rowSelectType;//行选中类型
+    private String rowSelectType;
 
     private AbsListReportFilterBean filteredBean;
 
@@ -73,9 +79,9 @@ public class CacheDataBean
 
     private List<ColBean> lstDynOrderColBeans;
     
-    private List<String> lstDynOrderColids;
+    private List<String> lstDynOrderColids;//存放lstDynColBeans对应的colid列表，会由lstDynColBeans自动生成
     
-    private List<String> lstDynDisplayColids;//对于数据自动列表报表，用户在使用过程中动态选择的显示列
+    private List<String> lstDynDisplayColids;
     
     private ListReportColPositionInfoBean colPositionBean;
     
@@ -88,17 +94,22 @@ public class CacheDataBean
 
     private ReportBean reportBean;
 
-    private Map<EditableReportUpdateDataBean,List<Map<String,String>>> mEditedData;
+    private Map<String,List<Map<String,String>>> mEditedData;
     
-    private Map<EditableReportUpdateDataBean,List<Map<String,String>>> mExternalValuesForEditedData;
+    private Map<String,List<Map<String,String>>> mParamValuesForEditedData;
     
     private ReportRequest rrequest;
-    
+        
 //    private List<Map<String,String>> lstDeletedExternalValues;//针对<delete/>配置的<external-values>配置参数的运行时数据，这里的数据与上面lstDeletedData的每条记录保持一一对应
     
     public CacheDataBean(ReportRequest rrequest)
     {
         this.rrequest=rrequest;
+    }
+    
+    public boolean isExportPrintPartData()
+    {
+        return false;
     }
     
     public int getPagecount()
@@ -148,7 +159,28 @@ public class CacheDataBean
         }
         this.recordcount=recordcount;
     }
-
+    
+    public void addRecordcount(String datasetid,int recordcount)
+    {
+        if(datasetid==null||datasetid.trim().equals("")) return;
+        if(this.maxrecordcount>0&&maxrecordcount<recordcount) recordcount=maxrecordcount;
+        if(this.mRecordcountOfDatasets==null) this.mRecordcountOfDatasets=new HashMap<String,Integer>();
+        this.mRecordcountOfDatasets.put(datasetid,recordcount);
+        StringBuffer allRecordcountsBuf=new StringBuffer();
+        for(Entry<String,Integer> entryTmp:this.mRecordcountOfDatasets.entrySet())
+        {
+            allRecordcountsBuf.append(entryTmp.getKey()+"="+entryTmp.getValue().intValue()).append(";");
+        }
+        rrequest.addParamToUrl(reportBean.getId()+"_ALLDATASETS_RECORDCOUNT",allRecordcountsBuf.toString(),true);
+    }
+    
+    public int getRecordcountOfDataset(String datasetid)
+    {
+        if(datasetid==null||datasetid.trim().equals("")) return this.recordcount;
+        if(this.mRecordcountOfDatasets==null||this.mRecordcountOfDatasets.get(datasetid)==null) return 0;
+        return this.mRecordcountOfDatasets.get(datasetid).intValue();
+    }
+    
     public void setDynpageno(int dynpageno)
     {
         this.dynpageno=dynpageno;
@@ -198,7 +230,7 @@ public class CacheDataBean
     
     public int getFinalPageno()
     {
-        if(this.pagesize<0) return 1;//此时是不分页显示
+        if(this.pagesize<0) return 1;
         if(!this.reportBean.getId().equals(this.reportBean.getNavigate_reportid()))
         {
             return rrequest.getCdb(this.reportBean.getNavigate_reportid()).getFinalPageno();
@@ -215,6 +247,20 @@ public class CacheDataBean
         return pagesize;
     }
 
+    public int getPageSplitReportDataCount(String datasetid)
+    {
+        int pageno=this.getFinalPageno();
+        int pagesize=this.getPagesize();
+        int myRecordcount=this.getRecordcountOfDataset(datasetid);
+        int myPagecount=ReportAssistant.getInstance().calPageCount(pagesize,myRecordcount);
+        if(myRecordcount<=(pageno-1)*pagesize) return 0;
+        if(myRecordcount>pagesize&&pageno==myPagecount&&myRecordcount%pagesize>0)
+        {//如果显示多于一页，且当前是显示最后一页（最后一页显示记录数可能小于pagesize）（如果myRecordcount%pagesize==0说明最后一页也是显示pagesize条记录）
+            return myRecordcount%pagesize;
+        }
+        return pagesize;
+    }
+    
     public void setPagesize(int pagesize)
     {
         if(pagesize<0&&pagesize!=-1||this.reportBean.isListReportType()&&pagesize==0)
@@ -394,7 +440,7 @@ public class CacheDataBean
                 &&(attributes.get("authroize_col_display")==null||!String.valueOf(attributes.get("authroize_col_display")).trim().equals("false"))
                 &&(alrbean==null||rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE||!(Consts.ROWSELECT_CHECKBOX.equalsIgnoreCase(alrbean
                         .getRowSelectType())||Consts.ROWSELECT_RADIOBOX.equalsIgnoreCase(alrbean.getRowSelectType()))))
-        {//没有从客户端动态选取要显示的列，也没有在客户端进行列拖动操作
+        {
             colPositionBean.setFirstColid(alrdbean.getDefaultFirstColid());
             colPositionBean.setLastColid(alrdbean.getDefaultLastColId());
             colPositionBean.setTotalColCount(alrdbean.getDefaultColumnCount());
@@ -432,10 +478,10 @@ public class CacheDataBean
                 this.isLoadAllReportData=this.printPagesize!=0;
             }
         }else if(rrequest.getShowtype()==Consts.DISPLAY_ON_PDF&&rrequest.isReportInPdfTemplate(this.reportBean.getId()))
-        {//如果当前是导出到PDF文件中，且本报表是放在PDF模板中进行导出
+        {
             this.shouldBatchDataExport=false;
             if(this.configDataexportRecordcount==0)
-            {
+            {//如果是导出当前页，则与页面的分页信息相同
                 this.isLoadAllReportData=this.pagesize<=0;
             }else
             {
@@ -443,7 +489,7 @@ public class CacheDataBean
                 if(this.configDataexportRecordcount>0) this.maxrecordcount=this.configDataexportRecordcount;
             }
         }else
-        {//其它类型的数据导出
+        {
             if(this.configDataexportRecordcount==0)
             {
                 this.isLoadAllReportData=this.pagesize<=0;
@@ -455,12 +501,12 @@ public class CacheDataBean
                 if(batchexportcount==Integer.MIN_VALUE) batchexportcount=Config.getInstance().getDataexportBatchCount();
                 this.pageno=1;
                 if(batchexportcount<=0)
-                {//不分批导出
+                {
                     this.shouldBatchDataExport=false;
                     this.isLoadAllReportData=true;
                     if(this.configDataexportRecordcount>0) this.maxrecordcount=this.configDataexportRecordcount;
                 }else if(this.configDataexportRecordcount>0&&this.configDataexportRecordcount<=batchexportcount)
-                {
+                {//如果指定了导出的最大记录数，且小于每批导出的数据量，则只要导一批即可
                     this.pagesize=this.configDataexportRecordcount;
                     this.shouldBatchDataExport=false;
                     this.isLoadAllReportData=false;
@@ -486,7 +532,7 @@ public class CacheDataBean
     {
         Integer displaymode=mColBeansDisplayModes.get(cbean.getColid());
         if(displaymode==null)
-        {//还没有获取过此列的显示模式
+        {
             displaymode=cbean.getDisplaymode(rrequest,lstDynDisplayColids);
             mColBeansDisplayModes.put(cbean.getColid(),displaymode);
         }
@@ -533,37 +579,50 @@ public class CacheDataBean
         this.lstRowSelectCallBackFuncs=lstRowSelectCallBackFuncs;
     }
 
-    public List<Map<String,String>> getLstEditedData(EditableReportUpdateDataBean updatebean)
+    public List<Map<String,String>> getLstEditedData(AbsEditableReportEditDataBean editbean)
     {
         if(this.mEditedData==null) return null;
-        return mEditedData.get(updatebean);
+        return mEditedData.get(getEditypeKey(editbean));
     }
 
-    public void setLstEditedData(EditableReportUpdateDataBean updatebean,
-            List<Map<String,String>> lstEditedData)
+    public void setLstEditedData(AbsEditableReportEditDataBean editbean,List<Map<String,String>> lstEditedData)
     {
         if(mEditedData==null)
         {
-            mEditedData=new HashMap<EditableReportUpdateDataBean,List<Map<String,String>>>();
+            mEditedData=new HashMap<String,List<Map<String,String>>>();
         }
-        mEditedData.put(updatebean,lstEditedData);
+        mEditedData.put(getEditypeKey(editbean),lstEditedData);
     }
 
-    public List<Map<String,String>> getLstEditedExternalValues(
-            EditableReportUpdateDataBean updatebean)
+    public List<Map<String,String>> getLstEditedParamValues(AbsEditableReportEditDataBean editbean)
     {
-        if(this.mExternalValuesForEditedData==null) return null;
-        return mExternalValuesForEditedData.get(updatebean);
+        if(this.mParamValuesForEditedData==null) return null;
+        return mParamValuesForEditedData.get(getEditypeKey(editbean));
     }
 
-    public void setLstEditedExternalValues(EditableReportUpdateDataBean updatebean,
-            List<Map<String,String>> lstEditedExternalValues)
+    public void setLstEditedParamValues(AbsEditableReportEditDataBean editbean,List<Map<String,String>> lstEditedExternalValues)
     {
-        if(mExternalValuesForEditedData==null)
+        if(mParamValuesForEditedData==null)
         {
-            mExternalValuesForEditedData=new HashMap<EditableReportUpdateDataBean,List<Map<String,String>>>();
+            mParamValuesForEditedData=new HashMap<String,List<Map<String,String>>>();
         }
-        mExternalValuesForEditedData.put(updatebean,lstEditedExternalValues);
+        mParamValuesForEditedData.put(getEditypeKey(editbean),lstEditedExternalValues);
+    }
+    
+    private String getEditypeKey(AbsEditableReportEditDataBean editbean)
+    {
+        String edittype="";
+        if(editbean instanceof EditableReportDeleteDataBean)
+        {
+            edittype="delete";
+        }else if(editbean instanceof EditableReportInsertDataBean)
+        {
+            edittype="insert";
+        }else
+        {
+            edittype="update";
+        }
+        return this.reportBean.getId()+"_editype_"+edittype;
     }
     
     private class ListReportColPositionInfoBean

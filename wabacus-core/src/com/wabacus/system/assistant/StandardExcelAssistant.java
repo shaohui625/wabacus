@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -32,8 +32,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellUtil;
 
-import com.itextpdf.text.Element;
-import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.system.datatype.AbsDateTimeType;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.CDateType;
@@ -129,13 +127,13 @@ public class StandardExcelAssistant
     }
 
     public void setRegionCellRealTypeValue(Workbook workbook,Sheet sheet,CellRangeAddress region,
-            CellStyle cellStyle,String align,Object cellvalue,IDataType typeObj)
+            CellStyle cellStyle,CellStyle cellStyleWithFormat,String align,Object cellvalue,IDataType typeObj)
     {
         createRowAndColInRegion(sheet,region,cellStyle);
-        Row rowTmp=sheet.getRow(region.getFirstRow());//这里得到的row是在setRegionStyle()方法中创建的
+        Row rowTmp=sheet.getRow(region.getFirstRow());
         Cell cellTmp=rowTmp.getCell(region.getFirstColumn());
         cellTmp.setCellStyle(cellStyle);
-        this.setCellValue(workbook,align,cellTmp,cellvalue,typeObj);
+        this.setCellValue(workbook,align,cellTmp,cellvalue,typeObj,cellStyleWithFormat);
         sheet.addMergedRegion(region);
     }
     
@@ -155,7 +153,7 @@ public class StandardExcelAssistant
         }
     }
     
-    public boolean setCellValue(Workbook workbook,String align,Cell cell,Object objValue,IDataType typeObj)
+    public boolean setCellValue(Workbook workbook,String align,Cell cell,Object objValue,IDataType typeObj,CellStyle cellStyleWithFormat)
     {
         if(objValue==null)
         {
@@ -183,34 +181,28 @@ public class StandardExcelAssistant
         }else if(typeObj instanceof BigdecimalType)
         {
             cell.setCellValue((((BigDecimal)objValue)).doubleValue());
-        }else if(typeObj instanceof DateType||typeObj instanceof TimeType
-                ||typeObj instanceof TimestampType)
+        }else if(typeObj instanceof DateType||typeObj instanceof TimeType||typeObj instanceof TimestampType)
         {
-            CellStyle dataCellStyle=this.getDataCellStyleForStandardExcel(workbook);
-            dataCellStyle.setDataFormat(workbook.createDataFormat().getFormat(
-                    ((AbsDateTimeType)typeObj).getDateformat()));
+            cellStyleWithFormat.setDataFormat(workbook.createDataFormat().getFormat(((AbsDateTimeType)typeObj).getDateformat()));
             if(align!=null&&!align.trim().equals(""))
             {
-                dataCellStyle=this.setCellAlign(dataCellStyle,align);
+                cellStyleWithFormat=this.setCellAlign(cellStyleWithFormat,align);
             }
             cell.setCellValue(((Date)objValue));
-            cell.setCellStyle(dataCellStyle);
+            cell.setCellStyle(cellStyleWithFormat);
             return true;
-        }else if(typeObj instanceof CDateType||typeObj instanceof CTimeType
-                ||typeObj instanceof CTimestampType)
+        }else if(typeObj instanceof CDateType||typeObj instanceof CTimeType||typeObj instanceof CTimestampType)
         {
-            CellStyle dataCellStyle=this.getDataCellStyleForStandardExcel(workbook);//获取数据行的样式对象
-            dataCellStyle.setDataFormat(workbook.createDataFormat().getFormat(
-                    ((AbsDateTimeType)typeObj).getDateformat()));
+            cellStyleWithFormat.setDataFormat(workbook.createDataFormat().getFormat(((AbsDateTimeType)typeObj).getDateformat()));
             if(align!=null&&!align.trim().equals(""))
             {
-                dataCellStyle=this.setCellAlign(dataCellStyle,align);
+                cellStyleWithFormat=this.setCellAlign(cellStyleWithFormat,align);
             }
             cell.setCellValue(((Calendar)objValue));
-            cell.setCellStyle(dataCellStyle);
+            cell.setCellStyle(cellStyleWithFormat);
             return true;
         }else
-        {
+        {//其它的类型都做为字符串形式写到Excel文件中
             cell.setCellValue(typeObj.value2label(objValue));
         }
         return false;

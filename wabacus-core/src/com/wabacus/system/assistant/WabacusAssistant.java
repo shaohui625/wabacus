@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -65,6 +65,38 @@ public class WabacusAssistant
     public static WabacusAssistant getInstance()
     {
         return instance;
+    }
+    
+    public String addDefaultPopupParams(String popupparams,String initsize,String defaultWidth,String defaultHeight,String defaultHandler)
+    {
+        popupparams=popupparams==null?"":popupparams.trim();
+        if(popupparams.startsWith("{")&&popupparams.endsWith("}")) popupparams=popupparams.substring(1,popupparams.length()-1).trim();
+        if(defaultWidth!=null&&!defaultWidth.trim().equals("")&&popupparams.toLowerCase().indexOf("width:")<0)
+        {
+            if(!popupparams.equals("")) popupparams+=",";
+            popupparams+="width:"+defaultWidth;
+        }
+        if(defaultHeight!=null&&!defaultHeight.trim().equals("")&&popupparams.toLowerCase().indexOf("height:")<0)
+        {
+            if(!popupparams.equals("")) popupparams+=",";
+            popupparams+="height:"+defaultHeight;
+        }
+        if(initsize!=null&&initsize.toLowerCase().trim().equals("max"))
+        {
+            if(!popupparams.equals("")) popupparams+=",";
+            popupparams+="initsize:'max'";
+        }else if(initsize!=null&&initsize.toLowerCase().trim().equals("min"))
+        {
+            if(!popupparams.equals("")) popupparams+=",";
+            popupparams+="initsize:'min'";
+        }
+        if(defaultHandler!=null&&!defaultHandler.trim().equals("")&&popupparams.toLowerCase().indexOf("handler:")<0)
+        {
+            if(!popupparams.equals("")) popupparams+=",";
+            popupparams+="handler:"+defaultHandler;
+        }
+        if(!popupparams.trim().equals("")) popupparams="{"+popupparams+"}";
+        return popupparams;
     }
     
     public List<Map<String,String>> parseStringToList(String sourcestring)
@@ -187,7 +219,7 @@ public class WabacusAssistant
         while(relativepath.startsWith("/"))
             relativepath=relativepath.substring(1);
         rootpath=rootpath+relativepath;
-//        return new File(URI.create(rootpath));
+
         return new File(rootpath);
     }
     
@@ -222,10 +254,10 @@ public class WabacusAssistant
                         +displayvalue.substring(endidxTmp);
             }
         }
+        //        lstImgObjs=RegexTools.getMatchObjectArray(displayvalue,"&lt;img[^&gt;]*&gt;",false);
         
         
         
-        //
         
         return displayvalue;
     }
@@ -341,7 +373,7 @@ public class WabacusAssistant
         String realkey=null;
         boolean isRequest=false;
         if(Tools.isDefineKey("request",key))
-        {//从request中取值
+        {
             realkey=Tools.getRealKeyByDefine("request",key);
             isRequest=true;
         }
@@ -399,7 +431,7 @@ public class WabacusAssistant
     {
         if(title==null) title="";
         title=Tools.replaceAll(title,"&nbsp;","");
-        title=title.replaceAll("<.*?\\>","").trim();
+        title=title.replaceAll("<.*?\\>","").trim();//去掉标题中的html元素
         try
         {
             if(Config.encode.equalsIgnoreCase("utf-8"))
@@ -504,7 +536,7 @@ public class WabacusAssistant
                 break;
             }
         }
-        sizevalue=tmpBuf.toString();//宽度的值（即数字部分）
+        sizevalue=tmpBuf.toString();
         if(sizevalue.equals("")) return null;
         int isizevalue=0;
         try
@@ -582,7 +614,7 @@ public class WabacusAssistant
             filepath=Tools.standardFilePath(filepath);
             istream=new FileInputStream(filepath);
         }else
-        {//绝对路径
+        {
             if(Tools.isDefineKey("absolute",filepath))
             {
                 filepath=Tools.getRealKeyByDefine("absolute",filepath).trim();

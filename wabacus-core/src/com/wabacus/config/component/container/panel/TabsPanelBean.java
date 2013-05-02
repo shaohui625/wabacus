@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -46,6 +46,8 @@ public class TabsPanelBean extends AbsContainerConfigBean
     private int displaycount;//显示tab标题个数，如果超过这个个数，将会自动提供左右/上下移动的箭头（根据titlestyle属性定是上下箭头还是左右箭头）
     
     private List<TabItemBean> lstTabItems;
+    
+    private String switchbeforecallback;
     
     public TabsPanelBean(AbsContainerConfigBean parentContainer,String tagname)
     {
@@ -102,6 +104,16 @@ public class TabsPanelBean extends AbsContainerConfigBean
         this.displaycount=displaycount;
     }
 
+    public String getSwitchbeforecallback()
+    {
+        return switchbeforecallback;
+    }
+
+    public void setSwitchbeforecallback(String switchbeforecallback)
+    {
+        this.switchbeforecallback=switchbeforecallback;
+    }
+
     public List<TabItemBean> getLstTabItems()
     {
         return lstTabItems;
@@ -143,7 +155,7 @@ public class TabsPanelBean extends AbsContainerConfigBean
     public boolean invokeCheckPermissionByChild(ReportRequest rrequest,IComponentConfigBean childConfigBean,String permissiontype,
             String permissionvalue)
     {
-        if(lstChildrenIDs==null||lstChildrenIDs.size()==0) return false;//没有tabitem
+        if(lstChildrenIDs==null||lstChildrenIDs.size()==0) return false;
         int i=0,len=lstChildrenIDs.size();
         for(;i<len;i++)
         {
@@ -173,9 +185,9 @@ public class TabsPanelBean extends AbsContainerConfigBean
                     this.setAsyn(false);
                 }
             }else if(childComponentTmp instanceof AbsContainerConfigBean)
-            {
+            {//如果直接子组件是一个容器
                 if(hasChildRelateWithOuterReport((AbsContainerConfigBean)childComponentTmp,(AbsContainerConfigBean)childComponentTmp))
-                {//当前标签页上的容器上存在与其它标签页或其它外部容器上的报表有依赖关系的子报表，则此tabpanel不能用异步加载
+                {
                     this.setAsyn(false);
                 }
             }
@@ -225,7 +237,7 @@ public class TabsPanelBean extends AbsContainerConfigBean
                 {
                     for(String idTmp:rbTmp.getMDependChilds().keySet())
                     {
-                        if(rootContainerBean.getChildComponentBean(idTmp,true)==null) return true;//如果有外部报表依赖于本标签页的容器上的报表
+                        if(rootContainerBean.getChildComponentBean(idTmp,true)==null) return true;
                     }
                 }
             }else if(childComponentTmp instanceof AbsContainerConfigBean)
@@ -267,7 +279,7 @@ public class TabsPanelBean extends AbsContainerConfigBean
         AbsContainerConfigBean parentConfigBean=childConfigBean1.getParentContainer();
         while(!parentConfigBean.getId().equals(this.id))
         {
-            if(parentConfigBean.getChildComponentBean(childConfigBean2.getId(),true)!=null) return true;
+            if(parentConfigBean.getChildComponentBean(childConfigBean2.getId(),true)!=null) return true;//它们的公共父容器在tabpanel的一个标签页中
             parentConfigBean=parentConfigBean.getParentContainer();
         }
         return false;
@@ -275,7 +287,7 @@ public class TabsPanelBean extends AbsContainerConfigBean
     
     private class TabItemBean
     {
-        private IComponentConfigBean childComponentBean;//当前tabItem存放的子组件配置对象
+        private IComponentConfigBean childComponentBean;
         
         private String refreshid;
         

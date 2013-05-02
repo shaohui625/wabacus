@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -18,6 +18,7 @@
  */
 package com.wabacus.system.component.container.page;
 
+import java.util.Collections;
 import java.util.List;
 
 import com.wabacus.config.Config;
@@ -25,6 +26,7 @@ import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
+import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.system.ReportRequest;
@@ -34,6 +36,7 @@ import com.wabacus.system.component.IComponentType;
 import com.wabacus.system.component.container.AbsContainerType;
 import com.wabacus.system.tags.component.AbsComponentTag;
 import com.wabacus.util.Consts;
+import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 import com.wabacus.util.UniqueArrayList;
 
@@ -43,7 +46,7 @@ public class PageType extends AbsContainerType
 
     private List<String> lstDynCsses=null;
     
-    private List<String> lstJavascripts=null;
+    private List<JavascriptFileBean> lstJavascripts=null;
     
     private PageBean pagebean;
 
@@ -63,28 +66,25 @@ public class PageType extends AbsContainerType
     public List<ReportBean> initDisplayOnPage()
     {
         this.lstCsses=ComponentAssistant.getInstance().initDisplayCss(rrequest);
-        this.lstJavascripts=new UniqueArrayList<String>();
+        this.lstJavascripts=new UniqueArrayList<JavascriptFileBean>();
+        this.lstJavascripts.addAll(pagebean.getLstSystemJavascriptFiles());
         String js=rrequest.getStringAttribute("JS","");
         if(!js.equals(""))
         {
             js=Tools.htmlEncode(js);
-            String[] jsArray=Tools.parseStringToArray(js,",");
-            for(int k=0;k<jsArray.length;k++)
+            List<String> lstJsTmp=Tools.parseStringToList(js,",",false);
+            for(String jsTmp:lstJsTmp)
             {
-                if(jsArray[k]==null||jsArray[k].trim().equals("")) continue;
-                jsArray[k]=Config.webroot+jsArray[k];
-                jsArray[k]=Tools.replaceAll(jsArray[k],"//","/");
-                lstJavascripts.add(jsArray[k]);
+                if(jsTmp==null||jsTmp.trim().equals("")) continue;
+                if(!jsTmp.trim().startsWith(Config.webroot)&&!jsTmp.trim().toLowerCase().startsWith("http://"))
+                {
+                    jsTmp=Tools.replaceAll(Config.webroot+"/"+jsTmp,"//","/");
+                }
+                this.lstJavascripts.add(new JavascriptFileBean(jsTmp,0));
             }
-        }
-        if(lstJavascripts.size()==0&&pagebean.getUlstMyJavascript()!=null)
+        }else if(pagebean.getLstMyJavascriptFiles()!=null)
         {
-            lstJavascripts.addAll(pagebean.getUlstMyJavascript());
-        }
-        List<String> lstSystemJs=pagebean.getUlstSystemJavascript();
-        if(lstSystemJs!=null)
-        {
-            lstJavascripts.addAll(lstSystemJs);
+            this.lstJavascripts.addAll(pagebean.getLstMyJavascriptFiles());
         }
         return super.initDisplayOnPage();
     }
@@ -99,7 +99,7 @@ public class PageType extends AbsContainerType
         wresponse.println(showStartWebResources());
         wresponse.println("<span id=\"WX_CONTENT_"+pagebean.getGuid()+"\">");//顶层<page/>的内容必须用<span/>完整括住，这样更新页面时才能更新整个页面内容
         wresponse.println(showContainerStartPart());
-        wresponse.println(showContainerTableTag());//显示容器最里层的<table>标签
+        wresponse.println(showContainerTableTag());
         if(rrequest.checkPermission(pagebean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY))
         {
             IComponentType childObjTmp;
@@ -128,20 +128,8 @@ public class PageType extends AbsContainerType
         wresponse.println("<div id=\"wx_titletree_buttoncontainer\" style=\"padding-top: 3px;padding-bottom:5px;text-align:center\"></div>");
         wresponse.println("</div>");
         wresponse.println("<div id=\"LOADING_IMG_ID\" class=\"cls-loading-img\"></div>");
-        String pageurlspan="<span id=\""+pagebean.getId()+"_url_id\" style=\"display:none;\" value=\""
-                +Tools.htmlEncode(Tools.jsParamEncode(rrequest.getUrl()))+"\"";
-        if(pagebean.isShouldProvideEncodePageUrl())
-        {
-            pageurlspan=pageurlspan+" encodevalue=\""+Tools.convertBetweenStringAndAscii(rrequest.getUrl(),true)+"\"";
-        }
-        String ancestorUrls=rrequest.getStringAttribute("ancestorPageUrls","");
-        if(!ancestorUrls.equals(""))
-        {
-            pageurlspan=pageurlspan+" ancestorPageUrls=\""+ancestorUrls+"\"";
-        }
-        wresponse.println(pageurlspan+"></span>");
         if(pagebean.getLstPrintBeans()!=null)
-        {//此页面上有组件需要打印，初始化所有打印对象
+        {
             for(AbsPrintProviderConfigBean ppcbeanTmp:pagebean.getLstPrintBeans())
             {
                 ppcbeanTmp.initPrint(rrequest);
@@ -158,7 +146,7 @@ public class PageType extends AbsContainerType
         if(rrequest.getLstAncestorUrls()!=null&&rrequest.getLstAncestorUrls().size()>0&&clickevent.equals(""))
         {
             if(this.pagebean.getButtonsBean()!=null&&this.pagebean.getButtonsBean().getcertainTypeButton(BackButton.class)!=null)
-            {
+            {//如果此页面配置了“返回”按钮，则不在这里自动显示（因为稍后显示按钮时会显示“返回”按钮）
                 return "";
             }
             BackButton buttonObj=(BackButton)Config.getInstance().getResourceButton(rrequest,rrequest.getPagebean(),Consts.BACK_BUTTON_DEFAULT,
@@ -173,19 +161,19 @@ public class PageType extends AbsContainerType
     private static String systemheadjs="";
     static
     {
-        if(Config.encode.toLowerCase().trim().equals("utf-8"))
-        {
-            systemheadjs="/webresources/script/wabacus_systemhead.js";
-        }else
-        {
-            String encode=Config.encode;
-            if(encode.trim().equalsIgnoreCase("gb2312"))
-            {
-                encode="gbk";
-            }
-            systemheadjs="/webresources/script/"+encode.toLowerCase()+"/wabacus_systemhead.js";
-        }
-        systemheadjs=Config.webroot+"/"+systemheadjs;
+
+
+//            systemheadjs="/webresources/script/wabacus_systemhead.js";
+
+
+
+
+
+
+//            }
+//            systemheadjs="/webresources/script/"+encode.toLowerCase()+"/wabacus_systemhead.js";
+
+        systemheadjs=Config.webroot+"/webresources/script/wabacus_systemhead.js";
         systemheadjs=Tools.replaceAll(systemheadjs,"//","/");
     }
     
@@ -214,13 +202,14 @@ public class PageType extends AbsContainerType
         StringBuffer resultBuf=new StringBuffer();
         if(this.lstJavascripts!=null)
         {
-            for(String jsTmp:this.lstJavascripts)
+            Collections.sort(this.lstJavascripts);
+            for(JavascriptFileBean jsBeanTmp:this.lstJavascripts)
             {
-                resultBuf.append("<script type=\"text/javascript\"  src=\"").append(jsTmp).append("\"></script>");
+                resultBuf.append("<script type=\"text/javascript\"  src=\"").append(jsBeanTmp.getJsfileurl()).append("\"></script>");
             }
         }
         if(lstDynCsses!=null)
-        {//将运行时动态决定需要包含的css文件包含进来
+        {
             for(String cssTmp:lstDynCsses)
             {
                 resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(cssTmp).append("\"/>");
@@ -242,19 +231,22 @@ public class PageType extends AbsContainerType
         return null;//因为<page/>是顶层容器，没有父容器
     }
     
-    public void addDynCss(String css)
+    public void addDynCsses(List<String> lstCsses)
     {
-        if(css==null||css.trim().equals("")) return;
-        if(this.lstCsses!=null&&this.lstCsses.contains(css)) return;
+        if(lstCsses==null||lstCsses.size()==0) return;
         if(this.lstDynCsses==null) this.lstDynCsses=new UniqueArrayList<String>();
-        this.lstDynCsses.add(css);
+        for(String cssTmp:lstCsses)
+        {
+            if(cssTmp==null||cssTmp.trim().equals("")) continue;
+            this.lstDynCsses.add(Tools.replaceAll(cssTmp,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin()));
+        }
     }
     
-    public void addDynJs(String js)
+    public void addDynJsFileBeans(List<JavascriptFileBean> lstJsFileBeans)
     {
-        if(js==null||js.trim().equals("")) return;
-        if(this.lstJavascripts==null) this.lstJavascripts=new UniqueArrayList<String>();
-        this.lstJavascripts.add(js);
+        if(lstJsFileBeans==null||lstJsFileBeans.size()==0) return;
+        if(this.lstJavascripts==null) this.lstJavascripts=new UniqueArrayList<JavascriptFileBean>();
+        this.lstJavascripts.addAll(lstJsFileBeans);
     }
     
     public AbsContainerConfigBean loadConfig(XmlElementBean eleContainer,AbsContainerConfigBean parent,String tagname)

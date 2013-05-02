@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -112,10 +112,10 @@ public abstract class AbsContainerType extends AbsComponentType
                 ReportBean rbTmp=(ReportBean)childConfigBeanTmp;
                 reportObj=(AbsReportType)childTypeObjTmp;
                 if(!rbTmp.isSlaveReportDependsonListReport())
-                {//如果当前报表不是依赖列表报表的从报表（从报表的初始化不会经过所属容器，而是直接在rrequest的初始化方法中调用）
+                {
                     lstReportbeans.add(rbTmp);
                     reportObj.init();
-                    reportObj.loadReportData();
+                    reportObj.loadReportData(true);
                 }
                 mChildren.put(childIDTmp,reportObj);
             }else if(childTypeObjTmp instanceof AbsContainerType)
@@ -210,7 +210,7 @@ public abstract class AbsContainerType extends AbsComponentType
         }
         if(!(containerConfigBean instanceof PageBean))
         {//<page/>的<span/>在PageType类中生成
-            resultBuf.append("<span id=\"WX_CONTENT_"+containerConfigBean.getGuid()+"\">");//后面的操作需要刷新当前容器时，从这里开始刷新，这样不需用到父容器来获取它的宽度
+            resultBuf.append("<span id=\"WX_CONTENT_"+containerConfigBean.getGuid()+"\">");
         }
         resultBuf.append(this.showHeader());
         resultBuf.append("<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"margin:0;\">");
@@ -241,7 +241,7 @@ public abstract class AbsContainerType extends AbsComponentType
             }
             resultBuf.append(";\"");
         }else
-        {//配置为不显示边框
+        {
             resultBuf.append(" style=\"border:0px;\"");
         }
         resultBuf.append(">");
@@ -313,7 +313,7 @@ public abstract class AbsContainerType extends AbsComponentType
         
         
         //        {//标题显示在顶部
-        //            resultBuf.append(" class=\"cls-title-left-table\"");
+        
         
         resultBuf.append(">");
         resultBuf.append("<tr><TD class=\"cls-title\">").append(
@@ -341,7 +341,7 @@ public abstract class AbsContainerType extends AbsComponentType
         if((isDisplayTopTitleBar&&this.containerConfigBean.isTitleInTop())||(!isDisplayTopTitleBar&&this.containerConfigBean.isTitleInBottom()))
         {
             if(rrequest.checkPermission(containerConfigBean.getId(),Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY))
-            {//授权为显示标题栏（则要显示标题和副标题）
+            {
                 realtitle=this.getDisplayRealTitleAndSubTitle();
             }
         }
@@ -439,7 +439,7 @@ public abstract class AbsContainerType extends AbsComponentType
         }
         childObj.displayOnPage(null);
         if(childConfigBean.getRight()!=null&&!childConfigBean.getRight().trim().equals(""))
-        {//配置了右边距
+        {
             wresponse.println("<td width=\""+childConfigBean.getRight()+"\">&nbsp;</td>");
         }
         if(hasLeftRight)
@@ -480,7 +480,7 @@ public abstract class AbsContainerType extends AbsComponentType
         }
         resultBuf.append("</table>");
         resultBuf.append(this.showFooter());
-//        resultBuf.append(this.showContextMenu());
+
         resultBuf.append(this.showMetaData());
         if(!(containerConfigBean instanceof PageBean)) resultBuf.append("</span>");
         if((containerConfigBean instanceof PageBean)||this.getParentContainerType()!=null)
@@ -576,7 +576,7 @@ public abstract class AbsContainerType extends AbsComponentType
             WordRichExcelExportBean debeanTmp;
             for(String appidTmp:lstApplicationids)
             {
-                if(!rrequest.getLstApplicationIds().contains(appidTmp)) continue;//没有在URL中指定要导出此应用
+                if(!rrequest.getLstApplicationIds().contains(appidTmp)) continue;
                 appTypeObjTmp=(AbsApplicationType)rrequest.getComponentTypeObj(appidTmp,null,true);
                 Object tplObjTmp=null;
                 if(appTypeObjTmp.getConfigBean().getDataExportsBean()!=null)

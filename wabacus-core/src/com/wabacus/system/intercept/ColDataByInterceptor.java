@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -24,7 +24,9 @@ public class ColDataByInterceptor
     private String dynstyleproperty;
     
     private boolean styleOverwrite;
-
+    
+    private boolean readonly;
+    
     public String getDynvalue()
     {
         return dynvalue;
@@ -53,6 +55,16 @@ public class ColDataByInterceptor
     public void setStyleOverwrite(boolean styleOverwrite)
     {
         this.styleOverwrite=styleOverwrite;
+    }
+
+    public boolean isReadonly()
+    {
+        return readonly;
+    }
+
+    public void setReadonly(boolean readonly)
+    {
+        this.readonly=readonly;
     }
 }
 

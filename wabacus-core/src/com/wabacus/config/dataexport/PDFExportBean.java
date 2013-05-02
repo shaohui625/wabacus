@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -23,6 +23,7 @@ import java.util.List;
 import com.itextpdf.text.PageSize;
 import com.itextpdf.text.Rectangle;
 import com.wabacus.config.Config;
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
@@ -44,7 +45,7 @@ public class PDFExportBean extends AbsDataExportBean
 
     private float width;
     
-    private boolean fullpagesplit;//指定报表分页时，是否每页都显示所有内容
+    private boolean fullpagesplit;
     
     private int titlefontsize;
     
@@ -186,7 +187,7 @@ public class PDFExportBean extends AbsDataExportBean
                 Object objTmp=null;
                 try
                 {
-                    objTmp=Class.forName(interceptor).newInstance();
+                    objTmp=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(interceptor).newInstance();
                 }catch(Exception e)
                 {
                     throw new WabacusConfigLoadingException("为组件"+this.owner.getPath()+"配置的导出到PDF文件中指定的拦截器类"+interceptor+"无法实例化",e);
@@ -222,7 +223,7 @@ public class PDFExportBean extends AbsDataExportBean
                 }
                 if(this.owner instanceof AbsContainerConfigBean)
                 {
-                    buttonObj.setPosition("top");//对于容器，默认位置在顶部
+                    buttonObj.setPosition("top");
                 }
                 ComponentConfigLoadManager.addButtonToPositions(this.owner,buttonObj);
             }

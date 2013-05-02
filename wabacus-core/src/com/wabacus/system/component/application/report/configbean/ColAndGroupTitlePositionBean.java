@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -28,7 +28,7 @@ public class ColAndGroupTitlePositionBean implements Cloneable
 
     private int colspan=1;
     
-    private int layer=0;//当前列标题所在的层级，最上一层为0
+    private int layer=0;
     
     private int displaymode;
     

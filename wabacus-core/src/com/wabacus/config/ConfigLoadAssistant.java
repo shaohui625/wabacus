@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -28,7 +28,7 @@ import org.dom4j.Element;
 
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.FormatBean;
-import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.datatype.IDataType;
@@ -105,7 +105,7 @@ public class ConfigLoadAssistant
             }
             lstEleBeans.add(eleReferredTmp);
             lstEleBeans.addAll(getRefElements(eleReferredTmp.attributeValue("ref"),nodename,
-                    lstReferedKeys,ccbean));//这个被引用的资源项可以再引用其它资源项，无限引用
+                    lstReferedKeys,ccbean));
         }
         return lstEleBeans;
     }
@@ -121,23 +121,25 @@ public class ConfigLoadAssistant
         for(String strclassTmp:lstTemp)
         {
             if(strclassTmp==null||strclassTmp.trim().equals("")) continue;
-            try
-            {
-                lstClasses.add(Class.forName(strclassTmp.trim()));
-            }catch(ClassNotFoundException e)
-            {
-                throw new WabacusConfigLoadingException("配置的类："+strclassTmp+"无法加载",e);
-            }
+            lstClasses.add(ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclassTmp.trim()));
         }
         return lstClasses;
     }
     
-    public static boolean isValidId(String id)
+    public static List<String> lstInvalidIdCharacters=new ArrayList<String>();
+    
+    static
     {
-        if(id==null||id.trim().equals("")) return false;
-        if(id.indexOf("|")>=0||id.indexOf("(")>=0||id.indexOf(")")>=0||id.indexOf("*")>=0
-                ||id.indexOf(".")>=0||id.indexOf("%")>=0||id.indexOf("#")>=0) return false;
-        return true;
+        lstInvalidIdCharacters.add("_");
+        lstInvalidIdCharacters.add("|");
+        lstInvalidIdCharacters.add("(");
+        lstInvalidIdCharacters.add(")");
+        lstInvalidIdCharacters.add("*");
+        lstInvalidIdCharacters.add(".");
+        lstInvalidIdCharacters.add("%");
+        lstInvalidIdCharacters.add("#");
+        lstInvalidIdCharacters.add("&");
+        lstInvalidIdCharacters.add("-");
     }
     
     public static IDataType loadDataType(XmlElementBean eleBean)
@@ -224,6 +226,50 @@ public class ConfigLoadAssistant
             }
         }
         return lstImportPackages;
+    }
+    
+    public List<JavascriptFileBean> getLstPopupComponentJs()
+    {
+        List<JavascriptFileBean> lstResults=new ArrayList<JavascriptFileBean>();
+        String promptDialogType=Config.getInstance().getSystemConfigValue("prompt-dialog-type","artdialog");
+        if(promptDialogType.toLowerCase().equals("ymprompt"))
+        {
+            String jsTmp=Config.webroot+"/webresources/component/ymPrompt/ymPrompt.js";
+            jsTmp=Tools.replaceAll(jsTmp,"\\","/");
+            jsTmp=Tools.replaceAll(jsTmp,"//","/");
+            lstResults.add(new JavascriptFileBean(jsTmp.trim(),0));
+        }else
+        {//artDialog提示组件
+            String jsTmp=Config.webroot+"/webresources/component/artDialog/artDialog.js";
+            jsTmp=Tools.replaceAll(jsTmp,"\\","/");
+            jsTmp=Tools.replaceAll(jsTmp,"//","/");
+            lstResults.add(new JavascriptFileBean(jsTmp.trim(),0));
+            jsTmp=Config.webroot+"/webresources/component/artDialog/plugins/iframeTools.js";
+            jsTmp=Tools.replaceAll(jsTmp,"\\","/");
+            jsTmp=Tools.replaceAll(jsTmp,"//","/");
+            lstResults.add(new JavascriptFileBean(jsTmp.trim(),0));
+        }
+        return lstResults;
+    }
+    
+    public List<String> getLstPopupComponentCss()
+    {
+        List<String> lstResults=new ArrayList<String>();
+        String promptDialogType=Config.getInstance().getSystemConfigValue("prompt-dialog-type","artdialog");
+        if(promptDialogType.toLowerCase().equals("ymprompt"))
+        {
+            String cssTmp=Config.webroot+"/webresources/skin/"+Config.skin+"/ymPrompt/ymPrompt.css";
+            cssTmp=Tools.replaceAll(cssTmp,"\\","/");
+            cssTmp=Tools.replaceAll(cssTmp,"//","/");
+            lstResults.add(cssTmp);
+        }else
+        {
+            String cssTmp=Config.webroot+"/webresources/skin/"+Config.skin+"/artDialog/artDialog.css";
+            cssTmp=Tools.replaceAll(cssTmp,"\\","/");
+            cssTmp=Tools.replaceAll(cssTmp,"//","/");
+            lstResults.add(cssTmp);
+        }
+        return lstResults;
     }
 }
 

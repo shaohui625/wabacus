@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import com.wabacus.config.Config;
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.OnloadMethodBean;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.ComponentConfigLoadManager;
@@ -60,14 +61,13 @@ import com.wabacus.system.component.application.report.abstractreport.AbsReportT
 import com.wabacus.system.component.application.report.abstractreport.IReportType;
 import com.wabacus.system.component.container.AbsContainerType;
 import com.wabacus.system.inputbox.AbsInputBox;
+import com.wabacus.system.inputbox.AbsSelectBox;
 import com.wabacus.system.inputbox.FileBox;
 import com.wabacus.system.inputbox.PopUpBox;
-import com.wabacus.system.inputbox.SelectBox;
 import com.wabacus.system.inputbox.TextBox;
 import com.wabacus.system.intercept.IInterceptor;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
-import com.wabacus.util.UniqueArrayList;
 
 public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 {
@@ -97,7 +97,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private String title;
 
-    private String titlealign="left";//报表标题对齐方式，可配置值为：left,center,right
+    private String titlealign="left";
     
     private Map<String,String> mDynTitleParts;
     
@@ -119,7 +119,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private XmlElementBean eleReportBean;
 
-    private String bordercolor;//报表中各单元格之间边框的颜色
+    private String bordercolor;
 
     private String strclass;
 
@@ -133,16 +133,10 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private List<String> lstDataImportFileNames;
 
-    private int dataimportwidth;
+    private String dataimportpopupparams;
 
-    private int dataimportheight;
-    
     private String dataimportinitsize;//上传数据文件窗口的初始大小，可配置值包括min/max/normal，分别表示最大化、最小化、正常窗口大小（即上面pagewidth/pageheight配置的大小）
     
-    private String dataimportmaxbtn;
-    
-    private String dataimportminbtn;//上传数据文件窗口是否显示最小化窗口按钮
-
     private String scrollheight;
 
     private String scrollwidth;
@@ -151,7 +145,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private String border=Consts_Private.REPORT_BORDER_ALL;
 
-    private String dynTplPath;//如果当前报表是用动态类型的模板（比如jsp、servlet），则在这里指定其访问URI，如果值为Consts_Private.REPORT_TEMPLATE_NONE，则没有显示模板，也不会用框架内置的全局模板
+    private String dynTplPath;
     
     private TemplateBean tplBean;
 
@@ -159,11 +153,11 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private String type;
 
-    private String classcache="";
+    private String classcache="";//是否将动态生成的POJO字节码缓存在内存中。只有采用自动生成pojo方式，即class属性设置成commondatabean时，这个配置才生效
 
     private boolean blClasscache=false;
 
-    private Class pojoclass;//存放从数据库中获取的数据的POJO类，只有当采用框架自动生成pojo类（即strclass=commondatabean）且blClasscache为true时，才会在此属性中存放pojo类的Class对象
+    private Class pojoclass;
 
     private ButtonsBean buttonsBean=null;
 
@@ -173,7 +167,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private int celldrag=0;
 
-    private int jsvalidatetype;//客户端校验类型。0：点击搜索或保存按钮时进行校验；1：焦点离开输入框时马上校验
+    private int jsvalidatetype;
 
     private TemplateBean headerTplBean;//<header/>配置的静态模板对象
     
@@ -185,23 +179,19 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private FormatBean fbean;
 
-    private List<String> ulstMyJavascript;
-
-    private List<String> ulstMyCss;
-
     private List<Class> lstFormatClasses;//本报表所需用到的校验类。里面定义的校验方法可以在每个<col/>的format属性中使用。配置方式与系统配置文件的全局配置项format-class一样，也可以配置多个。
 
     private List<TextBox> lstTextBoxesWithTypePrompt;//加载时暂时存放当前报表所有配置有输入提示功能的文本框，加载完后将全部转移到下面的mTextBoxesWithTypePrompt变量中
 
     private Map<String,TextBox> mTextBoxesWithTypePrompt;
 
-    private Map<String,SelectBox> mSelectBoxesInConditionWithRelate;
+    private Map<String,AbsSelectBox> mSelectBoxesInConditionWithRelate;
 
-    private Map<String,SelectBox> mSelectBoxesInColWithRelate;
+    private Map<String,AbsSelectBox> mSelectBoxesInColWithRelate;
     
     private List<FileBox> lstUploadFileBoxes;
 
-    private Map<String,FileBox> mUploadFileBoxes;//上传文件输入框，在dopostload()方法中由lstUploadFileBoxes生成
+    private Map<String,FileBox> mUploadFileBoxes;
 
     private List<PopUpBox> lstPopUpBoxes;
 
@@ -233,7 +223,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private AbsContainerConfigBean parentContainer;
 
-    private String validateSearchMethod;//当前报表的搜索需要客户端校验时，这里存放校验的方法名，否则为null
+    private String validateSearchMethod;
     
     private List<SubmitFunctionParamBean> lstSearchFunctionDynParams;
     
@@ -397,7 +387,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     public boolean isMasterReportOfMe(ReportBean rbeanMaster,boolean inherit)
     {
-        if(!this.isSlaveReport()) return false;//当前报表不是从报表
+        if(!this.isSlaveReport()) return false;
         if(this.dependParentId.equals(rbeanMaster.getId())) return true;
         if(!inherit) return false;
         return ((ReportBean)this.getPageBean().getChildComponentBean(this.dependParentId,true)).isMasterReportOfMe(rbeanMaster,inherit);
@@ -415,7 +405,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
 
 
-//            }
+
 
 
 
@@ -832,24 +822,14 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         return this.id;
     }
 
-    public int getDataimportwidth()
+    public String getDataimportpopupparams()
     {
-        return dataimportwidth;
+        return dataimportpopupparams;
     }
 
-    public void setDataimportwidth(int dataimportwidth)
+    public void setDataimportpopupparams(String dataimportpopupparams)
     {
-        this.dataimportwidth=dataimportwidth;
-    }
-
-    public int getDataimportheight()
-    {
-        return dataimportheight;
-    }
-
-    public void setDataimportheight(int dataimportheight)
-    {
-        this.dataimportheight=dataimportheight;
+        this.dataimportpopupparams=dataimportpopupparams;
     }
 
     public String getDataimportinitsize()
@@ -860,26 +840,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     public void setDataimportinitsize(String dataimportinitsize)
     {
         this.dataimportinitsize=dataimportinitsize;
-    }
-
-    public String getDataimportmaxbtn()
-    {
-        return dataimportmaxbtn;
-    }
-
-    public void setDataimportmaxbtn(String dataimportmaxbtn)
-    {
-        this.dataimportmaxbtn=dataimportmaxbtn;
-    }
-
-    public String getDataimportminbtn()
-    {
-        return dataimportminbtn;
-    }
-
-    public void setDataimportminbtn(String dataimportminbtn)
-    {
-        this.dataimportminbtn=dataimportminbtn;
     }
 
     public String getStrclass()
@@ -1098,38 +1058,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         this.fbean=fbean;
     }
 
-    public List<String> getUlstMyJavascript()
-    {
-        return ulstMyJavascript;
-    }
-
-    public void setUlstMyJavascript(List<String> ulstMyJavascript)
-    {
-        this.ulstMyJavascript=ulstMyJavascript;
-    }
-
-    public List<String> getUlstMyCss()
-    {
-        return ulstMyCss;
-    }
-
-    public void setUlstMyCss(List<String> ulstMyCss)
-    {
-        this.ulstMyCss=ulstMyCss;
-    }
-
-    public void addMyJavascript(String javascript)
-    {
-        if(ulstMyJavascript==null) ulstMyJavascript=new UniqueArrayList<String>();
-        ulstMyJavascript.add(javascript);
-    }
-
-    public void addMyCss(String css)
-    {
-        if(ulstMyCss==null) ulstMyCss=new UniqueArrayList<String>();
-        ulstMyCss.add(css);
-    }
-
     public List<Integer> getLstPagesize()
     {
         return lstPagesize;
@@ -1175,36 +1103,36 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         return mTextBoxesWithTypePrompt.get(inputboxid);
     }
     
-    public void setMSelectBoxesInConditionWithRelate(Map<String,SelectBox> selectBoxesInConditionWithRelate)
+    public void setMSelectBoxesInConditionWithRelate(Map<String,AbsSelectBox> selectBoxesInConditionWithRelate)
     {
         mSelectBoxesInConditionWithRelate=selectBoxesInConditionWithRelate;
     }
 
-    public void setMSelectBoxesInColWithRelate(Map<String,SelectBox> selectBoxesInColWithRelate)
+    public void setMSelectBoxesInColWithRelate(Map<String,AbsSelectBox> selectBoxesInColWithRelate)
     {
         mSelectBoxesInColWithRelate=selectBoxesInColWithRelate;
     }
 
-    public void addSelectBoxWithRelate(SelectBox selectBoxObj)
+    public void addSelectBoxWithRelate(AbsSelectBox selectBoxObj)
     {
         if(selectBoxObj.getOwner() instanceof ConditionBean)
         {
-            if(mSelectBoxesInConditionWithRelate==null) mSelectBoxesInConditionWithRelate=new HashMap<String,SelectBox>();
+            if(mSelectBoxesInConditionWithRelate==null) mSelectBoxesInConditionWithRelate=new HashMap<String,AbsSelectBox>();
             mSelectBoxesInConditionWithRelate.put(selectBoxObj.getOwner().getInputBoxId(),selectBoxObj);
         }else
         {
-            if(mSelectBoxesInColWithRelate==null) mSelectBoxesInColWithRelate=new HashMap<String,SelectBox>();
+            if(mSelectBoxesInColWithRelate==null) mSelectBoxesInColWithRelate=new HashMap<String,AbsSelectBox>();
             mSelectBoxesInColWithRelate.put(selectBoxObj.getOwner().getInputBoxId(),selectBoxObj);
         }
     }
 
-    public SelectBox getChildSelectBoxInConditionById(String inputboxid)
+    public AbsSelectBox getChildSelectBoxInConditionById(String inputboxid)
     {
         if(mSelectBoxesInConditionWithRelate==null) return null;
         return this.mSelectBoxesInConditionWithRelate.get(inputboxid);
     }
     
-    public SelectBox getChildSelectBoxInColById(String inputboxid)
+    public AbsSelectBox getChildSelectBoxInColById(String inputboxid)
     {
         if(mSelectBoxesInColWithRelate==null) return null;
         return this.mSelectBoxesInColWithRelate.get(inputboxid);
@@ -1329,7 +1257,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     {
         if(this.lstPagesize.size()>1||this.lstPagesize.get(0)>0) return true;
         
-        //对于列表报表，不存在pagesize为0的情况，因为在加载配置文件时已经将它替换成10，对于细览报表，则pagesize为0时，表示只取满足条件的第一条记录，相当于不分页显示
+        
         return false;
     }
     
@@ -1395,7 +1323,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         processNavigateReportid();
         if(this.mSelectBoxesInConditionWithRelate!=null&&this.mSelectBoxesInConditionWithRelate.size()>0)
         {
-            for(Entry<String,SelectBox> entryTmp:this.mSelectBoxesInConditionWithRelate.entrySet())
+            for(Entry<String,AbsSelectBox> entryTmp:this.mSelectBoxesInConditionWithRelate.entrySet())
             {
                 entryTmp.getValue().processRelateInputboxByReportBean();
             }
@@ -1439,13 +1367,14 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
             pojoclass=this.pojoclass;
         }else
         {
-            try
-            {
-                pojoclass=Class.forName(strclass);
-            }catch(ClassNotFoundException e)
-            {
-               throw new WabacusConfigLoadingException("没有找到报表"+this.getPath()+"配置的类"+strclass,e);
-            }
+            pojoclass=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclass);
+
+
+
+
+
+
+
         }
         ReportAssistant.getInstance().setMethodInfoToColBean(dbean,pojoclass);//设置每列colbean对应的POJO类的get/set方法
         IReportType reportObj=Config.getInstance().getReportType(this.getType());
@@ -1455,7 +1384,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         }
         if(this.mSelectBoxesInColWithRelate!=null&&this.mSelectBoxesInColWithRelate.size()>0)
         {
-            for(Entry<String,SelectBox> entryTmp:this.mSelectBoxesInColWithRelate.entrySet())
+            for(Entry<String,AbsSelectBox> entryTmp:this.mSelectBoxesInColWithRelate.entrySet())
             {
                 entryTmp.getValue().processRelateInputboxByReportBean();
             }
@@ -1480,23 +1409,13 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
             this.lstInputboxesWithAutoComplete=null;
         }
         if(this.buttonsBean!=null) this.buttonsBean.sortButtons();
-        ComponentConfigLoadAssistant.getInstance().validateApplicationRefreshid(this);
+        ComponentConfigLoadAssistant.getInstance().validateApplicationRefreshid(this);//校验refreshid配置的合法性
         if(this.refreshid==null||this.refreshid.trim().equals("")) this.refreshid=this.id;
         
-        if(this.ulstMyCss!=null)
-        {
-            getPageBean().addMyCss(ulstMyCss);
-            this.ulstMyCss=null;
-        }
-        if(this.ulstMyJavascript!=null)
-        {
-            getPageBean().addMyJavascript(ulstMyJavascript);
-            this.ulstMyJavascript=null;
-        }
-        
         JavaScriptAssistant.getInstance().createComponentOnloadScript(this);
-        JavaScriptAssistant.getInstance().createSearchValidateEvent(this);//创建搜索事件的校验函数
+        JavaScriptAssistant.getInstance().createSearchValidateEvent(this);
         this.fbean=null;
+        if(this.buttonsBean!=null) this.buttonsBean.doPostLoad();
     }
     
     private void processNavigateReportid()
@@ -1531,7 +1450,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     private void checkAndAddButtons()
     {
         if(lstDataImportItems!=null&&lstDataImportItems.size()>0)
-        {//配置了数据导入功能，则判断是否配置有数据导入按钮，如果没有，新增一个
+        {
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(this,DataImportButton.class,Consts.DATAIMPORT_BUTTON_DEFAULT);
         }
         if(sbean.isExistConditionWithInputbox(null))
@@ -1540,6 +1459,15 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         }
     }
     
+    public void doPostLoadFinally()
+    {
+        IReportType reportObj=Config.getInstance().getReportType(this.getType());
+        if(reportObj instanceof IAfterConfigLoadForReportType)
+        {
+            ((IAfterConfigLoadForReportType)reportObj).doPostLoadFinally(this);
+        }
+    }
+
     public IComponentConfigBean clone(AbsContainerConfigBean parentContainer)
     {
         return clone(this.id,parentContainer);
@@ -1597,10 +1525,10 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         }
         if(lstTextBoxesWithTypePrompt!=null&&lstTextBoxesWithTypePrompt.size()>0)
         {
-            rbNew.setLstTextBoxesWithTypePrompt(new ArrayList<TextBox>());
+            rbNew.setLstTextBoxesWithTypePrompt(new ArrayList<TextBox>());//清空，以便带有TypePrompt功能的输入框在clone时存放
         }
-        if(this.mSelectBoxesInColWithRelate!=null) rbNew.setMSelectBoxesInColWithRelate(new HashMap<String,SelectBox>());
-        if(this.mSelectBoxesInConditionWithRelate!=null) rbNew.setMSelectBoxesInConditionWithRelate(new HashMap<String,SelectBox>());
+        if(this.mSelectBoxesInColWithRelate!=null) rbNew.setMSelectBoxesInColWithRelate(new HashMap<String,AbsSelectBox>());
+        if(this.mSelectBoxesInConditionWithRelate!=null) rbNew.setMSelectBoxesInConditionWithRelate(new HashMap<String,AbsSelectBox>());
         if(this.lstUploadFileBoxes!=null)
         {
             rbNew.setLstUploadFileBoxes(new ArrayList<FileBox>());
@@ -1629,14 +1557,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         {
             rbNew.setSParamNamesFromURL(new HashSet<String>());
         }        
-        if(this.ulstMyJavascript!=null)
-        {
-            rbNew.setUlstMyJavascript((List<String>)((UniqueArrayList<String>)this.ulstMyJavascript).clone());
-        }
-        if(this.ulstMyCss!=null)
-        {
-            rbNew.setUlstMyCss((List<String>)((UniqueArrayList<String>)this.ulstMyCss).clone());
-        }
         if(this.lstFormatClasses!=null)
         {
             rbNew.setLstFormatClasses((List)((ArrayList)this.lstFormatClasses).clone());
@@ -1666,13 +1586,13 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         {
             rbNew.setRefreshParentOnSave(null);
         }
-//        if(this.refreshParentOnDelete!=null)
+
 
 
 
         
         rbNew.setRefreshid(null);
-        cloneExtendConfig(rbNew);//clone扩展配置项
+        cloneExtendConfig(rbNew);
         rbNew.setParentContainer(parentContainer);
         if(this.buttonsBean!=null) rbNew.setButtonsBean((ButtonsBean)this.buttonsBean.clone(rbNew));
         if(this.dbean!=null) rbNew.setDbean((DisplayBean)this.dbean.clone(rbNew));

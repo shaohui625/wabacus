@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -128,8 +128,8 @@ public class EditableFormReportType extends EditableDetailReportType
             }
         }else if(buttonType instanceof CancelButton)
         {
-            if(ersqlbean.getInsertbean()!=null&&this.realAccessMode.equals(Consts.ADD_MODE)&&rbean.getSbean().getValue()!=null
-                    &&!rbean.getSbean().getValue().trim().equals(""))
+            if(ersqlbean.getInsertbean()!=null&&this.realAccessMode.equals(Consts.ADD_MODE)&&rbean.getSbean().getLstDatasetBeans()!=null
+                    &&rbean.getSbean().getLstDatasetBeans().size()>0)
             {
                 return true;
             }

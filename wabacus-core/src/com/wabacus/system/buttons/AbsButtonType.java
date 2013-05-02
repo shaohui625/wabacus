@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -40,7 +40,7 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     
     protected Object clickhandler="";
 
-    protected String styleproperty;//控制按钮显示样式字符串
+    protected String styleproperty;
     
     protected String disabledstyleproperty;
 
@@ -57,6 +57,12 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     protected String referedbutton="hidden";
     
     protected boolean isReferedHiddenButton;
+    
+    protected String confirmessage;
+    
+    protected String confirmtitle;
+    
+    protected String cancelmethod;
     
     protected IComponentConfigBean ccbean;
 
@@ -195,6 +201,21 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
         this.isReferedHiddenButton=isReferedHiddenButton;
     }
 
+    public void setConfirmessage(String confirmessage)
+    {
+        this.confirmessage=confirmessage;
+    }
+
+    public void setConfirmtitle(String confirmtitle)
+    {
+        this.confirmtitle=confirmtitle;
+    }
+
+    public void setCancelmethod(String cancelmethod)
+    {
+        this.cancelmethod=cancelmethod;
+    }
+
     public String getClickEvent(ReportRequest rrequest)
     {
         if(clickhandler==null) return "";
@@ -226,7 +247,7 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     {
 //        if(ccbean==null) return false;//如果当前按钮不从属于某一个报表，则无法对其进行授权，因此直接返回false
         if(this.getButtonType()!=null&&!this.getButtonType().trim().equals(""))
-        {//如果有按钮类型的，只能根据按钮类型授权，不能根据其name属性授权，比如框架内置的功能按钮
+        {
             return rrequest.checkPermission(ccbean.getId(),Consts.BUTTON_PART,"type{"+this.getButtonType()+"}",Consts.PERMISSION_TYPE_DISABLED);
         }else if(this.name!=null&&!this.name.trim().equals(""))
         {
@@ -249,10 +270,10 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     public abstract String showButton(ReportRequest rrequest,String dynclickevent);
 
 //    /**
+//     * 显示按钮，客户端提供所有要执行的onLoad回调函数
 
 
 
-//     * @return
 //     */
 
     
@@ -264,7 +285,7 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
 
 
 
-//     * @return
+
 //     */
 
     
@@ -273,12 +294,12 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     public int compareTo(AbsButtonType otherButton)
     {
         if(otherButton==null) return 1;
-
+//        if(this.isDisplayedOnContextMenu()&&otherButton.isDisplayedOnContextMenu())
 //        {//两个都显示在右键菜单中
 
 
 //            {//如果两个按钮不在同一个分组，则直接比较分组
-//                this.menugroup.compareTo(otherButton.getMenugroup());
+
 
 
         if(this.positionorder>otherButton.getPositionorder()) return 1;
@@ -286,11 +307,16 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
         return 0;
     }
 
+    protected Object clone() throws CloneNotSupportedException
+    {
+        return super.clone();
+    }
+
     public AbsButtonType clone(IComponentConfigBean ccbean)
     {
         try
         {
-            AbsButtonType newButton=(AbsButtonType)super.clone();
+            AbsButtonType newButton=(AbsButtonType)clone();
             newButton.setCcbean(ccbean);
             return newButton;
         }catch(CloneNotSupportedException e)
@@ -298,5 +324,21 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
             log.error("clone按钮对象失败",e);
             return null;
         }
+    }
+
+    private boolean hasDoPostLoad;
+    
+    public void doPostLoad()
+    {
+        if(hasDoPostLoad) return;
+        hasDoPostLoad=true;
+    }
+
+    private boolean hasDoPostLoadFinally;
+    
+    public void doPostLoadFinally()
+    {
+        if(hasDoPostLoadFinally) return;
+        hasDoPostLoadFinally=true;
     }
 }

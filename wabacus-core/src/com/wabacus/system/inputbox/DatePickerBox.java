@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -34,6 +34,11 @@ public class DatePickerBox extends TextBox
         super(typename);
     }
 
+    public String getInputboxInnerType()
+    {
+        return "datepicker1";
+    }
+    
     protected String getTextBoxExtraStyleProperty(ReportRequest rrequest,boolean isReadonly)
     {
         if(isReadonly) return super.getTextBoxExtraStyleProperty(rrequest,isReadonly);
@@ -71,9 +76,6 @@ public class DatePickerBox extends TextBox
     {
         super.loadInputBoxConfig(ownerbean,eleInputboxBean);
         this.setTypePromptBean(null);
-        String jspick=Config.webroot+"/webresources/component/My97DatePicker/WdatePicker.js";
-        jspick=Tools.replaceAll(jspick,"//","/");
-        ownerbean.getReportBean().addMyJavascript(jspick);
         if(eleInputboxBean!=null)
         {
             String dateformat=eleInputboxBean.attributeValue("dateformat");
@@ -106,7 +108,15 @@ public class DatePickerBox extends TextBox
     
     protected String getDefaultStylePropertyForDisplayMode2()
     {
-        return "onkeypress='return onKeyEvent(event);' class='cls-inputbox2'";
+        String resultStr="onkeypress='return onKeyEvent(event);'";
+        if(this.hasDescription())
+        {
+            resultStr+=" class='cls-inputbox2' ";
+        }else
+        {
+            resultStr+=" class='cls-inputbox2-full' ";
+        }
+        return resultStr;
     }
     
     protected void processStylePropertyForFillInContainer()
@@ -124,4 +134,14 @@ public class DatePickerBox extends TextBox
     {
         this.fillmode=1;
     }
+
+    public void doPostLoad(IInputBoxOwnerBean ownerbean)
+    {
+        super.doPostLoad(ownerbean);
+        String jspick=Config.webroot+"/webresources/component/My97DatePicker/WdatePicker.js";
+        jspick=Tools.replaceAll(jspick,"//","/");
+        ownerbean.getReportBean().getPageBean().addMyJavascriptFile(jspick,0);
+    }
+    
+    
 }

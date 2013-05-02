@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -24,6 +24,7 @@ import java.util.List;
 import org.dom4j.Element;
 
 import com.wabacus.config.Config;
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.resource.AbsResource;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.config.resource.dataimport.configbean.ColumnMapBean;
@@ -94,7 +95,7 @@ public class DataImportRes extends AbsResource
         {
             try
             {
-                Object o=Class.forName(interceptor.trim()).newInstance();
+                Object o=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(interceptor.trim()).newInstance();
                 if(!(o instanceof IDataImportInterceptor))
                 {
                     throw new WabacusConfigLoadingException("加载KEY为"+key+"的数据导入资源项失败，配置的拦截器不是"

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -28,10 +28,8 @@ import org.apache.commons.logging.LogFactory;
 import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
-import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.UltraListReportAssistant;
 import com.wabacus.system.component.application.report.UltraListReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportBean;
@@ -39,23 +37,23 @@ import com.wabacus.system.component.application.report.abstractreport.configbean
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportDisplayBean;
 import com.wabacus.util.Tools;
 
-public class UltraListReportGroupBean extends AbsExtendConfigBean
+public class UltraListReportGroupBean extends AbsConfigBean
 {
     private static Log log=LogFactory.getLog(UltraListReportGroupBean.class);
-    
+
     private String groupid;
-    
+
     private String parentGroupid;
-    
+
     private String childids;
-    
+
     private String label;
 
     private String labelstyleproperty;
-    
+
     private int rowspan=1;
 
-    private List lstChildren;//这里存放displaytype不为never的所有普通子列和分组子列
+    private List lstChildren;
 
     public UltraListReportGroupBean(AbsConfigBean owner)
     {
@@ -68,7 +66,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         super(owner);
         this.groupid="group_"+groupid;
     }
-    
+
     public String getGroupid()
     {
         return groupid;
@@ -139,17 +137,17 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
     {
         this.lstChildren=lstChildren;
     }
-    
-    public void createColAndGroupDisplayBeans(Map<String,String> mDisplayRealColAndGroupLabels,ReportRequest rrequest,List<String> lstDynColids,
-            Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions,List<ColAndGroupDisplayBean> lstColAndGroupDisplayBeans)
+
+    public void createColAndGroupDisplayBeans(UltraListReportType reportTypeObj,Map<String,String> mDisplayRealColAndGroupLabels,
+            ReportRequest rrequest,List<String> lstDynColids,Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions,
+            List<ColAndGroupDisplayBean> lstColAndGroupDisplayBeans)
     {
         ColAndGroupDisplayBean cgDisplayBeanTmp;
         ColBean cbTmp;
         UltraListReportGroupBean ulgroupbeanTmp;
         ColAndGroupTitlePositionBean positionBeanTmp;
         UltraListReportColBean ulcbTmp;
-        List lstChildrenTmp=UltraListReportAssistant.getInstance().sortChildrenByDynColOrders(lstChildren,
-                lstDynColids,mColAndGroupTitlePostions);
+        List lstChildrenTmp=reportTypeObj.sortChildrenByDynColOrders(lstChildren,lstDynColids,mColAndGroupTitlePostions);
         AbsListReportColBean alrcbean=null;
         for(Object objTmp:lstChildrenTmp)
         {
@@ -162,7 +160,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
                 cgDisplayBeanTmp.setId(cbTmp.getColid());
                 cgDisplayBeanTmp.setControlCol(cbTmp.isControlCol());
                 alrcbean=(AbsListReportColBean)cbTmp.getExtendConfigDataForReportType(AbsListReportType.KEY);
-                cgDisplayBeanTmp.setNonFixedCol(alrcbean==null||!alrcbean.isFixedCol());
+                cgDisplayBeanTmp.setNonFixedCol(alrcbean==null||!alrcbean.isFixedCol(rrequest));
                 cgDisplayBeanTmp.setAlways(positionBeanTmp.getDisplaymode()==2);
                 cgDisplayBeanTmp.setChecked(positionBeanTmp.getDisplaymode()>0);
                 ulcbTmp=(UltraListReportColBean)cbTmp.getExtendConfigDataForReportType(UltraListReportType.KEY);
@@ -196,12 +194,12 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
                     cgDisplayBeanTmp.setTitle(rrequest.getI18NStringValue(ulgroupbeanTmp.getLabel()));
                 }
                 lstColAndGroupDisplayBeans.add(cgDisplayBeanTmp);
-                ulgroupbeanTmp.createColAndGroupDisplayBeans(mDisplayRealColAndGroupLabels,rrequest,lstDynColids,mColAndGroupTitlePostions,
-                        lstColAndGroupDisplayBeans);
+                ulgroupbeanTmp.createColAndGroupDisplayBeans(reportTypeObj,mDisplayRealColAndGroupLabels,rrequest,lstDynColids,
+                        mColAndGroupTitlePostions,lstColAndGroupDisplayBeans);
             }
         }
     }
-    
+
     public boolean hasRowgroupChildCol()
     {
         Object childObj=lstChildren.get(0);
@@ -217,8 +215,8 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         }
         return hasRowGroupCol;
     }
-    
-    public boolean hasFixedChildCol()
+
+    public boolean hasFixedChildCol(ReportRequest rrequest)
     {
         Object childObj=lstChildren.get(0);
         boolean result=false;
@@ -226,69 +224,22 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         {
             ColBean cbeanTmp=((ColBean)childObj);
             AbsListReportColBean alrcbean=(AbsListReportColBean)cbeanTmp.getExtendConfigDataForReportType(AbsListReportType.KEY);
-            result=alrcbean!=null&&alrcbean.isFixedCol();
+            result=alrcbean!=null&&alrcbean.isFixedCol(rrequest);
         }else if(childObj instanceof UltraListReportGroupBean)
         {
-            result=((UltraListReportGroupBean)childObj).hasFixedChildCol();
+            result=((UltraListReportGroupBean)childObj).hasFixedChildCol(rrequest);
         }
         return result;
     }
-    
+
     public boolean isDragable(AbsListReportDisplayBean alrdbean)
     {
-        if(this.hasFixedChildCol()) return false;
+        if(this.hasFixedChildCol(null)) return false;
         if(alrdbean==null||alrdbean.getRowgrouptype()<=0||alrdbean.getRowGroupColsNum()<=0) return true;
-        if(this.hasRowgroupChildCol()) return false;//有参与了行分组或树形分组的子列
+        if(this.hasRowgroupChildCol()) return false;
         return true;
     }
-    
-    public List getDisplayChildrenByLayer(List lstChildrens,Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions,int layer,
-            int currentrowcount,int parentrowspan)
-    {
-        if(lstChildrens==null||lstChildrens.size()==0||layer<=0) return null;
-        if(currentrowcount-parentrowspan<=0) return null;//如果父分组标题所占的rowspan还没有显示完，则在当前<tr/>中先不显示其子分组或子列
-        List lstDisplayChildren=new ArrayList();
 
-        if(layer==1)
-        {
-            String idTmp;
-            ColAndGroupTitlePositionBean positionBeanTmp;
-            for(Object objTmp:lstChildrens)
-            {
-                idTmp=null;
-                if(objTmp instanceof ColBean)
-                {
-                    idTmp=((ColBean)objTmp).getColid();
-
-                }else if(objTmp instanceof UltraListReportGroupBean)
-                {
-                    idTmp=((UltraListReportGroupBean)objTmp).getGroupid();
-
-                }
-                if(idTmp!=null)
-                {
-                    positionBeanTmp=mColAndGroupTitlePostions.get(idTmp);
-                    if(positionBeanTmp!=null&&positionBeanTmp.getDisplaymode()>0)
-                    {
-                        lstDisplayChildren.add(objTmp);
-                    }
-                }
-            }
-        }else
-        {
-            UltraListReportGroupBean groupBeanTmp;
-            for(Object obj:lstChildrens)
-            {
-                if(obj==null||obj instanceof ColBean) continue;
-                groupBeanTmp=(UltraListReportGroupBean)obj;
-                //System.out.println("groupBean.getLabel"+groupBean.getLabel()+" size:::"+getChildrenByLayer(groupBean.getLstChildren(),layer - 1));
-                List lstDisplayChildrenTmp=getDisplayChildrenByLayer(groupBeanTmp.getLstChildren(),
-                        mColAndGroupTitlePostions,layer-1,currentrowcount,parentrowspan+groupBeanTmp.getRowspan());
-                if(lstDisplayChildrenTmp!=null) lstDisplayChildren.addAll(lstDisplayChildrenTmp);
-            }
-        }
-        return lstDisplayChildren;
-    }
     public void getAllChildColIdsInerit(List<String> lstColIds)
     {
         Object obj;
@@ -305,7 +256,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
             }
         }
     }
-    
+
     public boolean containsChild(String childid,boolean inherit)
     {
         if(childid==null||childid.trim().equals("")) return false;
@@ -333,7 +284,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         }
         return false;
     }
-    
+
     public UltraListReportGroupBean getGroupBeanById(String groupid)
     {
         if(groupid==null||groupid.trim().equals("")) return null;
@@ -344,8 +295,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
             {
                 obj=lstChildren.get(i);
                 if(obj==null||obj instanceof ColBean) continue;
-                if(groupid.equals(((UltraListReportGroupBean)obj).getGroupid()))
-                   return (UltraListReportGroupBean)obj;
+                if(groupid.equals(((UltraListReportGroupBean)obj).getGroupid())) return (UltraListReportGroupBean)obj;
                 obj=((UltraListReportGroupBean)obj).getGroupBeanById(groupid);
                 if(obj!=null) return (UltraListReportGroupBean)obj;
             }
@@ -388,7 +338,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         }
         return result;
     }
-    
+
     public String getFirstColId(List<String> lstNewOrderChildCols)
     {
         if(lstNewOrderChildCols==null||lstNewOrderChildCols.size()==0)
@@ -415,7 +365,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         }
         return null;
     }
-    
+
     public String getLastColId(List<String> lstNewOrderChildCols)
     {
         if(lstNewOrderChildCols==null||lstNewOrderChildCols.size()==0)
@@ -444,7 +394,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         }
         return null;
     }
-    
+
     public void getAllColBeans(List<ColBean> lstColBeans,Map<String,ColAndGroupTitlePositionBean> mPositions)
     {
         ColAndGroupTitlePositionBean cgpositionBeanTmp;
@@ -464,7 +414,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
             }
         }
     }
-    
+
     public int calColSpans()
     {
         int colspans=0;
@@ -485,8 +435,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
             {
                 if(Integer.parseInt(value)>1)
                 {
-                    log
-                            .warn("对于复杂标题的报表，最好不要配置其colspan和rowspan，否则可能会干扰报表的正常显示，可采用width和height来控制宽度和高度");
+                    log.warn("对于复杂标题的报表，最好不要配置其colspan和rowspan，否则可能会干扰报表的正常显示，可采用width和height来控制宽度和高度");
                 }
             }catch(Exception e)
             {
@@ -499,7 +448,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         }
         return colspans;
     }
-    
+
     public int[] calPositionStart(ReportRequest rrequest,Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions,
             List<String> lstDisplayColids)
     {
@@ -538,8 +487,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
             }else if(objTmp instanceof UltraListReportGroupBean)
             {
                 groupBeanTmp=(UltraListReportGroupBean)objTmp;
-                int[] spans=groupBeanTmp.calPositionStart(rrequest,mColAndGroupTitlePostions,
-                        lstDisplayColids);
+                int[] spans=groupBeanTmp.calPositionStart(rrequest,mColAndGroupTitlePostions,lstDisplayColids);
                 positionBeanTmp=mColAndGroupTitlePostions.get(groupBeanTmp.getGroupid());
                 if(positionBeanTmp.getDisplaymode()>=0)
                 {
@@ -552,7 +500,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
                             maxrowspan=spans[1];
                         }
                         hasGroupChild=true;
-                        if(positionBeanTmp.getDisplaymode()==2) containsAlwaysCol=true;//当前分组包含参与本次显示的displaytype为always的列
+                        if(positionBeanTmp.getDisplaymode()==2) containsAlwaysCol=true;
                     }
                 }
             }
@@ -588,9 +536,8 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         }
         return new int[] { colspan, maxrowspan };
     }
-    
-    public void calPositionEnd(Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions,
-            int[] position)
+
+    public void calPositionEnd(Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions,int[] position)
     {
         int totalrowspan=position[0];
         int layer=position[1];
@@ -616,14 +563,12 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
                 }
             }else if(objTmp instanceof UltraListReportGroupBean)
             {
-                ((UltraListReportGroupBean)objTmp).calPositionEnd(mColAndGroupTitlePostions,
-                        new int[] { totalrowspan-this.rowspan, layer+1 });
+                ((UltraListReportGroupBean)objTmp).calPositionEnd(mColAndGroupTitlePostions,new int[] { totalrowspan-this.rowspan, layer+1 });
             }
         }
     }
 
-    public void calPositionForStandardExcel(
-            Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions,
+    public void calPositionForStandardExcel(UltraListReportType reportTypeObj,Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions,
             List<String> lstDynColids,int[] startcolrowidx)
     {
         ColAndGroupTitlePositionBean positionBean=mColAndGroupTitlePostions.get(this.groupid);
@@ -631,11 +576,11 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
         {
             return;
         }
-        int startrowidx=startcolrowidx[0];//起始行号
+        int startrowidx=startcolrowidx[0];
         int startcolidx=startcolrowidx[1];
         positionBean.setStartcolindex(startcolidx);
         positionBean.setStartrowindex(startrowidx);
-        List lstChildrenTemp=UltraListReportAssistant.getInstance().sortChildrenByDynColOrders(lstChildren,lstDynColids,mColAndGroupTitlePostions);
+        List lstChildrenTemp=reportTypeObj.sortChildrenByDynColOrders(lstChildren,lstDynColids,mColAndGroupTitlePostions);
         ColBean cbTmp;
         UltraListReportGroupBean groupBeanTmp;
         ColAndGroupTitlePositionBean positionBeanTmp;
@@ -657,52 +602,48 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
                 positionBeanTmp=mColAndGroupTitlePostions.get(groupBeanTmp.getGroupid());
                 if(positionBeanTmp.getDisplaymode()>0)
                 {
-                    groupBeanTmp.calPositionForStandardExcel(mColAndGroupTitlePostions,lstDynColids,
-                            new int[] { startrowidx+this.rowspan, startcolidx });
+                    groupBeanTmp.calPositionForStandardExcel(reportTypeObj,mColAndGroupTitlePostions,lstDynColids,new int[] {
+                            startrowidx+this.rowspan, startcolidx });
                     startcolidx+=positionBeanTmp.getColspan();
                 }
             }
         }
     }
-    
 
-    public AbsExtendConfigBean clone(AbsConfigBean owner)
+    public AbsConfigBean clone(AbsConfigBean parent)
     {
-        DisplayBean disbean=(DisplayBean)owner;
-        UltraListReportGroupBean bean=(UltraListReportGroupBean)super.clone(owner);
-        if(bean.getLstChildren()!=null&&bean.getLstChildren().size()>0)
+        DisplayBean disbean=(DisplayBean)parent;
+        UltraListReportGroupBean groupBeanNew=(UltraListReportGroupBean)super.clone(parent);
+        if(this.lstChildren!=null&&this.lstChildren.size()>0)
         {
             List lstTemp=new ArrayList();
             ColBean cbTmp;
-            for(int i=0;i<bean.getLstChildren().size();i++)
+            for(Object obj:this.lstChildren)
             {
-                Object obj=bean.getLstChildren().get(i);
-                if(obj==null) continue;
                 if(obj instanceof ColBean)
                 {
                     cbTmp=(ColBean)obj;
                     cbTmp=disbean.getColBeanByColId(cbTmp.getColid());
                     lstTemp.add(cbTmp);
-                }else if(obj instanceof AbsExtendConfigBean)
+                }else if(obj instanceof UltraListReportGroupBean)
                 {
-                    lstTemp.add(((AbsExtendConfigBean)obj).clone(owner));
+                    lstTemp.add(((UltraListReportGroupBean)obj).clone(parent));
                 }
             }
-            bean.setLstChildren(lstTemp);
+            groupBeanNew.setLstChildren(lstTemp);
         }
-        return bean;
+        cloneExtendConfig(groupBeanNew);
+        return groupBeanNew;
     }
 
     public void doPostLoad()
     {
         if(this.lstChildren!=null&&this.lstChildren.size()>0)
         {
-            AbsListReportBean alrbean=(AbsListReportBean)this.getOwner().getReportBean().getExtendConfigDataForReportType(AbsListReportType.KEY);
-            Object childObj;
+            AbsListReportBean alrbean=(AbsListReportBean)this.getReportBean().getExtendConfigDataForReportType(AbsListReportType.KEY);
             ColBean cbeanTmp;
-            for(int i=0;i<lstChildren.size();i++)
+            for(Object childObj:lstChildren)
             {
-                childObj=lstChildren.get(i);
                 if(childObj==null) continue;
                 if(childObj instanceof ColBean)
                 {
@@ -723,7 +664,7 @@ public class UltraListReportGroupBean extends AbsExtendConfigBean
             }
         }
     }
-    
+
     public int getHidden()
     {
         throw new RuntimeException("被删除");

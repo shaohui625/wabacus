@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -29,6 +29,7 @@ import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.system.component.application.report.configbean.UltraListReportGroupBean;
 
 public class LoadExtendConfigManager
 {
@@ -50,41 +51,29 @@ public class LoadExtendConfigManager
         int flag=0;
         if((type instanceof IReportExtendConfigLoad)&&(configbean instanceof ReportBean))
         {
-            if(isBefore)
-                flag=((IReportExtendConfigLoad)type).beforeReportLoading((ReportBean)configbean,
-                        lstEleBeans);
-            else
-                flag=((IReportExtendConfigLoad)type).afterReportLoading((ReportBean)configbean,
-                        lstEleBeans);
+            flag=isBefore?((IReportExtendConfigLoad)type).beforeReportLoading((ReportBean)configbean,lstEleBeans):((IReportExtendConfigLoad)type)
+                    .afterReportLoading((ReportBean)configbean,lstEleBeans);
         }else if((type instanceof IColExtendConfigLoad)&&(configbean instanceof ColBean))
         {
-            if(isBefore)
-                flag=((IColExtendConfigLoad)type).beforeColLoading((ColBean)configbean,lstEleBeans);
-            else
-                flag=((IColExtendConfigLoad)type).afterColLoading((ColBean)configbean,lstEleBeans);
+            flag=isBefore?((IColExtendConfigLoad)type).beforeColLoading((ColBean)configbean,lstEleBeans):((IColExtendConfigLoad)type)
+                    .afterColLoading((ColBean)configbean,lstEleBeans);
         }else if((type instanceof IDisplayExtendConfigLoad)&&(configbean instanceof DisplayBean))
         {
-            if(isBefore)
-                flag=((IDisplayExtendConfigLoad)type).beforeDisplayLoading((DisplayBean)configbean,
-                        lstEleBeans);
-            else
-                flag=((IDisplayExtendConfigLoad)type).afterDisplayLoading((DisplayBean)configbean,
-                        lstEleBeans);
+            flag=isBefore?((IDisplayExtendConfigLoad)type).beforeDisplayLoading((DisplayBean)configbean,lstEleBeans):((IDisplayExtendConfigLoad)type)
+                    .afterDisplayLoading((DisplayBean)configbean,lstEleBeans);
         }else if((type instanceof IConditionExtendConfigLoad)
                 &&(configbean instanceof ConditionBean))
         {
-            if(isBefore)
-                flag=((IConditionExtendConfigLoad)type).beforeConditionLoading(
-                        (ConditionBean)configbean,lstEleBeans);
-            else
-                flag=((IConditionExtendConfigLoad)type).afterConditionLoading(
-                        (ConditionBean)configbean,lstEleBeans);
+            flag=isBefore?((IConditionExtendConfigLoad)type).beforeConditionLoading((ConditionBean)configbean,lstEleBeans)
+                    :((IConditionExtendConfigLoad)type).afterConditionLoading((ConditionBean)configbean,lstEleBeans);
         }else if((type instanceof ISqlExtendConfigLoad)&&(configbean instanceof SqlBean))
         {
-            if(isBefore)
-                flag=((ISqlExtendConfigLoad)type).beforeSqlLoading((SqlBean)configbean,lstEleBeans);
-            else
-                flag=((ISqlExtendConfigLoad)type).afterSqlLoading((SqlBean)configbean,lstEleBeans);
+            flag=isBefore?((ISqlExtendConfigLoad)type).beforeSqlLoading((SqlBean)configbean,lstEleBeans):((ISqlExtendConfigLoad)type)
+                    .afterSqlLoading((SqlBean)configbean,lstEleBeans);
+        }else if((type instanceof IGroupExtendConfigLoad)&&(configbean instanceof UltraListReportGroupBean))
+        {
+            flag=isBefore?((IGroupExtendConfigLoad)type).beforeGroupLoading((UltraListReportGroupBean)configbean,lstEleBeans)
+                    :((IGroupExtendConfigLoad)type).afterGroupLoading((UltraListReportGroupBean)configbean,lstEleBeans);
         }
         if(flag<0)
         {

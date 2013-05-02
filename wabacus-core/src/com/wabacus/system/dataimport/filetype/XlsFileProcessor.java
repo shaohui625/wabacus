@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -60,7 +60,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
         
         
         
-        //        {
+        
         layoutObj=new HorizontalDataLayout();
         
     }
@@ -199,7 +199,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-//        public void init()
+
 
 //            startrecordindex=xlsConfigBean.getStartdatacolindex();//数据的起始列号
 //            HSSFRow row=sheetObj.getRow(xlsConfigBean.getStartdatarowindex());//取到数据第一行
@@ -212,7 +212,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-//                endrecordindex=endrecordidx;
+
 
 
 
@@ -224,7 +224,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 //            {//如果配置了字段名列的最后一行行号，且小于最大行数
 
-//            }
+
 
 
 
@@ -234,7 +234,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-//                }else
+
 
 
 
@@ -244,7 +244,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-//                }
+
 
 
 
@@ -256,7 +256,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 //            {//如果配置了字段名列的最后一行行号，且小于最大行数
-//                enddatarowidx=xlsConfigBean.getEnddatarowindex();
+
 
 
 
@@ -266,7 +266,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-//                {
+
 
 
 
@@ -276,7 +276,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-//        }
+
 
 
     private Object getCellValue(Cell cell)

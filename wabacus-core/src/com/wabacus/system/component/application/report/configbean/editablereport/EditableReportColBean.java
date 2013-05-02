@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -25,23 +25,17 @@ import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
-import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
-import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
-import com.wabacus.system.component.application.report.abstractreport.IEditableReportType;
+import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportColBean;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.system.inputbox.IInputBoxOwnerBean;
-import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
 public final class EditableReportColBean extends AbsExtendConfigBean implements IInputBoxOwnerBean
 {
-    private String updatecol;
+    private String updatecolDest;
 
-    private ColBean updateCbean;
-    
-    private String updatedcol;//被哪个<col/>通过updatecol属性引用，这里存放相应<col/>的property。只有hidden=1或hidden=2才能被别的<col/>引用。
+    private String updatecolSrc;//被哪个<col/>通过updatecol属性引用，这里存放相应<col/>的property。只有hidden=1或hidden=2才能被别的<col/>引用。
     
     private String defaultvalue;
 
@@ -49,56 +43,44 @@ public final class EditableReportColBean extends AbsExtendConfigBean implements 
 
     private AbsInputBox inputbox;
 
-    private Boolean editableForInsert;
+    private int editableWhenInsert;//本列添加时是否可编辑，如果为0，不可编辑；1：因为显示辅助输入框可编辑；2：因为在<insert/>指定了它可编辑；
     
-    private Boolean editableForUpdate;//修改时本列是否可编辑（即是否需要显示输入框）
+    private int editableWhenUpdate;//本列修改时是否可编辑如果为0，不可编辑；1：因为显示辅助输入框可编辑；2：因为在<update/>指定了它可编辑；
     
     public EditableReportColBean(AbsConfigBean owner)
     {
         super(owner);
     }
 
-    public String getUpdatecol()
-    {
-        return updatecol;
-    }
-
-    public void setUpdatecol(String updatecol)
+    public void setUpdatecolDest(String updatecol)
     {
         if(updatecol.trim().equals(""))
         {
-            this.updatecol=null;
+            this.updatecolDest=null;
         }else
         {
             if(!Tools.isDefineKey("@",updatecol))
             {
-                throw new WabacusConfigLoadingException("加载报表"
-                        +((ColBean)getOwner()).getReportBean().getPath()+"失败，column为"
-                        +((ColBean)getOwner()).getColumn()
-                        +"的<col/>的value属性配置不合法，必须配置为@{其它<col/>的property}格式");
+                throw new WabacusConfigLoadingException("加载报表"+((ColBean)getOwner()).getReportBean().getPath()+"失败，column为"
+                        +((ColBean)getOwner()).getColumn()+"的<col/>的value属性配置不合法，必须配置为@{其它<col/>的property}格式");
             }
-            this.updatecol=Tools.getRealKeyByDefine("@",updatecol);
+            this.updatecolDest=Tools.getRealKeyByDefine("@",updatecol);
         }
     }
 
-    public ColBean getUpdateCbean()
+    public String getUpdatecolSrc()
     {
-        return updateCbean;
+        return updatecolSrc;
     }
 
-    public void setUpdateCbean(ColBean updateCbean)
+    public void setUpdatecolSrc(String updatecolSrc)
     {
-        this.updateCbean=updateCbean;
+        this.updatecolSrc=updatecolSrc;
     }
 
-    public String getUpdatedcol()
+    public String getUpdatecolDest()
     {
-        return updatedcol;
-    }
-
-    public void setUpdatedcol(String updatedcol)
-    {
-        this.updatedcol=updatedcol;
+        return updatecolDest;
     }
 
     public String getDefaultvalue()
@@ -137,14 +119,44 @@ public final class EditableReportColBean extends AbsExtendConfigBean implements 
         this.textalign=textalign;
     }
 
-    public AbsExtendConfigBean clone(AbsConfigBean owner)
+    public int getEditableWhenInsert()
     {
-        EditableReportColBean ercbeanNew=(EditableReportColBean)super.clone(owner);
-        if(inputbox!=null)
+        return editableWhenInsert;
+    }
+
+    public void setEditableWhenInsert(int editableWhenInsert)
+    {
+        if(editableWhenInsert>0)
         {
-            ercbeanNew.setInputbox((AbsInputBox)inputbox.clone(ercbeanNew));
+            ColBean cbean=(ColBean)this.getOwner();
+            AbsListReportColBean lcolbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportColBean.class);
+            if(lcolbean!=null&&lcolbean.isRowgroup())
+            {
+                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"上的列"+cbean.getColumn()
+                        +"失败，此列为分组列，不能将其配置为可编辑，可以用editablelist报表类型编辑此列");
+            }
         }
-        return ercbeanNew;
+        this.editableWhenInsert=editableWhenInsert;
+    }
+
+    public int getEditableWhenUpdate()
+    {
+        return editableWhenUpdate;
+    }
+
+    public void setEditableWhenUpdate(int editableWhenUpdate)
+    {
+        if(editableWhenUpdate>0)
+        {
+            ColBean cbean=(ColBean)this.getOwner();
+            AbsListReportColBean lcolbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportColBean.class);
+            if(lcolbean!=null&&lcolbean.isRowgroup())
+            {
+                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"上的列"+cbean.getColumn()
+                        +"失败，此列为分组列，不能将其配置为可编辑，可以用editablelist报表类型编辑此列");
+            }
+        }
+        this.editableWhenUpdate=editableWhenUpdate;
     }
 
     public String getInputBoxId()
@@ -179,45 +191,6 @@ public final class EditableReportColBean extends AbsExtendConfigBean implements 
         return null;
     }
 
-    public String getInputBoxValue(ReportRequest rrequest,int rowidx)
-    {
-        ReportBean rbean=getOwner().getReportBean();
-        AbsReportType reportTypeObj=rrequest.getDisplayReportTypeObj(rbean.getId());
-        if(reportTypeObj.getLstReportData()==null||reportTypeObj.getLstReportData().size()==0) return "";
-        if(rowidx>=reportTypeObj.getLstReportData().size()) return "";
-        if(rowidx<0) rowidx=0;//说明当前列不是在editablelist2/listform报表类型中，则取第一条记录的此列值
-        Object dataObj=reportTypeObj.getLstReportData().get(rowidx);
-        if(dataObj==null) return "";
-        EditableReportSqlBean ersqlbean=(EditableReportSqlBean)rbean.getSbean().getExtendConfigDataForReportType(EditableReportSqlBean.class);
-        if(ersqlbean==null)
-        {
-            throw new WabacusRuntimeException("报表"+rbean.getPath()+"不是可编辑报表类型，不能显示输入框");
-        }
-        String accessmode=rrequest.getCurrentAccessMode(rbean.getId());
-        if(accessmode.equals(Consts.ADD_MODE))
-        {
-            if(ersqlbean.getInsertbean()==null||!this.isEditableForInsert())
-            {
-                return "";
-            }
-        }else
-        {
-            if(ersqlbean.getUpdatebean()==null||!this.isEditableForUpdate())
-            {
-                return "";
-            }
-        }
-        ColBean cbean=null;
-        if(this.updateCbean==null)
-        {
-            cbean=(ColBean)this.getOwner();
-        }else
-        {
-            cbean=this.updateCbean;
-        }
-        return ((IEditableReportType)reportTypeObj).getColOriginalValue(dataObj,cbean);
-    }
-
     public String getLabel()
     {
         return ((ColBean)this.getOwner()).getLabel();
@@ -225,57 +198,21 @@ public final class EditableReportColBean extends AbsExtendConfigBean implements 
     
     public boolean isEditableForInsert()
     {
-        if(editableForInsert==null)
-        {
-            EditableReportSqlBean ersqlbean=(EditableReportSqlBean)this.getOwner().getReportBean().getSbean().getExtendConfigDataForReportType(
-                    EditableReportSqlBean.class);
-            if(ersqlbean==null||ersqlbean.getInsertbean()==null)
-            {
-                this.editableForInsert=false;
-            }else if(ersqlbean.getInsertbean().containsParamBeanInUpdateClause((ColBean)this.getOwner()))
-            {//出现在<insert/>的更新子句中
-                this.editableForInsert=true;
-            }else
-            {
-                if(this.inputbox!=null)
-                {
-                    String displayon=this.inputbox.getDisplayon();
-                    if(displayon!=null&&displayon.trim().toLowerCase().indexOf("insert")>=0)
-                    {//通过<inputbox/>的displayon配置了insert
-                        this.editableForInsert=true;
-                    }
-                }
-                if(this.editableForInsert==null) this.editableForInsert=false;
-            }
-        }
-        return editableForInsert.booleanValue();
+        return this.editableWhenInsert>0;
     }
     
     public boolean isEditableForUpdate()
     {
-        if(editableForUpdate==null)
+        return this.editableWhenUpdate>0;
+    }
+    
+    public AbsExtendConfigBean clone(AbsConfigBean owner)
+    {
+        EditableReportColBean ercbeanNew=(EditableReportColBean)super.clone(owner);
+        if(inputbox!=null)
         {
-            EditableReportSqlBean ersqlbean=(EditableReportSqlBean)this.getOwner().getReportBean().getSbean().getExtendConfigDataForReportType(
-                    EditableReportSqlBean.class);
-            if(ersqlbean==null||ersqlbean.getUpdatebean()==null)
-            {
-                this.editableForUpdate=false;
-            }else if(ersqlbean.getUpdatebean().containsParamBeanInUpdateClause((ColBean)this.getOwner()))
-            {//出现在<update/>的更新子句中
-                this.editableForUpdate=true;
-            }else
-            {
-                if(this.inputbox!=null)
-                {
-                    String displayon=this.inputbox.getDisplayon();
-                    if(displayon!=null&&displayon.trim().toLowerCase().indexOf("update")>=0)
-                    {//通过<inputbox/>的displayon配置了insert
-                        this.editableForUpdate=true;
-                    }
-                }
-                if(this.editableForUpdate==null) this.editableForUpdate=false;
-            }
+            ercbeanNew.setInputbox((AbsInputBox)inputbox.clone(ercbeanNew));
         }
-        return editableForUpdate.booleanValue();
-    }    
+        return ercbeanNew;
+    }
 }

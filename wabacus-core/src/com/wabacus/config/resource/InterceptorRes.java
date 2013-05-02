@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -26,6 +26,7 @@ import com.wabacus.config.ConfigLoadAssistant;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.intercept.IInterceptor;
+import com.wabacus.util.Tools;
 
 public class InterceptorRes extends AbsResource
 {
@@ -43,108 +44,32 @@ public class InterceptorRes extends AbsResource
         }
         List<String> lstImportPackages=ConfigLoadAssistant.getInstance().loadImportsConfig(eleInterceptor);
         Element elePreAction=eleInterceptor.element("preaction");
-        String preaction=null;
-        if(elePreAction!=null)
-        {
-            preaction=elePreAction.getText();
-        }
-        preaction=preaction==null?"":preaction.trim();
+        String preaction=elePreAction==null?null:elePreAction.getText();
         Element elePostAction=eleInterceptor.element("postaction");
-        String postaction=null;
-        if(elePostAction!=null)
-        {
-            postaction=elePostAction.getText();
-        }
-        postaction=postaction==null?"":postaction.trim();
-
-        Element eleBeforeSave=eleInterceptor.element("beforesave");
-        String beforesave=null;
-        if(eleBeforeSave!=null)
-        {
-            beforesave=eleBeforeSave.getText();
-        }
-        beforesave=beforesave==null?"":beforesave.trim();
-
-        Element eleBeforeSavePerRow=eleInterceptor.element("beforesave-perrow");
-        String beforesavePerrow=null;
-        if(eleBeforeSavePerRow!=null)
-        {
-            beforesavePerrow=eleBeforeSavePerRow.getText();
-        }
-        beforesavePerrow=beforesavePerrow==null?"":beforesavePerrow.trim();
-
-        Element eleBeforeSavePerSql=eleInterceptor.element("beforesave-persql");
-        String beforesavePersql=null;
-        if(eleBeforeSavePerSql!=null)
-        {
-            beforesavePersql=eleBeforeSavePerSql.getText();
-        }
-        beforesavePersql=beforesavePersql==null?"":beforesavePersql.trim();
-
-        Element eleAfterSavePerSql=eleInterceptor.element("aftersave-persql");
-        String aftersavePersql=null;
-        if(eleAfterSavePerSql!=null)
-        {
-            aftersavePersql=eleAfterSavePerSql.getText();
-        }
-        aftersavePersql=aftersavePersql==null?"":aftersavePersql.trim();
-
-        Element eleAfterSavePerRow=eleInterceptor.element("aftersave-perrow");
-        String aftersavePerrow=null;
-        if(eleAfterSavePerRow!=null)
-        {
-            aftersavePerrow=eleAfterSavePerRow.getText();
-        }
-        aftersavePerrow=aftersavePerrow==null?"":aftersavePerrow.trim();
-
-        Element eleAfterSave=eleInterceptor.element("aftersave");
-        String aftersave=null;
-        if(eleAfterSave!=null)
-        {
-            aftersave=eleAfterSave.getText();
-        }
-        aftersave=aftersave==null?"":aftersave.trim();
-
+        String postaction=elePostAction==null?null:elePostAction.getText();
+        Element eleSaveaction=eleInterceptor.element("saveaction");
+        String saveaction=eleSaveaction==null?null:eleSaveaction.getText();
+        Element eleSaverowaction=eleInterceptor.element("saveaction-perrow");
+        String saverowaction=eleSaverowaction==null?null:eleSaverowaction.getText();
+        Element eleSavesqlaction=eleInterceptor.element("saveaction-peraction");
+        String savesqlaction=eleSavesqlaction==null?null:eleSavesqlaction.getText();
         Element eleBeforeLoadData=eleInterceptor.element("beforeloaddata");
-        String beforeloaddata=null;
-        if(eleBeforeLoadData!=null)
-        {
-            beforeloaddata=eleBeforeLoadData.getText();
-        }
-        beforeloaddata=beforeloaddata==null?"":beforeloaddata.trim();
-
+        String beforeloaddata=eleBeforeLoadData==null?null:eleBeforeLoadData.getText();
         Element eleAfterLoadData=eleInterceptor.element("afterloaddata");
-        String afterloaddata=null;
-        if(eleAfterLoadData!=null)
-        {
-            afterloaddata=eleAfterLoadData.getText();
-        }
-        afterloaddata=afterloaddata==null?"":afterloaddata.trim();
-
+        String afterloaddata=eleAfterLoadData==null?null:eleAfterLoadData.getText();
         Element eleDisplayPerRow=eleInterceptor.element("beforedisplay-perrow");
-        String displayperrow=null;
-        if(eleDisplayPerRow!=null)
-        {
-            displayperrow=eleDisplayPerRow.getText();
-        }
-        displayperrow=displayperrow==null?"":displayperrow.trim();
-
+        String displayperrow=eleDisplayPerRow==null?null:eleDisplayPerRow.getText();
         Element eleDisplayPerCol=eleInterceptor.element("beforedisplay-percol");
-        String displaypercol=null;
-        if(eleDisplayPerCol!=null)
-        {
-            displaypercol=eleDisplayPerCol.getText();
-        }
-        displaypercol=displaypercol==null?"":displaypercol.trim();
+        String displaypercol=eleDisplayPerCol==null?null:eleDisplayPerCol.getText();
 
-        if(preaction.equals("")&&postaction.equals("")&&beforesave.equals("")&&beforesavePerrow.equals("")&&beforesavePersql.equals("")
-                &&aftersavePersql.equals("")&&aftersavePerrow.equals("")&&aftersave.equals("")&&beforeloaddata.equals("")&&displayperrow.equals("")
-                &&displaypercol.equals(""))
+        if(Tools.isEmpty(preaction,true)&&Tools.isEmpty(postaction,true)&&Tools.isEmpty(saveaction,true)
+                &&Tools.isEmpty(saverowaction,true)&&Tools.isEmpty(savesqlaction,true)&&Tools.isEmpty(beforeloaddata,true)
+                &&Tools.isEmpty(afterloaddata,true)&&Tools.isEmpty(displayperrow,true)&&Tools.isEmpty(displaypercol,true))
         {
             return null;
         }
-        Class c=ReportAssistant.getInstance().buildInterceptorClass("resource_"+name,lstImportPackages,preaction,postaction,beforesave,
-                beforesavePerrow,beforesavePersql,aftersavePersql,aftersavePerrow,aftersave,beforeloaddata,afterloaddata,displayperrow,displaypercol);
+        Class c=ReportAssistant.getInstance().buildInterceptorClass("resource_"+name,lstImportPackages,preaction,postaction,saveaction,
+                saverowaction,savesqlaction,beforeloaddata,afterloaddata,displayperrow,displaypercol);
         if(c!=null)
         {
             try

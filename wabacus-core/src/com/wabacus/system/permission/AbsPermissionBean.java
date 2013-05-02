@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -91,7 +91,7 @@ public abstract class AbsPermissionBean
     protected String getPermission(String permissiontype)
     {
         if(!AuthorizationAssistant.getInstance().isExistPermissiontype(permissiontype))
-        {//框架不支持这个权限类型
+        {
             return null;
         }
         if(mPermissions==null) return null;

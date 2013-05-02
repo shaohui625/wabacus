@@ -36,7 +36,11 @@
     <xs:element name="local-jsfiles">
     	<xs:complexType>
     		<xs:sequence>
-    			<xs:element name="js-file" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    			<xs:element name="js-file" minOccurs="0" maxOccurs="unbounded">
+    				<xs:complexType mixed="true">
+						<xs:attribute name="loadorder" type="xs:integer"/>
+					</xs:complexType>
+    			</xs:element>
     		</xs:sequence>
     	</xs:complexType>
    </xs:element>
@@ -101,6 +105,7 @@
    			</xs:simpleType>
    		</xs:attribute>
    		<xs:attribute name="asyn" type="wxs:booleanType"/>
+   		<xs:attribute name="switchbeforecallback" type="xs:string"/>
    	</xs:complexType>
    </xs:element>
    <xs:element name="vpanel">
@@ -140,13 +145,13 @@
    			<xs:element ref="wxs:interceptor" minOccurs="0"/>
    			<xs:element name="header" type="wxs:headerfooter" minOccurs="0"/>
    			<xs:element name="display" type="wxs:displayType" minOccurs="0"/>
+   			<xs:element ref="wxs:subdisplay" minOccurs="0"/>
    			<xs:element name="footer" type="wxs:headerfooter" minOccurs="0"/>
    			<xs:element ref="wxs:sql" minOccurs="0"/>
    			<xs:element ref="wxs:buttons" minOccurs="0"/>
    			<xs:element ref="wxs:print" minOccurs="0"/>
    			<xs:element ref="wxs:dataexports" minOccurs="0"/>
    			<xs:element name="format" type="wxs:formatType" minOccurs="0"/>
-   			<xs:element name="dataheader-format" type="wxs:formatType" minOccurs="0"/>
    		</xs:all>
     		<xs:attributeGroup ref="wxs:componentCommonAttributes"/>
     		<xs:attribute name="extends" type="xs:string"/>
@@ -187,8 +192,7 @@
     			</xs:simpleType>
     		</xs:attribute>
     		<xs:attribute name="dataimport" type="xs:string"/>
-    		<xs:attribute name="dataimportwidth" type="xs:string"/>
-    		<xs:attribute name="dataimportheight" type="xs:string"/>
+    		<xs:attribute name="dataimportpopupparams" type="xs:string"/>
     		<xs:attribute name="dataimportinitsize">
     			<xs:simpleType>
     				<xs:restriction base="xs:string">
@@ -198,8 +202,6 @@
   					</xs:restriction>
     			</xs:simpleType>
     		</xs:attribute>
-    		<xs:attribute name="dataimportmaxbtn" type="wxs:booleanType"/>
-    		<xs:attribute name="dataimportminbtn" type="wxs:booleanType"/>
     		<xs:attribute name="jsvalidatetype" type="xs:string"/>
     		<xs:attribute name="onload" type="xs:string"/>
     		<xs:attribute name="border">

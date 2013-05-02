@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -20,23 +20,43 @@ package com.wabacus.config.typeprompt;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.system.ReportRequest;
+import com.wabacus.system.inputbox.TextBox;
+import com.wabacus.system.inputbox.option.TypepromptOptionBean;
 
 public class TypePromptBean implements Cloneable
 {
-    private int resultcount=10;
+    public final static String MATCHCONDITION_PLACEHOLDER="{#matchcondition#}";
+    
+    public final static DefaultTypePromptOptionMatcher DEFAULT_OPTION_MATCHER=new DefaultTypePromptOptionMatcher();
+    
+    private int resultcount=15;
 
     private int resultspanwidth=-1;//显示结果的<span/>的宽度，如果为-1，则与相应输入框保持同一宽度。
 
-    private boolean timeout=true;//显示结果的<span/>是否自动消失，true：不自动消失，false不自动消失
+    private int resultspanMaxheight;
+    
+    private int timeout=5;//显示结果的<span/>是否自动消失，如果配置为>0的数，表示timeout秒后自动消息，否则不自动消失
 
+    private boolean casesensitive;
+    
     private boolean showtitle;
+    
+    private boolean isSelectbox;
     
     private String callbackmethod;
     
     private List<TypePromptColBean> lstPColBeans;
 
-    private AbsTypePromptDataSource datasource;
-
+    private List<TypepromptOptionBean> lstOptionBeans;//配置的所有选项<option/>信息
+    
+    private ITypePromptOptionMatcher typePromptMatcherObj;
+    
+    private String clientMatcherMethodName;
+    
     public int getResultcount()
     {
         return resultcount;
@@ -44,6 +64,7 @@ public class TypePromptBean implements Cloneable
 
     public void setResultcount(int resultcount)
     {
+        if(resultcount<=0) resultcount=Integer.MAX_VALUE;
         this.resultcount=resultcount;
     }
 
@@ -57,14 +78,34 @@ public class TypePromptBean implements Cloneable
         this.resultspanwidth=resultspanwidth;
     }
 
-    public boolean isTimeout()
+    public int getResultspanMaxheight()
+    {
+        return resultspanMaxheight;
+    }
+
+    public void setResultspanMaxheight(int resultspanMaxheight)
+    {
+        this.resultspanMaxheight=resultspanMaxheight;
+    }
+
+    public int getTimeout()
     {
         return timeout;
     }
 
-    public void setTimeout(boolean timeout)
+    public void setTimeout(int timeout)
     {
         this.timeout=timeout;
+    }
+
+    public boolean isCasesensitive()
+    {
+        return casesensitive;
+    }
+
+    public void setCasesensitive(boolean casesensitive)
+    {
+        this.casesensitive=casesensitive;
     }
 
     public boolean isShowtitle()
@@ -75,6 +116,16 @@ public class TypePromptBean implements Cloneable
     public void setShowtitle(boolean showtitle)
     {
         this.showtitle=showtitle;
+    }
+
+    public boolean isSelectbox()
+    {
+        return isSelectbox;
+    }
+
+    public void setSelectbox(boolean isSelectbox)
+    {
+        this.isSelectbox=isSelectbox;
     }
 
     public String getCallbackmethod()
@@ -97,28 +148,59 @@ public class TypePromptBean implements Cloneable
         this.lstPColBeans=lstPColBeans;
     }
 
-    public AbsTypePromptDataSource getDatasource()
+    public List<TypepromptOptionBean> getLstOptionBeans()
     {
-        return datasource;
+        return lstOptionBeans;
     }
 
-    public void setDatasource(AbsTypePromptDataSource datasource)
+    public void setLstOptionBeans(List<TypepromptOptionBean> lstOptionBeans)
     {
-        this.datasource=datasource;
+        this.lstOptionBeans=lstOptionBeans;
     }
 
-    public Object clone()
+    public ITypePromptOptionMatcher getTypePromptMatcherObj()
+    {
+        return typePromptMatcherObj;
+    }
+
+    public void setTypePromptMatcherObj(ITypePromptOptionMatcher typePromptMatcherObj)
+    {
+        this.typePromptMatcherObj=typePromptMatcherObj;
+    }
+
+    public String getClientMatcherMethodName()
+    {
+        return clientMatcherMethodName;
+    }
+
+    public void setClientMatcherMethodName(String clientMatcherMethodName)
+    {
+        this.clientMatcherMethodName=clientMatcherMethodName;
+    }
+
+    public List<Map<String,String>> getLstRuntimeOptionsData(ReportRequest rrequest,ReportBean rbean,String txtValue)
+    {
+        if((txtValue==null||txtValue.trim().equals(""))&&!this.isSelectbox) return null;
+        List<Map<String,String>> lstResults=new ArrayList<Map<String,String>>();
+        List<Map<String,String>> lstOptionsTmp;
+        for(TypepromptOptionBean obean:this.lstOptionBeans)
+        {
+            lstOptionsTmp=obean.getLstRuntimeOptions(rrequest,txtValue);
+            if(lstOptionsTmp!=null) lstResults.addAll(lstOptionsTmp);
+        }
+        if(rbean.getInterceptor()!=null)
+        {
+            lstResults=(List<Map<String,String>>)rbean.getInterceptor().afterLoadData(rrequest,rbean,this,lstResults);
+        }
+        return lstResults;
+    }
+    
+    public Object clone(TextBox boxNew)
     {
         try
         {
             TypePromptBean tpbNew=(TypePromptBean)super.clone();
-            if(datasource!=null)
-            {
-                AbsTypePromptDataSource dsNew=(AbsTypePromptDataSource)datasource.clone();
-                dsNew.setPromptConfigBean(this);
-                tpbNew.setDatasource(dsNew);
-            }
-            if(lstPColBeans!=null&&lstPColBeans.size()>0)
+            if(lstPColBeans!=null)
             {
                 List<TypePromptColBean> lstPColBeansNew=new ArrayList<TypePromptColBean>();
                 for(int i=0;i<lstPColBeans.size();i++)
@@ -126,6 +208,15 @@ public class TypePromptBean implements Cloneable
                     lstPColBeansNew.add((TypePromptColBean)lstPColBeans.get(i).clone());
                 }
                 tpbNew.setLstPColBeans(lstPColBeansNew);
+            }
+            if(this.lstOptionBeans!=null)
+            {
+                List<TypepromptOptionBean> lstOptionsNew=new ArrayList<TypepromptOptionBean>();
+                for(TypepromptOptionBean optionBeanTmp:this.lstOptionBeans)
+                {
+                    lstOptionsNew.add(optionBeanTmp.clone(boxNew));
+                }
+                tpbNew.lstOptionBeans=lstOptionsNew;
             }
             return tpbNew;
         }catch(CloneNotSupportedException e)

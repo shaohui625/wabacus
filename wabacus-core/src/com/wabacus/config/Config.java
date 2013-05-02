@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -33,6 +33,7 @@ import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
+import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.database.datasource.AbsDataSource;
 import com.wabacus.config.resource.Resources;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
@@ -77,7 +78,7 @@ public class Config
 
     public static String skin;
 
-    public static String showreport_url;//显示报表的URL
+    public static String showreport_url;
 
     public static String showreport_onpage_url;
 
@@ -99,7 +100,7 @@ public class Config
     
     public static String i18n_filename;
 
-    public TemplateBean report_template_defaultbean;//默认的报表模板资源项
+    public TemplateBean report_template_defaultbean;
     
     public TemplateBean dataexport_template_defaultbean;
     
@@ -119,20 +120,24 @@ public class Config
 
     private List<String> ulstGlobalCss;
 
-    private Map<String,List<String>> mLocalCss;//存放每个报表配置文件下的所有报表页面需要包含的css文件路径
+    private Map<String,List<String>> mLocalCss;
 
-    private List<String> ulstGlobalJavascript;
+    private List<JavascriptFileBean> lstDefaultGlobalJavascriptFiles;
+    
+    private List<JavascriptFileBean> lstGlobalJavascriptFiles;
 
-    private Map<String,List<String>> mLocalJavascript;
+    private Map<String,List<JavascriptFileBean>> mLocalJavascriptFiles;
 
     private Map<String,AbsInputBox> mInputBoxTypes;
 
-    private Map<String,IDataType> mDataTypes;
+    private Map<String,IDataType> mDataTypes;//存放注册的所有数据类型
 
     //    private Map<String,Class> mClasses;//为那些用CommonDataBean存放中间数据的报表生成的子类字节码集合，只有当将生成的字节码配置成缓存在内存中，才会存在这里
 
-    private Resources resources;//存放项目中所有资源项
+    private Resources resources;
 
+    private String default_datasourcename;
+    
     private Map<String,AbsDataSource> mDataSources;
     
     private Map<String,TemplateBean> mFileTemplates;//所有存放在html/htm文件中的模板
@@ -147,7 +152,7 @@ public class Config
     
     private int dataexport_batch_count=Integer.MIN_VALUE;
     
-    private int dataexport_plainexcel_sheetsize=Integer.MIN_VALUE;//导出到plainexcel时，一个sheet显示的记录数，超过了则自动新增sheet
+    private int dataexport_plainexcel_sheetsize=Integer.MIN_VALUE;
     
     private final static Config INSTANCE=new Config();
 
@@ -164,6 +169,11 @@ public class Config
         mReportStructureInfo=reportStructureInfo;
     }
 
+    public Map<String,PageBean> getMAllPageBeans()
+    {
+        return this.mReportStructureInfo;
+    }
+    
     void setMReporttypes(Map<String,IReportType> reporttypes)
     {
         mReporttypes=reporttypes;
@@ -204,12 +214,21 @@ public class Config
         this.lstFormatClasses=lstFormatClasses;
     }
 
+    public String getDefault_datasourcename()
+    {
+        return default_datasourcename;
+    }
+
+    void setDefault_datasourcename(String default_datasourcename)
+    {
+        this.default_datasourcename=default_datasourcename;
+    }
+
     public void initConfigLoad()
     {
         this.report_template_defaultbean=null;
         this.dataexport_template_defaultbean=null;
         this.lstGlobalPageInterceptors=null;
-        this.ulstGlobalJavascript=null;
         this.ulstGlobalCss=null;
         if(mAutoDetectedDataImportBeans!=null)
         {
@@ -218,7 +237,7 @@ public class Config
         if(this.mDataSources!=null)
         {
             for(Entry<String,AbsDataSource> entryDsTmp:mDataSources.entrySet())
-            {
+            {//依次关掉所有老数据源
                 entryDsTmp.getValue().closePool();
             }
             this.mDataSources=null;
@@ -291,6 +310,31 @@ public class Config
     public Map<String,List<AbsDataImportConfigBean>> getMAutoDetectedDataImportBeans()
     {
         return mAutoDetectedDataImportBeans;
+    }
+
+    void setLstDefaultGlobalJavascriptFiles(List<JavascriptFileBean> lstDefaultGlobalJavascriptFiles)
+    {
+        this.lstDefaultGlobalJavascriptFiles=lstDefaultGlobalJavascriptFiles;
+    }
+
+    void setLstGlobalJavascriptFiles(List<JavascriptFileBean> lstGlobalJavascriptFiles)
+    {
+        this.lstGlobalJavascriptFiles=lstGlobalJavascriptFiles;
+    }
+
+    void setMLocalJavascriptFiles(Map<String,List<JavascriptFileBean>> localJavascriptFiles)
+    {
+        mLocalJavascriptFiles=localJavascriptFiles;
+    }
+
+    public List<JavascriptFileBean> getLstDefaultGlobalJavascriptFiles()
+    {
+        return lstDefaultGlobalJavascriptFiles;
+    }
+
+    public List<JavascriptFileBean> getLstGlobalJavascriptFiles()
+    {
+        return lstGlobalJavascriptFiles;
     }
 
     public void addAutoDetectedDataImportBean(String filepath,
@@ -401,6 +445,25 @@ public class Config
         return mReportStructureInfo.get(pageid);
     }
 
+    public List<String> getLstAllPageIds()
+    {
+        if(this.mReportStructureInfo==null) return null;
+        List<String> lstResults=new ArrayList<String>();
+        lstResults.addAll(this.mReportStructureInfo.keySet());
+        return lstResults;
+    }
+
+    public List<PageBean> getLstAllPageBeans()
+    {
+        if(this.mReportStructureInfo==null) return null;
+        List<PageBean> lstResults=new ArrayList<PageBean>();
+        for(Entry<String,PageBean> entryTmp:this.mReportStructureInfo.entrySet())
+        {
+            lstResults.add(entryTmp.getValue());
+        }
+        return lstResults;
+    }
+    
     public List<Class> getLstServerValidateClasses()
     {
         return lstServerValidateClasses;
@@ -451,7 +514,7 @@ public class Config
         {
             Class c=this.getTypeClass(typename);
             if(c!=null)
-            {//说明配置的type为class{类型全限定类名}形式。
+            {
                 Object obj=AbsComponentType.createComponentTypeObj(c,null,null,null);
                 if(!(obj instanceof AbsReportType))
                 {
@@ -477,13 +540,7 @@ public class Config
         {
             String realclass=Tools.getRealKeyByDefine("class",configclassname).trim();
             if(realclass.equals("")) return null;
-            try
-            {
-                return Class.forName(realclass);
-            }catch(ClassNotFoundException e)
-            {
-                throw new WabacusRuntimeException("加载报表/容器类型类"+realclass+"失败");
-            }
+            return ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(realclass);
         }
         return null;
     }
@@ -519,20 +576,15 @@ public class Config
         return mLocalCss;
     }
 
-    public Map<String,List<String>> getMLocalJavascript()
+    public Map<String,List<JavascriptFileBean>> getMLocalJavascriptFiles()
     {
-        return mLocalJavascript;
+        return mLocalJavascriptFiles;
     }
 
-    public List<String> getUlstLocalJavascript(PageBean pbean)
+    public List<JavascriptFileBean> getLstLocalJavascript(PageBean pbean)
     {
-        if(this.mLocalJavascript==null) return null;
-        return mLocalJavascript.get(pbean.getReportfile_key());
-    }
-
-    public void setMLocalJavascript(Map<String,List<String>> localJavascript)
-    {
-        mLocalJavascript=localJavascript;
+        if(this.mLocalJavascriptFiles==null) return null;
+        return mLocalJavascriptFiles.get(pbean.getReportfile_key());
     }
 
     public AbsInputBox getInputBoxTypeByName(String name)
@@ -660,23 +712,6 @@ public class Config
         if(ulstGlobalCss==null) ulstGlobalCss=new UniqueArrayList<String>();
         ulstGlobalCss.addAll(lstcss);
     }
-
-    public List<String> getUlstGlobalJavascript()
-    {
-        return ulstGlobalJavascript;
-    }
-    
-    public void addGlobalJavascript(String javascript)
-    {
-        if(ulstGlobalJavascript==null) ulstGlobalJavascript=new UniqueArrayList<String>();
-        ulstGlobalJavascript.add(javascript);
-    }
-    
-    public void addGlobalJavascript(List<String> lstJavascript)
-    {
-        if(ulstGlobalJavascript==null) ulstGlobalJavascript=new UniqueArrayList<String>();
-        ulstGlobalJavascript.addAll(lstJavascript);
-    }
     
     public void addFileTemplate(String filepath,TemplateBean tplBean)
     {
@@ -735,7 +770,7 @@ public class Config
     public int getDataexportBatchCount()
     {
         if(dataexport_batch_count==Integer.MIN_VALUE)
-        {//如果还没有初始化此值
+        {
             dataexport_batch_count=Config.getInstance().getSystemConfigValue("dataexport-batchselect-count",500);
         }
         return dataexport_batch_count;
@@ -783,7 +818,7 @@ public class Config
         if(mComponentsDefaultPermissions==null) mComponentsDefaultPermissions=new HashMap<String,ComponentPermissionBean>();
         ComponentPermissionBean cabean=this.mComponentsDefaultPermissions.get(componentGuid);
         if(cabean==null)
-        {
+        {//还没有对此组件或其上的元素授过权
             IComponentConfigBean ccbean=getComponentConfigBeanByGuid(componentGuid);
             if(ccbean==null) throw new WabacusConfigLoadingException("没有找到guid为"+componentGuid+"的组件，无法对其授权");
             cabean=new ComponentPermissionBean(ccbean);
@@ -839,7 +874,7 @@ public class Config
     {
         String resultSkin=null;
         if(pbean!=null&&pbean.getPersonalizeObj()!=null)
-        {//此页面有自己的主题风格持久化类
+        {
             resultSkin=pbean.getPersonalizeObj().loadSkin(request,pbean);
             if(resultSkin!=null&&!resultSkin.trim().equals("")) return resultSkin;
             resultSkin=pbean.getPersonalizeObj().loadSkin(request,null);

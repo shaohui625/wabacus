@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -18,7 +18,7 @@
  */
 package com.wabacus.system.inputbox;
 
-import com.wabacus.system.ReportRequest;
+import com.wabacus.config.xml.XmlElementBean;
 
 public class RadioBox extends AbsRadioCheckBox
 {
@@ -27,37 +27,40 @@ public class RadioBox extends AbsRadioCheckBox
         super(typename);
     }
 
-    protected String getBoxType()
+    public String getInputboxInnerType()
     {
         return "radio";
     }
-
-    protected boolean isSelectedValue(String selectedvalues,String optionvalue)
-    {
-        if(selectedvalues==null||optionvalue==null) return false;
-        return selectedvalues.trim().equals(optionvalue);
-    }
-
-    public String getDefaultlabel(ReportRequest rrequest)
-    {
-        if(this.defaultvalue==null) return null;
-        return SelectedBoxAssistant.getInstance().getSelectedLabelByValuesOfSingleSelectedBox(
-                getOptionNameAndValueList(rrequest,owner.getReportBean()),this.getDefaultvalue(rrequest));
-    }
     
-    protected String checkSelectedValueInClient()
+    protected boolean isMultipleSelect()
     {
-        return "if(boxValue==optionvalue)";
+        return false;
     }
 
     public String createGetValueByIdJs()
+    {
+        return createGetContentByIdJs(true);
+    }
+    
+    public String createGetLabelByIdJs()
+    {
+        return createGetContentByIdJs(false);
+    }
+
+    private String createGetContentByIdJs(boolean isGetValue)
     {
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("var radioObjs=document.getElementsByName(id);");
         resultBuf.append("if(radioObjs!=null){");
         resultBuf.append("  for(i=0;i<radioObjs.length;i=i+1){");
         resultBuf.append("      if(radioObjs[i].checked){");
-        resultBuf.append("          return radioObjs[i].value;");
+        if(isGetValue)
+        {
+            resultBuf.append("          return radioObjs[i].value;");
+        }else
+        {
+            resultBuf.append("          return radioObjs[i].getAttribute('label');");
+        }
         resultBuf.append("      }");
         resultBuf.append("  }");
         resultBuf.append("  return '';");
@@ -65,7 +68,7 @@ public class RadioBox extends AbsRadioCheckBox
         resultBuf.append("return '';");
         return resultBuf.toString();
     }
-
+    
     public String createSetInputBoxValueByIdJs()
     {
         StringBuffer resultBuf=new StringBuffer();
@@ -93,5 +96,12 @@ public class RadioBox extends AbsRadioCheckBox
         resultBuf.append("  }");
         resultBuf.append("}");
         return resultBuf.toString();
+    }
+    
+    public void loadInputBoxConfig(IInputBoxOwnerBean ownerbean,XmlElementBean eleInputboxBean)
+    {
+        super.loadInputBoxConfig(ownerbean,eleInputboxBean);
+        this.isMultiply=false;
+        this.separator=null;
     }
 }

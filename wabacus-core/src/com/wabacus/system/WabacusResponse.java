@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -61,7 +61,7 @@ public class WabacusResponse
     
     private String dynamicRefreshComponentGuid;
     
-    private String dynamicSlaveReportId;//如果当前是动态产生刷新组件的GUID，且此组件为一个从报表，则这里存放此从报表的ID
+    private String dynamicSlaveReportId;
     
     private HttpServletResponse response;
     
@@ -197,6 +197,11 @@ public class WabacusResponse
             load_error_mess=load_error_mess.trim();
             load_error_mess=rrequest.getI18NStringValue(load_error_mess);
         }
+        if(rrequest.getPagebean()==null)
+        {
+            log.error("没有取到"+rrequest.getStringAttribute("PAGEID","")+"对应的页面配置");
+            return "没有取到"+rrequest.getStringAttribute("PAGEID","")+"对应的页面配置";
+        }
         StringBuffer resultBuf=new StringBuffer();
         if(!rrequest.isLoadedByAjax()||(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&rrequest.getShowtype()!=Consts.DISPLAY_ON_PRINT))
         {
@@ -208,7 +213,7 @@ public class WabacusResponse
                    resultBuf.append(addSuccessMessage(false,"<br>"));
                    resultBuf.append(addAlertMessage(false,null));
                 }else
-                {//当前抛出了异常信息
+                {
                     resultBuf.append(addErrorMessage(load_error_mess,false,null));
                 }
             }else
@@ -218,12 +223,27 @@ public class WabacusResponse
                 resultBuf.append(addSuccessMessage(false,"<br>"));
                 resultBuf.append(addErrorMessage(null,false,null));
             }
+            if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
+            {
+                String pageurlspan="<span id=\""+rrequest.getPagebean().getId()+"_url_id\" style=\"display:none;\" value=\""
+                        +Tools.htmlEncode(Tools.jsParamEncode(rrequest.getUrl()))+"\"";
+                if(rrequest.getPagebean().isShouldProvideEncodePageUrl())
+                {
+                    pageurlspan=pageurlspan+" encodevalue=\""+Tools.convertBetweenStringAndAscii(rrequest.getUrl(),true)+"\"";
+                }
+                String ancestorUrls=rrequest.getStringAttribute("ancestorPageUrls","");
+                if(!ancestorUrls.equals(""))
+                {
+                    pageurlspan=pageurlspan+" ancestorPageUrls=\""+ancestorUrls+"\"";
+                }
+                resultBuf.append(pageurlspan+"></span>");
+            }
         }else
         {
             String pageid=rrequest.getPagebean().getId();
             resultBuf.append("<RESULTS_INFO-").append(pageid).append(">").append("{");
             resultBuf.append("pageurl:\"").append(rrequest.getUrl()).append("\",");
-            
+            //if(isForwardAction) resultBuf.append("isForwardAction:\"").append(isForwardAction).append("\",");
             if(rrequest.getPagebean().isShouldProvideEncodePageUrl())
             {
                 resultBuf.append("pageEncodeUrl:\"").append(Tools.convertBetweenStringAndAscii(rrequest.getUrl(),true)).append("\",");
@@ -232,7 +252,7 @@ public class WabacusResponse
             {
                 resultBuf.append("dynamicRefreshComponentGuid:\"").append(dynamicRefreshComponentGuid).append("\",");
                 if(dynamicSlaveReportId!=null&&!dynamicSlaveReportId.trim().equals(""))
-                {//动态刷新的组件为一个从报表
+                {
                     resultBuf.append("dynamicSlaveReportId:\"").append(dynamicSlaveReportId).append("\",");
                 }
             }
@@ -261,12 +281,12 @@ public class WabacusResponse
                 String methodNameTmp;
                 String methodParamsTmp;
                 for(Map<String,String> mMethodsTmp:this.lstOnloadMethods)
-                {//循环每个onload方法
+                {
                     methodNameTmp=mMethodsTmp.keySet().iterator().next();
                     methodParamsTmp=mMethodsTmp.get(methodNameTmp);
                     resultBuf.append("{methodname:").append(methodNameTmp);
                     if(methodParamsTmp!=null&&!methodParamsTmp.trim().equals(""))
-                    {
+                    {//如果此方法有参数，参数的格式必须为：param1:"value1",param2:"value2"
                         resultBuf.append(",methodparams:").append(methodParamsTmp);
                     }
                     resultBuf.append("},");
@@ -310,7 +330,7 @@ public class WabacusResponse
                 resultMess="alertmess:\""+resultMess.trim()+"\"";
             }
         }else
-        {//直接提示到页面
+        {
             resultMess=this.messageCollector.getJsAlertMessages("<br>");
         }
         resultMess=resultMess==null?"":resultMess.trim();
@@ -360,7 +380,7 @@ public class WabacusResponse
     {
         String resultMess="";
         if(jsPrompt)
-        {//通过js提示
+        {
             resultMess=this.messageCollector.getJsErrorMessages("  ");
             if(resultMess==null||resultMess.trim().equals("")) resultMess=defaultvalue;
             if(resultMess!=null&&!resultMess.trim().equals(""))
@@ -392,7 +412,7 @@ public class WabacusResponse
     {
         hasInitOutput=true;
         if(response!=null&&rrequest.getRequest()!=null)
-        {
+        {//本次是直接输出到页面
             rrequest.getRequest().getSession();
             if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL)
             {
@@ -432,7 +452,7 @@ public class WabacusResponse
     
     public void println(String content,boolean overwrite)
     {
-        if(!hasInitOutput) initOutput(null);//还没有初始化输出，则先初始化
+        if(!hasInitOutput) initOutput(null);
         if(content==null||content.trim().equals("")) return;
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL||rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
                 ||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT)
@@ -461,13 +481,13 @@ public class WabacusResponse
         {
             rrequest.getRequest().setAttribute("WX_REPORTREQUEST",rrequest);
             String starttagTmp=ReportAssistant.getInstance().getStartTagOfIncludeFilePlaceholder(rrequest.getPagebean());
-            String endtagTmp=ReportAssistant.getInstance().getEndTagOfIncludeFilePlaceholder(rrequest.getPagebean());//取到占位符结束标签
+            String endtagTmp=ReportAssistant.getInstance().getEndTagOfIncludeFilePlaceholder(rrequest.getPagebean());
             int idx=content.indexOf(starttagTmp);
             String reportidTmp;
             AbsReportType reportTypeObjTmp;
             *
              * 每个包含外部页面的格式为<tag>reportid</tag>，其中<tag>和</tag>分别是starttagTmp和endtagTmp
-             *
+             *//*
             String dynTplPathTmp=null;
             while(true)
             {
@@ -511,7 +531,7 @@ public class WabacusResponse
         if(content==null||content.trim().equals("")) return;
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL||rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
                 ||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT)
-        {//数据导出
+        {
             content=WabacusAssistant.getInstance().replaceAllImgPathInExportDataFile(rrequest.getRequest(),content);
         }
         if(jspout!=null)

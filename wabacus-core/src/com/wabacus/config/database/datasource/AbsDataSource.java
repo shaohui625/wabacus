@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -24,6 +24,7 @@ import javax.sql.DataSource;
 
 import org.dom4j.Element;
 
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
 
@@ -68,7 +69,7 @@ public abstract class AbsDataSource
         Class c;
         try
         {
-            c=Class.forName(dbtype.trim());
+            c=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(dbtype.trim());
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("配置的dbtype："+dbtype+"，无法加载此类",e);

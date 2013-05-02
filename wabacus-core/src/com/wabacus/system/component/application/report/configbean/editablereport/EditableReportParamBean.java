@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -38,7 +38,7 @@ public class EditableReportParamBean
 
     private boolean hasRightPercent;
 
-    private Object owner;//可能是ColBean或EditableReportExternalValueBean两者之一的对象
+    private Object owner;
 
     private String[][] servervalidate=null;
 
@@ -122,13 +122,11 @@ public class EditableReportParamBean
     {
         if(value==null||value.trim().equals(""))
         {
-            value=ReportAssistant.getInstance().getColAndConditionDefaultValue(rrequest,
-                    defaultvalue);
+            value=ReportAssistant.getInstance().getColAndConditionDefaultValue(rrequest,defaultvalue);
         }
-        if(value==null) value="";
         if(this.servervalidate!=null&&this.servervalidate.length>0)
         {
-            if(value.trim().equals(""))
+            if(value==null||value.trim().equals(""))
             {
                 int len=servervalidate.length;
                 for(int j=0;j<len;j++)
@@ -179,10 +177,12 @@ public class EditableReportParamBean
         {
             if(this.hasLeftPercent)
             {
+                if(value==null) value="";
                 value="%"+value;
             }
             if(this.hasRightPercent)
             {
+                if(value==null) value="";
                 value=value+"%";
             }
         }
@@ -197,7 +197,7 @@ public class EditableReportParamBean
     
     
     
-    //
+    
     
     
     
@@ -207,7 +207,7 @@ public class EditableReportParamBean
     
     
     
-    //        if (this.colbean == parambean.getColbean())
+    
     //        {//如果引用到同一个<col/>
     
     

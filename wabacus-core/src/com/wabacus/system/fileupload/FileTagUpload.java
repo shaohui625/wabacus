@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -127,11 +127,12 @@ public class FileTagUpload extends AbsFileUpload
         if(interceptor!=null&&!interceptor.trim().equals(""))
         {
             interceptorObj=AbsFileUploadInterceptor.createInterceptorObj(interceptor.trim());
-            request.setAttribute("WX_FILE_UPLOAD_INTERCEPTOR",interceptorObj);//保存拦截器存取来，以便在WabacusFacade中可以直接使用
+            request.setAttribute("WX_FILE_UPLOAD_INTERCEPTOR",interceptorObj);
         }
         List<String> lstConfigAllowTypes=getFileSuffixList(configAllowTypes);
         FileItem item;
         List<String> lstDestFileNames=new ArrayList<String>();
+        boolean existUploadFile=false;
         for(Object itemObj:lstFieldItems)
         {
             item=(FileItem)itemObj;
@@ -145,6 +146,7 @@ public class FileTagUpload extends AbsFileUpload
             mFormFieldValues.put(AbsFileUploadInterceptor.MAXSIZE_KEY,String.valueOf(String.valueOf(imaxsize)));
             mFormFieldValues.put(AbsFileUploadInterceptor.FILENAME_KEY,destfilename);
             mFormFieldValues.put(AbsFileUploadInterceptor.SAVEPATH_KEY,savepath);
+            existUploadFile=true;
             boolean shouldUpload=true;
             if(interceptorObj!=null)
             {
@@ -155,6 +157,10 @@ public class FileTagUpload extends AbsFileUpload
             if(errorMessage!=null&&!errorMessage.trim().equals("")) return errorMessage;
             destfilename=mFormFieldValues.get(AbsFileUploadInterceptor.FILENAME_KEY);
             if(!lstDestFileNames.contains(destfilename)) lstDestFileNames.add(destfilename);
+        }
+        if(!existUploadFile)
+        {
+            return "请选择要上传的文件!";
         }
         if(rooturl!=null&&!rooturl.trim().equals(""))
         {

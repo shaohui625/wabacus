@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -35,7 +35,7 @@ public class XmlElementBean implements Cloneable
 
     private List<XmlElementBean> lstChildElements;
 
-    private Map<String,String> mProperties;//属性集合
+    private Map<String,String> mProperties;
 
     public XmlElementBean(String name)
     {

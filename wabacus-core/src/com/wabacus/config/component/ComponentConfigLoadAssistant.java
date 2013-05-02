@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -25,6 +25,8 @@ import java.util.Map;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.IApplicationConfigBean;
+import com.wabacus.config.component.application.report.AbsConfigBean;
+import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
@@ -35,7 +37,6 @@ import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.buttons.AbsButtonType;
 import com.wabacus.util.Tools;
-import com.wabacus.util.UniqueArrayList;
 
 public class ComponentConfigLoadAssistant
 {
@@ -83,7 +84,7 @@ public class ComponentConfigLoadAssistant
             refreshGuid=ccbean.getGuid();
         }else
         {
-            IComponentConfigBean refreshContainerObj=pbean.getChildComponentBean(refreshid,true);//取到父容器对象
+            IComponentConfigBean refreshContainerObj=pbean.getChildComponentBean(refreshid,true);
             if(!(refreshContainerObj instanceof AbsContainerConfigBean))
             {
                 throw new WabacusRuntimeException("生成组件"+ccbean.getGuid()+"的refreshGuid失败，其refreshid："+refreshid+"即不是自己的ID，也不是父容器的ID");
@@ -181,7 +182,7 @@ public class ComponentConfigLoadAssistant
                 if(!pagesize.equals("")) ipagesize=Integer.parseInt(pagesize);
             }
             ReportBean rbean=ccbeanOwner.getPageBean().getReportChild(appidTmp,true);
-            if(rbean!=null) mReportidsAndPagesize.put(appidTmp,ipagesize);//当前应用是报表
+            if(rbean!=null) mReportidsAndPagesize.put(appidTmp,ipagesize);
             if(ccbeanOwner.getPageBean().getApplicationChild(appidTmp,true)==null)
             {
                 throw new WabacusConfigLoadingException("加载组件"+ccbeanOwner.getPath()+"上的打印配置失败，其include属性配置的应用ID"+appidTmp+"不存在");
@@ -196,5 +197,16 @@ public class ComponentConfigLoadAssistant
 //            mReportidsAndPagesize.put(ccbeanOwner.getId(),Integer.MIN_VALUE);//用默认值
 
         return new Object[] { appidsBuf.toString(), lstAppids, mReportidsAndPagesize };
+    }
+    
+    public List<ConditionBean> cloneLstConditionBeans(AbsConfigBean parent,List<ConditionBean> lstConditions)
+    {
+        if(lstConditions==null) return null;
+        List<ConditionBean> lstConNew=new ArrayList<ConditionBean>();
+        for(ConditionBean cbTmp:lstConditions)
+        {
+            lstConNew.add((ConditionBean)cbTmp.clone(parent));
+        }
+        return lstConNew;
     }
 }

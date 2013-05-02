@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -29,7 +29,9 @@ import java.util.Map.Entry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ComponentAssistant;
@@ -47,6 +49,8 @@ public class ButtonsBean implements Cloneable
     private int buttonspacing=3;
 
     private String align="right";
+    
+    private String titleposition;
     
     private IComponentConfigBean ccbean;
     
@@ -102,15 +106,25 @@ public class ButtonsBean implements Cloneable
         this.align=align;
     }
     
-//    public boolean isExistReferedButton()
 
 
 
 
-//    public void setExistReferedButton(boolean isExistReferedButton)
+//
 
 
 
+
+
+    public String getTitleposition()
+    {
+        return titleposition;
+    }
+
+    public void setTitleposition(String titleposition)
+    {
+        this.titleposition=titleposition;
+    }
 
     public AbsButtonType getButtonByName(String name)
     {
@@ -323,7 +337,7 @@ public class ButtonsBean implements Cloneable
     
     public List<AbsButtonType> getLstPrintTypeButtons(String printtype)
     {
-        List<AbsButtonType> lstPrintButtons=getAllCertainTypeButtonsList(PrintButton.class);//取到配置的所有打印按钮
+        List<AbsButtonType> lstPrintButtons=getAllCertainTypeButtonsList(PrintButton.class);
         if(lstPrintButtons==null||lstPrintButtons.size()==0) return null;
         printtype=printtype==null?"":printtype.trim();
         List<AbsButtonType> lstResults=new ArrayList<AbsButtonType>();
@@ -445,14 +459,14 @@ public class ButtonsBean implements Cloneable
                     if(menugroupTmp==null||menugroupTmp.trim().equals("")) menugroupTmp="0";
                     lstButtonsTmp=mButtonsTmp.get(menugroupTmp);
                     if(lstButtonsTmp==null) 
-                    {
+                    {//此menugroup下面还没有按钮
                         lstButtonsTmp=new ArrayList<AbsButtonType>();
                         mButtonsTmp.put(menugroupTmp,lstButtonsTmp);
                     }
                     lstButtonsTmp.add(buttonTypeObjTmp);
                 }
                 List<String> lstMenuGroups=new ArrayList<String>();
-                lstMenuGroups.addAll(mButtonsTmp.keySet());//将所有menugroup存入一list中
+                lstMenuGroups.addAll(mButtonsTmp.keySet());
                 Collections.sort(lstMenuGroups);
                 List<AbsButtonType> lstResults=new ArrayList<AbsButtonType>();
                 for(String menugroupTmp2:lstMenuGroups)
@@ -466,6 +480,32 @@ public class ButtonsBean implements Cloneable
             }else
             {
                 Collections.sort(entryButtons.getValue());
+            }
+        }
+    }
+    
+    public void doPostLoad()
+    {
+        if(mAllButtons==null) return;
+        for(Entry<String, List<AbsButtonType>> entryButtonsTmp:this.mAllButtons.entrySet())
+        {
+            if(entryButtonsTmp.getValue()==null) continue;
+            for(AbsButtonType buttonTypeObjTmp:entryButtonsTmp.getValue())
+            {
+                buttonTypeObjTmp.doPostLoad();
+            }
+        }
+    }
+    
+    public void doPostLoadFinally(ReportBean reportbean)
+    {
+        if(mAllButtons==null) return;
+        for(Entry<String, List<AbsButtonType>> entryButtonsTmp:this.mAllButtons.entrySet())
+        {
+            if(entryButtonsTmp.getValue()==null) continue;
+            for(AbsButtonType buttonTypeObjTmp:entryButtonsTmp.getValue())
+            {
+                buttonTypeObjTmp.doPostLoadFinally();
             }
         }
     }

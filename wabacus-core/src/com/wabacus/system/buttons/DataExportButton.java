@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -102,7 +102,7 @@ public class DataExportButton extends WabacusButton
         {
             if(comidTmp==null||comidTmp.trim().equals("")) continue;
             if(!rrequest.checkPermission(comidTmp,Consts.BUTTON_PART,"type{"+dataexporttype+"}",Consts.PERMISSION_TYPE_DISPLAY)) continue;
-            if(rrequest.checkPermission(comidTmp,Consts.BUTTON_PART,"type{"+dataexporttype+"}",Consts.PERMISSION_TYPE_DISABLED)) continue;//此组件的数据导入功能禁止使用
+            if(rrequest.checkPermission(comidTmp,Consts.BUTTON_PART,"type{"+dataexporttype+"}",Consts.PERMISSION_TYPE_DISABLED)) continue;
             if(comidTmp.equals(rrequest.getPagebean().getId()))
             {
                 ccbeanTmp=rrequest.getPagebean();
@@ -176,7 +176,7 @@ public class DataExportButton extends WabacusButton
         {
             exporturl=Config.showreport_onpdf_url;
         }else
-        {//Consts.DATAEXPORT_RICHEXCEL
+        {
             exporturl=Config.showreport_onrichexcel_url;
         }
         if(rbean!=null&&rbean.getDbean().isColselect())
@@ -186,15 +186,8 @@ public class DataExportButton extends WabacusButton
             paramsBuf.append(",includeApplicationids:\"").append(includeApplicationids).append("\"");
             paramsBuf.append(",skin:\"").append(rrequest.getPageskin()).append("\"");
             paramsBuf.append(",webroot:\"").append(Config.webroot).append("\"");
-            String width=rbean.getDbean().getColselectwidth();
-            if(width==null||width.trim().equals(""))
-            {
-                width=Config.getInstance().getSystemConfigValue("default-colselect-width","");
-            }
-            if(!width.equals(""))
-            {
-                paramsBuf.append(",width:\"").append(width).append("\"");
-            }
+            paramsBuf.append(",width:").append(rbean.getDbean().getColselectwidth());
+            paramsBuf.append(",maxheight:").append(rbean.getDbean().getColselectmaxheight());
             paramsBuf.append(",showreport_onpage_url:\"").append(Config.showreport_onpage_url).append("\"");
             paramsBuf.append(",showreport_dataexport_url:\"").append(exporturl).append("\"");
             paramsBuf.append("}");

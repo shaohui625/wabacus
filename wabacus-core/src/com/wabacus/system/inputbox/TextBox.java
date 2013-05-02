@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -19,17 +19,22 @@
 package com.wabacus.system.inputbox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.wabacus.config.Config;
-import com.wabacus.config.typeprompt.AbsTypePromptDataSource;
-import com.wabacus.config.typeprompt.SQLPromptDataSource;
+import com.wabacus.config.ConfigLoadManager;
+import com.wabacus.config.component.application.report.ConditionBean;
+import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.typeprompt.ITypePromptOptionMatcher;
 import com.wabacus.config.typeprompt.TypePromptBean;
 import com.wabacus.config.typeprompt.TypePromptColBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
+import com.wabacus.system.inputbox.option.TypepromptOptionBean;
 import com.wabacus.util.Tools;
 
 public class TextBox extends AbsInputBox implements Cloneable
@@ -54,18 +59,19 @@ public class TextBox extends AbsInputBox implements Cloneable
     protected String doGetDisplayStringValue(ReportRequest rrequest,String value,String style_property,boolean isReadonly)
     {
         StringBuffer resultBuf=new StringBuffer();
+        resultBuf.append(this.getBeforedescription(rrequest));
         String inputboxid=getInputBoxId(rrequest);
-        resultBuf.append("<input  type='"+this.getTextBoxType()+"' typename='"+typename+"' id='"+inputboxid+"' name='"+inputboxid+"'");
+        resultBuf.append("<input  type='"+this.getInputboxInnerType()+"' typename='"+typename+"' id='"+inputboxid+"' name='"+inputboxid+"'");
         resultBuf.append(" value=\""+getInputBoxValue(rrequest,value)+"\"  ");
         style_property=Tools.mergeHtmlTagPropertyString(style_property,getTextBoxExtraStyleProperty(rrequest,isReadonly),1);
         if(isReadonly) style_property=addReadonlyToStyleProperty1(style_property);
         if(style_property!=null) resultBuf.append(" ").append(style_property).append(" ");
         resultBuf.append("/>");
-        resultBuf.append(this.getDescription(rrequest));
+        resultBuf.append(this.getAfterdescription(rrequest));
         return resultBuf.toString();
     }
 
-    protected String getTextBoxType()
+    public String getInputboxInnerType()
     {
         return "text";
     }
@@ -75,8 +81,8 @@ public class TextBox extends AbsInputBox implements Cloneable
         StringBuffer resultBuf=new StringBuffer();
         if(typePromptBean!=null)
         {
-            resultBuf.append(" onfocus=\"try{if(this.obj==null){this.obj=initializeTypePromptProperties(this,'"
-                    +getTypePromptJsonString(getInputBoxId(rrequest))+"');}}catch(e){logErrorsAsJsFileLoad(e);}\"");
+            resultBuf.append(" onfocus=\"try{initializeTypePromptProperties(this,'"+getTypePromptJsonString(getInputBoxId(rrequest))
+                    +"');}catch(e){logErrorsAsJsFileLoad(e);}\"");
         }
         return resultBuf.toString();
     }
@@ -85,15 +91,23 @@ public class TextBox extends AbsInputBox implements Cloneable
     {
         if(typePromptBean==null) return "";
         StringBuffer resultBuf=new StringBuffer("{");
-        String token="?";
-        if(Config.showreport_url.indexOf("?")>0) token="&";
-        String serverurl=Config.showreport_url+token+"PAGEID="+owner.getReportBean().getPageBean().getId()+"&REPORTID="+owner.getReportBean().getId()
-                +"&INPUTBOXID="+inputboxid+"&ACTIONTYPE=GetTypePromptDataList";
-        resultBuf.append("serverUrl:\"").append(serverurl).append("\"");
+        resultBuf.append("pageid:\"").append(owner.getReportBean().getPageBean().getId()).append("\"");
+        resultBuf.append(",reportid:\"").append(owner.getReportBean().getId()).append("\"");
+        resultBuf.append(",inputboxid:\"").append(inputboxid).append("\"");
         resultBuf.append(",spanOutputWidth:").append(typePromptBean.getResultspanwidth());
+        resultBuf.append(",spanOutputMaxheight:").append(typePromptBean.getResultspanMaxheight());
         resultBuf.append(",resultCount:").append(typePromptBean.getResultcount());
-        resultBuf.append(",useTimeout:").append(typePromptBean.isTimeout());
+        resultBuf.append(",timeoutSecond:").append(typePromptBean.getTimeout());
         resultBuf.append(",isShowTitle:").append(typePromptBean.isShowtitle());
+        resultBuf.append(",isCasesensitive:").append(typePromptBean.isCasesensitive());
+        resultBuf.append(",isSelectBox:").append(typePromptBean.isSelectbox());
+        if(this.owner instanceof ConditionBean)
+        {
+            if(((ConditionBean)this.owner).getLabelstyle()==1&&((ConditionBean)this.owner).getLabel()!=null) 
+            {
+                resultBuf.append(",conditionlabel:\"").append(((ConditionBean)this.owner).getLabel()).append("\"");
+            }
+        }
         if(typePromptBean.getCallbackmethod()!=null&&!typePromptBean.getCallbackmethod().trim().equals(""))
         {
             resultBuf.append(",callbackmethod:").append(typePromptBean.getCallbackmethod());
@@ -103,13 +117,18 @@ public class TextBox extends AbsInputBox implements Cloneable
         {
             colBuf.append("{");
             colBuf.append("collabel:\"").append(tpColBean.getLabel()).append("\"");
-            colBuf.append(",colvalue:\"").append(tpColBean.getValue()).append("\"");
+            if(tpColBean.getValue()!=null) colBuf.append(",colvalue:\"").append(tpColBean.getValue()).append("\"");
             colBuf.append(",coltitle:\"").append(tpColBean.getTitle()==null?"":tpColBean.getTitle()).append("\"");
             colBuf.append(",matchmode:").append(tpColBean.getMatchmode());
+            colBuf.append(",hidden:").append(tpColBean.isHidden());
             colBuf.append("},");
         }
         if(colBuf.charAt(colBuf.length()-1)==',')  colBuf.deleteCharAt(colBuf.length()-1);
         resultBuf.append(",colsArray:[").append(colBuf.toString()).append("]");
+        if(typePromptBean.getClientMatcherMethodName()!=null&&!typePromptBean.getClientMatcherMethodName().trim().equals(""))
+        {
+            resultBuf.append(",clientMatchMethod:").append(typePromptBean.getClientMatcherMethodName());
+        }
         resultBuf.append("}");
         return Tools.jsParamEncode(resultBuf.toString());
     }
@@ -117,7 +136,7 @@ public class TextBox extends AbsInputBox implements Cloneable
     protected String initDisplaySpanStart(ReportRequest rrequest)
     {
         if(this.typePromptBean==null) return super.initDisplaySpanStart(rrequest);
-        //配置了输入联想功能
+        
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append(super.initDisplaySpanStart(rrequest));
         resultBuf.append(" typePrompt=\"").append(getTypePromptJsonString(this.owner.getInputBoxId())).append("\"");
@@ -127,15 +146,14 @@ public class TextBox extends AbsInputBox implements Cloneable
     public String filledInContainer(String onblur)
     {
         StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append(" boxstr=\"<input type='"+this.getTextBoxType()+"' value=\\\"\"+boxValue+\"\\\"\";");
+        resultBuf.append(" boxstr=\"<input type='"+this.getInputboxInnerType()+"' value=\\\"\"+boxValue+\"\\\"\";");
         resultBuf.append(getInputBoxCommonFilledProperties());
         resultBuf.append("boxstr=boxstr+\" onblur=\\\"try{\"+onblurmethod+\"").append(onblur).append("}catch(e){logErrorsAsJsFileLoad(e);}\\\"\";");
         resultBuf.append("var typePrompt=null;if(inputboxSpanObj!=null){typePrompt=inputboxSpanObj.getAttribute('typePrompt');}");
         resultBuf.append("if(onfocusmethod!=null&&onfocusmethod!=''||typePrompt!=null&&typePrompt!=''){");
         resultBuf.append("  boxstr=boxstr+\" onfocus=\\\"try{\"+onfocusmethod;");
         
-        resultBuf
-                .append("   if(typePrompt!=null&&typePrompt!=''){boxstr=boxstr+\"if(this.obj==null) this.obj=initializeTypePromptProperties(this,'\"+typePrompt+\"');\";}");
+        resultBuf.append("   if(typePrompt!=null&&typePrompt!=''){boxstr=boxstr+\"initializeTypePromptProperties(this,'\"+typePrompt+\"');\";}");
         resultBuf.append("  boxstr=boxstr+\"}catch(e){logErrorsAsJsFileLoad(e);}\\\"\";");
         resultBuf.append("}");
         resultBuf.append("boxstr=boxstr+\">\";");
@@ -147,7 +165,7 @@ public class TextBox extends AbsInputBox implements Cloneable
     public String getIndependentDisplayString(ReportRequest rrequest,String value,String dynstyleproperty,Object specificDataObj,boolean isReadonly)
     {
         StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append("<input  type='"+this.getTextBoxType()+"'  value=\""+value+"\"");
+        resultBuf.append("<input  type='"+this.getInputboxInnerType()+"'  value=\""+value+"\"");
         dynstyleproperty=Tools.mergeHtmlTagPropertyString(this.defaultstyleproperty,dynstyleproperty,1);
         if(isReadonly) dynstyleproperty=addReadonlyToStyleProperty1(dynstyleproperty);
         if(dynstyleproperty!=null) resultBuf.append(" ").append(dynstyleproperty).append(" ");
@@ -159,7 +177,7 @@ public class TextBox extends AbsInputBox implements Cloneable
     {
         super.loadInputBoxConfig(ownerbean,eleInputboxBean);
         if(eleInputboxBean==null) return;
-        
+        //加载输入联想配置
         XmlElementBean eleTypeprompt=eleInputboxBean.getChildElementByName("typeprompt");
         if(eleTypeprompt!=null)
         {
@@ -170,6 +188,11 @@ public class TextBox extends AbsInputBox implements Cloneable
             {
                 typePromptBean.setResultspanwidth(Tools.getWidthHeightIntValue(width));
             }
+            String maxheight=eleTypeprompt.attributeValue("maxheight");
+            if(maxheight!=null&&!maxheight.trim().equals(""))
+            {
+                typePromptBean.setResultspanMaxheight(Tools.getWidthHeightIntValue(maxheight));
+            }
             String count=eleTypeprompt.attributeValue("count");
             if(count!=null&&!count.trim().equals(""))
             {
@@ -178,74 +201,63 @@ public class TextBox extends AbsInputBox implements Cloneable
             String timeout=eleTypeprompt.attributeValue("timeout");
             if(timeout!=null&&!timeout.trim().equals(""))
             {
-                typePromptBean.setTimeout(Boolean.parseBoolean(timeout.trim()));
+                typePromptBean.setTimeout(Integer.parseInt(timeout.trim()));
             }
+            String casesensitive=eleTypeprompt.attributeValue("casesensitive");
+            casesensitive=casesensitive==null?"true":casesensitive.toLowerCase().trim();
+            typePromptBean.setCasesensitive(!casesensitive.toLowerCase().trim().equals("false"));
+            String selectbox=eleTypeprompt.attributeValue("selectbox");
+            if(selectbox!=null&&!selectbox.trim().equals(""))
+            {
+                typePromptBean.setSelectbox(selectbox.toLowerCase().trim().equals("true"));
+            }
+            if(typePromptBean.isSelectbox()) super.setDefaultFillmode(Config.getInstance().getReportType(ownerbean.getReportBean().getType()));//如果是模拟下拉框，则对于editalbelist2/editabledetail2等报表类型时时，是点击时再填充
+            
             String callbackmethod=eleTypeprompt.attributeValue("callbackmethod");
             if(callbackmethod!=null&&!callbackmethod.trim().equals(""))
             {
                 typePromptBean.setCallbackmethod(callbackmethod.trim());
             }
+            String servermatcher=eleTypeprompt.attributeValue("servermatcher");
+            if(servermatcher!=null&&!servermatcher.trim().equals(""))
+            {
+                Object obj=null;
+                try
+                {
+                    obj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(servermatcher).newInstance();
+                }catch(Exception e)
+                {
+                    throw new WabacusConfigLoadingException("为报表"+ownerbean.getReportBean().getPath()+"的<typeprompt/>配置的servermatcher属性："
+                            +servermatcher+"无法实例化",e);
+                }
+                if(!(obj instanceof ITypePromptOptionMatcher))
+                {
+                    throw new WabacusConfigLoadingException("为报表"+ownerbean.getReportBean().getPath()+"的<typeprompt/>配置的servermatcher属性："
+                            +servermatcher+"没有实现接口"+ITypePromptOptionMatcher.class.getName());
+                }
+                typePromptBean.setTypePromptMatcherObj((ITypePromptOptionMatcher)obj);
+            }
+            String clientmatcher=eleTypeprompt.attributeValue("clientmatcher");
+            if(clientmatcher!=null&&!clientmatcher.trim().equals(""))
+            {
+                typePromptBean.setClientMatcherMethodName(clientmatcher.trim());
+            }
             List<XmlElementBean> lstPromptcols=eleTypeprompt.getLstChildElementsByName("promptcol");
             loadPromptcolsConfig(ownerbean,lstPromptcols);
             XmlElementBean eleDataSources=eleTypeprompt.getChildElementByName("datasource");
-            loadPromptDataSourcesConfig(ownerbean,eleDataSources);
-            String typepromptjs=null;
-            if(Config.encode.toLowerCase().trim().equals("utf-8"))
+            if(eleDataSources==null)
             {
-                typepromptjs="/webresources/script/wabacus_typeprompt.js";
-            }else
-            {
-                String encode=Config.encode;
-                if(encode.trim().equalsIgnoreCase("gb2312"))
-                {
-                    encode="gbk";
-                }
-                typepromptjs="/webresources/script/"+encode.toLowerCase()+"/wabacus_typeprompt.js";
+                throw new WabacusConfigLoadingException("没有为报表"+ownerbean.getReportBean().getPath()+"的<typeprompt/>配置子标签<datasource/>");
             }
-            typepromptjs=Config.webroot+"/"+typepromptjs;
-            typepromptjs=Tools.replaceAll(typepromptjs,"//","/");
-            ownerbean.getReportBean().addMyJavascript(typepromptjs);
-        }
-    }
-
-    private void loadPromptDataSourcesConfig(IInputBoxOwnerBean ownerbean,XmlElementBean eleDataSources)
-    {
-        if(eleDataSources==null)
-        {
-            throw new WabacusConfigLoadingException("没有为报表"+ownerbean.getReportBean().getPath()+"的<typeprompt/>配置子标签<datasource/>");
-        }
-        String type=eleDataSources.attributeValue("type");
-        Object type_obj;
-        if(type==null||type.trim().equals(""))
-        {
-            type_obj=new SQLPromptDataSource();
-        }else
-        {//这里配置的是相应类的全限定类名
-            try
+            List<XmlElementBean> lstOptionElements=eleDataSources.getLstChildElementsByName("option");
+            if(lstOptionElements==null||lstOptionElements.size()==0)
             {
-                type_obj=Class.forName(type.trim()).newInstance();
-            }catch(InstantiationException e)
-            {
-                throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()+"为<typeprompt/>的子标签<datasource/>配置的type"+type
-                        +"对应的类无法实例化",e);
-            }catch(IllegalAccessException e)
-            {
-                throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()+"为<typeprompt/>的子标签<datasource/>配置的type"+type
-                        +"对应的类不能访问",e);
-            }catch(ClassNotFoundException e)
-            {
-                throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()+"为<typeprompt/>的子标签<datasource/>配置的type"+type
-                        +"对应的类没有找到",e);
+                throw new WabacusConfigLoadingException("没有为报表"+ownerbean.getReportBean().getPath()+"的<typeprompt/>配置的子标签<datasource/>配置<option/>选项标签");
             }
+            List<TypepromptOptionBean> lstObs=new ArrayList<TypepromptOptionBean>();
+            loadTypePromptOptionsConfig(ownerbean,lstOptionElements,lstObs);
+            this.typePromptBean.setLstOptionBeans(lstObs);
         }
-        if(!(type_obj instanceof AbsTypePromptDataSource))
-        {
-            throw new WabacusConfigLoadingException("加载报表"+ownerbean.getReportBean().getPath()+"的<typeprompt/>的<datasource/>失败，其配置的数据源类："
-                    +type_obj.getClass().getName()+"没有继承父类："+AbsTypePromptDataSource.class.getName());
-        }
-        ((AbsTypePromptDataSource)type_obj).setPromptConfigBean(typePromptBean);
-        ((AbsTypePromptDataSource)type_obj).loadExternalConfig(ownerbean.getReportBean(),eleDataSources);
-        typePromptBean.setDatasource((AbsTypePromptDataSource)type_obj);
     }
 
     private void loadPromptcolsConfig(IInputBoxOwnerBean ownerbean,List<XmlElementBean> lstPromptcols)
@@ -265,6 +277,8 @@ public class TextBox extends AbsInputBox implements Cloneable
             String value=elePromptColBeanTmp.attributeValue("value");
             String title=elePromptColBeanTmp.attributeValue("title");
             String matchmode=elePromptColBeanTmp.attributeValue("matchmode");
+            String hidden=elePromptColBeanTmp.attributeValue("hidden");
+            String matchexpression=elePromptColBeanTmp.attributeValue("matchexpression");
             if(label==null||label.trim().equals(""))
             {
                 throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()+"<typeprompt/>的子标签<promptcol/>的label属性不能为空");
@@ -276,26 +290,37 @@ public class TextBox extends AbsInputBox implements Cloneable
                 tpColbeanTmp.setTitle(title.trim());
                 isShowTitle=true;
             }
-            if(matchmode!=null&&!matchmode.trim().equals(""))
+            if(hidden!=null) tpColbeanTmp.setHidden(hidden.toLowerCase().equals("true"));
+            if(tpColbeanTmp.isHidden())
             {
-                try
+                tpColbeanTmp.setMatchmode(0);
+            }else
+            {
+                matchmode=matchmode==null?"":matchmode.toLowerCase().trim();
+                if("anywhere".equals(matchmode))
                 {
-                    tpColbeanTmp.setMatchmode(Integer.parseInt(matchmode.trim()));
-                }catch(NumberFormatException e)
+                    tpColbeanTmp.setMatchmode(2);
+                }else if("start".equals(matchmode))
                 {
-                    throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()
-                            +"<typeprompt/>的子标签<promptcol/>的matchmode属性只能配置为0,1,2三个数字");
-                }
-                if(tpColbeanTmp.getMatchmode()<0||tpColbeanTmp.getMatchmode()>2)
+                    tpColbeanTmp.setMatchmode(1);
+                }else
                 {
-                    throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()
-                            +"<typeprompt/>的子标签<promptcol/>的matchmode属性只能配置为0,1,2三个数字");
+                    tpColbeanTmp.setMatchmode(0);
                 }
                 if(tpColbeanTmp.getMatchmode()>0)
                 {
-                    isHasMatchCol=true;//存在参与匹配的列
+                    isHasMatchCol=true;
                     if(value==null||value.trim().equals("")) value=label;
                     tpColbeanTmp.setValue(value.trim());
+                    if(matchexpression!=null&&!matchexpression.trim().equals(""))
+                    {
+                        if(matchexpression.indexOf("#data#")<0)
+                        {
+                            throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()
+                                    +"<typeprompt/>的子标签<promptcol/>的matchexpression属性："+matchexpression+"失败，没有在这里指定输入值的占位符#data#");
+                        }
+                        tpColbeanTmp.setMatchexpression(matchexpression.trim());
+                    }
                 }
             }
             lstPColBeans.add(tpColbeanTmp);
@@ -303,15 +328,74 @@ public class TextBox extends AbsInputBox implements Cloneable
         if(!isHasMatchCol)
         {
             throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()
-                    +"<typeprompt/>的子标签<promptcol/>的matchmode属性不能均配置为0，必须指定一个或以上用于匹配的列");
+                    +"<typeprompt/>的子标签<promptcol/>的matchmode属性不能均配置为none，必须指定一个或以上用于匹配的列");
         }
         typePromptBean.setShowtitle(isShowTitle);
         typePromptBean.setLstPColBeans(lstPColBeans);
     }
 
+    private void loadTypePromptOptionsConfig(IInputBoxOwnerBean ownerbean,List<XmlElementBean> lstOptionElements,List<TypepromptOptionBean> lstObs)
+    {
+        ReportBean rbean=ownerbean.getReportBean();
+        for(XmlElementBean eleOptionTmp:lstOptionElements)
+        {
+            if(eleOptionTmp==null) continue;
+            TypepromptOptionBean ob=new TypepromptOptionBean(this);
+            String source=eleOptionTmp.attributeValue("source");
+            source=source==null?"":source.trim();
+            if(source.equals(""))
+            {
+                Map<String,String> mOption=new HashMap<String,String>();
+                String nameTmp,valueTmp;
+                for(TypePromptColBean tcolbeanTmp:typePromptBean.getLstPColBeans())
+                {//需要在常量<option/>中配置所有匹配列/显示列所需的数据
+                    nameTmp=tcolbeanTmp.getLabel();
+                    if(nameTmp==null||nameTmp.trim().equals(""))
+                    {
+                        throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的输入联想选项失败，没有在常量选项<option/>标签中配置label属性，指定显示label的数据");
+                    }
+                    valueTmp=eleOptionTmp.attributeValue(nameTmp);
+                    valueTmp=valueTmp==null?"":valueTmp.trim();
+                    mOption.put(nameTmp,valueTmp);//将此联想列的名和配置的常量值存入Map中
+                    nameTmp=tcolbeanTmp.getValue();
+                    if(nameTmp==null||nameTmp.trim().equals("")||nameTmp.equals(tcolbeanTmp.getLabel())) continue;
+                    valueTmp=eleOptionTmp.attributeValue(nameTmp);
+                    valueTmp=valueTmp==null?"":valueTmp.trim();
+                    mOption.put(nameTmp,valueTmp);
+                }
+                ob.setMPromptcolValues(mOption);
+            }else if(Tools.isDefineKey("@",source)||Tools.isDefineKey("class",source))
+            {
+                ob.loadOptionDynDatasourceObj(eleOptionTmp,source);
+            }else if(Tools.isDefineKey("$",source))
+            {
+                loadTypePromptOptionsConfig(ownerbean,(List<XmlElementBean>)Config.getInstance().getResourceObject(null,rbean.getPageBean(),source,
+                        true),lstObs);
+                continue;
+            }else
+            {
+                throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的输入联想选项的source："+eleOptionTmp.attributeValue("source")+"不合法");
+            }
+            lstObs.add(ob);
+        }
+    }
+    
     protected String getDefaultStylePropertyForDisplayMode2()
     {
-        return "onfocus='this.select();' onkeypress='return onKeyEvent(event);' class='cls-inputbox2'";
+        String style="onfocus='this.select();' onkeypress='return onKeyEvent(event);'";
+        if(this.hasDescription())
+        {
+            style+=" class='cls-inputbox2";
+        }else
+        {
+            style+=" class='cls-inputbox2-full";
+        }
+        if(this.typePromptBean!=null&&this.typePromptBean.isSelectbox())
+        {
+            style+=" cls-inputbox-typeselectbox";
+        }
+        style+="'";
+        return style;
     }
     
     public void doPostLoad(IInputBoxOwnerBean ownerbean)
@@ -319,7 +403,25 @@ public class TextBox extends AbsInputBox implements Cloneable
         super.doPostLoad(ownerbean);
         if(this.typePromptBean!=null)
         {
-            this.typePromptBean.getDatasource().doPostLoad(ownerbean.getReportBean());        
+            for(TypepromptOptionBean optionBeanTmp:this.typePromptBean.getLstOptionBeans())
+            {
+                optionBeanTmp.doPostLoad();
+            }
+            String typepromptjs="/webresources/script/wabacus_typeprompt.js";
+
+
+//                typepromptjs="/webresources/script/wabacus_typeprompt.js";
+
+
+
+
+
+
+
+//                typepromptjs="/webresources/script/"+encode.toLowerCase()+"/wabacus_typeprompt.js";
+//            }
+            typepromptjs=Tools.replaceAll(Config.webroot+"/"+typepromptjs,"//","/");
+            ownerbean.getReportBean().getPageBean().addMyJavascriptFile(typepromptjs,0);
         }
     }
 
@@ -328,17 +430,31 @@ public class TextBox extends AbsInputBox implements Cloneable
         super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
         if(this.typePromptBean!=null)
         {
-            this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,"onblur=\"hideTypePromptOnBlur(this);\"",1);
+            
             this.styleproperty=Tools.removePropertyValueByName("onkeypress",this.styleproperty);
+            if(this.typePromptBean.isSelectbox())
+            {
+                this.styleproperty=Tools.replaceAll(this.styleproperty,"cls-inputbox-normal","cls-inputbox-temp-normal cls-inputbox-typeselectbox");
+                this.styleproperty=Tools.replaceAll(this.styleproperty,"cls-inputbox-focus","cls-inputbox-temp-focus cls-inputbox-typeselectbox");
+                this.styleproperty=Tools.replaceAll(this.styleproperty,"cls-inputbox-mouseover","cls-inputbox-temp-mouseover cls-inputbox-typeselectbox");
+                this.styleproperty=Tools.replaceAll(this.styleproperty,"cls-inputbox-temp-normal","cls-inputbox-normal");
+                this.styleproperty=Tools.replaceAll(this.styleproperty,"cls-inputbox-temp-focus","cls-inputbox-focus");
+                this.styleproperty=Tools.replaceAll(this.styleproperty,"cls-inputbox-temp-mouseover","cls-inputbox-mouseover");
+            }
         }
     }
 
+    public void setDefaultFillmode(AbsReportType reportTypeObj)
+    {
+        this.fillmode=1;
+    }
+    
     public Object clone(IInputBoxOwnerBean owner)
     {
         TextBox tbNew=(TextBox)super.clone(owner);
         if(typePromptBean!=null)
         {
-            tbNew.setTypePromptBean((TypePromptBean)typePromptBean.clone());
+            tbNew.setTypePromptBean((TypePromptBean)typePromptBean.clone(tbNew));
             if(owner!=null&&owner.getReportBean()!=null)
             {
                 owner.getReportBean().addTextBoxWithingTypePrompt(tbNew);

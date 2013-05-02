@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -21,45 +21,35 @@ package com.wabacus.system.intercept;
 import java.util.List;
 import java.util.Map;
 
-import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
+import com.wabacus.system.assistant.EditableReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 
 public abstract class AbsInterceptorDefaultAdapter implements IInterceptor
 {
     public void doStart(ReportRequest rrequest,ReportBean rbean)
     {}
 
-    public int beforeSave(ReportRequest rrequest,ReportBean rbean)
+    public int doSave(ReportRequest rrequest,ReportBean rbean,AbsEditableReportEditDataBean editbean)
     {
-        return WX_CONTINUE;
+        return EditableReportAssistant.getInstance().doSaveReport(rbean,rrequest,editbean);
     }
 
-    public int beforeSavePerRow(ReportRequest rrequest,ReportBean rbean,Map mRowData,Map mExternalValues,int updatetype)
+    public int doSavePerRow(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues,
+            AbsEditableReportEditDataBean editbean)
     {
-        return WX_CONTINUE;
+        return EditableReportAssistant.getInstance().doSaveRow(rrequest,rbean,mRowData,mParamValues,editbean);
     }
 
-    public int beforeSavePerSql(ReportRequest rrequest,ReportBean rbean,Map mRowData,Map mExternalValues,String sql)
+    public int doSavePerAction(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues,
+            AbsEditActionBean actionbean,AbsEditableReportEditDataBean editbean)
     {
-        return WX_CONTINUE;
+        return EditableReportAssistant.getInstance().doSavePerAction(rrequest,rbean,mRowData,mParamValues,actionbean,editbean);
     }
-
-    public int afterSavePerSql(ReportRequest rrequest,ReportBean rbean,Map mRowData,Map mExternalValues,String sql)
-    {
-        return WX_CONTINUE;
-    }
-
-    public int afterSavePerRow(ReportRequest rrequest,ReportBean rbean,Map mRowData,Map mExternalValues,int updatetype)
-    {
-        return WX_CONTINUE;
-    }
-
-    public void afterSave(ReportRequest rrequest,ReportBean rbean)
-    {}
-
+    
     public void doEnd(ReportRequest rrequest,ReportBean rbean)
     {}
 

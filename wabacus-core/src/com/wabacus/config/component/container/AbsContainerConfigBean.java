@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -48,7 +48,7 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
     
     protected String margin_top;
     
-    protected String margin_bottom;//容器内部右边缘的间距
+    protected String margin_bottom;
     
     protected int border=-1;
 
@@ -367,20 +367,29 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
             {
                 childComponentTmp=entryTmp.getValue();
                 childComponentTmp.doPostLoad();
-                if(childComponentTmp instanceof ReportBean)
+                if(!(childComponentTmp instanceof ReportBean)||!((ReportBean)childComponentTmp).isSlaveReportDependsonListReport())
                 {
-                    ReportBean rbTmp=(ReportBean)childComponentTmp;
-                    if(rbTmp.isSlaveReportDependsonListReport()) continue;
+                    String childRefreshIdTmp=childComponentTmp.getRefreshid();
+                    if(childRefreshIdTmp==null||childRefreshIdTmp.trim().equals("")) continue;
+                    this.refreshid=this.getPageBean().getCommonRefreshIdOfComponents(this.refreshid,childRefreshIdTmp);
                 }
-                String childRefreshIdTmp=childComponentTmp.getRefreshid();
-                if(childRefreshIdTmp==null||childRefreshIdTmp.trim().equals("")) continue;
-                this.refreshid=this.getPageBean().getCommonRefreshIdOfComponents(this.refreshid,childRefreshIdTmp);
             }
         }
-        processContainerButtonsEnd();//这个方法要放在所有子组件都doPostLoad()完成后再调用，因为很多报表按钮是在doPostLoad()方法时才会新建的。
+        processContainerButtonsEnd();
         JavaScriptAssistant.getInstance().createComponentOnloadScript(this);
     }
 
+    public void doPostLoadFinally()
+    {
+        if(this.mChildren!=null&&this.mChildren.size()>0)
+        {
+            for(Entry<String,IComponentConfigBean> entryTmp:this.mChildren.entrySet())
+            {
+                entryTmp.getValue().doPostLoadFinally();
+            }
+        }
+    }
+    
     protected void processContainerButtonsStart()
     {
         ButtonsBean bbeans=this.getButtonsBean();
@@ -462,7 +471,7 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
                 }
                 buttonObjTmp.setReferedButtonObj(bbeansTmp.getButtonByName(referButton));
             }
-//            bbeansTmp.setExistReferedButton(true);
+
         }
     }
     

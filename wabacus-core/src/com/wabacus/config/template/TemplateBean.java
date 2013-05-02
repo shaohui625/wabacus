@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -75,7 +75,7 @@ public class TemplateBean
         {
             startCurr=tagObjTmp.getStartposition();
             if(endPrev>0&&startCurr-endPrev>1)
-            {//如果当前标签与上一个标题之间还有常量字符串，则把它原封不动地放入sbuffer中。
+            {
                 sbuffer.append(content.substring(endPrev+1,startCurr));
             }
             sbuffer.append(tagObjTmp.getDisplayValue(rrequest,ownerComponentObj));

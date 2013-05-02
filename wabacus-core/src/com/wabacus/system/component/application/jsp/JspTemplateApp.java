@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -95,7 +95,7 @@ public class JspTemplateApp extends AbsApplicationType
             if(this.jspConfigBean.getBelongToCcbean() instanceof ReportBean)
             {
                 AbsReportType reportTypeObj=rrequest.getDisplayReportTypeObj(this.jspConfigBean.getBelongToCcbean().getId());
-                rrequest.getRequest().setAttribute("WX_COMPONENT_OBJ",reportTypeObj);//存进去，以便JSP中的自定义标签能正常使用
+                rrequest.getRequest().setAttribute("WX_COMPONENT_OBJ",reportTypeObj);
             }
             try
             {

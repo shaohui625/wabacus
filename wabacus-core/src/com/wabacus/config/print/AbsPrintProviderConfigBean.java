@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -57,7 +57,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
 
     protected String previewbutton;
 
-    protected boolean isSetting;//是否需要打印设置功能
+    protected boolean isSetting;
 
     protected String settingbutton;
     
@@ -102,7 +102,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
     {
         String realjobname=null;
         if(jobname==null||jobname.trim().equals(""))
-        {//没有配置任务名
+        {
             realjobname=this.owner.getTitle(rrequest);
             if(realjobname==null||realjobname.trim().equals("")) realjobname=this.owner.getId();
         }else
@@ -368,7 +368,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
                 this.lstPrintPageBeans.add(pspagebeanTmp);
             }
         }
-        this.elePrintBean=null;//解析完转换成相应对象后变为null
+        this.elePrintBean=null;
         PrintTemplateElementBean ptelebeanTmp;
         if(this.lstPrintPageBeans.size()==0)
         {//没有在<print/>中配置有效的打印代码

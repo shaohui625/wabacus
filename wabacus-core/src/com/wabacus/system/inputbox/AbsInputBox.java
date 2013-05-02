@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -42,6 +42,7 @@ import com.wabacus.system.component.application.report.EditableListFormReportTyp
 import com.wabacus.system.component.application.report.EditableListReportType2;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
+import com.wabacus.system.inputbox.autocomplete.AutoCompleteBean;
 import com.wabacus.util.Tools;
 
 public abstract class AbsInputBox implements Cloneable
@@ -58,9 +59,13 @@ public abstract class AbsInputBox implements Cloneable
 
     protected String styleproperty2;
 
-    private String description;
+    private String beforedescription;
+    
+    private String afterdescription;
+    
+    private String tip;
 
-    protected Map<String,String> mStyleProperties2;//存放从styleproperty转变为styleproperty2后去掉的js事件属性名和属性值，以便在客户端能加上
+    protected Map<String,String> mStyleProperties2;
 
     protected String language;
 
@@ -70,11 +75,11 @@ public abstract class AbsInputBox implements Cloneable
 
     protected String typename;
 
-    protected IInputBoxOwnerBean owner;
+    protected IInputBoxOwnerBean owner;//当前输入框的持有者
 
     protected List<SubmitFunctionParamBean> lstSubmitFunctionParams;
 
-    private AutoCompleteConfigBean autocompleteBean;//自动填充其它列数据的配置
+    private AutoCompleteBean autoCompleteBean;
 
     private List<String> lstChildids;
 
@@ -137,14 +142,14 @@ public abstract class AbsInputBox implements Cloneable
         return ReportAssistant.getInstance().getColAndConditionDefaultValue(rrequest,defaultvalue);
     }
 
-    public AutoCompleteConfigBean getAutocompleteBean()
+    public AutoCompleteBean getAutoCompleteBean()
     {
-        return autocompleteBean;
+        return autoCompleteBean;
     }
 
-    public void setAutocompleteBean(AutoCompleteConfigBean autocompleteBean)
+    public void setAutoCompleteBean(AutoCompleteBean autoCompleteBean)
     {
-        this.autocompleteBean=autocompleteBean;
+        this.autoCompleteBean=autoCompleteBean;
     }
 
     public String getDefaultlabel(ReportRequest rrequest)
@@ -177,6 +182,8 @@ public abstract class AbsInputBox implements Cloneable
 
     protected abstract String getDefaultStylePropertyForDisplayMode2();
 
+    public abstract String getInputboxInnerType();
+    
     public void setDefaultFillmode(AbsReportType reportTypeObj)
     {
         if(reportTypeObj instanceof EditableListFormReportType)
@@ -218,7 +225,7 @@ public abstract class AbsInputBox implements Cloneable
             }
         }
         if(this.isJsValidateOnBlur())
-        {//如果需要失去焦点时的客户端校验
+        {
             resultBuf.append(" jsvalidate_onblur_method=\"").append(this.getBlurValidateEvent(rrequest)).append("\"");
         }
         if(this.inputboxparams!=null&&!this.inputboxparams.trim().equals(""))
@@ -276,6 +283,11 @@ public abstract class AbsInputBox implements Cloneable
         return buf.toString();
     }
 
+    public String createGetLabelByIdJs()
+    {
+        return "return getInputBoxValue(id,type);";//默认输入框的value和label一致
+    }
+    
     public String createGetValueByInputBoxObjJs()
     {
         return "value=boxObj.value; label=boxObj.value;";
@@ -302,49 +314,49 @@ public abstract class AbsInputBox implements Cloneable
         return inputboxid;
     }
 
-    //    protected String getOnKeypressEventProp(String style_property,boolean type)
     
     
     
     
-    //            String onkeypress=Tools.getPropertyValueByName("onkeypress",style_property.toLowerCase(),false);
+    
+    
     
     //            {//没有在styleproperty中指定onkeypress事件，则加上默认的事件
-    
+    //                if(this.displaymode==1)
     //                {//如果要显示输入框边框，由按回车键时，跳到下一个输入框（一般是输入框显示在表单中的情况）
     
     
     //                {//如果不显示输入框边框，说明输入框只是做为其它可编辑元素的一部分，此时按回车键时，失去焦点即可（一般是editablelist2/editabledetail2的情况）
-    //                    resultStr=" onkeypress=\"return onKeyEvent(event);\" ";
     
     
     
     
-    //            resultStr="if(!styleproperty||styleproperty.toLowerCase().indexOf('onkeypress')<0){";
+    
+    
+    
+    //            resultStr=resultStr+"else if(displaymode==2){boxstr=boxstr+\" onkeypress='return onKeyEvent(event)' \";}";
     
     
     
     
-    //        return resultStr;
     
     
     
     
-    //        if(type)
     //        {//如果是被getDisplayStringValue()调用
-    
-    
-    
     
     //            {
     
     
     
+    
+    
+    
     //        {//如果是被filledInContainer()调用
     
-    //        }
     
     
+    //    }
     protected String addReadonlyToStyleProperty1(String style_property)
     {
         if(style_property==null)
@@ -394,11 +406,36 @@ public abstract class AbsInputBox implements Cloneable
         this.jsvalidate=jsvalidate;
     }
 
-    public String getDescription(ReportRequest rrequest)
+    public String getBeforedescription(ReportRequest rrequest)
     {
-        if(this.description!=null&&!this.description.trim().equals(""))
+        if(this.beforedescription!=null&&!this.beforedescription.trim().equals(""))
         {
-            return rrequest.getI18NStringValue(this.description);
+            return rrequest.getI18NStringValue(this.beforedescription);
+        }
+        return "";
+    }
+
+    public String getAfterdescription(ReportRequest rrequest)
+    {
+        if(this.afterdescription!=null&&!this.afterdescription.trim().equals(""))
+        {
+            return rrequest.getI18NStringValue(this.afterdescription);
+        }
+        return "";
+    }
+
+    protected boolean hasDescription()
+    {
+        if(this.beforedescription!=null&&!this.beforedescription.trim().equals("")) return true;
+        if(this.afterdescription!=null&&!this.afterdescription.trim().equals("")) return true;
+        return false;
+    }
+    
+    public String getTip(ReportRequest rrequest)
+    {
+        if(this.tip!=null&&!this.tip.trim().equals(""))
+        {
+            return rrequest.getI18NStringValue(this.tip);
         }
         return "";
     }
@@ -448,60 +485,36 @@ public abstract class AbsInputBox implements Cloneable
         return displayon;
     }
 
-    public Object clone(IInputBoxOwnerBean owner)
-    {
-        try
-        {
-            AbsInputBox inputBoxNew=(AbsInputBox)super.clone();
-            inputBoxNew.setOwner(owner);
-            if(this.autocompleteBean!=null)
-            {
-                inputBoxNew.setAutocompleteBean(autocompleteBean.clone());
-                owner.getReportBean().addInputboxWithAutoComplete(inputBoxNew);
-            }
-            return inputBoxNew;
-        }catch(CloneNotSupportedException e)
-        {
-            throw new WabacusConfigLoadingException("clone输入框对象失败",e);
-        }
-    }
-
     public void loadInputBoxConfig(IInputBoxOwnerBean ownerbean,XmlElementBean eleInputboxBean)
     {
         this.owner=ownerbean;
         if(eleInputboxBean==null) return;
-        if(ownerbean instanceof EditableReportColBean)
+        XmlElementBean eleAutocompleteBean=eleInputboxBean.getChildElementByName("autocomplete");
+        if(eleAutocompleteBean!=null)
         {
-            String autocomplete=eleInputboxBean.attributeValue("autocomplete");
-            if(autocomplete!=null&&!autocomplete.trim().equals(""))
-            {//为此输入框配置了输入数据时自动填充其它列数据的功能
-                List<String> lstTmp=Tools.parseStringToList(autocomplete,";",false);
-                if(lstTmp.size()>0)
-                {
-                    this.autocompleteBean=new AutoCompleteConfigBean();
-                    this.autocompleteBean.setUlstCompleteColumns(lstTmp);
-                    String autocompletecondition=eleInputboxBean.attributeValue("autocompletecondition");
-                    if(autocompletecondition!=null&&!autocompletecondition.trim().equals(""))
-                    {
-                        this.autocompleteBean.setColConditionExpression(autocompletecondition.trim());
-                    }
-                    String autocompleteconditionref=eleInputboxBean.attributeValue("autocompleteconditionref");
-                    if(autocompleteconditionref!=null&&!autocompleteconditionref.trim().equals(""))
-                    {
-                        this.autocompleteBean.setUlstRefConditionNames(Tools.parseStringToList(autocompleteconditionref.trim(),";",false));
-                    }
-                    String autocompletemultiple=eleInputboxBean.attributeValue("autocompletemultiple");
-                    this.autocompleteBean.setEnableMultipleRecords(autocompletemultiple==null
-                            ||!autocompletemultiple.toLowerCase().trim().equals("false"));
-                    String autocompletesql=eleInputboxBean.attributeValue("autocompletesql");
-                    if(autocompletesql!=null) this.autocompleteBean.setAutocompletesql(autocompletesql.trim());
-                }
+            if(ownerbean instanceof EditableReportColBean)
+            {
+                this.autoCompleteBean=new AutoCompleteBean(this);
+                this.autoCompleteBean.loadConfig(eleAutocompleteBean);
+            }else
+            {//是查询条件上的自动填充输入框，则不用加载<autocomplete/>里面的配置，只要生成一个此对象标识一下有这个功能
+                
             }
         }
-        String description=eleInputboxBean.attributeValue("description");
-        if(description!=null)
+        String beforedescription=eleInputboxBean.attributeValue("beforedescription");
+        if(beforedescription!=null)
         {
-            this.description=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),description,true);
+            this.beforedescription=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),beforedescription,true);
+        }
+        String afterdescription=eleInputboxBean.attributeValue("afterdescription");
+        if(afterdescription!=null)
+        {
+            this.afterdescription=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),afterdescription,true);
+        }
+        String tip=eleInputboxBean.attributeValue("tip");
+        if(tip!=null)
+        {
+            this.tip=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),tip,true);
         }
         styleproperty=eleInputboxBean.attributeValue("styleproperty");
         styleproperty=styleproperty==null?"":Tools.formatStringBlank(styleproperty.trim());
@@ -528,7 +541,7 @@ public abstract class AbsInputBox implements Cloneable
                 {
                     finalmethodname=methodname.substring(0,lidx);
                     errormsg=methodname.substring(lidx+1,ridx).trim();
-                    //System.out.println(errormsg);
+                    
                     errormsg=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),errormsg,true);
                 }
                 if(finalmethodname==null||finalmethodname.trim().equals("")) continue;
@@ -610,8 +623,8 @@ public abstract class AbsInputBox implements Cloneable
 
         processRelativeInputBoxes();
 
-        if(this.autocompleteBean!=null) this.autocompleteBean.doPostLoad(this);
-        if(this.autocompleteBean!=null)
+        if(this.autoCompleteBean!=null) this.autoCompleteBean.doPostLoad();
+        if(this.autoCompleteBean!=null)
         {
             owner.getReportBean().addInputboxWithAutoComplete(this);
             ColBean cbOwner=(ColBean)((EditableReportColBean)owner).getOwner();
@@ -619,13 +632,24 @@ public abstract class AbsInputBox implements Cloneable
                     "onfocus=\"autoComplete_oldData=getInputBoxValue(this.getAttribute('id'),this.getAttribute('typename'));\"",1);
             StringBuffer blurEventBuf=new StringBuffer();
             blurEventBuf.append("loadAutoCompleteInputboxData(");
-            blurEventBuf.append("'").append(owner.getReportBean().getPageBean().getId()).append("','").append(owner.getReportBean().getId()).append(
-                    "',");
-            blurEventBuf.append("this.getAttribute('id'),'").append(cbOwner.getProperty()).append("','");
-            for(String colPropTmp:this.autocompleteBean.getLstColPropertiesInCondition())
+            blurEventBuf.append("'").append(owner.getReportBean().getPageBean().getId()).append("'");
+            blurEventBuf.append(",'").append(owner.getReportBean().getId()).append("'");
+            blurEventBuf.append(",this.getAttribute('id'),'").append(cbOwner.getProperty()).append("'");
+            if(cbOwner.getUpdateColBeanDest(false)!=null)
             {
-                if(colPropTmp==null||colPropTmp.trim().equals("")) continue;
-                blurEventBuf.append(colPropTmp).append(";");
+                blurEventBuf.append(",'").append(cbOwner.getUpdateColBeanDest(false).getProperty()).append("'");
+            }else
+            {
+                blurEventBuf.append(",''");
+            }
+            blurEventBuf.append(",'");
+            if(this.autoCompleteBean.getLstColPropertiesInColvalueConditions()!=null)
+            {
+                for(String colPropTmp:this.autoCompleteBean.getLstColPropertiesInColvalueConditions())
+                {
+                    if(colPropTmp==null||colPropTmp.trim().equals("")) continue;
+                    blurEventBuf.append(colPropTmp).append(";");
+                }
             }
             blurEventBuf.append("');");
             styleproperty=Tools.mergeHtmlTagPropertyString(styleproperty,"onblur=\"try{"+blurEventBuf.toString()
@@ -637,17 +661,27 @@ public abstract class AbsInputBox implements Cloneable
         {
             processStylePropertyForFillInContainer();
         }
-
+        if(this.owner instanceof EditableReportColBean&&this.displayon!=null)
+        {
+            if(this.displayon.indexOf("insert")>=0&&((EditableReportColBean)this.owner).getEditableWhenInsert()<=0)
+            {
+                ((EditableReportColBean)this.owner).setEditableWhenInsert(1);
+            }
+            if(this.displayon.indexOf("update")>=0&&((EditableReportColBean)this.owner).getEditableWhenUpdate()<=0)
+            {
+                ((EditableReportColBean)this.owner).setEditableWhenUpdate(1);
+            }
+        }
     }
 
     protected void processRelativeInputBoxes()
     {
-        if(this.lstChildids==null||this.lstChildids.size()==0) return;
+        if(this.lstChildids==null||this.lstChildids.size()==0) return;//如果没有依赖此输入框的子下拉框
         ReportBean rbean=this.owner.getReportBean();
         if(this.displaymode==1)
-        {//主输入框数据有变时，立即刷新子下拉框选项数据
+        {
             StringBuffer childidAndParamsBuf=new StringBuffer("{");
-            SelectBox childBoxObjTmp;
+            AbsSelectBox childBoxObjTmp;
             boolean isConditionBox=this.owner instanceof ConditionBean;
             for(String childidTmp:this.lstChildids)
             {
@@ -692,6 +726,20 @@ public abstract class AbsInputBox implements Cloneable
 
     protected void processStylePropertyAfterMerged(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
     {
+        addJsValidateOnBlurEvent(reportTypeObj,ownerbean);
+        if(this.tip!=null&&!this.tip.trim().equals(""))
+        {
+            this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,"title=\""+this.tip+"\"",1);
+        }
+        if(!(this.owner instanceof ConditionBean))
+        {
+            this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,"onblur=\"try{addInputboxDataForSaving('"
+                    +this.getOwner().getReportBean().getGuid()+"',this);}catch(e){logErrorsAsJsFileLoad(e);}\"",1);
+        }
+    }
+    
+    protected void addJsValidateOnBlurEvent(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
+    {
         if(isJsValidateOnBlur())
         {
             this.styleproperty=Tools
@@ -701,7 +749,8 @@ public abstract class AbsInputBox implements Cloneable
                             1);
         }
     }
-
+    
+    
     protected void processStylePropertyForFillInContainer()
     {
         this.mStyleProperties2=new HashMap<String,String>();
@@ -715,5 +764,28 @@ public abstract class AbsInputBox implements Cloneable
         String style=Tools.getPropertyValueByName("style",this.styleproperty,false);
         if(style!=null&&!style.trim().equals("")) this.mStyleProperties2.put("style",style);
         this.styleproperty2=Tools.removePropertyValueByName("style",this.styleproperty2);
+    }
+    
+    protected Object clone() throws CloneNotSupportedException
+    {
+        return super.clone();
+    }
+
+    public Object clone(IInputBoxOwnerBean owner)
+    {
+        try
+        {
+            AbsInputBox inputBoxNew=(AbsInputBox)clone();
+            inputBoxNew.setOwner(owner);
+            if(this.autoCompleteBean!=null)
+            {
+                inputBoxNew.setAutoCompleteBean(this.autoCompleteBean.clone(inputBoxNew));
+                owner.getReportBean().addInputboxWithAutoComplete(inputBoxNew);
+            }
+            return inputBoxNew;
+        }catch(CloneNotSupportedException e)
+        {
+            throw new WabacusConfigLoadingException("clone输入框对象失败",e);
+        }
     }
 }

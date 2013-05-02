@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -31,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
@@ -41,10 +42,19 @@ public abstract class AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(AbsDatabaseType.class);
 
-    public abstract String constructSplitPageSql(SqlBean sbean);
+    public abstract String constructSplitPageSql(ReportDataSetBean svbean);
 
-    public abstract String constructSplitPageSql(SqlBean sbean,String dynorderby);
+    public abstract String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby);
 
+    public abstract String getSequenceValueByName(String sequencename);
+    
+    public abstract String getSequenceValueSql(String sequencename);
+    
+    public String getLowerMethodname()
+    {
+        return "lower";
+    }
+    
     public String getClobValue(ResultSet rs,String column) throws SQLException
     {
         return rs.getString(column);

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -36,7 +36,7 @@ public class EditableReportColDataBean
 
     private String encodeDefaultvalue;
 
-    private String defaultvaluelabel;
+    
 
     private boolean isEditable;
 
@@ -92,15 +92,15 @@ public class EditableReportColDataBean
         this.encodeDefaultvalue=encodeDefaultvalue;
     }
 
-    public String getDefaultvaluelabel()
-    {
-        return defaultvaluelabel;
-    }
 
-    public void setDefaultvaluelabel(String defaultvaluelabel)
-    {
-        this.defaultvaluelabel=defaultvaluelabel;
-    }
+
+
+
+
+
+
+
+//    }
 
     public boolean isEditable()
     {
@@ -175,7 +175,7 @@ public class EditableReportColDataBean
         this.oldvalue=oldvalue;
     }
 
-    public static EditableReportColDataBean createInstance(ReportRequest rrequest,CacheDataBean cdb,EditableReportUpdateDataBean updatebean,
+    public static EditableReportColDataBean createInstance(ReportRequest rrequest,CacheDataBean cdb,AbsEditableReportEditDataBean editbean,
             ColBean cbean,String col_editvalue,EditableReportSecretColValueBean currentSecretColValuesBean)
     {
         EditableReportColDataBean ercdbean=new EditableReportColDataBean();
@@ -188,35 +188,43 @@ public class EditableReportColDataBean
             ercdbean.setNeedEncode(true);
             currentSecretColValuesBean.addParamValue(ercdbean.getEncodeEditvalue(),col_editvalue);
         }
-        EditableReportColBean ercbean=(EditableReportColBean)cbean.getExtendConfigDataForReportType(EditableReportColBean.class);
-        if(ercbean==null||Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())||cbean.isSequenceCol()||cbean.isControlCol())
+        ColBean cbeanUpdateSrc=cbean.getUpdateColBeanSrc(false);
+        if(cbeanUpdateSrc==null) cbeanUpdateSrc=cbean;
+        EditableReportColBean ercbeanSrc=(EditableReportColBean)cbeanUpdateSrc.getExtendConfigDataForReportType(EditableReportColBean.class);
+        if(ercbeanSrc==null||cbean.isSequenceCol()||cbean.isControlCol()
+                ||(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())&&cbean.getUpdateColBeanSrc(false)==null))
         {
             return formatInstance(cbean,ercdbean);
         }
-        if(updatebean!=null)
+        if(editbean!=null)
         {
-            if(updatebean.getEdittype()==EditableReportUpdateDataBean.EDITTYPE_INSERT)
+            if(editbean instanceof EditableReportInsertDataBean)
             {
-                ercdbean.setEditable(ercbean.isEditableForInsert());
-            }else if(updatebean.getEdittype()==EditableReportUpdateDataBean.EDITTYPE_UPDATE)
+                ercdbean.setEditable(ercbeanSrc.isEditableForInsert());
+            }else if(editbean instanceof EditableReportUpdateDataBean)
             {
-                ercdbean.setEditable(ercbean.isEditableForUpdate());
+                ercdbean.setEditable(ercbeanSrc.isEditableForUpdate());
             }
         }
         if(displaymode<0) return formatInstance(cbean,ercdbean);
         if((col_editvalue==null||col_editvalue.trim().equals(""))&&ercdbean.isEditable())
         {
-            String defaultvalue=ercbean.getInputbox().getDefaultvalue(rrequest);
+            String defaultvalue=ercbeanSrc.getInputbox().getDefaultvalue(rrequest);
             if(defaultvalue!=null&&!defaultvalue.equals(""))
-            {//为其输入框配置了默认值，则用默认值
-                ercdbean.setDefaultvalue(defaultvalue);
-                ercdbean.setDefaultvaluelabel(ercbean.getInputbox().getDefaultlabel(rrequest));
+            {
+                if(cbean.getUpdateColBeanDest(false)!=null)
+                {
+                    ercdbean.setDefaultvalue(ercbeanSrc.getInputbox().getDefaultlabel(rrequest));   
+                }else
+                {
+                    ercdbean.setDefaultvalue(defaultvalue);
+                }
                 ercdbean.setNeedDefaultValue(true);
             }
         }
-        if(ercdbean.isEditable()&&ercbean.getInputbox() instanceof PasswordBox)
+        if(ercdbean.isEditable()&&ercbeanSrc.getInputbox() instanceof PasswordBox)
         {
-            int encodelength=((PasswordBox)ercbean.getInputbox()).getEncodelength();
+            int encodelength=((PasswordBox)ercbeanSrc.getInputbox()).getEncodelength();
             if(encodelength>0)
             {
                 String encodevalue=currentSecretColValuesBean.getUniqueEncodeString(encodelength);
@@ -240,8 +248,8 @@ public class EditableReportColDataBean
     {
         String value_name=EditableReportAssistant.getInstance().getColParamName(cbean);
         if(ercdbean.isNeedEncode())
-        {
-            ercdbean.setValuename(Consts_Private.COL_NONDISPLAY_PERMISSION_PREX+value_name);//这里要加上前缀标识
+        {//当前列数据需要编码显示
+            ercdbean.setValuename(Consts_Private.COL_NONDISPLAY_PERMISSION_PREX+value_name);
             ercdbean.setOldvalue(ercdbean.getEncodeEditvalue());
         }else
         {

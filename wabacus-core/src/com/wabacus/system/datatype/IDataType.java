@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -31,14 +31,11 @@ import com.wabacus.config.database.type.AbsDatabaseType;
 
 public interface IDataType extends Cloneable
 {
-    public void setPreparedStatementValue(int iindex,String value,PreparedStatement pstmt,
-            AbsDatabaseType dbtype) throws SQLException;
+    public void setPreparedStatementValue(int iindex,String value,PreparedStatement pstmt,AbsDatabaseType dbtype) throws SQLException;
 
-    public Object getColumnValue(ResultSet rs,String column,AbsDatabaseType dbtype)
-            throws SQLException;
+    public Object getColumnValue(ResultSet rs,String column,AbsDatabaseType dbtype) throws SQLException;
 
-    public Object getColumnValue(ResultSet rs,int iindex,AbsDatabaseType dbtype)
-            throws SQLException;
+    public Object getColumnValue(ResultSet rs,int iindex,AbsDatabaseType dbtype) throws SQLException;
 
     public Object label2value(String label);
 

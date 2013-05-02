@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2010---2012 星星(wuweixing)<349446658@qq.com>
+ * Copyright (C) 2010---2013 星星(wuweixing)<349446658@qq.com>
  * 
  * This file is part of Wabacus 
  * 
@@ -65,7 +65,7 @@ public class Panel extends AbsPanelType
     {
         PanelBean panelbean=(PanelBean)super.loadConfig(eleContainer,parent,tagname);
         if(panelbean.getLstChildrenIDs().size()>1)
-        {//如果配置有多个子元素
+        {
             List<String> lstChildrenIds=new ArrayList<String>();
             lstChildrenIds.add(panelbean.getLstChildrenIDs().get(0));
             for(int i=1;i<panelbean.getLstChildrenIDs().size();i++)
