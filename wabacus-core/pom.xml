@@ -23,8 +23,10 @@
 		</license>
 	</licenses>
 	<scm>
-		<url>http://wabacus.googlecode.com/svn</url>
-		<connection>https://wabacus.googlecode.com/svn</connection>
+		<connection>scm:svn:http://wabacus.googlecode.com/svn/</connection>
+		<developerConnection>scm:svn:https://wabacus.googlecode.com/svn/</developerConnection>
+		<url>http://wabacus.googlecode.com/svn/</url>
+
 	</scm>
 	<developers>
 		<developer>
@@ -226,6 +228,23 @@
 		</resources>
 
 		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
@@ -240,7 +259,20 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
-
 	</build>
 </project>
