@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -46,7 +45,7 @@ import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.FormatBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.SqlBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -2000,8 +1999,13 @@ public abstract class AbsListReportType extends AbsReportType
     public int doPostLoad(ReportBean reportbean)
     {
         super.doPostLoad(reportbean);
-        constructSqlForListType(reportbean.getSbean());
+        final AbsDatabaseType dbtype=Config.getInstance().getDataSource(  reportbean.getSbean().getDatasource()).getDbType();
+        dbtype.constructSqlForListType(reportbean.getSbean());
         AbsListReportBean alrbean=(AbsListReportBean)reportbean.getExtendConfigDataForReportType(KEY);
+        
+        
+      
+        
         if(alrbean==null) return 1;
         processFixedColsAndRows(reportbean);
         processReportScrollConfig(reportbean);
@@ -2018,119 +2022,7 @@ public abstract class AbsListReportType extends AbsReportType
         return 1;
     }
 
-    private void constructSqlForListType(SqlBean sqlbean)
-    {
-        if(sqlbean==null||sqlbean.getLstDatasetBeans()==null) return;
-        AbsListReportDisplayBean alrdbean=(AbsListReportDisplayBean)sqlbean.getReportBean().getDbean().getExtendConfigDataForReportType(
-                AbsListReportType.KEY);
-        boolean isMatchedRowGroupColAndDataset=false;
-        for(ReportDataSetBean datasetbeanTmp:sqlbean.getLstDatasetBeans())
-        {
-            String value=datasetbeanTmp.getValue();
-            if(value==null||value.trim().equals("")||datasetbeanTmp.isStoreProcedure()||datasetbeanTmp.getCustomizeDatasetObj()!=null) continue;
-            datasetbeanTmp.doPostLoadSql(true);
-            if(alrdbean!=null&&alrdbean.getRowGroupColsNum()>0&&datasetbeanTmp.isMatchDatasetid(alrdbean.getRowgroupDatasetId()))
-            {
-                if(isMatchedRowGroupColAndDataset)
-                {
-                    throw new WabacusConfigLoadingException("报表"+sqlbean.getReportBean().getPath()+"配置了多个独立数据集，必须为其行分组列指定来自哪个数据集");
-                }
-                isMatchedRowGroupColAndDataset=true;
-                List<String> lstColsColumnInRowGroup=alrdbean.getLstRowgroupColsColumn();
-                if(lstColsColumnInRowGroup!=null&&lstColsColumnInRowGroup.size()>0)
-                {
-                    List<Map<String,String>> lstRowgroupColsAndOrders=new ArrayList<Map<String,String>>();
-                    alrdbean.setLstRowgroupColsAndOrders(lstRowgroupColsAndOrders);
-                    if(datasetbeanTmp.getSqlWithoutOrderby().indexOf("%orderby%")<0)
-                    {
-                        datasetbeanTmp.setSqlWithoutOrderby(datasetbeanTmp.getSqlWithoutOrderby()+" %orderby%");
-                        StringBuffer orderbybuf=new StringBuffer();
-                        for(String column:lstColsColumnInRowGroup)
-                        {
-                            if(column==null) continue;
-                            orderbybuf.append(column).append(",");
-                            Map<String,String> mColAndOrders=new HashMap<String,String>();
-                            mColAndOrders.put(column,"asc");//默认都为升序排序
-                            lstRowgroupColsAndOrders.add(mColAndOrders);
-                        }
-                        if(orderbybuf.charAt(orderbybuf.length()-1)==',')
-                        {
-                            orderbybuf.deleteCharAt(orderbybuf.length()-1);
-                        }
-                        datasetbeanTmp.setOrderby(orderbybuf.toString());
-                    }else
-                    {
-                        addRowGroupColumnToOrderByClause(datasetbeanTmp,lstColsColumnInRowGroup,lstRowgroupColsAndOrders);
-                    }
-                }
-            }
-            if(datasetbeanTmp.isIndependentDataSet()) datasetbeanTmp.buildPageSplitSql();
-        }
-    }
-
-    private void addRowGroupColumnToOrderByClause(ReportDataSetBean svbean,List<String> lstColsColumnInRowGroup,
-            List<Map<String,String>> lstRowgroupColsAndOrders)
-    {
-        String oldorderby=svbean.getOrderby();
-        List<String> lstOrderByColumns=Tools.parseStringToList(oldorderby,",");
-        List<Map<String,String>> lstOldOrderByColumns=new ArrayList<Map<String,String>>();
-        for(String orderby_tmp:lstOrderByColumns)
-        {
-            if(orderby_tmp==null||orderby_tmp.trim().equals("")) continue;
-            orderby_tmp=orderby_tmp.trim();
-            List<String> lstTemp=Tools.parseStringToList(orderby_tmp," ");
-            Map<String,String> mOldOrderBy=new HashMap<String,String>();
-            lstOldOrderByColumns.add(mOldOrderBy);
-            if(lstTemp.size()==1)
-            {
-                mOldOrderBy.put(lstTemp.get(0),"asc");
-            }else if(lstTemp.size()==2)
-            {
-                mOldOrderBy.put(lstTemp.get(0),lstTemp.get(1).trim().toLowerCase());
-            }else
-            {
-                throw new WabacusConfigLoadingException("报表"+svbean.getReportBean().getPath()+"配置的SQL语句中order by子句"+svbean.getOrderby()+"不合法");
-            }
-        }
-        StringBuffer orderBuf=new StringBuffer();
-        for(String rowgroupCol:lstColsColumnInRowGroup)
-        {
-            if(rowgroupCol==null) continue;
-            Map<String,String> mColAndOrders=new HashMap<String,String>();
-            lstRowgroupColsAndOrders.add(mColAndOrders);
-            Map<String,String> mTemp=null;
-            for(Map<String,String> mTemp2:lstOldOrderByColumns)
-            {
-                if(mTemp2.containsKey(rowgroupCol))
-                {
-                    mTemp=mTemp2;
-                    lstOldOrderByColumns.remove(mTemp2);
-                    break;
-                }
-            }
-            if(mTemp!=null)
-            {
-                orderBuf.append(rowgroupCol).append(" ").append(mTemp.get(rowgroupCol)).append(",");
-                mColAndOrders.put(rowgroupCol,mTemp.get(rowgroupCol));
-            }else
-            {
-                orderBuf.append(rowgroupCol).append(",");
-                mColAndOrders.put(rowgroupCol,"asc");
-            }
-        }
-        
-        for(Map<String,String> mTemp:lstOldOrderByColumns)
-        {
-            Entry<String,String> entry=mTemp.entrySet().iterator().next();
-            orderBuf.append(entry.getKey()).append(" ").append(entry.getValue()).append(",");
-        }
-        if(orderBuf.charAt(orderBuf.length()-1)==',')
-        {
-            orderBuf.deleteCharAt(orderBuf.length()-1);
-        }
-        svbean.setOrderby(orderBuf.toString());
-    }
-
+ 
     protected void processFixedColsAndRows(ReportBean reportbean)
     {
         AbsListReportBean alrbean=(AbsListReportBean)reportbean.getExtendConfigDataForReportType(KEY);

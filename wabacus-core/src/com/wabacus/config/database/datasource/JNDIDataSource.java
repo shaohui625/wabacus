@@ -32,7 +32,7 @@ import org.dom4j.Element;
 
 import com.wabacus.exception.WabacusConfigLoadingException;
 
-public class JNDIDataSource extends AbsDataSource
+public class JNDIDataSource extends AbstractJdbcDataSource
 {
     private static Log log=LogFactory.getLog(JNDIDataSource.class);
 
@@ -50,7 +50,7 @@ public class JNDIDataSource extends AbsDataSource
         this.jndi=jndi;
     }
 
-    public Connection getConnection()
+    public Connection getNativeConnection()
     {
         Connection conn=null;
         try

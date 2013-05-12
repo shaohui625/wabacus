@@ -18,9 +18,6 @@
  */
 package com.wabacus.system.component.application.report.configbean.editablereport;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +29,10 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
-import com.wabacus.config.database.type.Oracle;
+import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
-import com.wabacus.system.datatype.BlobType;
-import com.wabacus.system.datatype.ClobType;
 import com.wabacus.util.Tools;
 import com.wabacus.util.UUIDGenerator;
 
@@ -86,7 +81,7 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
         this.returnValueParamname=returnValueParamname;
     }
 
-    protected String parseAndRemoveReturnParamname(String configsql)
+    public String parseAndRemoveReturnParamname(String configsql)
     {
         if(configsql==null||configsql.trim().equals("")) return configsql;
         int idx=configsql.indexOf("=");
@@ -148,69 +143,11 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
             Map<String,String> mParamValues) throws SQLException
     {
         AbsDatabaseType dbtype=rrequest.getDbType(this.ownerGroupBean.getDatasource());
-        Connection conn=rrequest.getConnection(this.ownerGroupBean.getDatasource());
-        Oracle oracleType=null;
-        PreparedStatement pstmt=null;
-        try
-        {
-            if(Config.show_sql) log.info("Execute sql:"+sql);
-            pstmt=conn.prepareStatement(sql);
-            if(sql.trim().toLowerCase().startsWith("select ")&&(dbtype instanceof Oracle))
-            {
-                oracleType=(Oracle)dbtype;
-                if(lstParamBeans!=null&&lstParamBeans.size()>0)
-                {
-                    int colidx=1;
-                    for(EditableReportParamBean paramBean:lstParamBeans)
-                    {
-                        if((paramBean.getDataTypeObj() instanceof ClobType)||(paramBean.getDataTypeObj() instanceof BlobType)) continue;
-                        paramBean.getDataTypeObj().setPreparedStatementValue(colidx++,
-                                getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean),pstmt,dbtype);
-                    }
-                }
-                ResultSet rs=pstmt.executeQuery();
-                while(rs.next())
-                {
-                    if(lstParamBeans!=null&&lstParamBeans.size()>0)
-                    {
-                        int colidx=1;
-                        for(EditableReportParamBean paramBean:lstParamBeans)
-                        {
-                            if(!(paramBean.getDataTypeObj() instanceof ClobType)&&!(paramBean.getDataTypeObj() instanceof BlobType)) continue;
-                            String paramvalue=getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean);
-                            if(paramBean.getDataTypeObj() instanceof ClobType)
-                            {
-                                oracleType.setClobValueInSelectMode(paramvalue,(oracle.sql.CLOB)rs.getClob(colidx++));
-                            }else
-                            {
-                                oracleType.setBlobValueInSelectMode(paramBean.getDataTypeObj().label2value(paramvalue),(oracle.sql.BLOB)rs
-                                        .getBlob(colidx++));
-                            }
-                        }
-                    }
-                }
-                rs.close();
-            }else
-            {
-                if(lstParamBeans!=null&&lstParamBeans.size()>0)
-                {
-                    int idx=1;
-                    for(EditableReportParamBean paramBean:lstParamBeans)
-                    {
-                        paramBean.getDataTypeObj().setPreparedStatementValue(idx++,
-                                getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean),pstmt,dbtype);
-                    }
-                }
-                int rtnVal=pstmt.executeUpdate();
-                storeReturnValue(rrequest,mParamValues,String.valueOf(rtnVal));
-            }
-        }finally
-        {
-            WabacusAssistant.getInstance().release(null,pstmt);
-        }
+        IConnection conn = rrequest.getIConnection(this.ownerGroupBean.getDatasource());
+        dbtype.updateDBData(mRowData,mParamValues,conn,rbean,rrequest,this);
     }
 
-    protected String getParamValue(Map<String,String> mRowData,Map<String,String> mParamValues,ReportBean rbean,ReportRequest rrequest,
+    public String getParamValue(Map<String,String> mRowData,Map<String,String> mParamValues,ReportBean rbean,ReportRequest rrequest,
             EditableReportParamBean paramBean)
     {
         String paramvalue=null;
@@ -255,7 +192,7 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
         return paramvalue;
     }
 
-    protected void storeReturnValue(ReportRequest rrequest,Map<String,String> mExternalParamsValue,String rtnVal)
+    public void storeReturnValue(ReportRequest rrequest,Map<String,String> mExternalParamsValue,String rtnVal)
     {
         if(this.returnValueParamname==null||this.returnValueParamname.trim().equals("")) return;
         if(Tools.isDefineKey("#",this.returnValueParamname))

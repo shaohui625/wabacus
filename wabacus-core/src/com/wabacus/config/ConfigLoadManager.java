@@ -166,6 +166,7 @@ public class ConfigLoadManager
 
                         rbTemp.setEleReportBean(null);
                         rbTemp.getParentContainer().getMChildren().put(rbTemp.getId(),rbTemp);
+                        
                         ComponentConfigLoadManager.loadReportInfo(rbTemp,eleReportBean,rbeanParent);
                     }
                     if(lstTemp.size()==lstExtendReports.size())
@@ -490,7 +491,7 @@ public class ConfigLoadManager
             scriptBuf.append("   var boxValue=updateDestTdObj.getAttribute('value');");
             scriptBuf.append("   if(boxValue==null){");
             scriptBuf.append("      boxValue='';");
-            scriptBuf.append("   }else{");
+            scriptBuf.append("   }else if (type != 'textareabox') {");
             scriptBuf.append("      boxValue=boxValue.replace(/</g,'&lt;');boxValue=boxValue.replace(/>/g,'&gt;');boxValue=boxValue.replace(/\\\'/g,'&#039;');boxValue=boxValue.replace(/\\\"/g,'&quot;');");
             scriptBuf.append("   }var boxId=name;if(boxId.lastIndexOf('__')>0) boxId=boxId.substring(0,boxId.lastIndexOf('__'));");
             scriptBuf.append("   var inputboxSpanObj=document.getElementById('span_'+boxId+'_span');");

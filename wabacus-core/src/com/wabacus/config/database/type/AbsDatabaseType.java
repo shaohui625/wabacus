@@ -25,16 +25,24 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.system.IConnection;
+import com.wabacus.system.ReportRequest;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.DeleteSqlActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
+import com.wabacus.system.dataset.ISqlDataSetBuilder;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.util.Tools;
 
@@ -164,6 +172,9 @@ public abstract class AbsDatabaseType
 
     public abstract IDataType getWabacusDataTypeByColumnType(String columntype);
 
+    public abstract String parseDeleteSql(DeleteSqlActionBean actionBean,String reportTypeKey,String actionscript);
+
+    
     /*
         public void setPreparedStatementValue(int iindex,Object value,int type,PreparedStatement pstmt)
                 throws SQLException
@@ -301,4 +312,37 @@ public abstract class AbsDatabaseType
                     pstmt.setString(iindex,str2);
             }
         }*/
+
+    public abstract String getSequnceValue(IConnection conn,String seqname) throws SQLException;
+
+
+    public  abstract void updateDBData(Map<String,String> mParamsValue,Map<String,String> mExternalParamsValue,IConnection conn,ReportBean rbean,
+            ReportRequest rrequest,AbsEditSqlActionBean actionBean) throws SQLException;
+
+
+     public abstract ISqlDataSetBuilder getISQLTypeBuilder(ReportDataSetBean bean,String statementtype);
+
+     public abstract void parseConditionInSql(ReportDataSetBean bean,String value);
+
+
+     public abstract void doPostLoadSql(ReportDataSetBean rdsbean,boolean isListReportType);
+
+    /**
+     *    <UL>
+     *    <LI>sqlbean.doPostLoadSql(true);</LI>
+     *    <LI>orderby</LI>
+     *    <LI>  sqlbean.buildPageSplitSql();//生成分页显示的SQL语句</LI>
+     */
+     public abstract void constructSqlForListType(SqlBean sqlbean);
+
+
+  //  public abstract void parseUpdateAction(SqlBean sqlbean,String reportTypeKey,String sqls,EditableReportUpdateDataBean databean);
+    
+     
+    public abstract void parseActionscripts(EditActionGroupBean eagbean,String reportTypeKey);
+    public void doConditionBeanPostLoad(ConditionBean cdbean){
+        cdbean.doPostLoad();
+    }      
+ 
+
 }

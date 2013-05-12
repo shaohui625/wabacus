@@ -18,7 +18,6 @@
  */
 package com.wabacus.system.assistant;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -42,6 +41,8 @@ import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.exception.WabacusRuntimeWarningException;
 import com.wabacus.system.CacheDataBean;
+import com.wabacus.system.IConnection;
+import com.wabacus.system.JdbcConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.IEditableReportType;
@@ -550,6 +551,7 @@ public class EditableReportAssistant
             AbsEditableReportEditDataBean editbean)
     {
         boolean hasSaveData=false, hasNonRefreshReport=false;
+        
         for(EditActionGroupBean actionGroupBean:editbean.getLstEditActionGroupBeans())
         {
             for(AbsEditActionBean actionBeanTmp:actionGroupBean.getLstEditActionBeans())
@@ -595,7 +597,7 @@ public class EditableReportAssistant
         {
             Map<String,String> mCustomizedValues=rrequest.getMCustomizeEditData(rbean);
             Map<String,String> mExternalValue;
-            Connection conn=rrequest.getConnection(rbean.getSbean().getDatasource());
+            IConnection conn=rrequest.getIConnection(rbean.getSbean().getDatasource());
             AbsDatabaseType dbtype=rrequest.getDbType(rbean.getSbean().getDatasource());
             for(Map<String,String> mColParamsValue:lstColParamsValue)
             {//保存的每一条记录都要计算一次与它相应的所有在<params/>中定义的参数值。
@@ -632,15 +634,13 @@ public class EditableReportAssistant
                         }
                     }else if(Tools.isDefineKey("sequence",valuebean.getValue()))
                     {
-                        Statement stmt=conn.createStatement();
-                        ResultSet rs=stmt.executeQuery(dbtype.getSequenceValueSql(Tools.getRealKeyByDefine("sequence",valuebean.getValue())));
-                        rs.next();
-                        mExternalValue.put(valuebean.getName(),String.valueOf(rs.getInt(1)));
-                        rs.close();
-                        stmt.close();
+                    
+                        //不同数据库获取sequence方式是不同的,此处应用改为AbsDatabaseType中获取
+                        final String seqVal= dbtype.getSequnceValue(conn,valuebean.getValue());
+                        mExternalValue.put(valuebean.getName(),seqVal);
                     }else if(valuebean.getValue().toLowerCase().trim().startsWith("select ")&&valuebean.getLstParamsBean()!=null)
                     {//查询其它表的某个字段的值
-                        PreparedStatement pstmtTemp=conn.prepareStatement(valuebean.getValue());
+                        PreparedStatement pstmtTemp=((JdbcConnection)conn).getNativeConnection().prepareStatement(valuebean.getValue());
                         if(valuebean.getLstParamsBean().size()>0)
                         {
                             int j=1;
