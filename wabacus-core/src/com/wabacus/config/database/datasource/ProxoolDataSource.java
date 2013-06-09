@@ -47,7 +47,7 @@ import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.util.DesEncryptTools;
 import com.wabacus.util.Tools;
 
-public class ProxoolDataSource extends AbsDataSource
+public class ProxoolDataSource extends AbstractJdbcDataSource
 {
     private static Log log=LogFactory.getLog(ProxoolDataSource.class);
 
@@ -65,7 +65,7 @@ public class ProxoolDataSource extends AbsDataSource
         this.alias=alias;
     }
 
-    public Connection getConnection()
+    public Connection getNativeConnection()
     {
         try
         {
@@ -81,7 +81,7 @@ public class ProxoolDataSource extends AbsDataSource
     {
         throw new WabacusRuntimeException("不能从ProxoolDataSource数据源类型中获取javax.sql.DataSource对象");
     }
-    
+
     public void closePool()
     {
         super.closePool();

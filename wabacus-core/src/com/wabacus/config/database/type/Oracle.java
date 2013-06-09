@@ -65,7 +65,7 @@ import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
-public class Oracle extends AbsDatabaseType
+public class Oracle extends AbstractJdbcDatabaseType
 {
     private final static Log log=LogFactory.getLog(Oracle.class);
 

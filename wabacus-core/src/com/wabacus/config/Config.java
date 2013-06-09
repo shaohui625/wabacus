@@ -19,6 +19,7 @@
 package com.wabacus.config;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -225,8 +226,21 @@ public class Config
         }
         dataexport_batch_count=Integer.MIN_VALUE;
         dataexport_plainexcel_sheetsize=Integer.MIN_VALUE;
+        
+  
     }
     
+    private PropertyOverrideLoader propertyOverrideLoader;
+    
+    
+    public PropertyOverrideLoader getPropertyOverrideLoader()
+    {
+        if( null == propertyOverrideLoader ){
+            propertyOverrideLoader = PropertyOverrideLoaderDefault.createPropertyOverrideLoader("wabacusPropertyOverrideLoader"); 
+        }
+        return propertyOverrideLoader;
+    }
+
     public Object getResourceObject(ReportRequest rrequest,PageBean pbean,String key,boolean ismust)
     {
         if(key==null) return null;
@@ -286,6 +300,10 @@ public class Config
     void setMSystemConfig(Map<String,String> systemConfig)
     {
         mSystemConfig=systemConfig;
+        
+        final String defaultLoader=systemConfig.get("wabacusPropertyOverrideLoader");
+        propertyOverrideLoader =  PropertyOverrideLoaderDefault.createPropertyOverrideLoader("wabacusPropertyOverrideLoader",defaultLoader); 
+        
     }
 
     public Map<String,List<AbsDataImportConfigBean>> getMAutoDetectedDataImportBeans()
@@ -386,11 +404,14 @@ public class Config
 
     private String getSystemConfigValue(String key)
     {
-        if(mSystemConfig==null)
-        {
-            return "";
+        String temp = this.getPropertyOverrideLoader().getOverridePropertyValue("wabacus.",key,null);
+        
+        if( null == temp){
+            if(mSystemConfig !=null)
+            {
+                temp=mSystemConfig.get(key);
+            }
         }
-        String temp=mSystemConfig.get(key);
         if(temp==null||temp.trim().equals("")) return "";
         return temp;
     }
@@ -400,6 +421,14 @@ public class Config
         if(mReportStructureInfo==null) return null;
         return mReportStructureInfo.get(pageid);
     }
+    
+    
+   public Collection<String> getPageIds(){
+       if( null == mReportStructureInfo || mReportStructureInfo.size() < 1){
+           throw new IllegalArgumentException("wabacus未正确初始化！");
+       }
+       return mReportStructureInfo.keySet();
+   }
 
     public List<Class> getLstServerValidateClasses()
     {
@@ -479,7 +508,7 @@ public class Config
             if(realclass.equals("")) return null;
             try
             {
-                return Class.forName(realclass);
+                return ResourceUtils.loadClass(realclass);
             }catch(ClassNotFoundException e)
             {
                 throw new WabacusRuntimeException("加载报表/容器类型类"+realclass+"失败");
@@ -884,5 +913,33 @@ public class Config
         Map<String,String> mSkinConfigProperties=this.mSkinConfigProperties.get(skinname);
         if(mSkinConfigProperties==null) return null;
         return mSkinConfigProperties.get(propertyname);
+    }
+    
+    /**
+     *  构建页面的baseUrl
+     * @param pageid
+     * @param rreqeust
+     * @return
+     */
+    public String getPageUrl(String baseUrl,String pageid,ReportRequest rrequest){
+        StringBuffer s = new StringBuffer(baseUrl);
+        if(baseUrl.indexOf("?")>0)
+        {
+          s.append('&');
+        }else
+        {
+            s.append('?');
+        }
+        s.append("PAGEID=").append(pageid);
+        
+        
+        String url=s.toString();
+        
+        
+//        String  pageAccessMode = rrequest == null ? null :  rrequest.getStringAttribute("pageAccessMode");
+//        if( null != pageAccessMode ){
+//           url =  rrequest.addParamToUrl("pageAccessMode",pageAccessMode,true,url);
+//        }
+        return url;        
     }
 }

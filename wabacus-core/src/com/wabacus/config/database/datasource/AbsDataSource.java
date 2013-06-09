@@ -20,12 +20,13 @@ package com.wabacus.config.database.datasource;
 
 import java.sql.Connection;
 
-import javax.sql.DataSource;
-
 import org.dom4j.Element;
 
+import com.wabacus.config.Config;
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.system.IConnection;
 
 public abstract class AbsDataSource
 {
@@ -68,7 +69,7 @@ public abstract class AbsDataSource
         Class c;
         try
         {
-            c=Class.forName(dbtype.trim());
+            c=ResourceUtils.loadClass(dbtype.trim());
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("配置的dbtype："+dbtype+"，无法加载此类",e);
@@ -88,8 +89,32 @@ public abstract class AbsDataSource
         }
         this.dbType=(AbsDatabaseType)o;
     }
-    
+
+    public abstract IConnection getIConnection();
+
+
+    /**
+     * @deprecated
+     */
     public abstract Connection getConnection();
     
-    public abstract DataSource getDataSource();
+    private String prefix ;
+    
+    protected String getPrefix(){
+        if( null == prefix){
+            prefix = this.getName() +".";
+        }
+        return prefix;
+    }
+
+    /**
+     *   获取覆盖的系统属性
+     * @param name
+     * @param defaultValue
+     * @return
+     */
+    protected String getOverridePropertyValue(String name,String currentVal){
+        return Config.getInstance().getPropertyOverrideLoader().getOverridePropertyValue(this.getPrefix(),name,currentVal) ;
+    }
+   // public abstract DataSource getDataSource();
 }

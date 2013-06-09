@@ -1236,7 +1236,7 @@ public class CrossStatisticListReportType extends UltraListReportType
                         
                     }else if(reportbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
                     {
-                        cbTmp.getConditionExpression().parseConditionExpression();
+                        cbTmp.getConditionExpression().parseConditionExpression(cbTmp);
                     }
                     if(cbTmp.getConditionExpression()==null||cbTmp.getConditionExpression().getValue()==null
                             ||cbTmp.getConditionExpression().getValue().trim().equals(""))
@@ -1246,7 +1246,7 @@ public class CrossStatisticListReportType extends UltraListReportType
                     }
                 }else if(reportbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
                 {
-                    cbTmp.getConditionExpression().parseConditionExpression();
+                    cbTmp.getConditionExpression().parseConditionExpression(cbTmp);
                 }
             }
         }

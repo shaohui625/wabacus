@@ -21,6 +21,7 @@ package com.wabacus.config.component.application.report.condition;
 import java.util.List;
 
 import com.wabacus.config.component.application.report.ConditionBean;
+import com.wabacus.config.component.application.report.IConditionBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -29,7 +30,7 @@ import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.util.Tools;
 
-public class ConditionInSqlBean implements Cloneable
+public class ConditionInSqlBean implements IConditionBean,Cloneable
 {
     private String conditionname;
     

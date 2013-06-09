@@ -26,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -50,6 +51,7 @@ import com.itextpdf.text.Document;
 import com.itextpdf.text.pdf.PdfCopy;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
@@ -151,7 +153,7 @@ public class WabacusFacade
                 success=false;
                 errorinfo=wresponse.assembleResultsInfo(wrwe);
             }
-        }catch(Exception wre)
+        }catch(Throwable wre)
         {
             wresponse.setStatecode(Consts.STATECODE_FAILED);
             String errormess=wresponse.getMessageCollector().getLogErrorsMessages();
@@ -546,17 +548,7 @@ public class WabacusFacade
             }*/
             rrequest.setAttribute("FILTER_COLUMNNAME",cbean.getColumn());
             SqlBean sbean=rbean.getSbean();
-            ISQLType sqlTypeObj=null;
-            if(sbean.isStoreProcedure())
-            {//如果是Store Procedure
-                sqlTypeObj=new GetResultSetByStoreProcedure();
-            }else if(sbean.getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-            {
-                sqlTypeObj=new GetAllResultSetByPreparedSQL();
-            }else
-            {
-                sqlTypeObj=new GetAllResultSetBySQL();
-            }
+            ISQLType sqlTypeObj=sbean.getISQLTypeBuilder().createAllResultSetISQLType();
             AbsListReportColBean alrcbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
             AbsListReportFilterBean alfbean=alrcbean.getFilterBean();
             if(rbean.getInterceptor()!=null)
@@ -565,38 +557,19 @@ public class WabacusFacade
             }
             int maxOptionsCount=Config.getInstance().getSystemConfigValue("colfilter-maxnum-options",-1);
             AbsDatabaseType dbtype=rrequest.getDbType(rbean.getSbean().getDatasource());
-            List<String> lstSelectedData=new ArrayList<String>();
+            List<String> lstSelectedData=null;
             if(!alfbean.isConditionRelate())
             {
                 rrequest.setAttribute(rbean.getId()+"_WABACUS_GETDATA","selected");//当前是取当前列被选中的选项数据（即当前列目前显示的数据）
-                Object objTmp=sqlTypeObj.getResultSet(rrequest,(AbsReportType)rrequest.getComponentTypeObj(rbean,null,true));
-                if(objTmp==null||rrequest.getWResponse().getMessageCollector().hasErrors()
-                        ||rrequest.getWResponse().getMessageCollector().hasWarnings())
-                {
+                lstSelectedData=dbtype.getFilterDataList(rrequest,cbean,sqlTypeObj,maxOptionsCount);
+                if(lstSelectedData==null||rrequest.getWResponse().getMessageCollector().hasErrors()
+                        ||rrequest.getWResponse().getMessageCollector().hasWarnings())  {
                     return "<item><value>[error]</value><label><![CDATA[获取列过滤选项数据失败]]></label></item>";
-                }
-                if(!(objTmp instanceof ResultSet))
-                {
-                    throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"数据失败，在加载过滤选项数据的前置动作中，只能返回SQL语句或ResultSet，不能返回加载好的List对象");
-                }
-                ResultSet rs=(ResultSet)objTmp;
-                Object valObj;
-                String strvalue;
-                int optioncnt=0;
-                while(rs.next())
-                {
-                    valObj=cbean.getDatatypeObj().getColumnValue(rs,cbean.getColumn(),dbtype);
-                    strvalue=cbean.getDatatypeObj().value2label(valObj);
-                    if(strvalue==null||strvalue.trim().equals("")) continue;
-                    if(!lstSelectedData.contains(strvalue)) lstSelectedData.add(strvalue);
-                    if(maxOptionsCount>0&&++optioncnt==maxOptionsCount)
-                    {
-                        break;
-                    }
-                }
-                rs.close();
+                }                
+                
             }else
             {
+                lstSelectedData=new ArrayList<String>();
                 String filterval=rrequest.getStringAttribute(alfbean.getConditionname(),"");
                 if(!filterval.equals(""))
                 {
@@ -605,32 +578,12 @@ public class WabacusFacade
             }
             log.debug(lstSelectedData);
             rrequest.setAttribute(rbean.getId()+"_WABACUS_GETDATA","all");
-            Object objTmp=sqlTypeObj.getResultSet(rrequest,(AbsReportType)rrequest.getComponentTypeObj(rbean,null,true));
-            if(objTmp==null||rrequest.getWResponse().getMessageCollector().hasErrors()||rrequest.getWResponse().getMessageCollector().hasWarnings())
+            List<String> lstValues=dbtype.getFilterDataList(rrequest,cbean,sqlTypeObj,maxOptionsCount);
+            if(lstValues==null||rrequest.getWResponse().getMessageCollector().hasErrors()||rrequest.getWResponse().getMessageCollector().hasWarnings())
             {
                 return "<item><value>[error]</value><label><![CDATA[获取列过滤选项数据失败]]></label></item>";
             }
-            if(!(objTmp instanceof ResultSet))
-            {
-                throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"数据失败，在加载过滤选项数据的前置动作中，只能返回SQL语句或ResultSet，不能返回加载好的List对象");
-            }
-            ResultSet rs=(ResultSet)objTmp;
-            Object valObj;
-            String strvalue;
-            List<String> lstValues=new ArrayList<String>();
-            int optioncnt=0;
-            while(rs.next())
-            {
-                valObj=cbean.getDatatypeObj().getColumnValue(rs,cbean.getColumn(),dbtype);
-                strvalue=cbean.getDatatypeObj().value2label(valObj);
-                if(strvalue==null||strvalue.trim().equals("")) continue;
-                if(!lstValues.contains(strvalue)) lstValues.add(strvalue);
-                if(maxOptionsCount>0&&++optioncnt==maxOptionsCount)
-                {//如果指定了最大记录数，且当前记录数达到这个值，则不再取后面的选项数据
-                    break;
-                }
-            }
-            rs.close();
+           
             if(rbean.getInterceptor()!=null)
             {
                 lstValues=(List)rbean.getInterceptor().afterLoadData(rrequest,rbean,alfbean,lstValues);
@@ -686,6 +639,72 @@ public class WabacusFacade
         //        log.debug("获取的过滤数据列表："+resultBuf.toString());
         return resultBuf.toString();
     }
+//
+//    public static List<String> getSelectFilterList(ReportRequest rrequest,ReportBean rbean,ColBean cbean,ISQLType sqlTypeObj,int maxOptionsCount,
+//            AbsDatabaseType dbtype) throws SQLException
+//    {
+//        List<String> lstSelectedData;
+//        Object objTmp=sqlTypeObj.getResultSet(rrequest,(AbsReportType)rrequest.getComponentTypeObj(rbean,null,true));
+//        if(objTmp==null||rrequest.getWResponse().getMessageCollector().hasErrors()
+//                        ||rrequest.getWResponse().getMessageCollector().hasWarnings())  {
+//                    return null;
+//         }
+//        if(!(objTmp instanceof ResultSet))
+//        {
+//            throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"数据失败，在加载过滤选项数据的前置动作中，只能返回SQL语句或ResultSet，不能返回加载好的List对象");
+//        }
+//        lstSelectedData=new ArrayList<String>();
+//        ResultSet rs=(ResultSet)objTmp;
+//        Object valObj;
+//        String strvalue;
+//        int optioncnt=0;
+//        while(rs.next())
+//        {
+//            valObj=cbean.getDatatypeObj().getColumnValue(rs,cbean.getColumn(),dbtype);
+//            strvalue=cbean.getDatatypeObj().value2label(valObj);
+//            if(strvalue==null||strvalue.trim().equals("")) continue;
+//            if(!lstSelectedData.contains(strvalue)) lstSelectedData.add(strvalue);
+//            if(maxOptionsCount>0&&++optioncnt==maxOptionsCount)
+//            {
+//                break;
+//            }
+//        }
+//        rs.close();
+//        return lstSelectedData;
+//    }
+//
+//    public static List<String> getAllFiterList(ReportRequest rrequest,ReportBean rbean,ColBean cbean,ISQLType sqlTypeObj,int maxOptionsCount,AbsDatabaseType dbtype)
+//            throws SQLException
+//    {
+//        Object objTmp=sqlTypeObj.getResultSet(rrequest,(AbsReportType)rrequest.getComponentTypeObj(rbean,null,true));
+//        if(objTmp==null||rrequest.getWResponse().getMessageCollector().hasErrors()||rrequest.getWResponse().getMessageCollector().hasWarnings())
+//        {
+//            return null;
+//        }
+//       
+//        if(!(objTmp instanceof ResultSet))
+//        {
+//            throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"数据失败，在加载过滤选项数据的前置动作中，只能返回SQL语句或ResultSet，不能返回加载好的List对象");
+//        }
+//        ResultSet rs=(ResultSet)objTmp;
+//        Object valObj;
+//        String strvalue;
+//        List<String> lstValues=new ArrayList<String>();
+//        int optioncnt=0;
+//        while(rs.next())
+//        {
+//            valObj=cbean.getDatatypeObj().getColumnValue(rs,cbean.getColumn(),dbtype);
+//            strvalue=cbean.getDatatypeObj().value2label(valObj);
+//            if(strvalue==null||strvalue.trim().equals("")) continue;
+//            if(!lstValues.contains(strvalue)) lstValues.add(strvalue);
+//            if(maxOptionsCount>0&&++optioncnt==maxOptionsCount)
+//            {//如果指定了最大记录数，且当前记录数达到这个值，则不再取后面的选项数据
+//                break;
+//            }
+//        }
+//        rs.close();
+//        return lstValues;
+//    }
 
     public static String getTypePromptDataList(HttpServletRequest request,HttpServletResponse response)
     {
@@ -724,8 +743,7 @@ public class WabacusFacade
                 return "";
             }else
             {
-                List<Map<String,String>> lstResults=promptBean.getDatasource().getResultDataList(rrequest,rbean,inputvalue);
-                if(lstResults==null||lstResults.size()==0) return "";
+                List<Map<String,String>> lstResults=promptBean.getDatasource().getResultDataList(rrequest,rbean,inputvalue);                if(lstResults==null||lstResults.size()==0) return "";
                 int cnt=promptBean.getResultcount();
                 if(cnt>lstResults.size()) cnt=lstResults.size();
                 for(int i=0;i<cnt;i++)
@@ -1190,7 +1208,7 @@ public class WabacusFacade
         List<Map<String,String>> lstParamsValue=EditableReportAssistant.getInstance().parseSaveDataStringToList(params);
         try
         {
-            Object obj=Class.forName(serverClassName.trim()).newInstance();
+            Object obj=ResourceUtils.loadClass(serverClassName.trim()).newInstance();
             if(!(obj instanceof IServerAction))
             {
                 throw new WabacusRuntimeException("调用的服务器端类"+serverClassName+"没有实现"+IServerAction.class.getName()+"接口");

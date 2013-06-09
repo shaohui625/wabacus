@@ -381,6 +381,19 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
         JavaScriptAssistant.getInstance().createComponentOnloadScript(this);
     }
 
+    
+    private  List<ReportBean> lstAllReportBeans;
+    
+    /**
+    *@return 本组件依赖的报表
+     */
+    public List<ReportBean> getLstAllReportBeans(){
+        if( null == lstAllReportBeans){
+            lstAllReportBeans = getLstAllReportBeans(true);
+        }
+        return lstAllReportBeans;
+    }
+
     protected void processContainerButtonsStart()
     {
         ButtonsBean bbeans=this.getButtonsBean();

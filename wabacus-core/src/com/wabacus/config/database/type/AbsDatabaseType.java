@@ -25,16 +25,30 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.config.component.application.report.ColBean;
+import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.typeprompt.AbsTypePromptDataSource;
+import com.wabacus.config.typeprompt.SQLPromptDataSource;
+import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.system.IConnection;
+import com.wabacus.system.ReportRequest;
+import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.DeleteSqlActionBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportUpdateDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
 import com.wabacus.system.datatype.IDataType;
+import com.wabacus.system.resultset.ISQLType;
+import com.wabacus.system.resultset.ISQLTypeBuilder;
 import com.wabacus.util.Tools;
 
 public abstract class AbsDatabaseType
@@ -151,6 +165,7 @@ public abstract class AbsDatabaseType
     {
         insertSqlBean.constructInsertSql(configInsertSql,rbean,reportTypeKey);
     }
+    public abstract String  parseDeleteSql(SqlBean sqlbean,String reportTypeKey,String configSql,DeleteSqlActionBean actionBean);
 
     public abstract IDataType getWabacusDataTypeByColumnType(String columntype);
 
@@ -291,4 +306,70 @@ public abstract class AbsDatabaseType
                     pstmt.setString(iindex,str2);
             }
         }*/
+
+    public abstract String getSequnceValue(IConnection conn,String seqname) throws SQLException;
+
+
+    public  abstract void updateDBData(Map<String,String> mParamsValue,Map<String,String> mExternalParamsValue,IConnection conn,ReportBean rbean,
+            ReportRequest rrequest,AbsEditSqlActionBean actionBean) throws SQLException;
+
+
+    public abstract ISQLTypeBuilder getISQLTypeBuilder(SqlBean bean,String statementtype);
+
+    public abstract void parseConditionInSql(SqlBean bean,String value);
+
+
+
+    public abstract void doPostLoadSql(SqlBean sbean,boolean isListReportType);
+
+    /**
+     *    <UL>
+     *    <LI>sqlbean.doPostLoadSql(true);</LI>
+     *    <LI>orderby</LI>
+     *    <LI>  sqlbean.buildPageSplitSql();//生成分页显示的SQL语句</LI>
+     */
+    public abstract void constructSqlForListType(SqlBean sqlbean);
+
+
+    public abstract void parseUpdateAction(SqlBean sqlbean,String reportTypeKey,String sqls,EditableReportUpdateDataBean databean);
+    
+    public void doConditionBeanPostLoad(ConditionBean cdbean){
+        cdbean.doPostLoad();
+    }   
+    
+    
+    /**
+     * 获取列表数据某行的可选过滤数据
+     */
+    public List<String> getFilterDataList(ReportRequest rrequest,ColBean cbean,ISQLType sqlTypeObj,int maxOptionsCount)
+            throws SQLException{
+        
+        final ReportBean rbean = cbean.getReportBean();
+        Object objTmp=sqlTypeObj.getResultSet(rrequest,(AbsReportType)rrequest.getComponentTypeObj(rbean,null,true));
+        if(objTmp==null||rrequest.getWResponse().getMessageCollector().hasErrors()||rrequest.getWResponse().getMessageCollector().hasWarnings())
+        {
+            return null;
+        }
+        
+       return (List<String>)objTmp;
+    }
+    
+
+    public Object getPromptDataList(ReportRequest rrequest,ReportBean rbean,AbsTypePromptDataSource typeObj,String typedata)
+    {
+        SQLPromptDataSource pTypeObj = (SQLPromptDataSource)typeObj;
+        typedata=Tools.removeSQLKeyword(typedata);
+     //   typedata = typedata.replaceAll("(^[ 　])|([ 　]$)", "");//移除首尾的半角／全角空格以增加支好性
+        final SqlBean sbean=rbean.getSbean();             
+        ISQLType impISQLType=sbean.getISQLTypeBuilder().createAllResultSetISQLType();
+        String sqlTemp=Tools.replaceAll(pTypeObj.getSql(),"#data#",typedata);
+        log.debug("SQL语句："+sqlTemp);
+        Object objTmp=impISQLType.getResultSet(rrequest,rbean,pTypeObj,sqlTemp,pTypeObj.getLstConditions());
+        return objTmp;
+    }
+    
+    
+    public String parseAndValidPromptSql(ReportBean rbean,SQLPromptDataSource typeObj,String sql) {
+          return typeObj.parseAndValidPromptSql(rbean,sql);
+    }
 }

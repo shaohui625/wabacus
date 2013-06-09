@@ -42,7 +42,7 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class SQLSERVER2K extends AbsDatabaseType
+public class SQLSERVER2K extends AbstractJdbcDatabaseType
 {
     private static Log log=LogFactory.getLog(SQLSERVER2K.class);
 

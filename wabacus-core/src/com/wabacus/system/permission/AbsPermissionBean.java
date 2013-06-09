@@ -94,6 +94,14 @@ public abstract class AbsPermissionBean
         {//框架不支持这个权限类型
             return null;
         }
+        
+//        if(this.rrequest != null ){//不是默认权限
+//            //根据配置获取当前用户对组件的指定权限 getUserPermission(IComponentConfigBean,permissiontype)
+//            final String userPermission=UserPermissionHandlerFactory.getUserPermissionHandler().getUserPermission(this.rrequest,this.getComponentConfigBean(),permissiontype);
+//            if( null  != userPermission ){
+//                return userPermission;
+//            }
+//        }
         if(mPermissions==null) return null;
         return mPermissions.get(permissiontype);
     }

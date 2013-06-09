@@ -23,6 +23,7 @@ import java.util.List;
 import com.itextpdf.text.PageSize;
 import com.itextpdf.text.Rectangle;
 import com.wabacus.config.Config;
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
@@ -186,7 +187,7 @@ public class PDFExportBean extends AbsDataExportBean
                 Object objTmp=null;
                 try
                 {
-                    objTmp=Class.forName(interceptor).newInstance();
+                    objTmp=ResourceUtils.loadClass(interceptor).newInstance();
                 }catch(Exception e)
                 {
                     throw new WabacusConfigLoadingException("为组件"+this.owner.getPath()+"配置的导出到PDF文件中指定的拦截器类"+interceptor+"无法实例化",e);

@@ -19,6 +19,7 @@
 package com.wabacus.config.component;
 
 import java.util.List;
+import java.util.Map;
 
 import com.wabacus.config.OnloadMethodBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
@@ -151,4 +152,9 @@ public interface IComponentConfigBean
     public IComponentType createComponentTypeObj(ReportRequest rrequest,AbsContainerType parentContainer);
     
     public void doPostLoad();
+    
+    /**
+     * @return 获取组件属性键值对Map,非空
+     */
+    public Map<String,String> getAttrs();
 }

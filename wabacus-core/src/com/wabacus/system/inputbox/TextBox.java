@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.wabacus.config.Config;
+import com.wabacus.config.ResourceUtils;
+import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.typeprompt.AbsTypePromptDataSource;
 import com.wabacus.config.typeprompt.SQLPromptDataSource;
 import com.wabacus.config.typeprompt.TypePromptBean;
@@ -76,18 +78,19 @@ public class TextBox extends AbsInputBox implements Cloneable
         if(typePromptBean!=null)
         {
             resultBuf.append(" onfocus=\"try{if(this.obj==null){this.obj=initializeTypePromptProperties(this,'"
-                    +getTypePromptJsonString(getInputBoxId(rrequest))+"');}}catch(e){logErrorsAsJsFileLoad(e);}\"");
+                    +getTypePromptJsonString(getInputBoxId(rrequest),rrequest)+"');}}catch(e){logErrorsAsJsFileLoad(e);}\"");
         }
         return resultBuf.toString();
     }
     
-    private String getTypePromptJsonString(String inputboxid)
+    private String getTypePromptJsonString(String inputboxid,ReportRequest rrequest)
     {
         if(typePromptBean==null) return "";
         StringBuffer resultBuf=new StringBuffer("{");
         String token="?";
         if(Config.showreport_url.indexOf("?")>0) token="&";
-        String serverurl=Config.showreport_url+token+"PAGEID="+owner.getReportBean().getPageBean().getId()+"&REPORTID="+owner.getReportBean().getId()
+        final ReportBean reportBean=owner.getReportBean();
+        String serverurl=Config.getInstance().getPageUrl(Config.showreport_url,reportBean.getPageBean().getId(),rrequest)+"&REPORTID="+reportBean.getId()
                 +"&INPUTBOXID="+inputboxid+"&ACTIONTYPE=GetTypePromptDataList";
         resultBuf.append("serverUrl:\"").append(serverurl).append("\"");
         resultBuf.append(",spanOutputWidth:").append(typePromptBean.getResultspanwidth());
@@ -120,7 +123,7 @@ public class TextBox extends AbsInputBox implements Cloneable
         //配置了输入联想功能
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append(super.initDisplaySpanStart(rrequest));
-        resultBuf.append(" typePrompt=\"").append(getTypePromptJsonString(this.owner.getInputBoxId())).append("\"");
+        resultBuf.append(" typePrompt=\"").append(getTypePromptJsonString(this.owner.getInputBoxId(),rrequest)).append("\"");
         return resultBuf.toString();
     }
 
@@ -223,7 +226,7 @@ public class TextBox extends AbsInputBox implements Cloneable
         {//这里配置的是相应类的全限定类名
             try
             {
-                type_obj=Class.forName(type.trim()).newInstance();
+                type_obj=ResourceUtils.loadClass(type.trim()).newInstance();
             }catch(InstantiationException e)
             {
                 throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()+"为<typeprompt/>的子标签<datasource/>配置的type"+type

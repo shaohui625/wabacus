@@ -75,6 +75,8 @@ import com.wabacus.system.resultset.GetPartResultSetByPreparedSQL;
 import com.wabacus.system.resultset.GetPartResultSetBySQL;
 import com.wabacus.system.resultset.GetResultSetByStoreProcedure;
 import com.wabacus.system.resultset.ISQLType;
+import com.wabacus.system.resultset.ISQLTypeBuilder;
+import com.wabacus.system.resultset.QueryStatementType;
 import com.wabacus.system.tags.component.AbsComponentTag;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
@@ -417,31 +419,14 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         }
         if(isLazyDataLoad()) return;//如果本次访问设置了延迟加载，则不加载数据
         SqlBean sbean=rbean.getSbean();
+        final ISQLTypeBuilder isqlTypeBuilder=sbean.getISQLTypeBuilder();
         if(this.cacheDataBean.isLoadAllReportData())
         {
-            if(sbean.isStoreProcedure())
-            {
-                impISQLType=new GetResultSetByStoreProcedure();
-            }else if(sbean.isPreparedstatementSql())
-            {
-                impISQLType=new GetAllResultSetByPreparedSQL();
-            }else
-            {
-                impISQLType=new GetAllResultSetBySQL();
-            }
+            impISQLType =   isqlTypeBuilder.createAllResultSetISQLType();
             this.setLstReportData(ReportAssistant.getInstance().loadAllDataFromDB(rrequest,this,impISQLType));
         }else
         {
-            if(sbean.isStoreProcedure())
-            {//如果是Store Procedure
-                impISQLType=new GetResultSetByStoreProcedure();
-            }else if(sbean.isPreparedstatementSql())
-            {
-                impISQLType=new GetPartResultSetByPreparedSQL();
-            }else
-            {
-                impISQLType=new GetPartResultSetBySQL();
-            }
+            impISQLType =   isqlTypeBuilder.createPartResultSetISQLType();
             this.setLstReportData(ReportAssistant.getInstance().loadOnePageDataFromDB(rrequest,this,impISQLType));
         }
         if(rbean.getInterceptor()!=null)
@@ -1361,12 +1346,12 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     {
         return 0;
     }
-    
+
     protected String getComponentTypeName()
     {
         return "application.report";
     }
-    
+
     public int doPostLoad(ReportBean reportbean)
     {
         if(reportbean.isPageSplitReport()&&reportbean.getNavigateObj()==null)

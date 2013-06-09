@@ -21,6 +21,7 @@ package com.wabacus.config.component.application.report.condition;
 import java.util.List;
 
 import com.wabacus.config.component.application.report.ConditionBean;
+import com.wabacus.config.component.application.report.IConditionBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.util.Tools;
@@ -68,7 +69,7 @@ public class ConditionExpressionBean implements Cloneable
         this.pattern=pattern;
     }
 
-    public void parseConditionExpression()
+    public void parseConditionExpression(IConditionBean cdtBean)
     {
         if(value==null||value.trim().equals("")) return;
         int i=0;

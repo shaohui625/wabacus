@@ -38,22 +38,19 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
 
     public void parseSql(SqlBean sqlbean,String reportTypeKey,String configSql)
     {
-        configSql=this.parseAndRemoveReturnParamname(configSql);
-        if(this.isNormalInsertSql(configSql))
-        {
-            owner.addInsertSqlActionBean(configSql,null,this.returnValueParamname);
-            return;
-        }
-        AbsDatabaseType dbtype=Config.getInstance().getDataSource(sqlbean.getDatasource()).getDbType();
-        if(dbtype==null)
-        {
-            throw new WabacusConfigLoadingException("没有实现数据源"+sqlbean.getDatasource()+"对应数据库类型的相应实现类");
-        }
+        AbsDatabaseType dbtype = sqlbean.getDbType();
         dbtype.constructInsertSql(configSql,sqlbean.getReportBean(),reportTypeKey,this);
     }
 
     public void constructInsertSql(String configInsertSql,ReportBean rbean,String reportTypeKey)
     {
+        configInsertSql=this.parseAndRemoveReturnParamname(configInsertSql);
+        if(this.isNormalInsertSql(configInsertSql))
+        {
+            owner.addInsertSqlActionBean(configInsertSql,null,this.returnValueParamname);
+            return;
+        }
+
         List lstParams=new ArrayList();
         StringBuffer sqlBuffer=new StringBuffer();
         sqlBuffer.append("insert into ");

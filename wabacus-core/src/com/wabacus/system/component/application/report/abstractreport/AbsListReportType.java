@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,6 +39,7 @@ import com.itextpdf.text.Element;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadAssistant;
 import com.wabacus.config.OnloadMethodBean;
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
@@ -1585,7 +1585,7 @@ public abstract class AbsListReportType extends AbsReportType
                             Object obj=null;
                             try
                             {
-                                obj=Class.forName(roworderclass).newInstance();
+                                obj=ResourceUtils.loadClass(roworderclass).newInstance();
                             }catch(Exception e)
                             {
                                 throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，无法实例化"+roworderclass+"类对象",e);
@@ -2227,112 +2227,9 @@ public abstract class AbsListReportType extends AbsReportType
     private void constructSqlForListType(SqlBean sqlbean)
     {
         if(sqlbean==null) return;
-        String value=sqlbean.getValue();
-        if(value==null||value.trim().equals("")||sqlbean.isStoreProcedure()) return;//如果没有SQL语句或者为存储过程
-        sqlbean.doPostLoadSql(true);
-        String sqlFilter="select distinct %FILTERCOLUMN%  from ("+sqlbean.getSql_kernel()+") tblfilter "+Consts_Private.PLACEHODER_FILTERCONDITION
-                +" order by  %FILTERCOLUMN%";
-        AbsListReportSqlBean alrsbean=(AbsListReportSqlBean)sqlbean.getExtendConfigDataForReportType(KEY);
-        alrsbean.setFilterdata_sql(sqlFilter);
-
-        AbsListReportDisplayBean alrdbean=(AbsListReportDisplayBean)sqlbean.getReportBean().getDbean().getExtendConfigDataForReportType(
-                AbsListReportType.KEY);
-        if(alrdbean!=null&&alrdbean.getRowGroupColsNum()>0)
-        {
-            List<String> lstColsColumnInRowGroup=alrdbean.getLstRowgroupColsColumn();
-            if(lstColsColumnInRowGroup!=null&&lstColsColumnInRowGroup.size()>0)
-            {
-                List<Map<String,String>> lstRowgroupColsAndOrders=new ArrayList<Map<String,String>>();
-                alrdbean.setLstRowgroupColsAndOrders(lstRowgroupColsAndOrders);
-                if(sqlbean.getSqlWithoutOrderby().indexOf("%orderby%")<0)
-                {
-                    sqlbean.setSqlWithoutOrderby(sqlbean.getSqlWithoutOrderby()+" %orderby%");
-                    StringBuffer orderbybuf=new StringBuffer();
-                    for(String column:lstColsColumnInRowGroup)
-                    {
-                        if(column==null) continue;
-                        orderbybuf.append(column).append(",");
-                        Map<String,String> mColAndOrders=new HashMap<String,String>();
-                        mColAndOrders.put(column,"asc");
-                        lstRowgroupColsAndOrders.add(mColAndOrders);
-                    }
-                    if(orderbybuf.charAt(orderbybuf.length()-1)==',')
-                    {
-                        orderbybuf.deleteCharAt(orderbybuf.length()-1);
-                    }
-                    sqlbean.setOrderby(orderbybuf.toString());
-                }else
-                {
-                    addRowGroupColumnToOrderByClause(sqlbean,lstColsColumnInRowGroup,lstRowgroupColsAndOrders);
-                }
-            }
-        }
-        sqlbean.buildPageSplitSql();//生成分页显示的SQL语句
+        sqlbean.getDbType().constructSqlForListType(sqlbean);
     }
 
-    private void addRowGroupColumnToOrderByClause(SqlBean sqlbean,List<String> lstColsColumnInRowGroup,
-            List<Map<String,String>> lstRowgroupColsAndOrders)
-    {
-        String oldorderby=sqlbean.getOrderby();
-        List<String> lstOrderByColumns=Tools.parseStringToList(oldorderby,",");
-        List<Map<String,String>> lstOldOrderByColumns=new ArrayList<Map<String,String>>();
-        for(String orderby_tmp:lstOrderByColumns)
-        {
-            if(orderby_tmp==null||orderby_tmp.trim().equals("")) continue;
-            orderby_tmp=orderby_tmp.trim();
-            List<String> lstTemp=Tools.parseStringToList(orderby_tmp," ");
-            Map<String,String> mOldOrderBy=new HashMap<String,String>();
-            lstOldOrderByColumns.add(mOldOrderBy);
-            if(lstTemp.size()==1)
-            {
-                mOldOrderBy.put(lstTemp.get(0),"asc");
-            }else if(lstTemp.size()==2)
-            {
-                mOldOrderBy.put(lstTemp.get(0),lstTemp.get(1).trim().toLowerCase());
-            }else
-            {
-                throw new WabacusConfigLoadingException("报表"+sqlbean.getReportBean().getPath()+"配置的SQL语句中order by子句"+sqlbean.getOrderby()+"不合法");
-            }
-        }
-        StringBuffer orderBuf=new StringBuffer();
-        for(String rowgroupCol:lstColsColumnInRowGroup)
-        {
-            if(rowgroupCol==null) continue;
-            Map<String,String> mColAndOrders=new HashMap<String,String>();
-            lstRowgroupColsAndOrders.add(mColAndOrders);
-            Map<String,String> mTemp=null;
-            for(Map<String,String> mTemp2:lstOldOrderByColumns)
-            {
-                if(mTemp2.containsKey(rowgroupCol))
-                {
-                    mTemp=mTemp2;
-                    lstOldOrderByColumns.remove(mTemp2);
-                    break;
-                }
-            }
-            if(mTemp!=null)
-            {
-                orderBuf.append(rowgroupCol).append(" ").append(mTemp.get(rowgroupCol)).append(",");
-                mColAndOrders.put(rowgroupCol,mTemp.get(rowgroupCol));
-            }else
-            {
-                orderBuf.append(rowgroupCol).append(",");
-                mColAndOrders.put(rowgroupCol,"asc");
-            }
-        }
-        //sql语句的order by子句中除了行分组的column外，其它排序column附加到order by子句的最后
-        for(Map<String,String> mTemp:lstOldOrderByColumns)
-        {
-            Entry<String,String> entry=mTemp.entrySet().iterator().next();
-            orderBuf.append(entry.getKey()).append(" ").append(entry.getValue()).append(",");
-        }
-        if(orderBuf.charAt(orderBuf.length()-1)==',')
-        {
-            orderBuf.deleteCharAt(orderBuf.length()-1);
-        }
-        sqlbean.setOrderby(orderBuf.toString());
-    }
-    
     protected void processFixedColsAndRows(ReportBean reportbean)
     {
         AbsListReportBean alrbean=(AbsListReportBean)reportbean.getExtendConfigDataForReportType(KEY);

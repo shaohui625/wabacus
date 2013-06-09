@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.OnloadMethodBean;
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
@@ -1441,7 +1442,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         {
             try
             {
-                pojoclass=Class.forName(strclass);
+                pojoclass=ResourceUtils.loadClass(strclass);
             }catch(ClassNotFoundException e)
             {
                throw new WabacusConfigLoadingException("没有找到报表"+this.getPath()+"配置的类"+strclass,e);

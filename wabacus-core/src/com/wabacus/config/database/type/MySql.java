@@ -39,7 +39,7 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class MySql extends AbsDatabaseType
+public class MySql extends AbstractJdbcDatabaseType
 {
     private final static Log log=LogFactory.getLog(MySql.class);
 
@@ -47,6 +47,7 @@ public class MySql extends AbsDatabaseType
     {
         
         String sql=sbean.getSqlWithoutOrderby();
+
         if(sql.indexOf("%orderby%")>0)
         {
             sql=Tools.replaceAll(sql,"%orderby%"," order by "+sbean.getOrderby());

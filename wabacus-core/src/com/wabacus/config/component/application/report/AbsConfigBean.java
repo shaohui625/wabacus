@@ -19,9 +19,10 @@
 package com.wabacus.config.component.application.report;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.apache.commons.collections.MapUtils;
 
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
@@ -31,7 +32,8 @@ import com.wabacus.exception.WabacusConfigLoadingException;
 public abstract class AbsConfigBean implements Cloneable
 {
     private Map<String,AbsExtendConfigBean> mExtendConfigForReportType=new HashMap<String,AbsExtendConfigBean>();
-
+    
+    
     private AbsConfigBean parent;
 
     public AbsConfigBean(AbsConfigBean parent)
@@ -125,5 +127,19 @@ public abstract class AbsConfigBean implements Cloneable
                 mTemp.put(entryTmp.getKey(),entryTmp.getValue().clone(newConfigBean));
             }
         }
+    }
+    
+    
+    
+    private Map<String,String> attrs;
+
+    public Map<String,String> getAttrs()
+    {
+        return attrs == null ? MapUtils.EMPTY_MAP : attrs;
+    }
+
+    public void setAttrs(Map<String,String> attrs)
+    {
+        this.attrs=attrs;
     }
 }

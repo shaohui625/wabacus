@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -154,7 +155,7 @@ public class UpdateComponentDataServerActionBean
             Object obj=null;
             try
             {
-                obj=Class.forName(serverClassName.trim()).newInstance();
+                obj=ResourceUtils.loadClass(serverClassName.trim()).newInstance();
             }catch(InstantiationException e)
             {
                 throw new WabacusRuntimeException("调用的服务器端类"+serverClassName+"无法实例化",e);

@@ -31,17 +31,18 @@ import org.dom4j.Element;
 
 import com.mchange.v2.c3p0.DataSources;
 import com.mchange.v2.c3p0.PoolConfig;
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.util.DesEncryptTools;
 
-public class C3P0DataSource extends AbsDataSource
+public class C3P0DataSource extends AbstractJdbcDataSource
 {
     private static Log log=LogFactory.getLog(C3P0DataSource.class);
     
     private DataSource ds;
 
-    public Connection getConnection()
+    public Connection getNativeConnection()
     {
         try
         {
@@ -102,7 +103,7 @@ public class C3P0DataSource extends AbsDataSource
         {
             eleChild=(Element)lstEleProperties.get(i);
             name=eleChild.attributeValue("name");
-            value=eleChild.getText();
+            value= getOverridePropertyValue(name,eleChild.getText());
             name=name==null?"":name.trim();
             value=value==null?"":value.trim();
             if(value.equals(""))
@@ -170,7 +171,7 @@ public class C3P0DataSource extends AbsDataSource
         connectionProps.setProperty("password",password);
         try
         {
-            Class.forName(driver);
+            ResourceUtils.loadClass(driver);
             DataSource unpooled=DataSources.unpooledDataSource(url,connectionProps);
             this.ds=DataSources.pooledDataSource(unpooled,pcfg);
         }catch(Exception e)

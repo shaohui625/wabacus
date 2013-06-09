@@ -18,11 +18,9 @@
  */
 package com.wabacus.system.assistant;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -41,7 +39,9 @@ import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.exception.WabacusRuntimeWarningException;
 import com.wabacus.system.CacheDataBean;
+import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.JdbcConnection;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.IEditableReportType;
 import com.wabacus.system.component.application.report.abstractreport.SaveInfoDataBean;
@@ -289,10 +289,10 @@ public class EditableReportAssistant
     private void doSaveAction(ReportRequest rrequest,Map<String,IEditableReportType> mSavingReportObjs)
     {
         if(mSavingReportObjs==null||mSavingReportObjs.size()==0) return;
-        Map<String,Connection> mConnections=new HashMap<String,Connection>();
+        Map<String,IConnection> mConnections=new HashMap<String,IConnection>();
         IEditableReportType reportTypeObjTmp;
         ReportBean rbeanTmp;
-        Connection connTmp;
+        IConnection connTmp;
         boolean hasSaveReport=false;
         boolean shouldStopRefreshDisplay=true;
         String transactionLevel=rrequest.getStringAttribute(rrequest.getPagebean().getId()+"_TRANSACTION_LEVEL","").toLowerCase();
@@ -317,7 +317,7 @@ public class EditableReportAssistant
                 connTmp=mConnections.get(datasource);
                 if(connTmp==null)
                 {
-                    connTmp=rrequest.getConnection(datasource);
+                    connTmp=rrequest.getIConnection(datasource);
                     if(!transactionLevel.equals(Consts.TRANS_NONE))
                     {//本次保存是放在事务中的
                         connTmp.setAutoCommit(false);
@@ -388,10 +388,10 @@ public class EditableReportAssistant
         }
     }
 
-    private void commitRollBackAllTranses(Map<String,Connection> mConnections,String transactionLevel,boolean isSuccess)
+    private void commitRollBackAllTranses(Map<String,IConnection> mConnections,String transactionLevel,boolean isSuccess)
     {
-        Connection connTmp;
-        for(Entry<String,Connection> entryTmp:mConnections.entrySet())
+        IConnection connTmp;
+        for(Entry<String,IConnection> entryTmp:mConnections.entrySet())
         {
             try
             {
@@ -515,7 +515,7 @@ public class EditableReportAssistant
         return resultBuf.toString();
     }
 
-    public int updateDBData(ReportBean rbean,ReportRequest rrequest,Connection conn,EditableReportUpdateDataBean updatebean) throws SQLException
+    public int updateDBData(ReportBean rbean,ReportRequest rrequest,IConnection conn,EditableReportUpdateDataBean updatebean) throws SQLException
     {
         CacheDataBean cdb=rrequest.getCdb(rbean.getId());
         List<Map<String,String>> lstParamsValue=cdb.getLstEditedData(updatebean);
@@ -569,7 +569,7 @@ public class EditableReportAssistant
         {
             Map<String,String> mCustomizedValues=rrequest.getMCustomizeEditData(rbean);//用户传过来的自定义保存数据
             Map<String,String> mExternalValue;
-            Connection conn=rrequest.getConnection(rbean.getSbean().getDatasource());
+            IConnection conn=rrequest.getIConnection(rbean.getSbean().getDatasource());
             AbsDatabaseType dbtype=rrequest.getDbType(rbean.getSbean().getDatasource());
             for(Map<String,String> mColParamsValue:lstColParamsValue)
             {//保存的每一条记录都要计算一次与它相应的所有在<external-values/>中定义的参数值。
@@ -601,16 +601,15 @@ public class EditableReportAssistant
                         }
                     }else if(Tools.isDefineKey("sequence",valuebean.getValue()))
                     {
-                        String sql="select "+Tools.getRealKeyByDefine("sequence",valuebean.getValue())+".nextval from dual";
-                        Statement stmt=conn.createStatement();
-                        ResultSet rs=stmt.executeQuery(sql);
-                        rs.next();
-                        mExternalValue.put(valuebean.getName(),String.valueOf(rs.getInt(1)));
-                        rs.close();
-                        stmt.close();
+                        //不同数据库获取sequence方式是不同的,此处应用改为AbsDatabaseType中获取
+                        final String seqVal= dbtype.getSequnceValue(conn,valuebean.getValue());
+
+                        mExternalValue.put(valuebean.getName(),seqVal);
+
                     }else if(valuebean.getValue().toLowerCase().trim().startsWith("select ")&&valuebean.getLstParamsBean()!=null)
                     {
-                        PreparedStatement pstmtTemp=conn.prepareStatement(valuebean.getValue());
+                        //FIXME 为兼容NOSQL方式的数据源,此处代码要发造
+                        PreparedStatement pstmtTemp=((JdbcConnection)conn).getNativeConnection().prepareStatement(valuebean.getValue());
                         if(valuebean.getLstParamsBean().size()>0)
                         {
                             int j=1;

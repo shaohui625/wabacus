@@ -123,7 +123,7 @@ public class ConfigLoadAssistant
             if(strclassTmp==null||strclassTmp.trim().equals("")) continue;
             try
             {
-                lstClasses.add(Class.forName(strclassTmp.trim()));
+                lstClasses.add(ResourceUtils.loadClass(strclassTmp.trim()));
             }catch(ClassNotFoundException e)
             {
                 throw new WabacusConfigLoadingException("配置的类："+strclassTmp+"无法加载",e);

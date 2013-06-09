@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,6 +41,7 @@ import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.CacheDataBean;
+import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
 import com.wabacus.system.assistant.JavaScriptAssistant;
@@ -171,7 +172,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         setNewAccessMode(accessmode);
     }
 
-    public int[] doSaveAction(Connection conn) throws SQLException
+    public int[] doSaveAction(IConnection conn) throws SQLException
     {
         SaveInfoDataBean sidbean=(SaveInfoDataBean)rrequest.getAttribute(rbean.getId(),"SAVEINFO_DATABEAN");
         int[] result=new int[]{0,0};
@@ -198,7 +199,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         
     }
 
-    protected int updateDBData(EditableReportUpdateDataBean updatedatabean,Connection conn) throws SQLException
+    protected int updateDBData(EditableReportUpdateDataBean updatedatabean,IConnection conn) throws SQLException
     {
         if(updatedatabean==null) return 0;
         int rtnVal=Integer.MIN_VALUE;

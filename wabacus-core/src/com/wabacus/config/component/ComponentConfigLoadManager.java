@@ -33,6 +33,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadAssistant;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.OnloadMethodBean;
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.config.component.application.IApplicationConfigBean;
 import com.wabacus.config.component.application.jsphtml.HtmlComponentBean;
 import com.wabacus.config.component.application.jsphtml.JspComponentBean;
@@ -179,6 +180,7 @@ public class ComponentConfigLoadManager
         pbean.setReportfile_key(jsFileUrl);
         loadComponentCommonConfig(elePageBean,pbean);
         ConfigLoadManager.mAllPagesConfig.put(pbean.getId(),pbean);
+        pbean.setAttrs(elePageBean.getMPropertiesClone());
         try
         {
             loadContainerCommonConfig(elePageBean,pbean);
@@ -218,7 +220,7 @@ public class ComponentConfigLoadManager
                 Object obj=null;
                 try
                 {
-                    obj=Class.forName(personalizeclass).newInstance();
+                    obj=ResourceUtils.loadClass(personalizeclass).newInstance();
                 }catch(Exception e)
                 {
                     throw new WabacusConfigLoadingException("页面"+pbean.getId()+"配置的personalizeclass："+personalizeclass+"类对象实例化失败",e);
@@ -259,7 +261,7 @@ public class ComponentConfigLoadManager
                 if(interceptorTmp.equals("")) continue;
                 try
                 {
-                    clsTmp=Class.forName(interceptorTmp);
+                    clsTmp=ResourceUtils.loadClass(interceptorTmp);
                 }catch(ClassNotFoundException e)
                 {
                     throw new WabacusConfigLoadingException("初始化页面"+pbean.getId()+"的拦截器"+interceptorTmp+"失败",e);
@@ -717,6 +719,7 @@ public class ComponentConfigLoadManager
                 rbean=new ReportBean(parentContainerBean);
                 rbean.setId(reportid);
             }
+            rbean.setAttrs(eleReportBean.getMPropertiesClone());
             parentContainerBean.getMChildren().put(reportid,rbean);
             loadReportInfo(rbean,eleReportBean,rbeanParent);
         }catch(Exception e)
@@ -846,7 +849,7 @@ public class ComponentConfigLoadManager
                 Object obj=null;
                 try
                 {
-                    obj=Class.forName(personalizeclass).newInstance();
+                    obj=ResourceUtils.loadClass(personalizeclass).newInstance();
                 }catch(Exception e)
                 {
                     throw new WabacusConfigLoadingException("报表"+rb.getPath()+"配置的personalizeclass："+personalizeclass+"类对象无例化失败",e);
@@ -1131,6 +1134,20 @@ public class ComponentConfigLoadManager
         {
             rb.setTplBean(Config.getInstance().getDefaultReportTplBean());
         }
+        
+        
+        XmlElementBean eleSqlBean=eleReportBean.getChildElementByName("sql");
+        if(eleSqlBean!=null)
+        {
+        	SqlBean sbean=new SqlBean(rb);
+            rb.setSbean(sbean);
+           
+        	rb.setMSelectBoxesInConditionWithRelate(null);//配置了自己的<sql/>，则把从父报表中继承过来的查询条件关联下拉框对象从rbean中移除掉
+            loadSqlInfo(sbean,eleSqlBean);
+          
+        }
+        
+        
         XmlElementBean eleDisplayBean=eleReportBean.getChildElementByName("display");
         if(eleDisplayBean!=null)
         {
@@ -1141,15 +1158,10 @@ public class ComponentConfigLoadManager
             rb.setDbean(dbean);
         }
         
-        XmlElementBean eleSqlBean=eleReportBean.getChildElementByName("sql");
-        if(eleSqlBean!=null)
-        {
-            rb.setMSelectBoxesInConditionWithRelate(null);//配置了自己的<sql/>，则把从父报表中继承过来的查询条件关联下拉框对象从rbean中移除掉
-            SqlBean sbean=new SqlBean(rb);
-            loadSqlInfo(sbean,eleSqlBean);
-            rb.setSbean(sbean);
-        }
 
+       
+
+        
         String format=null;
         List<String> lstImports=null;
         XmlElementBean eleFormatBean=eleReportBean.getChildElementByName("format");
@@ -1295,7 +1307,7 @@ public class ComponentConfigLoadManager
                     rbean.setInterceptor(resource);
                 }else
                 {
-                    c=Class.forName(interceptor);
+                    c=ResourceUtils.loadClass(interceptor);
                 }
             }
         }else
@@ -1573,7 +1585,7 @@ public class ComponentConfigLoadManager
                 c=WabacusButton.class;
             }else
             {
-                c=Class.forName(buttonclass);
+                c=ResourceUtils.loadClass(buttonclass);
             }
             Object o=c.getConstructor(new Class[] { IComponentConfigBean.class }).newInstance(new Object[] { ccbean });
             if(!(o instanceof AbsButtonType))

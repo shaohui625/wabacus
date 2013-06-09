@@ -30,8 +30,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -64,6 +64,7 @@ import com.wabacus.system.component.container.page.PageType;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.system.intercept.AbsPageInterceptor;
 import com.wabacus.system.permission.ComponentPermissionBean;
+import com.wabacus.system.permission.UserPermissionHandlerFactory;
 import com.wabacus.system.serveraction.UpdateComponentDataServerActionBean;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
@@ -96,7 +97,7 @@ public class ReportRequest
 
     private WabacusResponse wresponse;
 
-    private Map<String,Connection> connections=new HashMap<String,Connection>();
+    private Map<String,IConnection> connections=new HashMap<String,IConnection>();
 
     private Map<String,AbsDatabaseType> mDbTypes=new HashMap<String,AbsDatabaseType>();
 
@@ -380,14 +381,16 @@ public class ReportRequest
     private void initDisplayOnPage(String pageid)
     {
         UpdateComponentDataServerActionBean.initServerActionBean(this);
-        if(Config.showreport_onpage_url.indexOf("?")>0)
-        {
-            url=Config.showreport_onpage_url+"&";
-        }else
-        {
-            url=Config.showreport_onpage_url+"?";
-        }
-        url=url+"PAGEID="+pageid;
+//        if(Config.showreport_onpage_url.indexOf("?")>0)
+//        {
+//            url=Config.showreport_onpage_url+"&";
+//        }else
+//        {
+//            url=Config.showreport_onpage_url+"?";
+//        }
+//        url=url+"PAGEID="+pageid;
+        url = Config.getInstance().getPageUrl(Config.showreport_onpage_url,pageid,this);
+
         String ancestorUrls=getStringAttribute("ancestorPageUrls","");//祖先页面（包括所有层级的跳转源页面）的URL列表，返回时用
         if(!ancestorUrls.equals(""))
         {
@@ -960,13 +963,24 @@ public class ReportRequest
         }
         return (CacheDataBean)mCacheDataBeans.get(reportid);
     }
-    
+
+
+   /**
+    *  @Deprecated 采改getIConnection以支持其它数源
+    */
+    public Connection getConnection(String datasource){
+        return ( (JdbcConnection)getIConnection(datasource) ).getNativeConnection();
+    }
+
+    /**
+     * @Deprecated 采改getIConnection以支持其它数源
+     */
     public Connection getConnection()
     {
         return getConnection(Consts.DEFAULT_KEY);
     }
-    
-    public Connection getConnection(String datasource)
+
+    public IConnection getIConnection(String datasource)
     {
         if(Tools.isDefineKey("i18n",datasource))
         {
@@ -974,10 +988,10 @@ public class ReportRequest
             if(this.locallanguage!=null&&!this.locallanguage.trim().equals(""))
             {
                 String dsTemp=datasource+"_"+this.locallanguage;
-                Connection conn=connections.get(dsTemp);
+               IConnection conn=connections.get(dsTemp);
                 if(conn==null)
                 {
-                    conn=Config.getInstance().getDataSource(dsTemp).getConnection();
+                    conn=Config.getInstance().getDataSource(dsTemp).getIConnection();
                     connections.put(dsTemp,conn);
                 }
                 if(conn!=null)
@@ -993,7 +1007,7 @@ public class ReportRequest
         if(datasource==null||datasource.trim().equals("")) datasource=Consts.DEFAULT_KEY;
         if(connections.get(datasource)==null)
         {
-            connections.put(datasource,Config.getInstance().getDataSource(datasource).getConnection());
+            connections.put(datasource,Config.getInstance().getDataSource(datasource).getIConnection());
         }
         return connections.get(datasource);
     }
@@ -1049,7 +1063,12 @@ public class ReportRequest
         return lstSearchReportIds.contains(reportid);
     }
     
-    public String addParamToUrl(String paramname,String paramvalue,boolean overwrite)
+    public String  addParamToUrl(String paramname,String paramvalue,boolean overwrite)
+    {
+        url = addParamToUrl(paramname,paramvalue,overwrite,url);
+        return url;
+    }
+    public String  addParamToUrl(String paramname,String paramvalue,boolean overwrite,String url)
     {
         if(!overwrite&&(url.indexOf("&"+paramname+"=")>=0||url.indexOf("?"+paramname+"=")>=0))
         {
@@ -1148,15 +1167,8 @@ public class ReportRequest
             return false;//显示授的权限值不是当前权限值
         }
         
-        IComponentConfigBean ccbean=null;
-        if(this.pagebean.getId().equals(componentId))
-        {
-            ccbean=this.pagebean;
-        }else
-        {
-            ccbean=this.pagebean.getChildComponentBean(componentId,true);
-            if(ccbean==null) throw new WabacusRuntimeException("页面"+this.pagebean.getId()+"下没有ID为"+componentId+"的组件");
-        }
+        IComponentConfigBean ccbean=getIComponentConfigBean(componentId);
+        
         permission=Config.getInstance().checkDefaultPermission(ccbean.getGuid(),parttype,partid,permissiontype,permissionvalue);
         if(permission==Consts.CHKPERMISSION_YES)
         {
@@ -1172,6 +1184,20 @@ public class ReportRequest
         boolean defaultpermission=AuthorizationAssistant.getInstance().checkDefaultPermissionTypeValue(permissiontype,permissionvalue);
         this.setAttribute(myPermissionKey,defaultpermission);
         return defaultpermission;
+    }
+
+    public IComponentConfigBean getIComponentConfigBean(String componentId)
+    {
+        IComponentConfigBean ccbean=null;
+        if(this.pagebean.getId().equals(componentId))
+        {
+            ccbean=this.pagebean;
+        }else
+        {
+            ccbean=this.pagebean.getChildComponentBean(componentId,true);
+            if(ccbean==null) throw new WabacusRuntimeException("页面"+this.pagebean.getId()+"下没有ID为"+componentId+"的组件");
+        }
+        return ccbean;
     }
     
     private boolean checkParentPermission(String componentId,String parttype,String partid,String permissiontype,String permissionvalue)
@@ -1208,7 +1234,12 @@ public class ReportRequest
         if(!AuthorizationAssistant.getInstance().isExistPermissiontype(permissiontype)) return Consts.CHKPERMISSION_UNSUPPORTEDTYPE;
         if(!AuthorizationAssistant.getInstance().isExistValueOfPermissiontype(permissiontype,permissionvalue))
             return Consts.CHKPERMISSION_UNSUPPORTEDVALUE;
-        if(mComponentsPermissions==null||this.mComponentsPermissions.get(componentId)==null) return Consts.CHKPERMISSION_EMPTY;//没有为此组件显式授权
+        if(mComponentsPermissions==null||this.mComponentsPermissions.get(componentId)==null){
+            UserPermissionHandlerFactory.getUserPermissionHandler().getUserPermission(this,componentId,permissiontype);
+        }
+        if(mComponentsPermissions==null||this.mComponentsPermissions.get(componentId)==null){         
+            return Consts.CHKPERMISSION_EMPTY;//没有为此组件显式授权
+        }
         return this.mComponentsPermissions.get(componentId).checkPermission(parttype,partid,permissiontype,permissionvalue);
     }
     
@@ -1276,7 +1307,7 @@ public class ReportRequest
             while(itConns.hasNext())
             {
                 name=itConns.next();
-                WabacusAssistant.getInstance().release(connections.get(name),null);
+                WabacusAssistant.getInstance().release(connections.get(name));
             }
             connections.clear();
         }

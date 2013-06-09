@@ -110,9 +110,12 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
             String action=Tools.getRequestValue(request,"ACTIONTYPE","");
             if(action.equalsIgnoreCase("updateconfig"))
             {
-                loadReportConfigFiles();
                 PrintWriter out=response.getWriter();
-                out.println("完成配置文件更新");
+                final long start=System.currentTimeMillis();
+                out.println("配置文件更新中,请稍后...");
+                out.flush();
+                loadReportConfigFiles();
+                out.println("完成配置文件更新. 时间:"+(System.currentTimeMillis()-start));
             }else if(action.equalsIgnoreCase("invokeServerAction"))
             {
                 String resultStr=WabacusFacade.invokeServerAction(request,response);

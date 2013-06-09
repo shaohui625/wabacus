@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.sql.Connection;
@@ -47,6 +48,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.AbsComponentType;
 import com.wabacus.util.Consts_Private;
@@ -149,9 +151,10 @@ public class WabacusAssistant
                 abspath=fileRelativePath;
             }else
             {
-                while(fileRelativePath.startsWith("/"))
+                while(fileRelativePath.startsWith("/")){
                     fileRelativePath=fileRelativePath.substring(1).trim();
-                abspath=homepath+"/"+fileRelativePath;
+                }
+                abspath = homepath+"/"+fileRelativePath;
             }
             abspath=Tools.replaceAll(abspath,"//","/");
             while(abspath.startsWith("/"))
@@ -172,8 +175,15 @@ public class WabacusAssistant
         }
         try
         {
-            rootpath=ConfigLoadManager.currentDynClassLoader.getResource(rootpath).getPath();
+            URL url=ConfigLoadManager.currentDynClassLoader.getResource(rootpath);
+            rootpath=url.getPath();
             rootpath=URLDecoder.decode(rootpath,"UTF-8");
+            
+            int indexOf = rootpath.indexOf("/WEB-INF");
+            if(indexOf > 0 && !new File(rootpath).exists()){
+                 rootpath =  Config.webroot_abspath+rootpath.substring(indexOf);
+             }
+            
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("在classpath中没有取到文件"+rootpath,e);
@@ -609,7 +619,22 @@ public class WabacusAssistant
             throw new WabacusRuntimeException("通过模板"+dyntplpath+"显示组件"+comObj.getConfigBean().getPath()+"失败",e);
         }
     }
-    
+
+    public void release(IConnection conn){
+
+        try
+        {
+            if(conn!=null)
+            {
+                conn.close();
+            }
+
+        }catch(Exception e)
+        {
+            log.error("关闭数据库连接失败",e);
+        }
+
+    }
     public void release(Connection conn,Statement stmt)
     {
         try

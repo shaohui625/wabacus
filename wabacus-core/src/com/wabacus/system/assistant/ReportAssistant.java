@@ -43,12 +43,12 @@ import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.condition.ConditionInSqlBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
@@ -75,8 +75,6 @@ import com.wabacus.system.inputbox.SelectBox;
 import com.wabacus.system.inputbox.TextBox;
 import com.wabacus.system.intercept.ColDataByInterceptor;
 import com.wabacus.system.intercept.IInterceptor;
-import com.wabacus.system.resultset.GetAllResultSetByPreparedSQL;
-import com.wabacus.system.resultset.GetAllResultSetBySQL;
 import com.wabacus.system.resultset.GetResultSetByStoreProcedure;
 import com.wabacus.system.resultset.ISQLType;
 import com.wabacus.util.Consts;
@@ -1065,15 +1063,8 @@ public class ReportAssistant
         List<String[]> lstResults=new ArrayList<String[]>();
         try
         {
-            ISQLType ImpISQLType=null;
-            if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-            {
-                ImpISQLType=new GetAllResultSetByPreparedSQL();
-            }else
-            {
-                ImpISQLType=new GetAllResultSetBySQL();
-            }
-            Object objTmp=ImpISQLType.getResultSet(rrequest,rbean,obean,sql,obean.getLstConditions());
+           ISQLType impISQLType=rbean.getSbean().getISQLTypeBuilder().createAllResultSetISQLType();;
+            Object objTmp=impISQLType.getResultSet(rrequest,rbean,obean,sql,obean.getLstConditions());
             if(objTmp instanceof List)
             {
                 for(Object itemTmp:(List)objTmp)
@@ -1352,11 +1343,11 @@ public class ReportAssistant
                     c=rbean.getPojoclass();
                 }else
                 {
-                    c=Class.forName(Consts.BASE_PACKAGE_NAME+".Pojo_"+rbean.getPageBean().getId()+"_"+rbean.getId());
+                    c=ResourceUtils.loadClass(Consts.BASE_PACKAGE_NAME+".Pojo_"+rbean.getPageBean().getId()+"_"+rbean.getId());
                 }
             }else
             {
-                c=Class.forName(classType);
+                c=ResourceUtils.loadClass(classType);
             }
             resultObj=c.newInstance();
         }catch(ClassNotFoundException e1)

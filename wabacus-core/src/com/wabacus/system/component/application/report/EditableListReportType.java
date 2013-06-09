@@ -18,7 +18,6 @@
  */
 package com.wabacus.system.component.application.report;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +36,7 @@ import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.CacheDataBean;
+import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
@@ -116,7 +116,7 @@ public class EditableListReportType extends UltraListReportType implements IEdit
         }
     }
 
-    public int[] doSaveAction(Connection conn) throws SQLException
+    public int[] doSaveAction(IConnection conn) throws SQLException
     {
         SaveInfoDataBean sidbean=(SaveInfoDataBean)rrequest.getAttribute(rbean.getId(),"SAVEINFO_DATABEAN");
         int[] result=new int[]{0,0};
@@ -293,7 +293,7 @@ public class EditableListReportType extends UltraListReportType implements IEdit
             ersqlbean=new EditableReportSqlBean(sqlbean);
             sqlbean.setExtendConfigDataForReportType(KEY,ersqlbean);
         }
-        Map<String,String> mSqlProperties=ConfigLoadAssistant.getInstance().assembleAllAttributes(lstEleSqlBeans,new String[] { "transaction" });//组装所有<sql/>配置的这些属性  
+        Map<String,String> mSqlProperties=ConfigLoadAssistant.getInstance().assembleAllAttributes(lstEleSqlBeans,new String[] { "transaction" });//组装所有<sql/>配置的这些属性
         String transactiontype=mSqlProperties.get("transaction");
         if(transactiontype!=null&&!transactiontype.trim().equals(""))
         {

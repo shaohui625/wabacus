@@ -27,14 +27,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
-import com.wabacus.config.component.application.report.condition.ConditionExpressionBean;
 import com.wabacus.config.component.application.report.condition.ConditionInSqlBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.resultset.ISQLTypeBuilder;
 import com.wabacus.util.Consts;
-import com.wabacus.util.Consts_Private;
-import com.wabacus.util.Tools;
 
 public class SqlBean extends AbsConfigBean
 {
@@ -104,19 +102,26 @@ public class SqlBean extends AbsConfigBean
         this.beforeSearchMethod=beforeSearchMethod;
     }
 
+    private String statementtype;
     public void setStatementType(String statementtype)
     {
         if(statementtype==null) return;
-        statementtype=statementtype.toLowerCase().trim();
-        if(statementtype.equals("statement"))
+       this.statementtype=statementtype.toLowerCase().trim();
+        if(this.statementtype.equals("statement"))
         {
             this.stmttype=STMTYPE_STATEMENT;
-        }else if(statementtype.equals("preparedstatement"))
+        }else if(this.statementtype.equals("preparedstatement"))
         {
             this.stmttype=STMTYPE_PREPAREDSTATEMENT;
         }
     }
 
+
+    public ISQLTypeBuilder getISQLTypeBuilder(){
+
+        AbsDatabaseType dbType = this.getDbType();
+       return dbType.getISQLTypeBuilder(this,this.statementtype);
+    }
     public boolean isStoreProcedure()
     {
         if(this.value==null||this.value.trim().equals("")) return false;
@@ -313,140 +318,13 @@ public class SqlBean extends AbsConfigBean
                         +cbTmp.getName()+"存在重复，必须确保唯一");
             }
             lstTmp.add(cbTmp.getName());
-            cbTmp.doPostLoad();
+           // cbTmp.doPostLoad();
+            this.getDbType().doConditionBeanPostLoad(cbTmp);
         }
-        if(this.isStoreProcedure()) return;
-        parseConditionInSql();
+        this.getDbType().parseConditionInSql(this,this.value);
         validateConditionsConfig();
     }
-    
-    private void parseConditionInSql()
-    {
-        if(this.value==null||this.value.trim().equals("")) return;
-        List<ConditionInSqlBean> lstConditionsInSqlBeans=new ArrayList<ConditionInSqlBean>();
-        ConditionInSqlBean csbeanTmp;
-        int placeholderIndex=0;
-        String sql=this.value;
-        StringBuffer sqlBuf=new StringBuffer();
-        int idxBracketStart;//存放sql语句中第一个有效{号的下标
-        int idxBracketEnd;
-        int idxJingStart;
-        int idxJingEnd;
-        while(true)
-        {
-            idxBracketStart=getValidIndex(sql,'{',0);
-            idxBracketEnd=getValidIndex(sql,'}',0);
-            idxJingStart=getValidIndex(sql,'#',0);
-            if(idxJingStart<0)
-            {
-                idxJingEnd=-1;
-            }else
-            {
-                idxJingEnd=getValidIndex(sql,'#',idxJingStart+1);
-            }
-            if(idxBracketStart<0&&idxBracketEnd<0&&idxJingStart<0&&idxJingEnd<0) break;//所有动态条件处理完毕
-
-
-
-            validateCondition(sql,idxBracketStart,idxBracketEnd,idxJingStart,idxJingEnd);
-            if(idxJingEnd>=0&&(idxJingEnd<idxBracketStart||idxBracketStart<0))
-            {
-                String prex=sql.substring(0,idxJingStart);
-                String expression=sql.substring(idxJingStart,idxJingEnd+1);//要包括左右的#号，所以后面用idxJingEnd+1
-                String suffix=sql.substring(idxJingEnd+1);
-                String conditionname=expression;
-                expression="#data#";//这里用#data#占位符即可，方便解析pattern，不用标识<condition/>的name，因为会在对应的ConditionInSqlBean的中标识
-                if(prex.endsWith("%"))
-                {
-                    prex=prex.substring(0,prex.length()-1);
-                    expression="%"+expression;
-                }
-                if(prex.endsWith("'"))
-                {
-                    prex=prex.substring(0,prex.length()-1);
-                    expression="'"+expression;
-                }
-                if(suffix.startsWith("%"))
-                {
-                    suffix=suffix.substring(1);
-                    expression=expression+"%";
-                }
-                if(suffix.startsWith("'"))
-                {
-                    suffix=suffix.substring(1);
-                    expression=expression+"'";
-                }
-                sql=suffix;
-                csbeanTmp=new ConditionInSqlBean(this);
-                lstConditionsInSqlBeans.add(csbeanTmp);
-                csbeanTmp.setConditionname(conditionname);
-                csbeanTmp.setPlaceholder(" [CONDITION_PLACEHOLDER_"+placeholderIndex+"] ");
-                ConditionExpressionBean expressionBean=new ConditionExpressionBean();
-                csbeanTmp.setConditionExpression(expressionBean);
-                expressionBean.setValue(expression);
-                if(this.stmttype==STMTYPE_PREPAREDSTATEMENT) expressionBean.parseConditionExpression();
-                sqlBuf.append(prex).append(csbeanTmp.getPlaceholder());
-                placeholderIndex++;
-            }else if(idxBracketStart<idxJingStart&&idxBracketEnd>idxJingEnd&&idxBracketStart>=0&&idxJingEnd>=0)
-            {
-                
-                sqlBuf.append(sql.substring(0,idxBracketStart));
-                String expression=sql.substring(idxBracketStart,idxBracketEnd+1);
-                if(expression.equals("{#condition#}"))
-                {
-                    csbeanTmp=new ConditionInSqlBean(this);
-                    csbeanTmp.setConditionname("{#condition#}");
-                    lstConditionsInSqlBeans.add(csbeanTmp);
-                    sqlBuf.append(" {#condition#} ");
-                }else
-                {
-                    csbeanTmp=new ConditionInSqlBean(this);
-                    csbeanTmp.setPlaceholder(" [CONDITION_PLACEHOLDER_"+placeholderIndex+"] ");
-                    sqlBuf.append(csbeanTmp.getPlaceholder());
-                    if(idxBracketStart==0&&idxJingStart==1&&idxBracketEnd==expression.length()-1&&idxJingEnd==expression.length()-2)
-                    {//{#name#}形式，则某个查询条件本身就是一个完整的条件表达式
-                        csbeanTmp.setConditionname(expression);
-                    }else
-                    {
-                        expression=expression.substring(1,expression.length()-1);
-                        String conditionname=sql.substring(idxJingStart+1,idxJingEnd);//放在一个{}中的一定是从同一个<condition/>（即name属性相同）中取值做为条件，因此在这里可以取到此name属性（在##之间的值），
-                        if(conditionname.equals("data"))
-                        {
-                            throw new WabacusConfigLoadingException("解析报表"+this.getReportBean().getPath()+"的查询SQL语句"+this.value
-                                    +"失败，不能在其中直接使用占位符#data#，这是一个框架做为保留字的字符串，请使用#conditionname#格式");
-                        }
-                        expression=Tools.replaceAll(expression,"#"+conditionname+"#","#data#");
-                        csbeanTmp.setConditionname(conditionname);
-                        ConditionExpressionBean expressionBean=new ConditionExpressionBean();
-                        csbeanTmp.setConditionExpression(expressionBean);
-                        expressionBean.setValue(expression);
-                        if(this.stmttype==STMTYPE_PREPAREDSTATEMENT) expressionBean.parseConditionExpression();
-                    }
-                    lstConditionsInSqlBeans.add(csbeanTmp);
-                    placeholderIndex++;
-                }
-                sql=sql.substring(idxBracketEnd+1);
-            }else
-            {
-                throw new WabacusConfigLoadingException("解析报表"+this.getReportBean()+"的SQL语句："+this.value+"中的动态条件失败，无法解析其中用{}和##括住的动态条件");
-            }
-        }
-        if(!sql.equals("")) sqlBuf.append(sql);
-        if(lstConditionsInSqlBeans==null||lstConditionsInSqlBeans.size()==0
-                ||(lstConditionsInSqlBeans.size()==1&&lstConditionsInSqlBeans.get(0).getConditionname().equals("{#condition#}")))
-        {
-            this.lstConditionInSqlBeans=null;
-        }else
-        {
-            this.value=sqlBuf.toString();
-            this.lstConditionInSqlBeans=lstConditionsInSqlBeans;
-        }
-        this.value=Tools.replaceAllOnetime(this.value,"\\{","{");
-        this.value=Tools.replaceAllOnetime(this.value,"\\}","}");
-        this.value=Tools.replaceAllOnetime(this.value,"\\#","#");
-    }
-
-    private void validateCondition(String sql,int idxBracketStart,int idxBracketEnd,int idxJingStart,int idxJingEnd)
+    public void validateCondition(String sql,int idxBracketStart,int idxBracketEnd,int idxJingStart,int idxJingEnd)
     {
         if(idxBracketStart>=0&&idxBracketEnd<0||idxBracketStart<0&&idxBracketEnd>=0||idxBracketStart>=idxBracketEnd&&idxBracketEnd>=0)
         {//只有一个{或只有一个}或者{在}的后面
@@ -482,8 +360,8 @@ public class SqlBean extends AbsConfigBean
             throw new WabacusConfigLoadingException("解析报表"+this.getReportBean()+"的SQL语句："+this.value+"中的动态条件失败，{、}、#、#之间的关系混乱");
         }
     }
-    
-    private int getValidIndex(String sql,char sign,int startindex)
+
+    public  static int getValidIndex(String sql,char sign,int startindex)
     {
         if(sql==null||sql.equals("")) return -1;
         char c;
@@ -505,7 +383,7 @@ public class SqlBean extends AbsConfigBean
         return -1;
     }
     
-    private void validateConditionsConfig()
+   public void validateConditionsConfig()
     {
         List<String> lstConditionNamesInSql=new ArrayList<String>();//在sql语句中通过#name#指定了条件的<condition/>的name集合
         if(this.lstConditionInSqlBeans!=null&&this.lstConditionInSqlBeans.size()>0)
@@ -545,77 +423,27 @@ public class SqlBean extends AbsConfigBean
     public final static String sqlprex="select * from (";//有的地方要根据这个去除掉这个前缀和下面的后缀
 
     public final static String sqlsuffix=") wabacus_temp_tbl";
-    
+
     public void doPostLoadSql(boolean isListReportType)
     {
-        if(value==null||value.trim().equals("")||this.isStoreProcedure()) return;
-        this.sqlWithoutOrderby=sqlprex+Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL+sqlsuffix;
-        if(isListReportType)
-        {
-            this.sqlWithoutOrderby=this.sqlWithoutOrderby+" "+Consts_Private.PLACEHODER_FILTERCONDITION;
-        }
-        this.sqlWithoutOrderby=this.sqlWithoutOrderby+" %orderby%";
-        String sqlKernel=value;
-        String sqlTemp=Tools.removeBracketAndContentInside(value);
-        if(sqlTemp.indexOf("(")>=0||sqlTemp.indexOf(")")>=0)
-        {
-            throw new WabacusConfigLoadingException("配置的sql语句："+value+"不合法，左右括号没有配对");
-        }
-        sqlTemp=Tools.replaceAll(sqlTemp,"  "," ");
-        if(sqlTemp.toLowerCase().indexOf("order by")>0)
-        {
-            int idx_orderby=value.toLowerCase().lastIndexOf("order by");
-            sqlKernel=value.substring(0,idx_orderby);
-            String orderbyTmp=value.substring(idx_orderby+"order by ".length());
-            List<String> lstOrderByColumns=Tools.parseStringToList(orderbyTmp,",",false);
-            StringBuffer orderbuf=new StringBuffer();
-            for(String orderby_tmp:lstOrderByColumns)
-            {
-                if(orderby_tmp==null||orderby_tmp.trim().equals("")) continue;
-                orderby_tmp=orderby_tmp.trim();
-                int idx=orderby_tmp.indexOf(".");
-                if(idx>0)
-                {
-                    orderbuf.append(orderby_tmp.substring(idx+1));
-                }else
-                {
-                    orderbuf.append(orderby_tmp);
-                }
-                orderbuf.append(",");
-            }
-            orderbyTmp=orderbuf.toString();
-            if(orderbyTmp.charAt(orderbyTmp.length()-1)==',') orderbyTmp=orderbyTmp.substring(0,orderbyTmp.length()-1);
-            this.orderby=orderbyTmp;
-        }else
-        {//没有配置order by
-            String column=null;
-            for(ColBean cbTmp:this.getReportBean().getDbean().getLstCols())
-            {
-                if(!cbTmp.isControlCol()&&!cbTmp.isNonFromDbCol()&&!cbTmp.isNonValueCol())
-                {
-                    column=cbTmp.getColumn();
-                    if(column!=null&&!column.trim().equals("")) break;
-                }
-            }
-
-            this.orderby=column;
-        }
-        this.sql_kernel=sqlKernel;
-        this.sqlCount="select count(*) from ("+Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL+")  tabletemp ";
-        if(isListReportType)
-        {
-            this.sqlCount=this.sqlCount+Consts_Private.PLACEHODER_FILTERCONDITION;
-        }
+        this.getDbType().doPostLoadSql(this,isListReportType);
     }
-    
+
     public void buildPageSplitSql()
+    {
+        if(value==null||value.trim().equals("")) return;//如果没有QL语句就不需要处理了
+        AbsDatabaseType dbtype=getDbType();
+        this.setSplitpage_sql(dbtype.constructSplitPageSql(this));
+    }
+
+    public AbsDatabaseType getDbType()
     {
         AbsDatabaseType dbtype=Config.getInstance().getDataSource(this.getDatasource()).getDbType();
         if(dbtype==null)
         {
             throw new WabacusConfigLoadingException("没有实现数据源"+this.getDatasource()+"对应数据库类型的相应实现类");
         }
-        this.setSplitpage_sql(dbtype.constructSplitPageSql(this));
+        return dbtype;
     }
     
     public AbsConfigBean clone(AbsConfigBean parent)

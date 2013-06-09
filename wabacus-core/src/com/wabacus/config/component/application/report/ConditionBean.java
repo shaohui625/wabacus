@@ -41,7 +41,7 @@ import com.wabacus.system.inputbox.IInputBoxOwnerBean;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
-public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
+public class ConditionBean extends AbsConfigBean implements IConditionBean,IInputBoxOwnerBean
 {
     private static Log log=LogFactory.getLog(ConditionBean.class);
     
@@ -974,7 +974,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if(this.conditionExpression==null&&this.cvaluesbean==null) return;
         if(this.conditionExpression!=null&&this.conditionExpression.getValue()!=null&&!this.conditionExpression.getValue().trim().equals(""))
         {//直接在<conditon/>的<value/>子标签中配置了一个条件表达式
-            conditionExpression.parseConditionExpression();
+            conditionExpression.parseConditionExpression(this);
         }else
         {
             conditionExpression=null;
@@ -984,7 +984,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                 if(cvbTmp.getConditionExpression()!=null&&cvbTmp.getConditionExpression().getValue()!=null
                         &&!cvbTmp.getConditionExpression().getValue().trim().equals(""))
                 {//在<values/>的<value/>中配置了条件表达式
-                    cvbTmp.getConditionExpression().parseConditionExpression();
+                    cvbTmp.getConditionExpression().parseConditionExpression(this);
                 }else
                 {//在<values/>的<value/>的<column/>中配置了条件表达式
                     cvbTmp.setConditionExpression(null);
@@ -997,7 +997,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                             throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的name属性为"+this.name
                                     +"的查询条件失败，没有为它配置条件表达式");
                         }
-                        ccbeanTmp.getConditionExpression().parseConditionExpression();
+                        ccbeanTmp.getConditionExpression().parseConditionExpression(this);
                     }
                 }
             }

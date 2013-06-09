@@ -160,8 +160,6 @@ public abstract class AbsDetailReportType extends AbsReportType
     private void constructSqlForDetailType(SqlBean sqlbean)
     {
         if(sqlbean==null) return;
-        String value=sqlbean.getValue();
-        if(value==null||value.trim().equals("")||sqlbean.isStoreProcedure()) return;
         sqlbean.doPostLoadSql(false);
         sqlbean.buildPageSplitSql();
     }

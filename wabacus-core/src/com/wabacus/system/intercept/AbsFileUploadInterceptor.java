@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
 
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.exception.WabacusConfigLoadingException;
 
 public abstract class AbsFileUploadInterceptor
@@ -68,7 +69,7 @@ public abstract class AbsFileUploadInterceptor
         Object interObj=null;
         try
         {
-            interObj=Class.forName(interceptor.trim()).newInstance();
+            interObj=ResourceUtils.loadClass(interceptor.trim()).newInstance();
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("文件上传拦截器"+interceptor+"类无法实例化",e);

@@ -29,16 +29,15 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.component.ComponentConfigLoadManager;
+import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.resultset.GetAllResultSetByPreparedSQL;
-import com.wabacus.system.resultset.GetAllResultSetBySQL;
-import com.wabacus.system.resultset.ISQLType;
 import com.wabacus.util.Tools;
 
 public class SQLPromptDataSource extends AbsTypePromptDataSource implements Cloneable
@@ -62,23 +61,14 @@ public class SQLPromptDataSource extends AbsTypePromptDataSource implements Clon
     public List<Map<String,String>> getResultDataList(ReportRequest rrequest,ReportBean rbean,
             String typedata)
     {
-        typedata=Tools.removeSQLKeyword(typedata);
         List<Map<String,String>> lstResults=new ArrayList<Map<String,String>>();
         try
         {
             List<TypePromptColBean> lstPColsBean=promptConfigBean.getLstPColBeans();
             if(lstPColsBean==null||lstPColsBean.size()==0) return null;
-            ISQLType ImpISQLType=null;
-            if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-            {
-                ImpISQLType=new GetAllResultSetByPreparedSQL();
-            }else
-            {
-                ImpISQLType=new GetAllResultSetBySQL();
-            }
-            String sqlTemp=Tools.replaceAll(sql,"#data#",typedata);
-            log.debug("SQL语句："+sqlTemp);
-            Object objTmp=ImpISQLType.getResultSet(rrequest,rbean,this,sqlTemp,this.getLstConditions());
+        
+            Object objTmp=getPromptDataList(rrequest,rbean,this,typedata);
+            
             int cnt=0;
             if(objTmp instanceof List)
             {
@@ -131,6 +121,23 @@ public class SQLPromptDataSource extends AbsTypePromptDataSource implements Clon
         return lstResults;
     }
 
+    public Object getPromptDataList(ReportRequest rrequest,ReportBean rbean,SQLPromptDataSource typeObj,String typedata)
+    {
+//        typedata=Tools.removeSQLKeyword(typedata);
+//        final SqlBean sbean=rbean.getSbean();             
+//        ISQLType impISQLType=sbean.getISQLTypeBuilder().createAllResultSetISQLType();
+//        String sqlTemp=Tools.replaceAll(typeObj.getSql(),"#data#",typedata);
+//        log.debug("SQL语句："+sqlTemp);
+//        Object objTmp=impISQLType.getResultSet(rrequest,rbean,typeObj,sqlTemp,typeObj.getLstConditions());
+//        return objTmp;
+        return getDbType(rbean).getPromptDataList(rrequest,rbean,typeObj,typedata);
+    }
+
+    public AbsDatabaseType getDbType(ReportBean rbean)
+    {
+        return rbean.getSbean().getDbType();
+    }
+
     public void loadExternalConfig(ReportBean rbean,XmlElementBean eleDataSourceBean)
     {
         super.loadExternalConfig(rbean,eleDataSourceBean);
@@ -147,17 +154,11 @@ public class SQLPromptDataSource extends AbsTypePromptDataSource implements Clon
         {
             throw new WabacusConfigLoadingException("为报表"+rbean.getPath()+"配置的输入联想配置的SQL语句不能为空");
         }
-        sql=Tools.formatStringBlank(sql).trim();
-        if(!sql.toLowerCase().startsWith("select")||sql.toLowerCase().indexOf("from")<=0)
-        {
-            throw new WabacusConfigLoadingException("为报表"+rbean.getPath()+"配置的输入联想配置的SQL语句"+sql+"不合法");
-        }
-        sql=sql.substring("select".length()).trim();
-        if(sql.toLowerCase().indexOf("distinct")!=0)
-        {
-            sql=" distinct "+sql;
-        }
-        sql="select "+sql;
+        
+        
+        
+        final AbsDatabaseType dbType=getDbType(rbean);
+        sql = dbType.parseAndValidPromptSql(rbean,this,sql);
         this.lstConditions=ComponentConfigLoadManager.loadConditionsInOtherPlace(eleDataSourceBean,rbean);
         if(this.lstConditions!=null&&this.lstConditions.size()>0)
         {
@@ -172,6 +173,23 @@ public class SQLPromptDataSource extends AbsTypePromptDataSource implements Clon
         }
     }
 
+    public String parseAndValidPromptSql(ReportBean rbean,String sql)
+    {
+
+        sql=Tools.formatStringBlank(sql).trim();
+        if(!sql.toLowerCase().startsWith("select")||sql.toLowerCase().indexOf("from")<=0)
+        {
+            throw new WabacusConfigLoadingException("为报表"+rbean.getPath()+"配置的输入联想配置的SQL语句"+sql+"不合法");
+        }
+        sql=sql.substring("select".length()).trim();
+        if(sql.toLowerCase().indexOf("distinct")!=0)
+        {
+            sql=" distinct "+sql;
+        }
+        sql="select "+sql;
+        return sql;
+    }
+
     public void doPostLoad(ReportBean rbean)
     {
         super.doPostLoad(rbean);
@@ -179,7 +197,7 @@ public class SQLPromptDataSource extends AbsTypePromptDataSource implements Clon
         {
             for(ConditionBean cbeanTmp:this.lstConditions)
             {
-                cbeanTmp.getConditionExpression().parseConditionExpression();
+                cbeanTmp.getConditionExpression().parseConditionExpression(cbeanTmp);
             }
         }
     }

@@ -56,11 +56,7 @@ public class UpdateSqlActionBean extends AbsEditSqlActionBean
             whereclause=configSql.substring(idxwhere).trim();
             configSql=configSql.substring(0,idxwhere).trim();
         }
-        AbsDatabaseType dbtype=Config.getInstance().getDataSource(sqlbean.getDatasource()).getDbType();
-        if(dbtype==null)
-        {
-            throw new WabacusConfigLoadingException("没有实现数据源"+sqlbean.getDatasource()+"对应数据库类型的相应实现类");
-        }
+        AbsDatabaseType dbtype = sqlbean.getDbType();
         List<UpdateSqlActionBean> lstRealUpdateSqls=dbtype.constructUpdateSql(configSql,sqlbean.getReportBean(),reportTypeKey,this);
         List<EditableReportParamBean> lstParamsBean;
         String updatesql;

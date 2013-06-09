@@ -222,33 +222,10 @@ public class EditableReportUpdateDataBean implements Cloneable
             return 0;
         }
         lstSqlActionBeans=new ArrayList<AbsEditSqlActionBean>();
-        List<String> lstUpdateSqls=Tools.parseStringToList(sqls,';','\"');
-        AbsEditSqlActionBean sqlBeanTmp=new UpdateSqlActionBean(this);//临时生成一个这样对象去掉SQL语句前面的返回值配置，以便判断它是哪种类型的SQL语句
-        String realSqlTmp;
-        for(String sqltmp:lstUpdateSqls)
-        {
-            if(sqltmp==null||sqltmp.trim().equals("")) continue;
-            sqltmp=sqltmp.trim();
-            realSqlTmp=sqlBeanTmp.parseAndRemoveReturnParamname(sqltmp).toLowerCase().trim();
-            if(realSqlTmp.indexOf("insert ")==0)
-            {
-                new InsertSqlActionBean(this).parseSql(sqlbean,reportTypeKey,sqltmp);
-            }else if(realSqlTmp.indexOf("update ")==0)
-            {
-                new UpdateSqlActionBean(this).parseSql(sqlbean,reportTypeKey,sqltmp);
-            }else if(realSqlTmp.indexOf("delete ")==0)
-            {
-                new DeleteSqlActionBean(this).parseSql(sqlbean,reportTypeKey,sqltmp);
-            }else if(realSqlTmp.indexOf("call ")==0)
-            {
-                new StoreProcedureActionBean(this).parseSql(sqlbean,reportTypeKey,sqltmp);
-            }else
-            {
-                throw new WabacusConfigLoadingException("加载报表"+sqlbean.getReportBean().getPath()+"失败，配置的更新数据的SQL语句"+sqltmp+"不合法");
-            }
-        }
+        sqlbean.getDbType().parseUpdateAction(sqlbean,reportTypeKey,sqls,this);
         return 1;
     }
+
 
     public void addInsertSqlActionBean(String sql,List<EditableReportParamBean> lstParamBeans,String returnValueParamName)
     {
@@ -477,7 +454,7 @@ public class EditableReportUpdateDataBean implements Cloneable
             }
         }
     }
-    
+
     private void processParamnameOfAllParamBeans()
     {
         if(mParamsBeanInUpdateClause!=null&&mParamsBeanInUpdateClause.size()>0)

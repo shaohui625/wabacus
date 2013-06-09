@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.util.RegexTools;
@@ -144,9 +145,15 @@ public class FilePathAssistant
             {
                 urlTmp=(URL)rootUrls.nextElement();
                 protocolTmp=urlTmp.getProtocol();
-                if("file".equals(protocolTmp))
+                if("file".equals(protocolTmp) || "vfs".equals(protocolTmp))  // "vfs" for jboss AS
                 {//是目录
                     String filePath=URLDecoder.decode(urlTmp.getFile(),"UTF-8");
+                    if("vfs".equals(protocolTmp) ){
+                    	int indexOf = filePath.indexOf("/WEB-INF");
+                    	 if(indexOf > 0 && !new File(filePath).exists()){
+                    		 filePath =  Config.webroot_abspath+filePath.substring(indexOf);
+                    	 }
+                    }
                     getFileFromClasspathDir(rootpath,filePath,regex,isRecursive,lstResults);
                 }else if("jar".equals(protocolTmp))
                 {
@@ -155,7 +162,7 @@ public class FilePathAssistant
                     JarEntry jarEntryTmp;
                     while(entries.hasMoreElements())
                     {
-                        jarEntryTmp=entries.nextElement();// 获取jar里的一个实体 可以是目录 和一些jar包里的其他文件 如META-INF等文件 
+                        jarEntryTmp=entries.nextElement();// 获取jar里的一个实体 可以是目录 和一些jar包里的其他文件 如META-INF等文件
                         if(jarEntryTmp.isDirectory()) continue;
                         String name=jarEntryTmp.getName();
                         if(name.charAt(0)=='/') name=name.substring(1);// 如果是以/开头的

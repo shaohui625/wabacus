@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
+
 import com.wabacus.config.Config;
 import com.wabacus.config.OnloadMethodBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
@@ -544,5 +546,19 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
             e.printStackTrace();
             return null;
         }
+    }
+    
+    
+    
+    private Map<String,String> attrs;
+
+    public Map<String,String> getAttrs()
+    {
+        return attrs == null ? MapUtils.EMPTY_MAP : attrs;
+    }
+
+    public void setAttrs(Map<String,String> attrs)
+    {
+        this.attrs=attrs;
     }
 }

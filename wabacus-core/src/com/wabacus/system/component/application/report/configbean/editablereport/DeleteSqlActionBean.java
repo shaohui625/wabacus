@@ -45,19 +45,8 @@ public class DeleteSqlActionBean extends AbsEditSqlActionBean
 
     public void parseSql(SqlBean sqlbean,String reportTypeKey,String configSql)
     {
-        configSql=this.parseAndRemoveReturnParamname(configSql);
-        int idxwhere=configSql.toLowerCase().indexOf(" where ");
-        if(idxwhere<=0)
-        {
-            this.sql=configSql;
-        }else
-        {
-            this.lstParamBeans=new ArrayList<EditableReportParamBean>();
-            StringBuffer sqlBuffer=new StringBuffer();
-            sqlBuffer.append(configSql.substring(0,idxwhere));
-            sqlBuffer.append(parseUpdateWhereClause(sqlbean,reportTypeKey,lstParamBeans,configSql.substring(idxwhere)));
-            this.sql=sqlBuffer.toString();
-        }
+
+        this.sql = sqlbean.getDbType().parseDeleteSql(sqlbean,reportTypeKey,configSql,this);
         owner.getLstSqlActionBeans().add(this);
     }
 

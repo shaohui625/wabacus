@@ -129,6 +129,11 @@ public class TabsPanel extends AbsPanelType
                     break;
                 }
             }
+            if(currentSelectedTabItemDisplayBean==null)
+            {
+                currentSelectedTabItemDisplayBean = lstDisplayedChildren.get(0);
+                changeSelectedTabItemIdx(currentSelectedTabItemDisplayBean.getIndex());
+            }
         }
     }
     

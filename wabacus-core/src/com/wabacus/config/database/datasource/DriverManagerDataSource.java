@@ -28,11 +28,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dom4j.Element;
 
+import com.wabacus.config.ResourceUtils;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.util.DesEncryptTools;
 
-public class DriverManagerDataSource extends AbsDataSource
+public class DriverManagerDataSource extends AbstractJdbcDataSource
 {
     private static Log log=LogFactory.getLog(DriverManagerDataSource.class);
 
@@ -84,12 +85,12 @@ public class DriverManagerDataSource extends AbsDataSource
         this.password=password;
     }
 
-    public Connection getConnection()
+    public Connection getNativeConnection()
     {
         try
         {
             log.debug("从数据源"+this.getName()+"获取数据库连接");
-            Class.forName(this.driver).newInstance();
+            ResourceUtils.loadClass(this.driver).newInstance();
             return DriverManager.getConnection(url,user,password);
         }catch(Exception e)
         {

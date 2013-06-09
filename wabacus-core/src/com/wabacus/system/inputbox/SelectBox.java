@@ -710,7 +710,7 @@ public class SelectBox extends AbsInputBox implements Cloneable
             if(lstCons==null||lstCons.size()==0) continue;
             for(ConditionBean cbTmp:lstCons)
             {
-                if(isPreparedStmt) cbTmp.getConditionExpression().parseConditionExpression();
+                if(isPreparedStmt) cbTmp.getConditionExpression().parseConditionExpression(cbTmp);
 //                if(cbTmp.isConditionValueFromUrl())
 
 

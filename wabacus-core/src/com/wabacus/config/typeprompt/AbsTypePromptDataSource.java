@@ -21,6 +21,7 @@ package com.wabacus.config.typeprompt;
 import java.util.List;
 import java.util.Map;
 
+import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.system.ReportRequest;

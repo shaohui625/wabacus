@@ -18,10 +18,10 @@
  */
 package com.wabacus.system.component.application.report.abstractreport;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 import com.wabacus.config.component.application.report.ColBean;
+import com.wabacus.system.IConnection;
 import com.wabacus.system.buttons.AbsButtonType;
 
 public interface IEditableReportType
@@ -34,7 +34,7 @@ public interface IEditableReportType
     
     public String getColOriginalValue(Object object,ColBean cbean);
 
-    public int[] doSaveAction(Connection conn) throws SQLException;
+    public int[] doSaveAction(IConnection conn) throws SQLException;
     
     public void setNewAccessMode(String newaccessmode);
 }

@@ -21,7 +21,6 @@ package com.wabacus.config;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
@@ -30,8 +29,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -568,10 +567,10 @@ public class ConfigLoadManager
                 scriptBuf.append("  }");
             }
             scriptBuf
-                    .append("   if(label==null){label='';}else{ label=label.replace(/</g,'&lt;');label=label.replace(/>/g,'&gt;');label=label.replace(/\\\'/g,'&#039;');label=label.replace(/\\\"/g,'&quot;');}");
+                    .append("   if(label==null){label='';}else  if (type != 'textareabox')  { label=label.replace(/</g,'&lt;');label=label.replace(/>/g,'&gt;');label=label.replace(/\\\'/g,'&#039;');label=label.replace(/\\\"/g,'&quot;');}");
             scriptBuf.append("   if(fillmode==2) setColDisplayValueToEditable2Td(parentTdObj,label);");//如果是点击时填充，则赋完值到所属<td/>的value属性后，将它的label也填充到<td/>的innerHTML中。
             scriptBuf
-                    .append("   if(value==null){value='';}else{ value=value.replace(/</g,'&lt;');value=value.replace(/>/g,'&gt;');value=value.replace(/\\\'/g,'&#039;');value=value.replace(/\\\"/g,'&quot;');}");
+                    .append("   if(value==null){value='';}else if (type != 'textareabox')  { value=value.replace(/</g,'&lt;');value=value.replace(/>/g,'&gt;');value=value.replace(/\\\'/g,'&#039;');value=value.replace(/\\\"/g,'&quot;');}");
             scriptBuf.append("   var oldvalue=parentTdObj.getAttribute('value');if(oldvalue==null) oldvalue='';");
             scriptBuf.append("   if(value!=oldvalue){");//编辑后的值与<td/>中原有的值不同，则要更新它
             scriptBuf.append("       parentTdObj.setAttribute('value',value);");
@@ -633,7 +632,7 @@ public class ConfigLoadManager
         int idxdot=file.lastIndexOf(".");
         if(idxsep>=0&&idxdot>idxsep||idxdot>0)
         {
-            throw new WabacusConfigLoadingException("在系统配置文件<i18n-resources/>中配置的file指定的国际化资源文件类型："+file.substring(idxdot)+"不合法，只能是.xml格式");
+            throw new WabacusConfigLoadingException("在系统配置文件<i18n-resources/>中配置的file指定的国际化资源文件类型："+file+"不合法，只能是.xml格式");
         }
     }
 
@@ -873,7 +872,7 @@ public class ConfigLoadManager
             Object obj=null;
             try
             {
-                obj=Class.forName(default_roworderclass).newInstance();
+                obj=ResourceUtils.loadClass(default_roworderclass).newInstance();
             }catch(Exception e)
             {
                 throw new WabacusConfigLoadingException("在wabacus.cfg.xml通过default-roworderclass配置的"+default_roworderclass+"类对象实例化失败",e);
@@ -891,7 +890,7 @@ public class ConfigLoadManager
             Object obj=null;
             try
             {
-                obj=Class.forName(default_pagepersonalizeclass).newInstance();
+                obj=ResourceUtils.loadClass(default_pagepersonalizeclass).newInstance();
             }catch(Exception e)
             {
                 throw new WabacusConfigLoadingException("在wabacus.cfg.xml通过default-pagepersonalizeclass配置的"+default_pagepersonalizeclass+"类对象实例化失败",e);
@@ -909,7 +908,7 @@ public class ConfigLoadManager
             Object obj=null;
             try
             {
-                obj=Class.forName(default_reportpersonalizeclass).newInstance();
+                obj=ResourceUtils.loadClass(default_reportpersonalizeclass).newInstance();
             }catch(Exception e)
             {
                 throw new WabacusConfigLoadingException("在wabacus.cfg.xml通过default-reportpersonalizeclass配置的"+default_reportpersonalizeclass+"类对象无例化失败",e);
@@ -982,7 +981,7 @@ public class ConfigLoadManager
             }
             try
             {
-                clsTmp=Class.forName(classTmp);
+                clsTmp=ResourceUtils.loadClass(classTmp);
             }catch(ClassNotFoundException e)
             {
                 throw new WabacusConfigLoadingException("初始化全局拦截器"+classTmp+"失败",e);
@@ -1058,7 +1057,7 @@ public class ConfigLoadManager
                     }
                     try
                     {
-                        Class c=Class.forName(strclass);
+                        Class c=ResourceUtils.loadClass(strclass);
                         Object o=c.getConstructor(new Class[] { String.class }).newInstance(new Object[] { name });
                         if(!(o instanceof AbsInputBox))
                         {
@@ -1128,7 +1127,7 @@ public class ConfigLoadManager
                     }
                     try
                     {
-                        Class c=Class.forName(strclass);
+                        Class c=ResourceUtils.loadClass(strclass);
                         Object o=c.newInstance();
                         if(!(o instanceof IDataType))
                         {
@@ -1375,7 +1374,7 @@ public class ConfigLoadManager
             Object providerObj=null;
             try
             {
-                Class c_provider=Class.forName(provider);
+                Class c_provider=ResourceUtils.loadClass(provider);
                 providerObj=c_provider.newInstance();
             }catch(ClassNotFoundException e1)
             {
@@ -1440,7 +1439,7 @@ public class ConfigLoadManager
                         }
                         type=type.trim();
 
-                        Object o=Class.forName(type).newInstance();
+                        Object o=ResourceUtils.loadClass(type).newInstance();
                         if(!(o instanceof AbsResource))
                         {
                             throw new WabacusConfigLoadingException("在resource文件中，为"+key+"资源项配置的type，没有继承AbsResource类");
@@ -1482,7 +1481,7 @@ public class ConfigLoadManager
             }
             try
             {
-                Object containerObj=AbsComponentType.createComponentTypeObj(Class.forName(strclass),null,null,null);
+                Object containerObj=AbsComponentType.createComponentTypeObj(ResourceUtils.loadClass(strclass),null,null,null);
                 if(!(containerObj instanceof AbsContainerType))
                 {
                     throw new WabacusConfigLoadingException("配置报表的容器类型的class："+strclass+"没有继承"+AbsContainerType.class.getName()+"类");
@@ -1533,7 +1532,7 @@ public class ConfigLoadManager
             }
             try
             {
-                Object reportObj=AbsComponentType.createComponentTypeObj(Class.forName(strclass),null,null,null);
+                Object reportObj=AbsComponentType.createComponentTypeObj(ResourceUtils.loadClass(strclass),null,null,null);
                 if(!(reportObj instanceof AbsReportType))
                 {
                     throw new WabacusConfigLoadingException("配置报表类型的class："+strclass+"没有继承"+AbsReportType.class.getName()+"类");
