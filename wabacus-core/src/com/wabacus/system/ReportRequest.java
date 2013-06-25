@@ -98,7 +98,7 @@ public class ReportRequest
 
     private WabacusResponse wresponse;
 
-    private Map<String,IConnection> connections=new HashMap<String,IConnection>();
+    private Map<String,Connection> connections=new HashMap<String,Connection>();
 
     private Map<String,AbsDatabaseType> mDbTypes=new HashMap<String,AbsDatabaseType>();
 
@@ -975,24 +975,12 @@ public class ReportRequest
         return (CacheDataBean)mCacheDataBeans.get(reportid);
     }
     
-
-    /**
-     *  @Deprecated 采改getIConnection以支持其它数源
-     */
-     @Deprecated 
-     public Connection getConnection(String datasource){
-         return ( (JdbcConnection)getIConnection(datasource) ).getNativeConnection();
-     }
-
-     /**
-      * @Deprecated 采改getIConnection以支持其它数源
-      */
-     public Connection getConnection()
-     {
-         return getConnection(Config.getInstance().getDefault_datasourcename());
-     }
+    public Connection getConnection()
+    {
+        return getConnection(Config.getInstance().getDefault_datasourcename());
+    }
     
-    public IConnection getIConnection(String datasource)
+    public Connection getConnection(String datasource)
     {
         if(Tools.isDefineKey("i18n",datasource))
         {
@@ -1000,10 +988,10 @@ public class ReportRequest
             if(this.locallanguage!=null&&!this.locallanguage.trim().equals(""))
             {
                 String dsTemp=datasource+"_"+this.locallanguage;
-                IConnection conn=connections.get(dsTemp);
+                Connection conn=connections.get(dsTemp);
                 if(conn==null)
                 {
-                    conn=Config.getInstance().getDataSource(dsTemp).getIConnection();
+                    conn=Config.getInstance().getDataSource(dsTemp).getConnection();
                     connections.put(dsTemp,conn);
                 }
                 if(conn!=null)
@@ -1019,7 +1007,7 @@ public class ReportRequest
         if(datasource==null||datasource.trim().equals("")||datasource.trim().equals(Consts.DEFAULT_KEY)) datasource=Config.getInstance().getDefault_datasourcename();
         if(connections.get(datasource)==null)
         {
-            connections.put(datasource,Config.getInstance().getDataSource(datasource).getIConnection());
+            connections.put(datasource,Config.getInstance().getDataSource(datasource).getConnection());
         }
         return connections.get(datasource);
     }
@@ -1331,7 +1319,7 @@ public class ReportRequest
             while(itConns.hasNext())
             {
                 name=itConns.next();
-                WabacusAssistant.getInstance().release(connections.get(name));
+                WabacusAssistant.getInstance().release(connections.get(name),null);
             }
             connections.clear();
         }

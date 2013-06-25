@@ -47,7 +47,6 @@ import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.AbsComponentType;
 import com.wabacus.util.Consts_Private;
@@ -642,22 +641,7 @@ public class WabacusAssistant
             throw new WabacusRuntimeException("通过模板"+dyntplpath+"显示组件"+comObj.getConfigBean().getPath()+"失败",e);
         }
     }
-
-    public void release(IConnection conn){
-
-        try
-        {
-            if(conn!=null)
-            {
-                conn.close();
-            }
-
-        }catch(Exception e)
-        {
-            log.error("关闭数据库连接失败",e);
-        }
-
-    }
+    
     public void release(Connection conn,Statement stmt)
     {
         try

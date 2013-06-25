@@ -47,7 +47,7 @@ import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.util.DesEncryptTools;
 import com.wabacus.util.Tools;
 
-public class ProxoolDataSource extends AbstractJdbcDataSource
+public class ProxoolDataSource extends AbsDataSource
 {
     private static Log log=LogFactory.getLog(ProxoolDataSource.class);
 
@@ -65,7 +65,7 @@ public class ProxoolDataSource extends AbstractJdbcDataSource
         this.alias=alias;
     }
 
-    public Connection getNativeConnection()
+    public Connection getConnection()
     {
         try
         {
@@ -202,7 +202,7 @@ public class ProxoolDataSource extends AbstractJdbcDataSource
         boolean shouldsave=false;
         if(actiontype)
         {
-            if(DesEncryptTools.KEY_OBJ==null) return;//没有在wabacus.cfg.xml中指定密钥，则不加密
+            if(DesEncryptTools.KEY_OBJ==null) return;
             if(password.startsWith("{3DES}"))
             {
                 if(DesEncryptTools.IS_NEWKEY)

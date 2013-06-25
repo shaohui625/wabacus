@@ -46,7 +46,11 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
             addInsertSqlActionBean(realsql,lstDynParamsTmp,this.returnValueParamname);
         }else
         {
-            AbsDatabaseType dbtype=this.ownerGroupBean.getDbType();
+            AbsDatabaseType dbtype=Config.getInstance().getDataSource(this.ownerGroupBean.getDatasource()).getDbType();
+            if(dbtype==null)
+            {
+                throw new WabacusConfigLoadingException("没有实现数据源"+this.ownerGroupBean.getDatasource()+"对应数据库类型的相应实现类");
+            }
             dbtype.constructInsertSql(actionscript,this.ownerGroupBean.getOwnerUpdateBean().getOwner().getReportBean(),reportTypeKey,this);
         }
     }

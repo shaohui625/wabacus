@@ -31,18 +31,17 @@ import org.dom4j.Element;
 
 import com.mchange.v2.c3p0.DataSources;
 import com.mchange.v2.c3p0.PoolConfig;
-import com.wabacus.config.ResourceUtils;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.util.DesEncryptTools;
 
-public class C3P0DataSource extends AbstractJdbcDataSource
+public class C3P0DataSource extends AbsDataSource
 {
     private static Log log=LogFactory.getLog(C3P0DataSource.class);
     
     private DataSource ds;
 
-    public Connection getNativeConnection()
+    public Connection getConnection()
     {
         try
         {
@@ -103,7 +102,7 @@ public class C3P0DataSource extends AbstractJdbcDataSource
         {
             eleChild=(Element)lstEleProperties.get(i);
             name=eleChild.attributeValue("name");
-            value= getOverridePropertyValue(name,eleChild.getText());
+            value=eleChild.getText();
             name=name==null?"":name.trim();
             value=value==null?"":value.trim();
             if(value.equals(""))
@@ -174,13 +173,10 @@ public class C3P0DataSource extends AbstractJdbcDataSource
             Class.forName(driver);
             DataSource unpooled=DataSources.unpooledDataSource(url,connectionProps);
             this.ds=DataSources.pooledDataSource(unpooled,pcfg);
-            this.getNativeConnection().close();//FIXME remove it
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("数据源："+this.getName()+"对象无法创建",e);
         }
-        
-    
     }
 
     protected void finalize() throws Throwable

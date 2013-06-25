@@ -775,7 +775,6 @@ public class ComponentConfigLoadManager
 
     public static int loadReportInfo(ReportBean rb,XmlElementBean eleReportBean,ReportBean rbParent) throws Exception
     {
-        rb.setAttrs(eleReportBean.getMPropertiesClone());
         loadComponentCommonConfig(eleReportBean,rb);
         loadApplicationCommonConfig(eleReportBean,rb);
         List<XmlElementBean> lstEleReportBeans=new ArrayList<XmlElementBean>();

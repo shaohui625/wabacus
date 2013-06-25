@@ -21,6 +21,7 @@ package com.wabacus.system.component.application.report.configbean.editablerepor
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -43,13 +44,12 @@ public class DeleteSqlActionBean extends AbsEditSqlActionBean
 
     public void parseActionscript(String reportTypeKey,String actionscript)
     {
-        AbsDatabaseType dbtype=this.ownerGroupBean.getDbType();
-        
-        sql = dbtype.parseDeleteSql(this,reportTypeKey,actionscript);
-        ownerGroupBean.addActionBean(this);
+        actionscript=this.parseAndRemoveReturnParamname(actionscript);
+        this.lstParamBeans=new ArrayList<EditableReportParamBean>();
+        this.sql=this.ownerGroupBean.getOwnerUpdateBean().parseStandardEditSql(actionscript,lstParamBeans,reportTypeKey);
+        this.ownerGroupBean.addActionBean(this);
     }
 
-    /*
     public void updateData(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues)
             throws SQLException
     {
@@ -80,5 +80,4 @@ public class DeleteSqlActionBean extends AbsEditSqlActionBean
             WabacusAssistant.getInstance().release(null,pstmt);
         }
     }
-    */
 }

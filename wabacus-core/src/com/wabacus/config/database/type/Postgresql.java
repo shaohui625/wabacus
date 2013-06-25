@@ -42,7 +42,7 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class Postgresql extends AbstractJdbcDatabaseType
+public class Postgresql extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(Postgresql.class);
 

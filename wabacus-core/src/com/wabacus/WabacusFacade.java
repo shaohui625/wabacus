@@ -75,6 +75,9 @@ import com.wabacus.system.component.application.report.abstractreport.AbsReportT
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportColBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
 import com.wabacus.system.dataset.IReportDataSet;
+import com.wabacus.system.dataset.sqldataset.GetAllDataSetByPreparedSQL;
+import com.wabacus.system.dataset.sqldataset.GetAllDataSetBySQL;
+import com.wabacus.system.dataset.sqldataset.GetDataSetByStoreProcedure;
 import com.wabacus.system.fileupload.AbsFileUpload;
 import com.wabacus.system.fileupload.DataImportReportUpload;
 import com.wabacus.system.fileupload.DataImportTagUpload;
@@ -526,10 +529,16 @@ public class WabacusFacade
             if(datasetbean.getCustomizeDatasetObj()!=null)
             {
                 datasetObj=datasetbean.getCustomizeDatasetObj();
-            }else{
-                datasetObj =datasetbean.getISQLTypeBuilder().createAllResultSetISQLType();
+            }else if(datasetbean.isStoreProcedure())
+            {
+                datasetObj=new GetDataSetByStoreProcedure();
+            }else if(datasetbean.getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
+            {
+                datasetObj=new GetAllDataSetByPreparedSQL();
+            }else
+            {
+                datasetObj=new GetAllDataSetBySQL();
             }
-            
             AbsListReportColBean alrcbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
             AbsListReportFilterBean alfbean=alrcbean.getFilterBean();
             if(rbean.getInterceptor()!=null)

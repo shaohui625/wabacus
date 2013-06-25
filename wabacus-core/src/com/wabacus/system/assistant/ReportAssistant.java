@@ -26,8 +26,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.StringTokenizer;
+import java.util.Map.Entry;
 
 import javassist.CannotCompileException;
 import javassist.ClassClassPath;
@@ -657,6 +657,7 @@ public class ReportAssistant
                 return ;
             }
             Class c=obj.getClass();
+
 //            {//如果是分页显示的数据列表报表，且是SQLSERVER2000数据库
 //                /**
 //                 * 因为在SQL数据库中，如果页数大于1，且当前翻到最后一页，如果最后一页的记录数小于页大小，则仍会查询出页大小对应的记录数

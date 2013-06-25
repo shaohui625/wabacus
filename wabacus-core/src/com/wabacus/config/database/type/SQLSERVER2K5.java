@@ -42,7 +42,7 @@ import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
-public class SQLSERVER2K5 extends AbstractJdbcDatabaseType
+public class SQLSERVER2K5 extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(SQLSERVER2K5.class);
 

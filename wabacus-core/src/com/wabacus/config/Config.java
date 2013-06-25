@@ -19,7 +19,6 @@
 package com.wabacus.config;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +72,7 @@ public class Config
 
     public static boolean should_createjs=true;
 
-    public static boolean show_sql=true;
+    public static boolean show_sql=false;
 
     public static String configpath;
 
@@ -247,17 +246,6 @@ public class Config
         dataexport_plainexcel_sheetsize=Integer.MIN_VALUE;
     }
     
-    private PropertyOverrideLoader propertyOverrideLoader;
-    
-    
-    public PropertyOverrideLoader getPropertyOverrideLoader()
-    {
-        if( null == propertyOverrideLoader ){
-            propertyOverrideLoader = PropertyOverrideLoaderDefault.createPropertyOverrideLoader("wabacusPropertyOverrideLoader"); 
-        }
-        return propertyOverrideLoader;
-    }
-
     public Object getResourceObject(ReportRequest rrequest,PageBean pbean,String key,boolean ismust)
     {
         if(key==null) return null;
@@ -476,14 +464,6 @@ public class Config
         return lstResults;
     }
     
-    
-   public Collection<String> getPageIds(){
-       if( null == mReportStructureInfo || mReportStructureInfo.size() < 1){
-           throw new IllegalArgumentException("wabacus未正确初始化！");
-       }
-       return mReportStructureInfo.keySet();
-   }
-
     public List<Class> getLstServerValidateClasses()
     {
         return lstServerValidateClasses;
@@ -939,33 +919,5 @@ public class Config
         Map<String,String> mSkinConfigProperties=this.mSkinConfigProperties.get(skinname);
         if(mSkinConfigProperties==null) return null;
         return mSkinConfigProperties.get(propertyname);
-    }
-    
-    /**
-     *  构建页面的baseUrl
-     * @param pageid
-     * @param rreqeust
-     * @return
-     */
-    public String getPageUrl(String baseUrl,String pageid,ReportRequest rrequest){
-        StringBuffer s = new StringBuffer(baseUrl);
-        if(baseUrl.indexOf("?")>0)
-        {
-          s.append('&');
-        }else
-        {
-            s.append('?');
-        }
-        s.append("PAGEID=").append(pageid);
-        
-        
-        String url=s.toString();
-        
-        
-//        String  pageAccessMode = rrequest == null ? null :  rrequest.getStringAttribute("pageAccessMode");
-//        if( null != pageAccessMode ){
-//           url =  rrequest.addParamToUrl("pageAccessMode",pageAccessMode,true,url);
-//        }
-        return url;        
     }
 }

@@ -40,7 +40,7 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class MySql extends AbstractJdbcDatabaseType
+public class MySql extends AbsDatabaseType
 {
     private final static Log log=LogFactory.getLog(MySql.class);
 

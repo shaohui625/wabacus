@@ -71,20 +71,11 @@ public class SqlBean extends AbsConfigBean
     {
         this.beforeSearchMethod=beforeSearchMethod;
     }
-    
-    private String statementTypeName;
-    
-    public String getStatementTypeName()
-    {
-        return statementTypeName;
-    }
-
 
     public void setStatementType(String statementtype)
     {
         if(statementtype==null) return;
         statementtype=statementtype.toLowerCase().trim();
-        statementTypeName = statementtype;
         if(statementtype.equals("statement"))
         {
             this.stmttype=STMTYPE_STATEMENT;

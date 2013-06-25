@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 
 import com.wabacus.config.Config;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsJavaEditActionBean;
@@ -42,10 +41,10 @@ public class DefaultTransactionType implements ITransactionType
     public void beginTransaction(ReportRequest rrequest,List<EditActionGroupBean> lstEditActionGroupBeans)
     {
         if(lstEditActionGroupBeans==null||lstEditActionGroupBeans.size()==0) return;
-        Map<String,IConnection> mConnections=new HashMap<String,IConnection>();
+        Map<String,Connection> mConnections=new HashMap<String,Connection>();
         List<AbsJavaEditActionBean> lstJavaActionBeans=new ArrayList<AbsJavaEditActionBean>();
         String dsNameTmp, dsLevelTmp;
-        IConnection connTmp;
+        Connection connTmp;
         try
         {
             for(EditActionGroupBean actionGroupBeanTmp:lstEditActionGroupBeans)
@@ -53,10 +52,8 @@ public class DefaultTransactionType implements ITransactionType
                 dsNameTmp=actionGroupBeanTmp.getDatasource();
                 if(dsNameTmp==null||dsNameTmp.trim().equals("")) dsNameTmp=Config.getInstance().getDefault_datasourcename();
                 if(mConnections.containsKey(dsNameTmp)) continue;
-                connTmp=rrequest.getIConnection(dsNameTmp);
-                if(!connTmp.isAutoCommit()){
-                    continue;
-                }
+                connTmp=rrequest.getConnection(dsNameTmp);
+                if(!connTmp.getAutoCommit()) continue;
                 connTmp.setAutoCommit(false);
                 dsLevelTmp=rrequest.getTransactionLevel(dsNameTmp);
                 if(dsLevelTmp!=null&&!dsLevelTmp.trim().equals(""))
@@ -81,7 +78,7 @@ public class DefaultTransactionType implements ITransactionType
             }
         }catch(Exception e)
         {
-            for(Entry<String,IConnection> entryTmp:mConnections.entrySet())
+            for(Entry<String,Connection> entryTmp:mConnections.entrySet())
             {
                 try
                 {
@@ -102,9 +99,9 @@ public class DefaultTransactionType implements ITransactionType
     public void commitTransaction(ReportRequest rrequest,List<EditActionGroupBean> lstEditActionGroupBeans)
     {
         if(lstEditActionGroupBeans==null||lstEditActionGroupBeans.size()==0) return;
-        Map<String,IConnection> mConnections=new HashMap<String,IConnection>();
+        Map<String,Connection> mConnections=new HashMap<String,Connection>();
         String dsNameTmp, dsLevelTmp;
-        IConnection connTmp;
+        Connection connTmp;
         try
         {
             for(EditActionGroupBean actionGroupBeanTmp:lstEditActionGroupBeans)
@@ -112,12 +109,10 @@ public class DefaultTransactionType implements ITransactionType
                 dsNameTmp=actionGroupBeanTmp.getDatasource();
                 if(dsNameTmp==null||dsNameTmp.trim().equals("")) dsNameTmp=Config.getInstance().getDefault_datasourcename();
                 if(mConnections.containsKey(dsNameTmp)) continue;
-                connTmp=rrequest.getIConnection(dsNameTmp);
+                connTmp=rrequest.getConnection(dsNameTmp);
                 dsLevelTmp=rrequest.getTransactionLevel(dsNameTmp);
                 if(Consts.TRANS_NONE.equals(dsLevelTmp)) continue;
                 connTmp.commit();
-                
-                //DefaultTransactionType.commitTransaction 中个小问题：如果数据默认不是自动提交，则经过此代码后默认变成的自动提交
                 connTmp.setAutoCommit(true);
                 mConnections.put(dsNameTmp,connTmp);
                 for(AbsEditActionBean actionBeanTmp:actionGroupBeanTmp.getLstEditActionBeans())
@@ -134,9 +129,9 @@ public class DefaultTransactionType implements ITransactionType
     public void rollbackTransaction(ReportRequest rrequest,List<EditActionGroupBean> lstEditActionGroupBeans)
     {
         if(lstEditActionGroupBeans==null||lstEditActionGroupBeans.size()==0) return;
-        Map<String,IConnection> mConnections=new HashMap<String,IConnection>();//存放已经提交了事务的数据库连接
+        Map<String,Connection> mConnections=new HashMap<String,Connection>();//存放已经提交了事务的数据库连接
         String dsNameTmp, dsLevelTmp;
-        IConnection connTmp;
+        Connection connTmp;
         try
         {
             for(EditActionGroupBean actionGroupBeanTmp:lstEditActionGroupBeans)
@@ -144,7 +139,7 @@ public class DefaultTransactionType implements ITransactionType
                 dsNameTmp=actionGroupBeanTmp.getDatasource();
                 if(dsNameTmp==null||dsNameTmp.trim().equals("")) dsNameTmp=Config.getInstance().getDefault_datasourcename();
                 if(mConnections.containsKey(dsNameTmp)) continue;
-                connTmp=rrequest.getIConnection(dsNameTmp);
+                connTmp=rrequest.getConnection(dsNameTmp);
                 dsLevelTmp=rrequest.getTransactionLevel(dsNameTmp);
                 if(Consts.TRANS_NONE.equals(dsLevelTmp)) continue;
                 connTmp.rollback();

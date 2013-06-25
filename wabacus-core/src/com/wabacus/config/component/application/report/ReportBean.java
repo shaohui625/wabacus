@@ -1363,7 +1363,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         Class pojoclass=null;
         if(this.strclass==null||this.strclass.trim().equals(""))
         {//开发人员没有自己开发存放数据的POJO，则自动生成一个
-            ReportAssistant.getInstance().buildReportPOJOClass(this,true );
+            ReportAssistant.getInstance().buildReportPOJOClass(this,true);
             pojoclass=this.pojoclass;
         }else
         {
