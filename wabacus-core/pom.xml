@@ -12,7 +12,7 @@
 	<artifactId>wabacus-core</artifactId>
 	<packaging>jar</packaging>
 	<name>wabacus core</name>
-	<version>4.0</version>
+	<version>4.0.1</version>
 	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
 	<url>https://code.google.com/p/wabacus/</url>
 	<licenses>
@@ -222,7 +222,7 @@
 			<resource>
 				<directory>src</directory>
 				<excludes>
-					<exclude>*.java</exclude>
+					<exclude>**/*.java</exclude>
 				</excludes>
 			</resource>
 		</resources>
