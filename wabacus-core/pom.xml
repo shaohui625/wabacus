@@ -15,6 +15,10 @@
 	<version>3.5</version>
 	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
 	<url>https://code.google.com/p/wabacus/</url>
+	<properties>
+		<gpg.skip>false</gpg.skip>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 	<licenses>
 		<license>
 			<name>GNU Lesser GPL 2.0</name>
@@ -222,7 +226,7 @@
 			<resource>
 				<directory>src</directory>
 				<excludes>
-					<exclude>*.java</exclude>
+					<exclude>**/*.java</exclude>
 				</excludes>
 			</resource>
 		</resources>
@@ -262,6 +266,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
+				<configuration>
+				<skip>${gpg.skip}</skip>
+				
+				</configuration>
 				<version>1.4</version>
 				<executions>
 					<execution>
