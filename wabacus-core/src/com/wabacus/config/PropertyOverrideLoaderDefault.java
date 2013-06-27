@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 
 /**
  * 默认的全局属性配置加载器实现
@@ -38,7 +40,7 @@ public final class PropertyOverrideLoaderDefault implements PropertyOverrideLoad
     /**
     * Logger for this class
     */
-    private static final Logger LOG=Logger.getLogger(PropertyOverrideLoaderDefault.class);
+    private static final Log LOG=LogFactory.getLog(PropertyOverrideLoaderDefault.class);
 
 
     private Properties props;
