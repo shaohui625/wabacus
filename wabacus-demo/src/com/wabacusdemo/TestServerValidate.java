@@ -17,9 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.wabacusdemo;
+
+import java.util.List;
+import java.util.Map;
+
+import com.wabacus.system.ReportRequest;
+
 public class TestServerValidate
 {
-    public static boolean isValidAge(String age)
+    public static boolean isValidAge(ReportRequest rrequest,String age,Map<String,String> mValues,List<String> lstErrorMessages)
     {
         if(age==null||age.trim().equals("")) return true;
         int iage;

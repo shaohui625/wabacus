@@ -3,7 +3,7 @@
 	<!--==============================================================================-->
 	<!--=================================报表类型配置===================================-->
 	<!--==============================================================================-->
-	<item id="reporttypes" text="报表类型&lt;font color='red'&gt;New&lt;font/&gt;" im0="dhtmlxtree_icon.gif"
+	<item id="reporttypes" text="报表类型&lt;font color='red'&gt;New&lt;/font&gt;" im0="dhtmlxtree_icon.gif"
 		im1="dhtmlxtree_icon.gif" im2="dhtmlxtree_icon.gif">
 		<item text="数据自动列表报表" id="listpage">
 			<userdata name="pageid">listreportpage1</userdata>
@@ -46,7 +46,7 @@
 					更多介绍可以参看《Wabacus框架开发指南》文档
 			</userdata>
 		</item>
-		<item id="crosslist" text="交叉列表报表&lt;font color='red'&gt;New&lt;font/&gt;">
+		<item id="crosslist" text="交叉列表报表">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt;
@@ -111,7 +111,6 @@
 				</userdata>
 			</item>
 		</item>
-		
 		<item text="数据细览报表" id="detailpage">
 			<userdata name="pageid">detailpage1</userdata>
 			<userdata name="configfilename">report_reportypes.xml</userdata>
@@ -128,6 +127,152 @@
 					里演示了配置与不配置提示选项标题的情况，还演示了提示一列或提示多列的情况。
 					关于更多“输入联想”功能的演示，请参看后面“输入联想”的演示部分
 				</userdata>
+		</item>
+		
+		<item id="fusioncharts" text="图形报表&lt;font color='red'&gt;New&lt;/font&gt;">
+			<userdata name="groupnode">true</userdata>
+			<userdata name="desc">
+				&lt;br&gt;
+				&lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				这里演示了使用框架开发各类图表功能的方法和显示效果，底层用的fusioncharts图表组件。
+			</userdata>
+			<item text="单序列数据图" id="singleserieschart">
+				<userdata name="pageid">singleserieschartpage1</userdata>
+				<userdata name="configfilename">
+					report_fusioncharts.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=singleserieschartpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					是指数据部分直接使用＜set/＞进行显示，没有＜categories/＞和＜dataset/＞标签，比如常见的Column2D.swf、Column3D.swf等等。&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					横向数据集指每条记录的列是动态扩展的，记录数是固定的数据集;&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					纵向数据集是指列是固定配置的，但记录数是动态的
+				</userdata>
+			</item>
+			<item text="多序列数据图" id="multiserieschart">
+				<userdata name="pageid">multiserieschartpage1</userdata>
+				<userdata name="configfilename">
+					report_fusioncharts.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=multiserieschartpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					指一个图表中显示了多个指标的数据信息，这种图表一般是标题部分显示在＜categories＞＜/categories＞中，然后显示多个＜dataset/＞，每个＜dataset/＞提供一个指标的数据列表。
+				</userdata>
+			</item>
+			<item text="组合图" id="combinationchart">
+				<userdata name="pageid">combinationchartpage1</userdata>
+				<userdata name="configfilename">
+					report_fusioncharts.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=combinationchartpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					是指在一个图表中显示多种图表类型，比如同时显示折线图、柱状图等等。
+				</userdata>
+			</item>
+			<item text="散列/泡沫图" id="xychart">
+				<userdata name="pageid">xychartpage1</userdata>
+				<userdata name="configfilename">
+					report_fusioncharts.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=xychartpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					是指Scatter.swf、Bubble.swf两种图表类型，它们与一般的图表不同，每个点分别通过x、y，和x、y、z三个值来指定它们的显示位置。
+				</userdata>
+			</item>
+			<item text="多序列堆栈图" id="multiseriesstatckchart">
+				<userdata name="pageid">multiseriesstatckchartpage1</userdata>
+				<userdata name="configfilename">
+					report_fusioncharts.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=multiseriesstatckchartpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					是指在一个图表中同时显示多个维度、每个维度又显示多个指标的数据。这种图表一般是标题显示在＜categories/＞中。每个维度的数据放在一个外层的＜dataset/＞中，本维度各指标的数据又放在一个或多个内层＜dataset＞中。
+				</userdata>
+			</item>
+			<item text="带滚动条的图" id="scrollchart">
+				<userdata name="pageid">scrollchartpage1</userdata>
+				<userdata name="configfilename">
+					report_fusioncharts.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=scrollchartpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					这种图表数据方面没什么特殊之处，只不过是带有滚动条功能。
+				</userdata>
+			</item>
+			<item text="自己提供图表数据" id="customizedchart">
+				<userdata name="pageid">customizedchartpage1</userdata>
+				<userdata name="configfilename">
+					report_fusioncharts.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=customizedchartpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					演示了完全由开发人员自己提供数据＜chart/＞部分，框架不自动构造图表数据。
+				</userdata>
+			</item>
+			<item id="linkcharts" text="图表链接(下钻)功能">
+				<userdata name="groupnode">true</userdata>
+				<userdata name="desc">
+					&lt;br&gt;
+					&lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					演示了为图表添加跳转链接和跳转JS事件的功能
+				</userdata>
+				<item text="链接到其它页面" id="linkcharts1">
+					<userdata name="pageid">linkcharts1page1</userdata>
+					<userdata name="configfilename">
+						report_fusioncharts.xml
+					</userdata>
+					<userdata name="desc">
+						&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=linkcharts1page1&lt;br&gt;
+						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						这里演示的是添加跳转到其它非图表数据的页面或者JS事件的功能
+					</userdata>
+				</item>
+				<item text="链接到其它图表" id="linkcharts2">
+					<userdata name="pageid">linkcharts2page1</userdata>
+					<userdata name="configfilename">
+						report_fusioncharts.xml
+					</userdata>
+					<userdata name="desc">
+						&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=linkcharts2page1&lt;br&gt;
+						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						这里演示的是添加跳转到另一个配置的图表的功能，又分为两种情况：&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						一种是跳转的图表数据是单独加载的，没有出现在本图表报表的＜chart/＞中；&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						另一种是跳转的图表数据也配置在本＜page/＞中，它的图表数据放在＜linkeddata/＞中，并放在本图表的＜chart/＞中&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						这里还演示了如何控制跳转到目标图表后目标图表的显示行为和显示效果
+					</userdata>
+				</item>
+			</item>
 		</item>
 	</item>
 	<!--==============================================================================-->
@@ -1559,7 +1704,7 @@
 	<!--==============================================================================-->
 	<!--=================================常用功能配置===================================-->
 	<!--==============================================================================-->
-	<item id="usualfunctions" text="常用功能配置&lt;font color='red'&gt;New&lt;font/&gt;" im0="dhtmlxtree_icon.gif"
+	<item id="usualfunctions" text="常用功能配置&lt;font color='red'&gt;New&lt;/font&gt;" im0="dhtmlxtree_icon.gif"
 		im1="dhtmlxtree_icon.gif" im2="dhtmlxtree_icon.gif">
 		<userdata name="groupnode">true</userdata>
 		<userdata name="desc">
@@ -1721,7 +1866,7 @@
 				</userdata>
 			</item>
 		</item>
-		<item text="报表数据集&lt;font color='red'&gt;New&lt;font/&gt;" id="dataset">
+		<item text="报表数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="dataset">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -1742,172 +1887,214 @@
 					更多它们的使用说明，请参看《开发指南二》中相关章节的介绍。
 				</userdata>
 			</item>
-			<item text="多数据集" id="multipledataset">
+			<item text="多数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="multipledataset">
 				<userdata name="groupnode">true</userdata>
 				<userdata name="desc">
 					&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					一个报表、表单的数据可以从多个地方获取，获取方式也可以是上面三种数据集类型中的任意一种，每个数据集可以来自同一个数据库，也可以来自不同的数据库，如果是SQL语句的数据集，还可以单独指定自己是采用preparedstatement还是statement方式执行。
+					在wabacus框架中，支持一个报表的记录行来自多个数据集，一个记录行上各列的数据也可以来自多个数据集，前者称为纵向多数据集，后者称为横向多数据集。
 				</userdata>
-				<item text="不相关的多数据集" id="nonrelatemultipledataset">
-					<userdata name="pageid">nonrelatemultipledatasetpage1</userdata>
+				<item text="纵向多数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="vmultipledataset">
+					<userdata name="pageid">vmultipledatasetpage1</userdata>
 					<userdata name="configfilename">
 						report_usualfunc5.xml
 					</userdata>
 					<userdata name="desc">
 						&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=nonrelatemultipledatasetpage1&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=vmultipledatasetpage1&lt;br&gt;
 						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						这里演示一个报表的数据是来自多个不相关的数据集，最终记录数由最大记录数的数据集决定。
+						是指一个报表的记录是由多个数据集查询出来的，比如一个数据集查询前面几条记录，另一个数据集查询后面几条记录，最后组装成一个报表数据进行展示。
+						在这里演示的报表中，记录行来自三个数据集，分别对应三个＜dataset/＞标签，第一个数据集负责查询所有性别为“女”的员工信息列表，第二个数据集负责查询部门信息列表，第三个数据集负责查询所有性别为“男”的员工信息列表报表。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						＜dataset/＞标签有自己的datasource属性，可以配置本数据集的数据源，这样就可以不同的数据集来自不同的数据源。 &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						配置的查询条件＜condition/＞可以通过belongto属性指定属于哪一个数据集或哪些数据集，如果没有指定belongto属性，则它属于所有数据集。
 					</userdata>
 				</item>
-				<item text="关联关系的多数据集" id="relatemultipledataset">
-					<userdata name="pageid">relatemultipledatasetpage1</userdata>
+				<item text="横向多数据集" id="hmultipledataset">
+					<userdata name="groupnode">true</userdata>
+					<userdata name="desc">
+						&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						一个记录行上各列的数据可以来自不同的数据集，这就是横向数据集的意思，这些数据集之间可以无任何关系，也可以是一对一、一对多、多对一、多对多的依赖关系。 &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						每个横向数据集配置在一个＜value/＞标签中，＜value/＞标签也有自己的datasource属性，指定自己的数据源。
+					</userdata>
+					<item text="不相关的多数据集" id="nonrelatemultipledataset">
+						<userdata name="pageid">nonrelatemultipledatasetpage1</userdata>
+						<userdata name="configfilename">
+							report_usualfunc5.xml
+						</userdata>
+						<userdata name="desc">
+							&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+							&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=nonrelatemultipledatasetpage1&lt;br&gt;
+							&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+							&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+							这里演示一个报表的数据是来自多个不相关的数据集，最终记录数由最大记录数的数据集决定。
+						</userdata>
+					</item>
+					<item text="关联关系的多数据集" id="relatemultipledataset">
+						<userdata name="pageid">relatemultipledatasetpage1</userdata>
+						<userdata name="configfilename">
+							report_usualfunc5.xml
+						</userdata>
+						<userdata name="desc">
+							&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+							&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=relatemultipledatasetpage1&lt;br&gt;
+							&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+							&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+							这里演示一个报表的数据是来自多个相关的数据集，可以是一个数据集被多个子数据集依赖，也可以是一个子数据集又被其它子数据集依赖，依赖关系有两种，则value标签的dependstype属性决定。具体参见《开发指南》文档的相关章节的介绍。
+						</userdata>
+					</item>
+				</item>
+				<item text="混合多数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="complexmultipledataset">
+					<userdata name="pageid">complexmultipledatasetpage1</userdata>
 					<userdata name="configfilename">
 						report_usualfunc5.xml
 					</userdata>
 					<userdata name="desc">
 						&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=relatemultipledatasetpage1&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=complexmultipledatasetpage1&lt;br&gt;
 						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						这里演示一个报表的数据是来自多个相关的数据集，可以是一个数据集被多个子数据集依赖，也可以是一个子数据集又被其它子数据集依赖，依赖关系有两种，则value标签的dependstype属性决定。具体参见《开发指南》文档的相关章节的介绍。
+						这里演示了一个报表在纵向由三个数据集查询它的记录，对应三个＜dataset/＞标签，第一个和第二个＜dataset/＞标签查询的记录行上各列的数据又来自两个横向数据集，即它们的记录行上各列的数据又是通过两个数据集查询的，即
+						对应两个＜value/＞标签，第三个＜dataset/＞数据集的记录行上各列的数据只来自一个数据集，所以只配置了一个＜value/＞标签
 					</userdata>
 				</item>
 			</item>
-		</item>
-		<item text="使用拦截器控制数据集" id="resultset">
-			<userdata name="groupnode">true</userdata>
-			<userdata name="desc">
-				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				控制记录集是指在报表拦截器的加载数据前置动作中修改将要执行的SQL语句或直接返回相应的结果集的List对象。&lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				如果是返回修改后的SQL语句，则框架会执行用户返回的SQL语句。&lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				如果是在加载数据前置动作中直接加载好数据，返回存放了结果集的List对象，则框架不会执行任何SQL语句，而是使用用户返回的List对象
-				做为结果集。究竟结果集List对象存放什么结果，则视当前加载的数据类型决定。&lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				如果是加载报表数据，则List对象中存放POJO对象；如果是加载报表记录数的，则只要在里面存放一Integer对象；如果是加载下拉选项数据，
-				则存放String[]类型的对象，每个选项数据对应一个String[]类型的数组，选项名存放在String[0]中，选项值存放在String[1]中。
-				如果是加载列过滤的选项数据，则不能直接返回结果集，只能返回SQL语句。
-			</userdata>
-			<item text="打印所有执行的SQL语句" id="resultset1">
-				<userdata name="pageid">resultsetpage1</userdata>
-				<userdata name="configfilename">
-					report_usualfunc4.xml
-				</userdata>
+			<item text="使用拦截器控制数据集" id="resultset">
+				<userdata name="groupnode">true</userdata>
 				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=resultsetpage1&lt;br&gt;
-					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					这里演示了在报表拦截器（关于拦截器配置请看后面的演示）的加载数据前置动作中打印所有执行的SQL语句，包括加载报表数据、加载记录数、
-					从数据库加载下拉选项数据、用户点击列过滤后加载选项数据等。&lt;br&gt;
+					控制记录集是指在报表拦截器的加载数据前置动作中修改将要执行的SQL语句或直接返回相应的结果集的List对象。&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					如果是返回修改后的SQL语句，则框架会执行用户返回的SQL语句。&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					如果是在加载数据前置动作中直接加载好数据，返回存放了结果集的List对象，则框架不会执行任何SQL语句，而是使用用户返回的List对象
+					做为结果集。究竟结果集List对象存放什么结果，则视当前加载的数据类型决定。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					加载上面每一类数据时，都会调用一次拦截器的beforeLoadData()方法，传入当前要执行的SQL语句。这里没对SQL语句做任何处理，
-					只是打印出来，然后原封不动的返回，后面会演示如何控制它们。
+					如果是加载报表数据，则List对象中存放POJO对象；如果是加载报表记录数的，则只要在里面存放一Integer对象；如果是加载下拉选项数据，
+					则存放String[]类型的对象，每个选项数据对应一个String[]类型的数组，选项名存放在String[0]中，选项值存放在String[1]中。
+					如果是加载列过滤的选项数据，则不能直接返回结果集，只能返回SQL语句。
 				</userdata>
-			</item>
-			<item text="控制报表数据记录集" id="resultset2">
-				<userdata name="pageid">resultsetpage2</userdata>
-				<userdata name="configfilename">
-					report_usualfunc4.xml
-				</userdata>
-				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=resultsetpage2&lt;br&gt;
-					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					这里演示如何通过拦截器的加载数据前置动作中控制查询报表数据的记录集，包括改变查询报表数据的SQL语句和直接在前置动作中返回
-					结果集两种方式。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					如果只是修改查询数据的SQL语句，则只要在查询数据前置动作中修改，然后返回修改好的SQL语句，框架就会执行用户修改好的SQL语句。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					如果直接在查询数据的前置动作中构造好结果集，则直接返回构造好的List对象，框架将不会再进行查询动作，直接使用用户返回的结果集。
-					返回的结果集只能是List对象，即使里面只存放了一个结果数据。&lt;br&gt;&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在此页面演示的两个报表中：&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					“控制SQL语句”报表演示了如何在拦截器的加载数据前置动作中修改加载报表数据的SQL语句，这里是在SQL语句中加上条件age>30，即只显示30岁以上的员工。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					因为这个加载数据前置动作在执行所有SQL语句时都会执行，因此要判断当前是在执行什么类型的SQL语句，通过判断typeObj变量的具体类型实现，
-					如果是在加载报表数据，它的类型为IReportType，如果是在加载列过滤的选项数据，它的类型为AbsListReportFilterBean，如果是在加载下拉/单选框选项数据，
-					它的类型为OptionBean。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					这里只修改加载报表和列过滤选项数据的SQL语句，因此判断到是这两个类型才修改，其它的则原样返回sql。
-					为了方便动态加上条件，在配置时为sql语句加上了%mycondition%占位符，以便替换。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					“控制结果集”演示了如何直接在拦截器的加载数据前置动作中获取结果集进行返回。对于查询报表数据，返回的结果集是存放有POJO对象的List对象。对于查询记录数，
-					返回的结果集就是存放有记录数的List对象。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					为了方便起见，这里没有采用框架自动生成POJO方式，而是自己开发POJO，这样调用时比较方便，不需用到反射操作。另外采用statement
-					方式执行SQL语句，这样在加载数据前置动作中的SQL语句就是拼凑好了的条件，如果采用PreparedStatement方式执行sql语句，则在
-					加载数据前置动作中的SQL语句中的条件全部为?号，还要手工从rrequet中取条件进行设置，略为麻烦。
-				</userdata>
-			</item>
-			<item text="控制下拉选项数据记录集" id="resultset3">
-				<userdata name="pageid">resultsetpage3</userdata>
-				<userdata name="configfilename">
-					report_usualfunc4.xml
-				</userdata>
-				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=resultsetpage3&lt;br&gt;
-					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					这里演示如何通过拦截器的加载数据前置动作中控制查询下拉/单选项选项数据的记录集，包括改变查询选项数据的SQL语句和直接在前置动作中返回
-					结果集两种方式。&lt;br&gt;&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在此页面演示的两个报表中：&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					“控制SQL语句”报表演示了如何在拦截器的加载数据前置动作中修改加载选项数据的SQL语句，这里是在SQL语句中加上条件deptname like '%售%'，即只显示部门名称含“售”的部门。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					因为这个加载数据前置动作在执行所有SQL语句时都会执行，因此要判断当前是在执行什么类型的SQL语句，通过判断typeObj变量的具体类型实现，
-					如果是在加载报表数据，它的类型为IReportType，如果是在加载列过滤的选项数据，它的类型为AbsListReportFilterBean，如果是在加载下拉/单选框选项数据，
-					它的类型为OptionBean。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					这里只修改加载报表和列过滤选项数据的SQL语句，因此判断到是OptionBean类型才修改，其它的则原样返回sql。
-					为了方便动态加上条件，在配置时为sql语句加上了%mycondition%占位符，以便替换。&lt;br&gt;&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					“控制结果集”演示了如何直接在拦截器的加载数据前置动作中获取结果集进行返回。对于查询选项数据，返回的结果集是存放有String[]对象的List对象。
-					每个String[]对象存放一个下拉选项，String[0]为label，String[1]为value。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					获取每个下拉选项的label和value的字段名从OptionBean对象中可以得到，它有一个getLabel()和getValue()方法，分别获取到获取label和value数据的字段名。
-				</userdata>
-			</item>
-			<item text="报表数据来自多个数据源" id="resultset4">
-				<userdata name="pageid">resultsetpage4</userdata>
-				<userdata name="configfilename">
-					report_usualfunc4.xml
-				</userdata>
-				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=resultsetpage4&lt;br&gt;
-					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在这里演示的报表中，“序号”、“工号”、“姓名”、“年龄”、“性别”、“出生日期”几列来自一个数据源，“省”、“市”、“县”三列来自另一个数据源，它们通过“工号”列关联在一起。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					实现方式为：&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在配置＜display/＞标签时，为所有列都配置好对应的＜col/＞标签，不过如果是来自于主数据源的，则像正常一样配置，而来自于子数据源的则统一将＜col/＞的column属性配置为{non-fromdb}，然后为它们配置一个property属性，
-					稍后就是根据这个property属性读写相应列的数据&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在配置＜sql/＞标签时，只配置查询主数据源的SQL语句，由框架自动查出主数据源的各列显示数据。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					开发一拦截器，实现加载数据后置动作，在其中先取到主数据源的关联列的数据（比如上面的工号列），然后根据它访问一次数据库取到子数据源中相应列的数据，然后将它们设置到相应记录的POJO对象中，显示时会使用加载数据后置动作修改后的数据对象进行显示。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					因为在加载数据后置动作中要修改报表数据，所以要读写报表每条记录每列数据，有两种方式：&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					第一种是像普通报表一样，采用框架自动生成POJO类的方式来存放报表数据，此时就要通过框架在ReportDataAssistant类中提供的一组接口方法来读写任意行任意列的数据，可以看一下此类的源码或常用类的API文档关于此类方法的介绍&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					另一种是开发人员自己提供存放报表数据的POJO类，只要编写一个类，为每个＜col/＞提供一个成员变量，成员变量名是＜col/＞的property属性，如果没有此属性，则是它的column属性配置值，然后为每个成员变量提供get/set方法，如果要对报表数据进行格式化，
-					则实现IFormat接口，并在其中完成格式化动作。采用这种方式后，就可以在加载数据后置动作中直接调它的get/set方法存取报表任意列的数据了。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					以上两种方式在DEMO都有演示。
-					关于加载数据后置动作的更多介绍，可以参看《开发指南》文档中相应章节
-				</userdata>
+				<item text="打印所有执行的SQL语句" id="resultset1">
+					<userdata name="pageid">resultsetpage1</userdata>
+					<userdata name="configfilename">
+						report_usualfunc4.xml
+					</userdata>
+					<userdata name="desc">
+						&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=resultsetpage1&lt;br&gt;
+						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						这里演示了在报表拦截器（关于拦截器配置请看后面的演示）的加载数据前置动作中打印所有执行的SQL语句，包括加载报表数据、加载记录数、
+						从数据库加载下拉选项数据、用户点击列过滤后加载选项数据等。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						加载上面每一类数据时，都会调用一次拦截器的beforeLoadData()方法，传入当前要执行的SQL语句。这里没对SQL语句做任何处理，
+						只是打印出来，然后原封不动的返回，后面会演示如何控制它们。
+					</userdata>
+				</item>
+				<item text="控制报表数据记录集" id="resultset2">
+					<userdata name="pageid">resultsetpage2</userdata>
+					<userdata name="configfilename">
+						report_usualfunc4.xml
+					</userdata>
+					<userdata name="desc">
+						&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=resultsetpage2&lt;br&gt;
+						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						这里演示如何通过拦截器的加载数据前置动作中控制查询报表数据的记录集，包括改变查询报表数据的SQL语句和直接在前置动作中返回
+						结果集两种方式。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						如果只是修改查询数据的SQL语句，则只要在查询数据前置动作中修改，然后返回修改好的SQL语句，框架就会执行用户修改好的SQL语句。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						如果直接在查询数据的前置动作中构造好结果集，则直接返回构造好的List对象，框架将不会再进行查询动作，直接使用用户返回的结果集。
+						返回的结果集只能是List对象，即使里面只存放了一个结果数据。&lt;br&gt;&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						在此页面演示的两个报表中：&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						“控制SQL语句”报表演示了如何在拦截器的加载数据前置动作中修改加载报表数据的SQL语句，这里是在SQL语句中加上条件age>30，即只显示30岁以上的员工。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						因为这个加载数据前置动作在执行所有SQL语句时都会执行，因此要判断当前是在执行什么类型的SQL语句，通过判断typeObj变量的具体类型实现，
+						如果是在加载报表数据，它的类型为IReportType，如果是在加载列过滤的选项数据，它的类型为AbsListReportFilterBean，如果是在加载下拉/单选框选项数据，
+						它的类型为OptionBean。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						这里只修改加载报表和列过滤选项数据的SQL语句，因此判断到是这两个类型才修改，其它的则原样返回sql。
+						为了方便动态加上条件，在配置时为sql语句加上了%mycondition%占位符，以便替换。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						“控制结果集”演示了如何直接在拦截器的加载数据前置动作中获取结果集进行返回。对于查询报表数据，返回的结果集是存放有POJO对象的List对象。对于查询记录数，
+						返回的结果集就是存放有记录数的List对象。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						为了方便起见，这里没有采用框架自动生成POJO方式，而是自己开发POJO，这样调用时比较方便，不需用到反射操作。另外采用statement
+						方式执行SQL语句，这样在加载数据前置动作中的SQL语句就是拼凑好了的条件，如果采用PreparedStatement方式执行sql语句，则在
+						加载数据前置动作中的SQL语句中的条件全部为?号，还要手工从rrequet中取条件进行设置，略为麻烦。
+					</userdata>
+				</item>
+				<item text="控制下拉选项数据记录集" id="resultset3">
+					<userdata name="pageid">resultsetpage3</userdata>
+					<userdata name="configfilename">
+						report_usualfunc4.xml
+					</userdata>
+					<userdata name="desc">
+						&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=resultsetpage3&lt;br&gt;
+						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						这里演示如何通过拦截器的加载数据前置动作中控制查询下拉/单选项选项数据的记录集，包括改变查询选项数据的SQL语句和直接在前置动作中返回
+						结果集两种方式。&lt;br&gt;&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						在此页面演示的两个报表中：&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						“控制SQL语句”报表演示了如何在拦截器的加载数据前置动作中修改加载选项数据的SQL语句，这里是在SQL语句中加上条件deptname like '%售%'，即只显示部门名称含“售”的部门。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						因为这个加载数据前置动作在执行所有SQL语句时都会执行，因此要判断当前是在执行什么类型的SQL语句，通过判断typeObj变量的具体类型实现，
+						如果是在加载报表数据，它的类型为IReportType，如果是在加载列过滤的选项数据，它的类型为AbsListReportFilterBean，如果是在加载下拉/单选框选项数据，
+						它的类型为OptionBean。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						这里只修改加载报表和列过滤选项数据的SQL语句，因此判断到是OptionBean类型才修改，其它的则原样返回sql。
+						为了方便动态加上条件，在配置时为sql语句加上了%mycondition%占位符，以便替换。&lt;br&gt;&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						“控制结果集”演示了如何直接在拦截器的加载数据前置动作中获取结果集进行返回。对于查询选项数据，返回的结果集是存放有String[]对象的List对象。
+						每个String[]对象存放一个下拉选项，String[0]为label，String[1]为value。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						获取每个下拉选项的label和value的字段名从OptionBean对象中可以得到，它有一个getLabel()和getValue()方法，分别获取到获取label和value数据的字段名。
+					</userdata>
+				</item>
+				<item text="报表数据来自多个数据源" id="resultset4">
+					<userdata name="pageid">resultsetpage4</userdata>
+					<userdata name="configfilename">
+						report_usualfunc4.xml
+					</userdata>
+					<userdata name="desc">
+						&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=resultsetpage4&lt;br&gt;
+						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						在这里演示的报表中，“序号”、“工号”、“姓名”、“年龄”、“性别”、“出生日期”几列来自一个数据源，“省”、“市”、“县”三列来自另一个数据源，它们通过“工号”列关联在一起。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						实现方式为：&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						在配置＜display/＞标签时，为所有列都配置好对应的＜col/＞标签，不过如果是来自于主数据源的，则像正常一样配置，而来自于子数据源的则统一将＜col/＞的column属性配置为{non-fromdb}，然后为它们配置一个property属性，
+						稍后就是根据这个property属性读写相应列的数据&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						在配置＜sql/＞标签时，只配置查询主数据源的SQL语句，由框架自动查出主数据源的各列显示数据。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						开发一拦截器，实现加载数据后置动作，在其中先取到主数据源的关联列的数据（比如上面的工号列），然后根据它访问一次数据库取到子数据源中相应列的数据，然后将它们设置到相应记录的POJO对象中，显示时会使用加载数据后置动作修改后的数据对象进行显示。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						因为在加载数据后置动作中要修改报表数据，所以要读写报表每条记录每列数据，有两种方式：&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						第一种是像普通报表一样，采用框架自动生成POJO类的方式来存放报表数据，此时就要通过框架在ReportDataAssistant类中提供的一组接口方法来读写任意行任意列的数据，可以看一下此类的源码或常用类的API文档关于此类方法的介绍&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						另一种是开发人员自己提供存放报表数据的POJO类，只要编写一个类，为每个＜col/＞提供一个成员变量，成员变量名是＜col/＞的property属性，如果没有此属性，则是它的column属性配置值，然后为每个成员变量提供get/set方法，如果要对报表数据进行格式化，
+						则实现IFormat接口，并在其中完成格式化动作。采用这种方式后，就可以在加载数据后置动作中直接调它的get/set方法存取报表任意列的数据了。&lt;br&gt;
+						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+						以上两种方式在DEMO都有演示。
+						关于加载数据后置动作的更多介绍，可以参看《开发指南》文档中相应章节
+					</userdata>
+				</item>
 			</item>
 		</item>
 		
@@ -1933,7 +2120,7 @@
 			</userdata>
 		</item>
 		
-		<item text="显示辅助记录行&lt;font color='red'&gt;New&lt;font/&gt;" id="subdisplay">
+		<item text="显示辅助记录行" id="subdisplay">
 			<userdata name="pageid">subdisplaypage1</userdata>
 			<userdata name="configfilename">
 				report_usualfunc3.xml
@@ -2729,74 +2916,18 @@
 			</item>
 		</item>
 		
-		<item text="客户端/服务器端校验配置" id="validate">
-			<userdata name="groupnode">true</userdata>
-			<userdata name="desc">
-				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				可以为查询条件输入框配置需要用到的一个或多个客户端校验和服务器端校验函数。&lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				所配置的客户端校验函数必须在其直接或间接引用的js文件中存在，否则找不到校验函数。&lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				配置的服务器端校验函数必须在系统配置文件中配置的全局JAVA校验类中存在，否则不能完成校验。
+		<item text="客户端/服务器端校验配置&lt;font color='red'&gt;New&lt;/font&gt;" id="validate">
+			<userdata name="pageid">validatepage1</userdata>
+			<userdata name="configfilename">
+				report_usualfunc1.xml
 			</userdata>
-			<item text="客户端校验" id="clientvalidate1">
-				<userdata name="pageid">clientvalidatepage1</userdata>
-				<userdata name="configfilename">
-					report_usualfunc1.xml
-				</userdata>
-				<userdata name="desc">
+			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=clientvalidatepage1&lt;br&gt;
-				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在本演示报表中，配置了三个查询条件，并为它们配置了客户端校验，三个查询条件要求如下：&lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					    “姓名”查询条件要求不能为空。为些查询条件配置的校验出错提示直接跟在校验函数中&lt;br&gt;
-					    &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					    “工号”查询条件要求不能为空，且全部由数字组成。校验出错提示通过key引用资源项&lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					    “年龄”查询条件要求必须是有效数字，且值在0和200之间。校验出错提示通过key引用资源项&lt;br&gt;
-				</userdata>
-			</item>
-			<item text="增强型客户端校验" id="clientvalidate2">
-				<userdata name="pageid">clientvalidatepage2</userdata>
-				<userdata name="configfilename">
-					report_usualfunc1.xml
-				</userdata>
-				<userdata name="desc">
-				&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=clientvalidatepage2&lt;br&gt;
-				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在本演示页面演示的客户端配置中，校验字段与逻辑完全一样，但这种校验配置不光在点击“搜索”时进行校验。
-					在输入框失去焦点时也会进行校验。&lt;br&gt;
-				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					要配置这种校验方式，需要将＜report/＞的jsvalidatetype配置为1。如果整个项目都需要这种校验功能，可以在wabacus.cfg.xml
-					系统级配置文件中的＜system/＞中增加一default-jsvalidatetype配置项，将其值配置为1，则对整个项目生效。
-					如果配置为0，则只会在点击“搜索”按钮时进行一次校验。
-				</userdata>
-			</item>
-			<item text="服务器端校验" id="servervalidate">
-				<userdata name="pageid">servervalidatepage1</userdata>
-				<userdata name="configfilename">
-					report_usualfunc1.xml
-				</userdata>
-				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=servervalidatepage1&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=validatepage1&lt;br&gt;
 					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						在本演示报表中，配置了两个查询条件，并为它们配置了服务器端校验，两个查询条件要求如下：&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						    “工号”查询条件要求不能为空（此条件由客户端校验），且全部由数字组成（由服务器端方法校验）。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						    “年龄”查询条件要求必须是有效数字，且值在0和200之间（均由服务器端校验）。&lt;br&gt;&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						此报表用到的两个服务器端校验方法isNumber和isValidAge，前者定义在框架自带的JAVA类ValidateTools中，在内置系统配置文件wabacus.default.xml中注册；
-						后者定义在用户自定义校验类TestServerValidate.java中，在系统配置文件wabacus.cfg.xml中注册。
-				</userdata>
-			</item>
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				可以为查询条件输入框配置客户端校验、服务器端校验，并且都可以指定是失去焦点时、提交时、还是两种情况都进行校验。
+			</userdata>
 		</item>
 		<item text="输入联想" id="typeprompt">
 			<userdata name="groupnode">true</userdata>
@@ -2908,21 +3039,21 @@
 			</item>
 		</item>
 		
-		<item text="功能按钮&lt;font color='red'&gt;New&lt;font/&gt;" id="buttons">
+		<item text="功能按钮" id="buttons">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 				这里演示了如何为wabacus的组件配置各种功能按钮
 			</userdata>
-			<item text="容器按钮&lt;font color='red'&gt;New&lt;font/&gt;" id="containerbuttons">
+			<item text="容器按钮" id="containerbuttons">
 				<userdata name="groupnode">true</userdata>
 				<userdata name="desc">
 					&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					这里以tabpanel容器为例演示了如何为容器配置功能按钮，其它的容器的配置方法与此容器类似，另外，为容器配置的按钮也支持静态配置事件和动态构造事件，这里没做演示，请参看报表按钮部分的演示。
 				</userdata>
-				<item text="按钮显示类型&lt;font color='red'&gt;New&lt;font/&gt;" id="containerbuttonsdisplay">
+				<item text="按钮显示类型" id="containerbuttonsdisplay">
 					<userdata name="pageid">containerbuttonsdisplaypage1</userdata>
 					<userdata name="configfilename">
 						report_usualfunc4.xml
@@ -2969,7 +3100,7 @@
 				</item>
 			</item>
 			
-			<item text="报表按钮&lt;font color='red'&gt;New&lt;font/&gt;" id="reportbuttons">
+			<item text="报表按钮" id="reportbuttons">
 				<userdata name="groupnode">true</userdata>
 				<userdata name="desc">
 					&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -2977,7 +3108,7 @@
 					这里演示如何为报表配置功能按钮。根据显示按钮的位置不同，分为两类：一类是显示在记录中的按钮，每条记录显示一个按钮，这种类型的按钮配置方法就与一般的格式化方法一样，在＜format/＞方法中进行拼凑。
 					另一类是显示在搜索栏、翻页导航栏、Title、Header、Footer、右键菜单等部分的按钮，这些按钮是配置在＜report/＞的＜buttons/＞子标签中，每个按钮配置一＜button/＞子标签，一个按钮可以配置显示在多个位置上。
 				</userdata>
-				<item text="按钮显示类型&lt;font color='red'&gt;New&lt;font/&gt;" id="reportbuttonsdisplay">
+				<item text="按钮显示类型" id="reportbuttonsdisplay">
 					<userdata name="pageid">reportbuttonsdisplaypage1</userdata>
 					<userdata name="configfilename">
 						report_usualfunc4.xml
@@ -2990,7 +3121,7 @@
 						为应用配置的功能按钮可以是普通的按钮，也可以是图片按钮，还可以是与框架风格一致的按钮，这里分别进行了演示。
 					</userdata>
 				</item>
-				<item text="按钮位置类型&lt;font color='red'&gt;New&lt;font/&gt;" id="reportbuttonsposition">
+				<item text="按钮位置类型" id="reportbuttonsposition">
 					<userdata name="pageid">reportbuttonspositionpage1</userdata>
 					<userdata name="configfilename">
 						report_usualfunc4.xml
@@ -3006,7 +3137,7 @@
 						如果要显示在其它位置，比如Footer、Header等等，可以通过静态模板或动态模板的＜wx:button/＞自定义标题在模板文件中指定显示位置，这里没做演示。
 					</userdata>
 				</item>
-				<item text="按钮事件类型&lt;font color='red'&gt;New&lt;font/&gt;" id="reportbuttonsevent">
+				<item text="按钮事件类型" id="reportbuttonsevent">
 					<userdata name="pageid">reportbuttonseventpage1</userdata>
 					<userdata name="configfilename">
 						report_usualfunc4.xml
@@ -3043,7 +3174,7 @@
 			</item>
 		</item>
 		
-		<item text="客户端调用服务器端方法&lt;font color='red'&gt;New&lt;font/&gt;" id="invokeservermethod">
+		<item text="客户端调用服务器端方法" id="invokeservermethod">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -3065,7 +3196,7 @@
 					在此演示中，对页面和页面上的两个报表都配置了一个调用服务器端方法的按钮，关于这种调用的更多介绍请参看《Wabacus框架开发指南》文档。
 				</userdata>
 			</item>
-			<item text="直接配置调用脚本&lt;font color='red'&gt;New&lt;font/&gt;" id="invokeservermethod_sql">
+			<item text="直接配置调用脚本" id="invokeservermethod_sql">
 				<userdata name="pageid">invokeservermethod_sqlpage1</userdata>
 				<userdata name="configfilename">
 					report_usualfunc4.xml
@@ -3219,20 +3350,25 @@
 				</userdata>
 			</item>
 		</item>
-		<item text="行选中功能" id="rowselect">
+		<item text="记录行选中功能&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselect">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				Wabacus框架允许开发人员为报表配置选中记录的功能，也就是行选中功能，可配置四种选中方式：&lt;br&gt;
+				Wabacus框架允许开发人员为报表配置选中记录的功能，也就是行选中功能，可配置六种选中方式：&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					1、普通单行选中：通过鼠标点击直接选中&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					2、单选框单行选中：会自动显示一列，为每行显示一个单选框，选中单选框即可选中整行&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					3、普通多行选中：通过按住Ctrl键或Shift键点击记录行进行多选&lt;br&gt;
+					3、单选框单行选中2：会自动显示一列，为每行显示一个单选框，选中单选框或点击记录行任意位置都可以选中整行&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					4、复选框多行选中：会自动显示一列，为每行显示一个复选框，选中复选框即可选中整行&lt;br&gt;
+					4、普通多行选中：通过点击记录行进行多选&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					5、复选框多行选中：会自动显示一列，为每行显示一个复选框，选中复选框即可选中整行&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					6、复选框多行选中2：通过点击记录行或点击复选框都可以进行多选&lt;br&gt;
+					
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 				另外，框架还允许用户配置选中后的回调javascript函数，这样选中了记录时，框架就会调用用户的js函数，在js函数中
 				可以取到被选中行的任意列的数据
@@ -3250,7 +3386,7 @@
 					本页面演示为报表配置单行选中功能的方法，只需将&lt;report/&gt;的rowselect属性配置为single即可。
 				</userdata>
 			</item>
-			<item text="单选框单行选中" id="rowselectsingle2">
+			<item text="单选框单行选中&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectsingle2">
 				<userdata name="pageid">rowselectsinglepage2</userdata>
 				<userdata name="configfilename">
 					report_usualfunc2.xml
@@ -3279,7 +3415,7 @@
 					用鼠标单击记录行进行选中
 				</userdata>
 			</item>
-			<item text="多选框多行选中" id="rowselectmulti2">
+			<item text="复选框多行选中&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectmulti2">
 				<userdata name="pageid">rowselectmultipage2</userdata>
 				<userdata name="configfilename">
 					report_usualfunc2.xml
@@ -3292,6 +3428,32 @@
 					本页面演示为报表配置通过复选框进行多行选中功能的方法，只需将&lt;report/&gt;的rowselect属性配置为checkbox即可。 &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					这里除了演示了由框架自动生成行选中的复选框列，在最后一个报表还演示了如何控制行选择列的显示位置或样式，方法就是为它专门配置一个＜col/＞，将其column配置为{col-rowselect}，然后它就可以像普通列一样控制样式。
+				</userdata>
+			</item>
+			<item text="跨页选中多记录行&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectmulticrosspage">
+				<userdata name="pageid">rowselectmulticrosspage1</userdata>
+				<userdata name="configfilename">
+					report_usualfunc2.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=rowselectmulticrosspage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					这里演示一次选中多页上的记录
+				</userdata>
+			</item>
+			<item text="服务器端指定选中记录行&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectbyserverside">
+				<userdata name="pageid">rowselectbyserversidepage1</userdata>
+				<userdata name="configfilename">
+					report_usualfunc2.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=rowselectbyserversidepage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					
 				</userdata>
 			</item>
 			<item text="执行选中回调函数" id="rowselect3">
@@ -3398,7 +3560,7 @@
 				</userdata>
 			</item>
 		</item>
-		<item text="数据统计&lt;font color='red'&gt;New&lt;font/&gt;" id="statistic">
+		<item text="数据统计" id="statistic">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -3473,9 +3635,14 @@
 			</item>
 		</item>
 		<item text="报表拦截器" id="interceptor">
-			<userdata name="groupnode">true</userdata>
+			<userdata name="pageid">interceptorpage1</userdata>
+			<userdata name="configfilename">
+				report_usualfunc3.xml
+			</userdata>
 			<userdata name="desc">
-				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
+				&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=interceptorpage1&lt;br&gt;
+				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 				拦截器是Wabacus框架提供给用户控制报表显示的一个手段，配置给报表的拦截器包括前置动作和后置动作两部分，前置动作在执行初始报表时执行，用户可以在前置动作中
 				通过调用rrequest.getErrors().addError("出错信息");中断报表的显示并提示出错；后置动作在报表显示完后执行。&lt;br&gt;
@@ -3492,48 +3659,6 @@
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 				上面三种方式定义的拦截器是等价的，一个报表最多只能配置一个拦截器，不管采用哪种方式。后面的演示中就会通过三种方式配置同一功能的拦截器。
 			</userdata>
-			<item text="直接配置拦截器" id="interceptor1">
-				<userdata name="pageid">interceptorpage1</userdata>
-				<userdata name="configfilename">
-					report_usualfunc3.xml
-				</userdata>
-				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=interceptorpage1&lt;br&gt;
-					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					本页面演示的报表通过＜report/＞标签的＜interceptor/＞子标签配置拦截器，同时配置了前置动作和后置动作，
-					其中前置动作对用户输入的“年龄”查询条件进行校验，只能输入10到20之间的数字，否则中断报表显示，并给出出错提示。前后置动作在执行完后都会在控制台打印一条提示信息。&lt;br&gt;
-				</userdata>
-			</item>
-			<item text="引用资源文件中的拦截器" id="interceptor2">
-				<userdata name="pageid">interceptorpage2</userdata>
-				<userdata name="configfilename">
-					report_usualfunc3.xml
-				</userdata>
-				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=interceptorpage2&lt;br&gt;
-					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					本页面演示的报表通过＜report/＞标签的interceptor属性引用定义在资源文件中key为interceptorpage2.report1.interceptor的拦截器资源项，它的逻辑与上面直接配置在报表中的拦截器逻辑完全一致。
-					可以打开resources/resources_business_zh.xml资源文件查看此资源项。&lt;br&gt;
-				</userdata>
-			</item>
-			<item text="开发拦截器JAVA类" id="interceptor3">
-				<userdata name="pageid">interceptorpage3</userdata>
-				<userdata name="configfilename">
-					report_usualfunc3.xml
-				</userdata>
-				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=interceptorpage3&lt;br&gt;
-					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					本页面演示的报表通过＜report/＞标签的interceptor属性引用一拦截器JAVA类，它的逻辑与上面直接配置在报表中的拦截器逻辑完全一致。
-					可以打开com.wabacusdemo.Interceptorpage3Report1Interceptor类查看此拦截器的逻辑。&lt;br&gt;
-				</userdata>
-			</item>
 		</item>
 		<item text="多语言支持" id="multilanguage">
 			<userdata name="groupnode">true</userdata>
@@ -3653,6 +3778,25 @@
 					此外，还可以将引入的外部JSP文件显示在一个独立的iframe中，只要将＜jsp/＞标签的iframe属性配置为true即可。关于此标签的更多介绍，请参看《Wabacus框架开发指南》文档。
 				</userdata>
 			</item>
+		</item>
+		
+		<item text="onload回调函数&lt;font color='red'&gt;New&lt;/font&gt;" id="onload">
+			<userdata name="pageid">onloadpage1</userdata>
+			<userdata name="configfilename">
+				report_usualfunc3.xml
+			</userdata>
+			<userdata name="desc">
+				&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=onloadpage1&lt;br&gt;
+				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				任意组件（包括各种容器和报表）的标签上都支持onload属性，用于配置另载完后客户端的回调函数，这里配置的onload回调函数在每次刷新时都会调用到，每个onload回调函数可以声明两个参数：
+				pageid和componentid，框架在执行时会自动通过这两个参数将当前报表所在页面的ID和组件ID传进来，在回调函数内部可以使用它们。&lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				此外，还可以在后台JAVA类中通过调用rrequest.getWResponse().addOnload()方法动态添加要执行的JS回调函数，此时加以加入传入任意参数到onload回调函数中。&lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				回调函数所在js文件必须通过所在页面的＜page/＞的js属性导入进来，否则访问不到。
+			</userdata>
 		</item>
 		
 		<item text="其它" id="other">
@@ -3847,23 +3991,6 @@
 					获取选中值的javascript代码放在/wabacusdemo/js/otherpage3.js文件中&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					通过报表＜format/＞标签的format方法，可以为任意列拼凑出任意输入框或按钮。
-				</userdata>
-			</item>
-			<item text="配置报表onload回调函数" id="reportonload">
-				<userdata name="pageid">reportonloadpage1</userdata>
-				<userdata name="configfilename">
-					report_usualfunc3.xml
-				</userdata>
-				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=reportonloadpage1&lt;br&gt;
-					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					可以通过报表的＜report/＞标签的onload属性配置报表每次加载完后的回调函数，这样当前报表每次重新加载完（比如因为查询、翻页等等动作）都会自动调用它们。
-					可以配置多个，用分号分隔。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					回调函数所在js文件必须通过所在页面的＜page/＞的js属性导入进来，否则访问不到。另外，每个onload回调函数可以声明两个参数：
-					pageid和reportid，框架在执行时会自动通过这两个参数将当前报表所在页面的ID和报表ID传进来，在回调函数内部可以使用它们。
 				</userdata>
 			</item>
 		</item>

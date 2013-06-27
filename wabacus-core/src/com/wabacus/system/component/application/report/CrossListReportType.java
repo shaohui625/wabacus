@@ -26,13 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtMethod;
-import javassist.CtNewMethod;
-import javassist.NotFoundException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -42,7 +35,6 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import com.itextpdf.text.Element;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadAssistant;
-import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
@@ -50,13 +42,12 @@ import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.component.application.report.extendconfig.IGroupExtendConfigLoad;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.ClassPoolAssistant;
 import com.wabacus.system.assistant.ListReportAssistant;
-import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.assistant.StandardExcelAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportBean;
@@ -72,7 +63,6 @@ import com.wabacus.system.component.application.report.configbean.crosslist.Cros
 import com.wabacus.system.component.application.report.configbean.crosslist.CrossListReportGroupBean;
 import com.wabacus.system.component.application.report.configbean.crosslist.CrossListReportStatiBean;
 import com.wabacus.system.component.container.AbsContainerType;
-import com.wabacus.system.format.IFormat;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 import com.wabacus.util.UniqueArrayList;
@@ -105,7 +95,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
         return this.hasLoadedData;
     }
 
-    protected void setHasLoadedDataFlag(boolean hasLoadedDataFlag)
+    public void setHasLoadedDataFlag(boolean hasLoadedDataFlag)
     {
         super.setHasLoadedDataFlag(hasLoadedDataFlag);
         this.hasLoadedData=hasLoadedDataFlag;
@@ -133,7 +123,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
         List lstConfigChildren=getLstConfigChildren(rbean.getDbean());
         Map<String,Boolean> mDynamicColGroupDisplayType=getMDynamicColGroupDisplayType(lstConfigChildren);
         getAllRuntimeColGroupBeans(lstConfigChildren,this.lstAllDisplayColAndGroupBeans,lstAllRuntimeColBeans,mDynamicColGroupDisplayType);
-        processFixedColsAndRows(rbean);//处理冻结行列标题的情况
+        processFixedColsAndRows(rbean);
         if(csrbean.isShouldCreateRowSelectCol()&&rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
         {
             super.insertRowSelectNewCols(alrbean,lstAllRuntimeColBeans);
@@ -148,7 +138,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
             entryTmp.getValue().buildRealSelectSqls();
         }
         super.loadReportData(shouldInvokePostaction);
-        
+        //如果某个交叉统计报表配置了针对每一列数据的统计，开始加载针对每个动态列的统计数据
         createVerticalStaticColBeansAndData(lstAllRuntimeColBeans);
     }
 
@@ -204,7 +194,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
     {
         boolean hasVerticalStatiData=false;
         for(Entry<String,RuntimeDynamicDatasetBean> entryTmp:this.mDynamicDatasetBeans.entrySet())
-        {//每个数据集加载针对动态列的垂直统计数据
+        {
             hasVerticalStatiData|=entryTmp.getValue().loadVerticalStatiData();
         }
         if(!hasVerticalStatiData) return;
@@ -279,7 +269,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
                     {
                         createVerticalStatiLabelColBean(lstNotDisplayStatiLabelBeans,colspans);
                         lstNotDisplayStatiLabelBeans.clear();
-                        colspans=1;//当前普通列单独起一个ColBean
+                        colspans=1;
                         isPrevFixedCol=false;
                     }
                 }else
@@ -305,9 +295,9 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
     private void createVerticalStatiLabelColBean(List<AbsCrossListReportColAndGroupBean> lstNotDisplayStatiLabelBeans,int colspan)
     {
         if(lstNotDisplayStatiLabelBeans==null||lstNotDisplayStatiLabelBeans.size()==0)
-        {
+        {//到目前为止所有交叉统计列都已经显示了verticallabel，则此普通列只要显示空字符串
             ColBean cbTmp=new ColBean(rbean.getDbean());
-            cbTmp.setValuestyleproperty(" colspan=\""+colspan+"\"");
+            cbTmp.setValuestyleproperty(" colspan=\""+colspan+"\"",true);
             
             
             this.lstVerticalStatiColBeansAndValues.add(new VerticalCrossStatisticColData(cbTmp,"",colspan));
@@ -319,7 +309,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
             {
                 displayvalue=rrequest.getI18NStringValue(lstNotDisplayStatiLabelBeans.get(i).getInnerDynamicColBean().getVerticallabel());
                 if(colspan<=0)
-                {//已经没有多余的单元格来显示剩下的统计标题了，则和前面的合并
+                {
                     this.lstVerticalStatiColBeansAndValues.get(this.lstVerticalStatiColBeansAndValues.size()-1).appendColValue(displayvalue);
                 }else
                 {
@@ -335,7 +325,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
                     }
                     valuestyleproperty=Tools.removePropertyValueByName("colspan",valuestyleproperty);
                     valuestyleproperty=valuestyleproperty+" colspan=\""+icolspan+"\"";
-                    cbTmp.setValuestyleproperty(valuestyleproperty);
+                    cbTmp.setValuestyleproperty(valuestyleproperty,true);
                     this.lstVerticalStatiColBeansAndValues.add(new VerticalCrossStatisticColData(cbTmp,displayvalue,icolspan));
                     colspan-=icolspan;
                 }
@@ -373,9 +363,14 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
         return this.lstAllDisplayColAndGroupBeans;
     }
 
+    protected List<ColBean> getLstAllRealColBeans()
+    {
+        return this.cacheDataBean.getLstDynOrderColBeans();
+    }
+    
     protected String getLastDisplayColIdInFirstTitleRow(UltraListReportDisplayBean urldbean)
     {
-        return null;
+        return "[CROSSLISTREPORT]";
     }
 
     protected String showSubRowDataForWholeReport(int position)
@@ -388,7 +383,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
             for(VerticalCrossStatisticColData vcDataTmp:this.lstVerticalStatiColBeansAndValues)
             {
                 resultBuf.append("<td class='cls-data-td-list' ");
-                resultBuf.append(vcDataTmp.getCbean().getValuestyleproperty()).append(">");
+                resultBuf.append(vcDataTmp.getCbean().getValuestyleproperty(rrequest,false)).append(">");
                 resultBuf.append(vcDataTmp.getColValue());
                 resultBuf.append("</td>");
             }
@@ -435,7 +430,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
             {
                 stativalue=vcDataTmp.getColValue();
                 stativalue=Tools.replaceAll(stativalue,"&nbsp;"," ");
-                stativalue=stativalue.replaceAll("<.*?\\>","");
+                stativalue=stativalue.replaceAll("<.*?\\>","");//替换掉html标签
                 startcolidx=endcolidx+1;
                 endcolidx=startcolidx+vcDataTmp.getColspan();
                 addDataCell(vcDataTmp.getCbean(),stativalue,1,endcolidx-startcolidx,Element.ALIGN_LEFT);
@@ -450,7 +445,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
     }
 
     public String getColSelectedMetadata()
-    {//这种报表类型不提供列选择功能
+    {
         return "";
     }
 
@@ -477,7 +472,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
         verticallabel=verticallabel==null?"":Config.getInstance().getResourceString(null,colbean.getPageBean(),verticallabel,true).trim();
         clrcbean.setVerticallabel(verticallabel);
         clrcbean.setVerticallabelstyleproperty(verticallabelstyleproperty==null?"":verticallabelstyleproperty.trim());
-        clrcbean.setDatasetid(colbean.getDatasetid());
+        clrcbean.setDatasetid(colbean.getDatasetValueId());
         
         
         //            throw new WabacusConfigLoadingException("加载报表"+colbean.getReportBean().getPath()+"失败，为交叉<col/>配置column属性不能为"
@@ -662,7 +657,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
     public int doPostLoad(ReportBean reportbean)
     {
         DisplayBean disbean=reportbean.getDbean();
-        disbean.setColselect(false);//交叉统计报表不允许列选择功能
+        disbean.setColselect(false);
         reportbean.setCelldrag(0);
         List lstChildren=getLstConfigChildren(disbean);
         for(Object childObjTmp:lstChildren)
@@ -678,7 +673,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
         cslrbean.doPostLoad();
         super.doPostLoad(reportbean);
         removeDyncolsFromFilterDataSql(reportbean);
-        rebuildReportPojoClass(reportbean);
+        
         return 1;
     }
 
@@ -687,7 +682,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
         UltraListReportDisplayBean ulrdbean=(UltraListReportDisplayBean)disbean.getExtendConfigDataForReportType(UltraListReportType.KEY);
         List lstChildren=null;
         if(ulrdbean==null||!ulrdbean.isHasGroupConfig(null))
-        {
+        {//如果不是列分组显示的报表
             lstChildren=disbean.getLstCols();
         }else
         {
@@ -730,15 +725,18 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
     private void removeDyncolsFromFilterDataSql(ReportBean reportbean)
     {
         String sqlFilterTmp;
-        for(ReportDataSetBean svbeanTmp:reportbean.getSbean().getLstDatasetBeans())
+        for(ReportDataSetBean dsbeanTmp:reportbean.getSbean().getLstDatasetBeans())
         {
-            sqlFilterTmp=svbeanTmp.getFilterdata_sql();
-            if(sqlFilterTmp!=null&&!sqlFilterTmp.trim().equals(""))
+            for(ReportDataSetValueBean dsvbeanTmp:dsbeanTmp.getLstValueBeans())
             {
-                sqlFilterTmp=replaceDynColPlaceHolder(sqlFilterTmp,"","[#dynamic-columns#]");
-                sqlFilterTmp=replaceDynColPlaceHolder(sqlFilterTmp,"","(#dynamic-columns#)");
+                sqlFilterTmp=dsvbeanTmp.getFilterdata_sql();
+                if(sqlFilterTmp!=null&&!sqlFilterTmp.trim().equals(""))
+                {
+                    sqlFilterTmp=replaceDynColPlaceHolder(sqlFilterTmp,"","[#dynamic-columns#]");
+                    sqlFilterTmp=replaceDynColPlaceHolder(sqlFilterTmp,"","(#dynamic-columns#)");
+                }
+                dsvbeanTmp.setFilterdata_sql(sqlFilterTmp);
             }
-            svbeanTmp.setFilterdata_sql(sqlFilterTmp);
         }
     }
 
@@ -765,7 +763,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
 
     protected void processFixedColsAndRows(ReportBean reportbean)
     {
-        if(rrequest==null||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return;//加载配置文件时不处理，在运行时根据生成好的列进行处理
+        if(rrequest==null||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return;
         List<ColBean> lstRuntimeColBeans=this.cacheDataBean.getLstDynOrderColBeans();
         if(lstRuntimeColBeans==null||lstRuntimeColBeans.size()==0) return;
         int fixedcols=this.alrbean.getFixedcols(null);
@@ -820,7 +818,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
         CrossListReportBean cslrbean=(CrossListReportBean)alrbean.getOwner().getReportBean().getExtendConfigDataForReportType(KEY);
         if(!cslrbean.isHasDynamicColGroupBean()) return super.insertRowSelectNewCols(alrbean,lstCols);
         cslrbean.setShouldCreateRowSelectCol(true);
-        return null;
+        return null;//对于交叉报表，不在这里新增行选择列，而是在运行时新增
     }
 
     protected Map<String,ColAndGroupTitlePositionBean> calPosition(ReportBean reportbean,List lstChildren,List<String> lstDisplayColIds)
@@ -832,66 +830,8 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
     protected void calPositionForStandardExcel(List lstChildren,List<String> lstDynColids,
             Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions)
     {
-        if(rrequest==null) return;//在加载的时候不计算位置，因为动态列是否显示，显示多少列都没有定，所以统一放在运行时计算
+        if(rrequest==null) return;
         super.calPositionForStandardExcel(lstChildren,lstDynColids,mColAndGroupTitlePostions);
-    }
-
-    private void rebuildReportPojoClass(ReportBean reportbean)
-    {
-        try
-        {
-            List<String> lstImports=null;
-            String format=null;
-            if(reportbean.getFbean()!=null)
-            {
-                format=reportbean.getFbean().getFormatContent();
-                lstImports=reportbean.getFbean().getLstImports();
-            }
-            format=format==null?"":format.trim();
-            ClassPool pool=ClassPoolAssistant.getInstance().createClassPool();
-            CtClass cclass=pool.makeClass(Consts.BASE_PACKAGE_NAME+".Pojo_"+reportbean.getPageBean().getId()+reportbean.getId());
-            if(lstImports==null) lstImports=new UniqueArrayList<String>();
-            lstImports.add("com.wabacus.system.format");
-            lstImports.add("java.util");
-            ClassPoolAssistant.getInstance().addImportPackages(pool,lstImports);
-            if(!format.equals(""))
-            {
-                cclass.setInterfaces(new CtClass[] { pool.get(IFormat.class.getName()) });
-            }
-            if(reportbean.getDbean().getLstCols()!=null)
-            {
-                CrossListReportColBean clrcbeanTmp;
-                for(ColBean cbTmp:reportbean.getDbean().getLstCols())
-                {
-                    clrcbeanTmp=(CrossListReportColBean)cbTmp.getExtendConfigDataForReportType(KEY);
-                    if(clrcbeanTmp!=null&&clrcbeanTmp.isDynamicColGroup()) continue;
-                    ReportAssistant.getInstance().buildFieldAndGetSetMethodForColBean(reportbean,cbTmp,pool,cclass);
-                }
-            }
-            ListReportAssistant.getInstance().addMDataFieldToClass(pool,cclass);
-
-            if(!format.equals(""))
-            {
-                CtMethod formatMethod=CtNewMethod.make("public void format("+ReportRequest.class.getName()+"  rrequest,"+ReportBean.class.getName()
-                        +" rbean){"+format+" \n}",cclass);
-                cclass.addMethod(formatMethod);
-            }
-            reportbean.setPojoclass(ConfigLoadManager.currentDynClassLoader.loadClass(Consts.BASE_PACKAGE_NAME+".Pojo_"
-                    +reportbean.getPageBean().getId()+reportbean.getId(),cclass.toBytecode()));
-            cclass.detach();
-            pool.clearImportedPackages();
-            pool=null;
-            ReportAssistant.getInstance().setMethodInfoToColBean(reportbean.getDbean(),reportbean.getPojoclass());
-        }catch(NotFoundException e)
-        {
-            throw new WabacusConfigLoadingException("为报表"+reportbean.getPath()+"生成字节码时，执行pool.get()失败",e);
-        }catch(CannotCompileException e)
-        {
-            throw new WabacusConfigLoadingException("生成类"+reportbean.getPath()+"时无法编译",e);
-        }catch(Exception e)
-        {
-            throw new WabacusConfigLoadingException("生成类"+reportbean.getPath()+"的字节码失败",e);
-        }
     }
 
     private class RuntimeDynamicDatasetBean

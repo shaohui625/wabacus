@@ -22,7 +22,7 @@ import java.util.List;
 
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.SqlBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
@@ -38,9 +38,9 @@ public class ConditionInSqlBean implements Cloneable
     
     private ConditionExpressionBean conditionExpression;
     
-    private ReportDataSetBean owner;
+    private ReportDataSetValueBean owner;
     
-    public ConditionInSqlBean(ReportDataSetBean owner)
+    public ConditionInSqlBean(ReportDataSetValueBean owner)
     {
         this.owner=owner;
     }
@@ -101,11 +101,11 @@ public class ConditionInSqlBean implements Cloneable
             if(conditionname.equals("{#condition#}"))
             {
                 return ReportAssistant.getInstance().addDynamicConditionExpressionsToSql(rrequest,this.owner.getReportBean(),this.owner,sql,
-                        ((SqlBean)owner.getParent()).getLstConditions(),lstConditionValues,lstConditionTypes);
+                        owner.getReportBean().getSbean().getLstConditions(),lstConditionValues,lstConditionTypes);
             }
             throw new WabacusRuntimeException("报表"+this.owner.getReportBean().getPath()+"中ConditionBeanInSqlBean的conditionname属性为空");
         }
-        ConditionBean cbeanRefered=((SqlBean)owner.getParent()).getConditionBeanByName(conname);//取到被此条件引用的<condition/>
+        ConditionBean cbeanRefered=owner.getReportBean().getSbean().getConditionBeanByName(conname);//取到被此条件引用的<condition/>
         String conditionvalue=cbeanRefered.getDynamicConditionvalueForSql(rrequest,-1);
         if(!conditionvalue.equals("")||(conditionname.startsWith("#")&&conditionname.endsWith("#")))
         {

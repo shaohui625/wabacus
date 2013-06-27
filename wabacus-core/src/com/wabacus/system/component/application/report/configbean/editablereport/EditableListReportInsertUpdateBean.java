@@ -25,6 +25,7 @@ import java.util.Map;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.page.PageBean;
@@ -139,7 +140,7 @@ public class EditableListReportInsertUpdateBean implements Cloneable
         return this.owner instanceof EditableListReportUpdateDataBean;
     }
     
-    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,Object dataObj)
+    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
     {
         ReportBean rbean=this.getOwner().getOwner().getReportBean();
         boolean isBelongtoInsert=isBelongtoInsert();
@@ -177,9 +178,9 @@ public class EditableListReportInsertUpdateBean implements Cloneable
                         throw new WabacusRuntimeException("显示报表"+rbean.getPath()+"失败，为其配置的urlparams属性中指定的@{"+paramvalueTmp+"}没有对应的<col/>");
                     }
                     paramvalueTmp=reportTypeObj.getColOriginalValue(dataObj,cbTmp);
-                }else if(Tools.isDefineKey("request",paramvalueTmp)||Tools.isDefineKey("session",paramvalueTmp))
+                }else if(WabacusAssistant.getInstance().isGetRequestContextValue(paramvalueTmp))
                 {//是从request/session中取数据
-                    paramvalueTmp=WabacusAssistant.getInstance().getRequestSessionValue(rrequest,paramvalueTmp,null);
+                    paramvalueTmp=WabacusAssistant.getInstance().getRequestContextStringValue(rrequest,paramvalueTmp,null);
                 }
                 if(paramvalueTmp==null||paramvalueTmp.trim().equals("")) continue;
                 urlParamsBuf.append("&").append(paramnameTmp).append("=").append(paramvalueTmp);
@@ -189,7 +190,7 @@ public class EditableListReportInsertUpdateBean implements Cloneable
         return realpageurl;
     }
     
-    public void doPostLoad()
+    public void doPostLoadFinally()
     {
         ReportBean rbean=this.getOwner().getOwner().getReportBean();
         this.pageid=this.pageid==null?"":this.pageid.trim();

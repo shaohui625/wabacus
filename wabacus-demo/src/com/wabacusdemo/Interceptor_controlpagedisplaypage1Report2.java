@@ -20,52 +20,54 @@ package com.wabacusdemo;
 
 import java.util.List;
 
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
+import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.ReportDataAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
-import com.wabacus.system.intercept.RowDataByInterceptor;
+import com.wabacus.system.intercept.RowDataBean;
 import com.wabacus.util.Consts;
 
 public class Interceptor_controlpagedisplaypage1Report2 extends AbsInterceptorDefaultAdapter
 {
-    public RowDataByInterceptor beforeDisplayReportDataPerRow(AbsReportType reportTypeObj,ReportRequest rrequest,int rowindex,int colspans,
-            List lstColBeans)
+    public void beforeDisplayReportDataPerRow(ReportRequest rrequest,ReportBean rbean,RowDataBean rowDataBean)
     {
-        RowDataByInterceptor rowdata=new RowDataByInterceptor();
-        if(rowindex==Integer.MAX_VALUE)
+        if(rowDataBean.getRowindex()==Integer.MAX_VALUE)
         {//当前是显示完最后一行记录后的调用
-            String insertedHtml="<tr><td align='center' bgcolor='#dddddd' colspan='"+colspans+"' ><font size='3'><b>";
+            String insertedHtml="<tr><td align='center' bgcolor='#dddddd' colspan='"+rowDataBean.getColspans()+"' ><font size='3'><b>";
             insertedHtml+="显示结束";
             insertedHtml+="</b></font></td></tr>";
-            rowdata.setInsertDisplayRowHtml(insertedHtml);
+            rowDataBean.setInsertDisplayRowHtml(insertedHtml);
         }else
         {//显示数据行
-            List lstData=reportTypeObj.getLstReportData();//所有报表数据的容器
-            if(lstData!=null&&lstData.size()>0&&lstColBeans!=null&&lstColBeans.size()>0)
+            AbsReportType reportTypeObj=rrequest.getDisplayReportTypeObj(rbean.getId());
+            List<AbsReportDataPojo> lstData=reportTypeObj.getLstReportData();//所有报表数据的容器
+            if(lstData!=null&&lstData.size()>0&&rowDataBean.getLstColBeans()!=null&&rowDataBean.getLstColBeans().size()>0)
             {//报表有数据
                 StringBuffer collabelBuf=new StringBuffer();
+                String labelTmp;
                 ColBean cbTmp;
-                for(int i=0;i<lstColBeans.size();i++)
+                for(int i=0;i<rowDataBean.getLstColBeans().size();i++)
                 {
-                    cbTmp=(ColBean)lstColBeans.get(i);
+                    cbTmp=(ColBean)rowDataBean.getLstColBeans().get(i);
                     if(cbTmp.getDisplaytype().equals(Consts.COL_DISPLAYTYPE_HIDDEN)) continue;
-                    if(cbTmp.getLabel()==null||cbTmp.getLabel().trim().equals("")) continue;
-                    collabelBuf.append(cbTmp.getLabel()).append(";");
+                    labelTmp=cbTmp.getLabel(rrequest);
+                    if(labelTmp==null||labelTmp.trim().equals("")||labelTmp.equals(ColBean.NON_LABEL))
+                        continue;
+                    collabelBuf.append(cbTmp.getLabel(rrequest)).append(";");
                 }
                 if(collabelBuf.length()>0&&collabelBuf.charAt(collabelBuf.length()-1)==';') collabelBuf.deleteCharAt(collabelBuf.length()-1);
                 if(collabelBuf.length()>0)
                 {
                     StringBuffer insertedHtmlBuf=new StringBuffer();
-                    insertedHtmlBuf.append("<tr><td colspan='"+colspans+"' align='left' bgcolor='#eeeeee'>");
+                    insertedHtmlBuf.append("<tr><td colspan='"+rowDataBean.getColspans()+"' align='left' bgcolor='#eeeeee'>");
                     insertedHtmlBuf.append("<font size='2'><b>"+collabelBuf.toString()+"列的数据</b></font>");
                     insertedHtmlBuf.append("</td></tr>");
-                    rowdata.setInsertDisplayRowHtml(insertedHtmlBuf.toString());//动态插入要显示的内容
+                    rowDataBean.setInsertDisplayRowHtml(insertedHtmlBuf.toString());//动态插入要显示的内容
                 }
             }
         }
-        return rowdata;
     }
 }
 

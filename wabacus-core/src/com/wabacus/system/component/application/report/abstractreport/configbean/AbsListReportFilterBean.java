@@ -138,11 +138,12 @@ public class AbsListReportFilterBean extends AbsExtendConfigBean
     {
         ColBean cbean=(ColBean)this.getOwner();
         SqlBean sqlbean=cbean.getReportBean().getSbean();
-        if(cbean.getDatasetid()!=null&&!cbean.getDatasetid().trim().equals(""))
+        if(cbean.getDatasetValueId()!=null&&!cbean.getDatasetValueId().trim().equals(""))
         {
-            if(!sqlbean.isIndependentDataset(cbean.getDatasetid()))
+            if(sqlbean.isExistDependentDataset(cbean.getDatasetValueId()))
             {
-                throw new WabacusConfigLoadingException("加载报表"+cbean.getReportBean().getPath()+"的列"+cbean.getLabel()+"失败，当前列是从子数据集中取数据，不能为它配置列过滤功能");
+                throw new WabacusConfigLoadingException("加载报表"+cbean.getReportBean().getPath()+"的列"+cbean.getLabel(null)
+                        +"失败，当前列是从子数据集中取数据，不能为它配置列过滤功能");
             }
         }
         if(isConditionRelate())

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
@@ -71,20 +72,12 @@ public class SqlBean extends AbsConfigBean
     {
         this.beforeSearchMethod=beforeSearchMethod;
     }
-    
-    private String statementTypeName;
-    
-    public String getStatementTypeName()
-    {
-        return statementTypeName;
-    }
-
 
     public void setStatementType(String statementtype)
     {
-        if(statementtype==null) return;
+        if(statementtype==null||statementtype.trim().equals(""))
+            statementtype=Config.getInstance().getSystemConfigValue("default-sqltype","statement");
         statementtype=statementtype.toLowerCase().trim();
-        statementTypeName = statementtype;
         if(statementtype.equals("statement"))
         {
             this.stmttype=STMTYPE_STATEMENT;
@@ -118,35 +111,68 @@ public class SqlBean extends AbsConfigBean
     {
         return lstDatasetBeans;
     }
-
+    
     public void setLstDatasetBeans(List<ReportDataSetBean> lstDatasetBeans)
     {
         this.lstDatasetBeans=lstDatasetBeans;
+        if(lstDatasetBeans==null||lstDatasetBeans.size()==0)
+        {
+            this.mDatasetBeans=null;
+        }else
+        {
+            this.mDatasetBeans=new HashMap<String,ReportDataSetBean>();
+            for(ReportDataSetBean dsbeanTmp:this.lstDatasetBeans)
+            {
+                mDatasetBeans.put(dsbeanTmp.getId(),dsbeanTmp);
+            }
+        }
     }
 
+    public boolean isMultiDatasetRows()
+    {
+        return this.lstDatasetBeans!=null&&this.lstDatasetBeans.size()>1;
+    }
+    
+    public boolean isMultiDataSetCols()
+    {
+        if(this.lstDatasetBeans==null||this.lstDatasetBeans.size()==0) return false;
+        for(ReportDataSetBean datasetBeanTmp:this.lstDatasetBeans)
+        {
+            if(datasetBeanTmp.getLstValueBeans()!=null&&datasetBeanTmp.getLstValueBeans().size()>1) return true;
+        }
+        return false;
+    }
+    
     public ReportDataSetBean getDatasetBeanById(String datasetid)
     {
-        if(this.mDatasetBeans==null||this.mDatasetBeans.size()==0)
-        {
-            this.mDatasetBeans=constructMSqlValueBeans();
-        }
-        if((datasetid==null||datasetid.trim().equals(""))&&this.lstDatasetBeans!=null&&this.lstDatasetBeans.size()==1)
-        {
-            return this.lstDatasetBeans.get(0);
-        }
         if(this.mDatasetBeans==null) return null;
+        if(datasetid==null||datasetid.trim().equals("")) datasetid=Consts.DEFAULT_KEY;
         return this.mDatasetBeans.get(datasetid);
     }
     
-    public boolean isIndependentDataset(String datasetid)
+    public List<ReportDataSetValueBean> getLstDatasetValueBeansByValueid(String valueid)
     {
-        if(this.mDatasetBeans==null||this.mDatasetBeans.size()==0)
+        if(this.mDatasetBeans==null) return null;
+        if(valueid==null||valueid.trim().equals("")) valueid=Consts.DEFAULT_KEY;
+        List<ReportDataSetValueBean> lstResults=new ArrayList<ReportDataSetValueBean>();
+        ReportDataSetValueBean dsvbeanTmp;
+        for(ReportDataSetBean dsbeanTmp:this.lstDatasetBeans)
         {
-            this.mDatasetBeans=constructMSqlValueBeans();
+            dsvbeanTmp=dsbeanTmp.getDatasetValueBeanById(valueid);
+            if(dsvbeanTmp!=null) lstResults.add(dsvbeanTmp);
         }
-        if(datasetid==null||datasetid.trim().equals("")) return true;
-        if(this.mDatasetBeans==null||this.mDatasetBeans.get(datasetid)==null) return true;
-        return this.mDatasetBeans.get(datasetid).isIndependentDataSet();
+        return lstResults;
+    }
+    
+    public boolean isExistDependentDataset(String dsvalueid)
+    {
+        if(lstDatasetBeans==null) return false;
+        if(dsvalueid==null||dsvalueid.trim().equals("")) dsvalueid=Consts.DEFAULT_KEY;
+        for(ReportDataSetBean dsbeanTmp:lstDatasetBeans)
+        {
+            if(dsbeanTmp.isDependentDatasetValue(dsvalueid)) return true;
+        }
+        return false;
     }
     
     public List<String> getLstConditionFromUrlNames()
@@ -188,9 +214,14 @@ public class SqlBean extends AbsConfigBean
     public void initConditionValues(ReportRequest rrequest)
     {
         if(this.lstConditions==null||this.lstConditions.size()==0) return;
+        Map<String,String> mConditionValues=new HashMap<String,String>();
         for(ConditionBean cbean:lstConditions)
         {
-            cbean.initConditionValueByInitMethod(rrequest);
+            cbean.initConditionValueByInitMethod(rrequest,mConditionValues);
+        }
+        for(ConditionBean cbean:lstConditions)
+        {
+            cbean.validateConditionValue(rrequest,mConditionValues);
         }
     }
     
@@ -200,7 +231,7 @@ public class SqlBean extends AbsConfigBean
         for(ConditionBean cbeanTmp:this.lstConditions)
         {
             if(!cbeanTmp.isConditionWithInputbox()) continue;
-            if(rrequest!=null//如果是在运行时判断，且当前查询条件被授权为不显示
+            if(rrequest!=null
                     &&!rrequest.checkPermission(this.getReportBean().getId(),Consts.SEARCH_PART,cbeanTmp.getName(),Consts.PERMISSION_TYPE_DISPLAY))
                 continue;
             return true;
@@ -223,86 +254,41 @@ public class SqlBean extends AbsConfigBean
         return lstConditions;
     }
     
-    public void afterLoad()
+    public void afterSqlLoad()
     {
-        for(ReportDataSetBean svbTmp:lstDatasetBeans)
+        if(lstDatasetBeans==null) return;
+        for(ReportDataSetBean dsbeanTmp:lstDatasetBeans)
         {
-            svbTmp.afterLoad();
+            dsbeanTmp.afterSqlLoad();
         }
-        List<ReportDataSetBean> lstResults=new ArrayList<ReportDataSetBean>();
-        List<String> lstProcessedValueIds=new ArrayList<String>();
-        ReportDataSetBean svbeanTmp;
-        List<ReportDataSetBean> lstTmp=new ArrayList<ReportDataSetBean>();
-        while(this.lstDatasetBeans.size()>0)
-        {
-            for(int i=0;i<this.lstDatasetBeans.size();i++)
-            {
-                svbeanTmp=this.lstDatasetBeans.get(i);
-                if(svbeanTmp.getMDependParents()==null||svbeanTmp.getMDependParents().size()==0
-                        ||hasProcessedAllParentValues(svbeanTmp,lstProcessedValueIds))
-                {
-                    if(svbeanTmp.getId()!=null&&!svbeanTmp.getId().trim().equals("")) lstProcessedValueIds.add(svbeanTmp.getId());
-                    lstResults.add(svbeanTmp);
-                }else
-                {
-                    lstTmp.add(svbeanTmp);
-                }
-            }
-            if(lstTmp.size()==this.lstDatasetBeans.size())
-            {
-                throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的<sql/>中的<value/>配置失败，存在循环依赖或者依赖的父数据集ID不存在的配置");
-            }
-            this.lstDatasetBeans=lstTmp;
-            lstTmp.clear();
-        }
-        this.lstDatasetBeans=lstResults;
     }
     
-    private boolean hasProcessedAllParentValues(ReportDataSetBean svbeanTmp,List<String> lstProcessedValueIds)
-    {
-        if(svbeanTmp.getMDependParents()==null||svbeanTmp.getMDependParents().size()==0) return true;
-        if(lstProcessedValueIds==null||lstProcessedValueIds.size()==0) return false;
-        List<String> lstParentValueids=svbeanTmp.getAllParentValueIds();
-        for(String parentValueidTmp:lstParentValueids)
-        {
-            if(!lstProcessedValueIds.contains(parentValueidTmp)) return false;
-        }
-        return true;
-    }
-
     public void doPostLoad()
     {
-        this.mDatasetBeans=constructMSqlValueBeans();
-        if(this.lstConditions==null||this.lstConditions.size()==0) return;
-        List<String> lstTmp=new ArrayList<String>();
-        for(ConditionBean cbTmp:lstConditions)
+        if(this.lstConditions!=null)
         {
-            if(cbTmp==null||cbTmp.getName()==null) continue;
-            if(lstTmp.contains(cbTmp.getName()))
+            List<String> lstTmp=new ArrayList<String>();
+            for(ConditionBean cbTmp:lstConditions)
             {
-                throw new WabacusConfigLoadingException("报表 "+this.getReportBean().getPath()+"配置的查询条件name:"+cbTmp.getName()+"存在重复，必须确保唯一");
-            }
-            lstTmp.add(cbTmp.getName());
-            cbTmp.doPostLoad();
-        }
-        for(ReportDataSetBean svbeanTmp:this.lstDatasetBeans)
-        {
-            svbeanTmp.doPostLoad();
-        }        
-    }
-
-    private Map<String,ReportDataSetBean> constructMSqlValueBeans()
-    {
-        Map<String,ReportDataSetBean> mSqlValueBeans=null;
-        if(this.lstDatasetBeans!=null&&this.lstDatasetBeans.size()>0)
-        {
-            mSqlValueBeans=new HashMap<String,ReportDataSetBean>();
-            for(ReportDataSetBean svbeanTmp:this.lstDatasetBeans)
-            {
-                if(svbeanTmp.getId()!=null&&!svbeanTmp.getId().trim().equals("")) mSqlValueBeans.put(svbeanTmp.getId(),svbeanTmp);
+                if(cbTmp==null||cbTmp.getName()==null) continue;
+                if(lstTmp.contains(cbTmp.getName()))
+                {
+                    throw new WabacusConfigLoadingException("报表 "+this.getReportBean().getPath()+"配置的查询条件name:"+cbTmp.getName()+"存在重复，必须确保唯一");
+                }
+                lstTmp.add(cbTmp.getName());
+                cbTmp.doPostLoad();
             }
         }
-        return mSqlValueBeans;
+        if(lstDatasetBeans!=null)
+        {
+            for(ReportDataSetBean dsbeanTmp:this.lstDatasetBeans)
+            {
+                for(ReportDataSetValueBean svbeanTmp:dsbeanTmp.getLstValueBeans())
+                {
+                    svbeanTmp.doPostLoad();
+                }
+            }
+        }
     }
     
     public AbsConfigBean clone(AbsConfigBean parent)
@@ -316,17 +302,19 @@ public class SqlBean extends AbsConfigBean
         }
         if(lstDatasetBeans!=null)
         {
-            List<ReportDataSetBean> lstSqlValueBeansNew=new ArrayList<ReportDataSetBean>();
+            List<ReportDataSetBean> lstDataSetBeansNew=new ArrayList<ReportDataSetBean>();
+            Map<String,ReportDataSetBean> mDatasetBeansNew=new HashMap<String,ReportDataSetBean>();
+            ReportDataSetBean rdsbeanTmp;
             for(ReportDataSetBean svbeanTmp:lstDatasetBeans)
             {
-                lstSqlValueBeansNew.add(svbeanTmp.clone(sbeanNew));
+                rdsbeanTmp=(ReportDataSetBean)svbeanTmp.clone(sbeanNew);
+                lstDataSetBeansNew.add(rdsbeanTmp);
+                mDatasetBeansNew.put(rdsbeanTmp.getId(),rdsbeanTmp);
             }
-            sbeanNew.setLstDatasetBeans(lstSqlValueBeansNew);
+            sbeanNew.lstDatasetBeans=lstDataSetBeansNew;
+            sbeanNew.mDatasetBeans=mDatasetBeansNew;
         }
-        this.mDatasetBeans=null;
         cloneExtendConfig(sbeanNew);
         return sbeanNew;
     }
-
-    
 }

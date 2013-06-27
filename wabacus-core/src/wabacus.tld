@@ -341,5 +341,15 @@
     	<required>false</required>
     	<rtexprvalue>true</rtexprvalue>
    </attribute>
+   <attribute>
+    	<name>interceptor</name>
+    	<required>false</required>
+    	<rtexprvalue>true</rtexprvalue>
+   </attribute>
+   <attribute>
+    	<name>asyn</name>
+    	<required>false</required>
+    	<rtexprvalue>true</rtexprvalue>
+   </attribute>
   </tag>
 </taglib>

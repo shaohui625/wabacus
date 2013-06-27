@@ -33,6 +33,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -69,6 +72,30 @@ public class DataImportItem
     
     private String errorSqlTrace;
     
+    private HttpServletRequest request;
+    
+    private HttpSession session;
+    
+    public HttpServletRequest getRequest()
+    {
+        return request;
+    }
+
+    public void setRequest(HttpServletRequest request)
+    {
+        this.request=request;
+    }
+
+    public HttpSession getSession()
+    {
+        return session;
+    }
+
+    public void setSession(HttpSession session)
+    {
+        this.session=session;
+    }
+
     public DataImportItem(AbsDataImportConfigBean configBean,File datafileObj)
     {
         this.configBean=configBean;
@@ -205,7 +232,7 @@ public class DataImportItem
         {
             DataImportSqlBean disqlbean=null;
             if(fileProcessor.isEmpty())
-            {//如果没有数据，则不论是哪种导入类型，都将清空表中所有数据
+            {
                 disqlbean=new DataImportSqlBean();
                 disqlbean.setSql("delete from "+configBean.getTablename());
             }else
@@ -223,7 +250,7 @@ public class DataImportItem
                 boolean matchFileIndex=configBean.getColMapBean().getFileMapType().equals("index");
                 List<String> lstColNames=getLstColNames(matchFileIndex);
                 this.lstColNamesTrace=lstColNames;
-                boolean hasUnCommitData=false;
+                boolean hasUnCommitData=false;//是否存在没有提交的数据
                 List lstDataColValuesPerRow;
                 Map<String,Object> mDataColValues=null;
                 int i=fileProcessor.getStartrecordindex();
@@ -267,7 +294,7 @@ public class DataImportItem
 
     private boolean shouldBatchCommit(int rownum)
     {
-        if(this.batchupdatesize==1) return true;//如果是1，则表示每条都单独提交
+        if(this.batchupdatesize==1) return true;
         if(this.batchupdatesize>0&&rownum!=0&&rownum%this.batchupdatesize==0) return true;
         return false;
     }
@@ -433,7 +460,7 @@ public class DataImportItem
             {
                 log.debug("正在删除数据文件"+fileObj.getAbsolutePath());
             }else
-            {//配置了备份路径，则移到备份目录中
+            {
                 String filename=fileObj.getName();
                 int idxdot=filename.lastIndexOf(".");
                 if(idxdot>0)
@@ -498,22 +525,34 @@ public class DataImportItem
     private void updateDBRowData(PreparedStatement pstmt,AbsDatabaseType dbtype,List lstColsInFile,List<IDataType> lstColType,boolean matchFileIndex,
             List lstDataColValuesPerRow,Map<String,Object> mDataColValues) throws SQLException
     {
-        Object objDataVal;
-        Object objCol;
+        Object objDataVal,objCol;
         IDataType varcharTypeObj=Config.getInstance().getDataTypeByClass(VarcharType.class);
         if(this.batchupdatesize==1)this.lstErrorColValuesTrace=lstDataColValuesPerRow;
         for(int i=0;i<lstColsInFile.size();i++)
         {
             objCol=lstColsInFile.get(i);
-            if(matchFileIndex)
+            objDataVal=null;
+            if(Tools.isDefineKey("request",String.valueOf(objCol)))
             {
-                if((Integer)objCol>=lstDataColValuesPerRow.size())
+                if(request==null)
                 {
-                    objDataVal=null;
+                    log.warn("导入数据时需要从request中取"+objCol+"对应的数据，但request对象为null，无法获取其中的导入数据");
                 }else
                 {
-                    objDataVal=lstDataColValuesPerRow.get((Integer)objCol);
+                    objDataVal=WabacusAssistant.getInstance().getValueFromRequest(request,String.valueOf(objCol));
                 }
+            }else if(Tools.isDefineKey("session",String.valueOf(objCol)))
+            {
+                if(session==null)
+                {
+                    log.warn("导入数据时需要从session中取"+objCol+"对应的数据，但session对象为null，无法获取其中的导入数据");
+                }else
+                {
+                    objDataVal=WabacusAssistant.getInstance().getValueFromSession(session,String.valueOf(objCol));
+                }
+            }else if(matchFileIndex)
+            {
+                if((Integer)objCol<lstDataColValuesPerRow.size()) objDataVal=lstDataColValuesPerRow.get((Integer)objCol);
             }else
             {
                 objDataVal=mDataColValues.get(objCol);
@@ -524,7 +563,7 @@ public class DataImportItem
                 {
                     ((AbsDateTimeType)lstColType.get(i)).setPreparedStatementValue(i+1,(Date)objDataVal,pstmt);
                 }else
-                {
+                {//当作字符串处理
                     varcharTypeObj.setPreparedStatementValue(i+1,String.valueOf(objDataVal),pstmt,dbtype);
                 }
             }else

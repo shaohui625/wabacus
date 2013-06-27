@@ -202,7 +202,7 @@ public class StandardExcelAssistant
             cell.setCellStyle(cellStyleWithFormat);
             return true;
         }else
-        {//其它的类型都做为字符串形式写到Excel文件中
+        {
             cell.setCellValue(typeObj.value2label(objValue));
         }
         return false;

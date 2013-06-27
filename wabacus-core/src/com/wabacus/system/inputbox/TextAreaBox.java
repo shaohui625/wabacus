@@ -57,7 +57,6 @@ public class TextAreaBox extends AbsInputBox
         resultBuf.append("      textAreabox.className='cls-inputbox-textareabox2';textAreabox.setAttribute('typename','"+this.typename+"');");
         resultBuf.append("      textAreabox.setAttribute('id','WX_TEXTAREA_BOX');");
         resultBuf.append("      textAreabox.setAttribute('isStoreOldValue','true');");
-        resultBuf.append("      textAreabox.errorPromptObj=createJsValidateTipObj(textAreabox);");
         resultBuf.append("      document.body.appendChild(textAreabox);");
         resultBuf.append("  }");
         String onblur2=Tools.replaceAll(onblur,"'\"+reportguid+\"'","reportguid");
@@ -86,7 +85,7 @@ public class TextAreaBox extends AbsInputBox
     public String createGetValueByInputBoxObjJs()
     {
         StringBuffer sbuffer=new StringBuffer();
-        sbuffer.append("if(fillmode==2){");//点击时填充
+        sbuffer.append("if(fillmode==2){");
         sbuffer
                 .append("var textareaObj=document.getElementById('WX_TEXTAREA_BOX');value=textareaObj.value; label=textareaObj.value;textareaObj.style.display='none';");
         sbuffer.append("}else if(fillmode==1){");
@@ -100,12 +99,6 @@ public class TextAreaBox extends AbsInputBox
         super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
         this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,"isStoreOldValue=\"true\"  onfocus=\"try{storeInputboxOldValue('"
                 +this.getOwner().getReportBean().getGuid()+"',this);}catch(e){logErrorsAsJsFileLoad(e);}\"",1);
-    }
-    
-    protected void addJsValidateOnBlurEvent(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
-    {
-        if(this.fillmode==2) return;
-        super.addJsValidateOnBlurEvent(reportTypeObj,ownerbean);
     }
     
     protected String getDefaultStylePropertyForDisplayMode2()

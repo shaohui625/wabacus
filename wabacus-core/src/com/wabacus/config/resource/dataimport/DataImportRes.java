@@ -182,7 +182,7 @@ public class DataImportRes extends AbsResource
                 throw new WabacusConfigLoadingException("加载KEY为"+key
                         +"的数据导入资源项失败，当<columnmap/>标签配置type属性为"+type+"时，没有配置映射字段");
             }
-            columnmaps=Tools.formatStringBlank(columnmaps).toUpperCase();
+            columnmaps=Tools.formatStringBlank(columnmaps);
             if(dbcoltype.equals("name")&&filecoltype.equals("name"))
             {
                 cmbean.setMaptype(ColumnMapBean.MAPTYPE_NAME_NAME);

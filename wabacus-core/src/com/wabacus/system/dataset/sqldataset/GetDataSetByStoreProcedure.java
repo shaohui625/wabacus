@@ -33,7 +33,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.database.type.Oracle;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -61,7 +61,7 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         this.isLoadAllData=isLoadAllData;
     }
 
-    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean datasetbean)
+    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean datasetbean)
     {
         ReportBean rbean=reportTypeObj.getReportBean();
         StringBuffer systemParamsBuf=new StringBuffer();
@@ -82,17 +82,17 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
             
             
             
-            //        {
             
             
             
             
             
+            //        }
             
             
             
             
-            //            recordcount=Integer.parseInt(rtnVal);
+            
             
             
             
@@ -115,7 +115,7 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         return 0;
     }
     
-    public Object getColFilterDataSet(ReportRequest rrequest,ColBean filterColBean,ReportDataSetBean datasetbean,
+    public Object getColFilterDataSet(ReportRequest rrequest,ColBean filterColBean,ReportDataSetValueBean datasetbean,
             Map<String,List<String>> mSelectedFilterValues)
     {
         ReportBean rbean=filterColBean.getReportBean();
@@ -132,7 +132,7 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         return doGetResultSet(rrequest,rbean,datasetbean,rrequest.getAttribute(rbean.getId()+"_WABACUS_FILTERBEAN"),systemParamsBuf);
     }
 
-    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean datasetbean,List lstReportData)
+    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean datasetbean,List lstReportData)
     {
         ReportBean rbean=reportTypeObj.getReportBean();
         StringBuffer systemParamsBuf=new StringBuffer();
@@ -156,17 +156,15 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         int pagesize=isLoadAllData?-1:cdb.getPagesize();
         if(pagesize>0)
         {
-            int realGetDataCount=cdb.getPageSplitReportDataCount(datasetbean.getId());
-            if(realGetDataCount==0) return null;
-            systemParamsBuf.append("{[(<pagesize:"+realGetDataCount+">)]}");
-            //            systemParamsBuf.append("{[(<refreshNavigateType:"+(cdb.getRefreshNavigateInfoType()<0)+">)]}");//标识本次是否需要查询记录数，只有小于0时才需要查询记录数
-            int pageno=cdb.getFinalPageno();
-            systemParamsBuf.append("{[(<startrownum:"+((pageno-1)*pagesize)+">)]}");
-            systemParamsBuf.append("{[(<endrownum:"+(pageno*pagesize)+">)]}");
+            int[] startEndRownumArr=cdb.getStartEndRownumOfDataset(datasetbean.getGuid());
+            if(startEndRownumArr==null||startEndRownumArr.length!=2||startEndRownumArr[0]<0||startEndRownumArr[1]<=0||startEndRownumArr[0]==startEndRownumArr[1]) return null;
+            systemParamsBuf.append("{[(<pagesize:"+(startEndRownumArr[1]-startEndRownumArr[0])+">)]}");
+            systemParamsBuf.append("{[(<startrownum:"+startEndRownumArr[0]+">)]}");
+            systemParamsBuf.append("{[(<endrownum:"+startEndRownumArr[1]+">)]}");
         }else
         {
             systemParamsBuf.append("{[(<pagesize:-1>)]}");
-            if(!datasetbean.isIndependentDataSet())
+            if(datasetbean.isDependentDataSet())
             {
                 String realConExpress=datasetbean.getRealDependsConditionExpression(lstReportData);
                 systemParamsBuf.append("{[(<parentdataset_conditions:").append(realConExpress).append(">)]}");
@@ -177,7 +175,7 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         
     }
 
-    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetBean svbean,Object typeObj,String sql,boolean isStatisticForOnePage)
+    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetValueBean svbean,Object typeObj,String sql,boolean isStatisticForOnePage)
     {
         StringBuffer systemParamsBuf=new StringBuffer();
         ReportBean rbean=reportObj.getReportBean();
@@ -195,12 +193,11 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         int pagesize=isLoadAllData?-1:cdb.getPagesize();
         if(pagesize>0)
         {
-            int realGetDataCount=cdb.getPageSplitReportDataCount(svbean.getId());//本次实际要获取的记录数
-            if(realGetDataCount==0) return null;
-            systemParamsBuf.append("{[(<pagesize:"+realGetDataCount+">)]}");
-            int pageno=cdb.getFinalPageno();
-            systemParamsBuf.append("{[(<startrownum:"+((pageno-1)*pagesize)+">)]}");
-            systemParamsBuf.append("{[(<endrownum:"+(pageno*pagesize)+">)]}");
+            int[] startEndRownumArr=cdb.getStartEndRownumOfDataset(svbean.getGuid());
+            if(startEndRownumArr==null||startEndRownumArr.length!=2||startEndRownumArr[0]<0||startEndRownumArr[1]<=0||startEndRownumArr[0]==startEndRownumArr[1]) return null;
+            systemParamsBuf.append("{[(<pagesize:"+(startEndRownumArr[1]-startEndRownumArr[0])+">)]}");
+            systemParamsBuf.append("{[(<startrownum:"+startEndRownumArr[0]+">)]}");
+            systemParamsBuf.append("{[(<endrownum:"+startEndRownumArr[1]+">)]}");
             addRowgroupColsToParams(rbean,systemParamsBuf);
             String[] orderbys=(String[])rrequest.getAttribute(rbean.getId(),"ORDERBYARRAY");
             if(orderbys!=null&&orderbys.length==2)
@@ -210,7 +207,7 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         }else
         {
             systemParamsBuf.append("{[(<pagesize:-1>)]}");
-            if(!svbean.isIndependentDataSet())
+            if(svbean.isDependentDataSet())
             {
                 List lstReportData=null;
                 if(!cdb.isLoadAllReportData()&&!isStatisticForOnePage)
@@ -269,7 +266,7 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
             IDataType datatypeObj;
             int idx=1;
             if(lstConditionBeans!=null&&lstConditionBeans.size()>0)
-            {
+            {//存储过程有动态参数
                 for(ConditionBean cbTmp:lstConditionBeans)
                 {
                     datatypeObj=cbTmp.getDatatypeObj();
@@ -298,7 +295,7 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         }
     }
 
-    private ResultSet doGetResultSet(ReportRequest rrequest,ReportBean rbean,ReportDataSetBean datasetbean,Object typeObj,StringBuffer systemParamsBuf)
+    private ResultSet doGetResultSet(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean datasetbean,Object typeObj,StringBuffer systemParamsBuf)
     {
         log.debug(systemParamsBuf.toString());
         String procedure=datasetbean.getValue();
@@ -328,13 +325,13 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
             VarcharType varcharObj=(VarcharType)Config.getInstance().getDataTypeByClass(VarcharType.class);
             int idx=1;
             if(datasetbean.getLstStoreProcedureParams()!=null&&datasetbean.getLstStoreProcedureParams().size()>0)
-            {//存储过程有动态参数
+            {
                 ConditionBean cbeanTmp;
                 for(String paramTmp:datasetbean.getLstStoreProcedureParams())
                 {
-                    if(Tools.isDefineKey("request",paramTmp)||Tools.isDefineKey("session",paramTmp))
+                    if(WabacusAssistant.getInstance().isGetRequestContextValue(paramTmp))
                     {//从request/session中取值
-                        varcharObj.setPreparedStatementValue(idx,WabacusAssistant.getInstance().getRequestSessionValue(rrequest,paramTmp,""),cstmt,
+                        varcharObj.setPreparedStatementValue(idx,WabacusAssistant.getInstance().getRequestContextStringValue(rrequest,paramTmp,""),cstmt,
                                 dbtype);
                     }else if(Tools.isDefineKey("condition",paramTmp))
                     {
@@ -378,7 +375,7 @@ public class GetDataSetByStoreProcedure implements ISqlDataSet
         }
     }
     
-    private String getDynamicSelectCols(ReportRequest rrequest,ReportDataSetBean datasetbean)
+    private String getDynamicSelectCols(ReportRequest rrequest,ReportDataSetValueBean datasetbean)
     {
         String datasetid=datasetbean.getId();
         datasetid=datasetid==null?"":datasetid.trim();

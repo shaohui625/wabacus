@@ -205,7 +205,7 @@ public class TagAssistant
             styleproperty=attributes.get("styleproperty");
         }
         if(cbean==null)
-        {//显示整个报表数据部分
+        {
             StringBuffer resultBuf=new StringBuffer();
             resultBuf.append(showTopSpace(top));
             if(isShowlabel&&isShowdata)
@@ -278,7 +278,7 @@ public class TagAssistant
             return showButton(ccbean,rrequest,buttonObj,label);
         }
         if(Consts.lstDataExportTypes.contains(type))
-        {
+        {//数据导出
             String componentids=attributes.get("componentids");
             if(componentids==null||componentids.trim().equals("")) componentids=ccbean.getId();
             if(componentids.equals(ccbean.getId()))
@@ -303,7 +303,7 @@ public class TagAssistant
             String beforecallback=attributes.get("beforecallback");
             beforecallback=beforecallback==null||beforecallback.trim().equals("")?null:beforecallback.trim();
             if(!rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
-                    Consts.PERMISSION_TYPE_DISPLAY)) return "";//没有显示权限
+                    Consts.PERMISSION_TYPE_DISPLAY)) return "";
             if(label==null||label.trim().equals("")) label="<input type='button' class='cls-button' value='跳转'>";
             if(rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
                     Consts.PERMISSION_TYPE_DISABLED)) return label;
@@ -469,7 +469,7 @@ public class TagAssistant
                     Consts.PERMISSION_TYPE_DISPLAY)) return "";
             if(label==null||label.trim().equals("")) label="<input type='button' class='cls-button' value='跳转'>";
             if(rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
-                    Consts.PERMISSION_TYPE_DISABLED)) return label;//没有点击权限 
+                    Consts.PERMISSION_TYPE_DISABLED)) return label;
             return "<a href=\"#\" onclick=\"try{"+rrequest.forwardPageWithBack(pageurl,beforecallback)+"}catch(e){logErrorsAsJsFileLoad(e);}\">"+label+"</a>";
         }else if(type.equals(Consts_Private.BACK_BUTTON))
         {
@@ -537,7 +537,7 @@ public class TagAssistant
         CacheDataBean cdb=rrequest.getCdb(rbean.getId());
         label=label==null?"":label.trim();
         if(Tools.isDefineKey("$",label))
-        {
+        {//是从资源文件中获取
             label=Config.getInstance().getResourceString(rrequest,rbean.getPageBean(),label,false);
         }
         if(Tools.isDefineKey("i18n",label))
@@ -728,7 +728,7 @@ public class TagAssistant
         }
 
         if(label==null||label.indexOf("%PAGENO%")<0)
-        {//没有包括%PAGENO%占位符，则只显示页码
+        {
             label="%PAGENO%";
         }
         int pageno=cdb.getFinalPageno();
@@ -814,14 +814,14 @@ public class TagAssistant
         return new int[] { startidx, endidx };
     }
 
-    public String getDataImportDisplayValue(String ref,String popupparams,String initsize,String label,HttpServletRequest request)
+    public String getDataImportDisplayValue(String ref,String asyn,String popupparams,String initsize,String label,String interceptor,HttpServletRequest request)
     {
         if(ref==null||ref.trim().equals(""))
         {
             throw new WabacusRuntimeException("必须指定<wx:dataimport/>的ref属性");
         }
         StringBuffer refBuf=new StringBuffer();
-        List<String> lst=Tools.parseStringToList(ref,"|");
+        List<String> lst=Tools.parseStringToList(ref,";");
         for(String strTmp:lst)
         {
             if(strTmp.equals("")) continue;
@@ -836,13 +836,13 @@ public class TagAssistant
             {
                 throw new WabacusConfigLoadingException("<dataimport/>中通过ref属性引用的数据导出项"+strTmp+"对应的资源项不是数据导出项资源类型");
             }
-            refBuf.append(strTmp).append("|");
+            refBuf.append(strTmp).append(";");
         }
         if(refBuf.length()==0)
         {
             throw new WabacusRuntimeException("必须为<wx:dataimport/>指定有效的ref属性");
         }
-        if(refBuf.charAt(refBuf.length()-1)=='|')
+        if(refBuf.charAt(refBuf.length()-1)==';')
         {
             refBuf.deleteCharAt(refBuf.length()-1);
         }
@@ -851,7 +851,15 @@ public class TagAssistant
         if(Config.showreport_url.indexOf("?")>0) token="&";
         String url=Config.showreport_url+token+"DATAIMPORT_REF="+refBuf.toString()+"&ACTIONTYPE=ShowUploadFilePage&FILEUPLOADTYPE="
                 +Consts_Private.FILEUPLOADTYPE_DATAIMPORTTAG;
-        String clickevent="wx_winpage('"+url+"',"+popupparams+");";
+        if(interceptor!=null&&!interceptor.trim().equals(""))
+        {
+            url=url+"&INTERCEPTOR="+interceptor;
+        }
+        if(asyn!=null&&!asyn.trim().equals(""))
+        {
+            url=url+"&ASYN="+asyn;
+        }
+        String clickevent="wx_winpage('"+url+"',"+popupparams+")";
         StringBuffer labelBuf=new StringBuffer();
         if(label!=null&&!label.trim().equals(""))
         {
@@ -862,7 +870,7 @@ public class TagAssistant
         {
             label=Config.getInstance().getResources().getString(null,Consts.DATAIMPORT_LABEL,true).trim();
             labelBuf.append("<input type=\"button\" class=\"cls-button2\" onClick=\""+clickevent+"\"");
-            labelBuf.append("  onFocus=\"this.select();\" value=\""+label+"\">");
+            labelBuf.append(" value=\""+label+"\">");
         }
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append(addPopupIncludeJsCss(request));
@@ -963,6 +971,8 @@ public class TagAssistant
                     Tools.replaceAll(Config.webroot+"/webresources/script/wabacus_api.js","//","/")).append("\"></script>");
             resultBuf.append("<script language=\"javascript\"  src=\"").append(
                     Tools.replaceAll(Config.webroot+"/webresources/script/wabacus_util.js","//","/")).append("\"></script>");
+            resultBuf.append("<script language=\"javascript\"  src=\"").append(
+                    Tools.replaceAll(Config.webroot+"/webresources/script/wabacus_tools.js","//","/")).append("\"></script>");
             resultBuf.append("<script language=\"javascript\"  src=\"").append(
                     Tools.replaceAll(Config.webroot+"/wabacus-generatejs/generate_system.js","//","/")).append("\"></script>");
             List<JavascriptFileBean> lstJsTmp=ConfigLoadAssistant.getInstance().getLstPopupComponentJs();

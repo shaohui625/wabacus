@@ -152,7 +152,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 //            startrecordindex=xlsConfigBean.getStartdatarowindex()-sheetObj.getFirstRowNum();//得到真正的相对getFirstRowNum()的起始行
 
             startrecordindex=xlsConfigBean.getStartdatarowindex();
-            recordcount=sheetObj.getLastRowNum()-startrecordindex+1;//有效的记录行数
+            recordcount=sheetObj.getLastRowNum()-startrecordindex+1;
             if(recordcount<0) recordcount=0;
         }
 
@@ -199,7 +199,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-
+//        public void init()
 
 //            startrecordindex=xlsConfigBean.getStartdatacolindex();//数据的起始列号
 //            HSSFRow row=sheetObj.getRow(xlsConfigBean.getStartdatarowindex());//取到数据第一行
@@ -207,7 +207,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 //            int colcnt=row.getLastCellNum()-row.getFirstCellNum();//总列数
 
 
-//            if(endrecordidx<0||endrecordidx>=colcnt)
+
 
 
 
@@ -229,17 +229,17 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-//            {
 
 
 
 
 
+//                }else
 
 
 
 
-//                        lstResults.add("");
+
 
 
 
@@ -261,17 +261,17 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
 
 
-//            System.out.println("行号"+recordidx);
 
 
 
 
 
+//                {
 
 
 
 
-//                    lstResults.add(getCellValue(cellTmp));
+
 
 
 

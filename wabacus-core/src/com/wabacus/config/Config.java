@@ -19,7 +19,6 @@
 package com.wabacus.config;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,10 +51,12 @@ import com.wabacus.system.component.AbsComponentType;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.IReportType;
 import com.wabacus.system.component.container.AbsContainerType;
+import com.wabacus.system.dataimport.thread.TimingDataImportTask;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.system.intercept.AbsPageInterceptor;
 import com.wabacus.system.permission.ComponentPermissionBean;
+import com.wabacus.system.task.TimingThread;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
@@ -73,7 +74,7 @@ public class Config
 
     public static boolean should_createjs=true;
 
-    public static boolean show_sql=true;
+    public static boolean show_sql=false;
 
     public static String configpath;
 
@@ -89,7 +90,7 @@ public class Config
 
     public static String showreport_onword_url;
     
-    public static String showreport_onpdf_url;//显示报表到pdf上的URL
+    public static String showreport_onpdf_url;
 
     public static String encode;
 
@@ -101,7 +102,7 @@ public class Config
     
     public static String i18n_filename;
 
-    public TemplateBean report_template_defaultbean;
+    public TemplateBean report_template_defaultbean;//默认的报表模板资源项
     
     public TemplateBean dataexport_template_defaultbean;
     
@@ -111,7 +112,7 @@ public class Config
 
     private List<Class> lstFormatClasses;
 
-    private Map<String,PageBean> mReportStructureInfo; //存放加载的报表结构配置信息
+    private Map<String,PageBean> mReportStructureInfo; 
 
     private Map<String,String> mSystemConfig;
 
@@ -238,7 +239,7 @@ public class Config
         if(this.mDataSources!=null)
         {
             for(Entry<String,AbsDataSource> entryDsTmp:mDataSources.entrySet())
-            {//依次关掉所有老数据源
+            {
                 entryDsTmp.getValue().closePool();
             }
             this.mDataSources=null;
@@ -247,17 +248,6 @@ public class Config
         dataexport_plainexcel_sheetsize=Integer.MIN_VALUE;
     }
     
-    private PropertyOverrideLoader propertyOverrideLoader;
-    
-    
-    public PropertyOverrideLoader getPropertyOverrideLoader()
-    {
-        if( null == propertyOverrideLoader ){
-            propertyOverrideLoader = PropertyOverrideLoaderDefault.createPropertyOverrideLoader("wabacusPropertyOverrideLoader"); 
-        }
-        return propertyOverrideLoader;
-    }
-
     public Object getResourceObject(ReportRequest rrequest,PageBean pbean,String key,boolean ismust)
     {
         if(key==null) return null;
@@ -369,6 +359,7 @@ public class Config
             mAutoDetectedDataImportBeans.put(filepath,lstAutoDetectedDataImportBeans);
         }
         lstAutoDetectedDataImportBeans.add(autoDetectedDataImportBean);
+        TimingThread.getInstance().addTask(new TimingDataImportTask());
     }
 
     public String getSystemConfigValue(String key,String defaultValue)
@@ -476,14 +467,6 @@ public class Config
         return lstResults;
     }
     
-    
-   public Collection<String> getPageIds(){
-       if( null == mReportStructureInfo || mReportStructureInfo.size() < 1){
-           throw new IllegalArgumentException("wabacus未正确初始化！");
-       }
-       return mReportStructureInfo.keySet();
-   }
-
     public List<Class> getLstServerValidateClasses()
     {
         return lstServerValidateClasses;
@@ -542,7 +525,7 @@ public class Config
                 }
                 reportObj=(IReportType)obj;
                 if(mReporttypes==null) mReporttypes=new HashMap<String,IReportType>();
-                mReporttypes.put(typename,reportObj);
+                mReporttypes.put(typename,reportObj);//存放进去以便下次获取时可以从中直接取到
             }
         }
         if(reportObj==null)
@@ -838,7 +821,7 @@ public class Config
         if(mComponentsDefaultPermissions==null) mComponentsDefaultPermissions=new HashMap<String,ComponentPermissionBean>();
         ComponentPermissionBean cabean=this.mComponentsDefaultPermissions.get(componentGuid);
         if(cabean==null)
-        {//还没有对此组件或其上的元素授过权
+        {
             IComponentConfigBean ccbean=getComponentConfigBeanByGuid(componentGuid);
             if(ccbean==null) throw new WabacusConfigLoadingException("没有找到guid为"+componentGuid+"的组件，无法对其授权");
             cabean=new ComponentPermissionBean(ccbean);
@@ -939,33 +922,5 @@ public class Config
         Map<String,String> mSkinConfigProperties=this.mSkinConfigProperties.get(skinname);
         if(mSkinConfigProperties==null) return null;
         return mSkinConfigProperties.get(propertyname);
-    }
-    
-    /**
-     *  构建页面的baseUrl
-     * @param pageid
-     * @param rreqeust
-     * @return
-     */
-    public String getPageUrl(String baseUrl,String pageid,ReportRequest rrequest){
-        StringBuffer s = new StringBuffer(baseUrl);
-        if(baseUrl.indexOf("?")>0)
-        {
-          s.append('&');
-        }else
-        {
-            s.append('?');
-        }
-        s.append("PAGEID=").append(pageid);
-        
-        
-        String url=s.toString();
-        
-        
-//        String  pageAccessMode = rrequest == null ? null :  rrequest.getStringAttribute("pageAccessMode");
-//        if( null != pageAccessMode ){
-//           url =  rrequest.addParamToUrl("pageAccessMode",pageAccessMode,true,url);
-//        }
-        return url;        
     }
 }

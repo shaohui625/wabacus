@@ -29,7 +29,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
+import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.CacheDataBean;
@@ -47,7 +48,7 @@ public class CrossListReportDynDatasetBean
 
     private static Log log=LogFactory.getLog(CrossListReportDynDatasetBean.class);
     
-    private ReportDataSetBean datasetbean;
+    private ReportDataSetValueBean datasetbean;
 
     private String dynamicColsPlaceholder;
 
@@ -57,12 +58,12 @@ public class CrossListReportDynDatasetBean
 
     private List<AbsCrossListReportColAndGroupBean> lstIncludeCrossStatiColAndGroupBeans;
 
-    public ReportDataSetBean getDatasetbean()
+    public ReportDataSetValueBean getDatasetbean()
     {
         return datasetbean;
     }
 
-    public void setDatasetbean(ReportDataSetBean datasetbean)
+    public void setDatasetbean(ReportDataSetValueBean datasetbean)
     {
         this.datasetbean=datasetbean;
     }
@@ -70,11 +71,6 @@ public class CrossListReportDynDatasetBean
     public String getSql_getVerticalStatisData()
     {
         return sql_getVerticalStatisData;
-    }
-
-    public void setSql_getVerticalStatisData(String sql_getVerticalStatisData)
-    {
-        this.sql_getVerticalStatisData=sql_getVerticalStatisData;
     }
 
     public void addCrossColGroupBean(AbsCrossListReportColAndGroupBean crossColGroupBean)
@@ -109,7 +105,7 @@ public class CrossListReportDynDatasetBean
         {
             rrequest.setAttribute(rbean.getId(),datasetid+"_DYN_SELECT_COLS",allSelectCols.toString());
         }else if(allSelectCols.trim().equals("")&&this.dynamicColsPlaceholder.equals("(#dynamic-columns#)"))
-        {//SQL语句，且当前没有查询到动态列，而且没有动态列时不需查询报表数据
+        {
             rrequest.setAttribute(rbean.getId(),datasetid+"_DYN_SQL","[NONE]");
         }else
         {
@@ -124,7 +120,7 @@ public class CrossListReportDynDatasetBean
                     sql=mSqlParts.get("prevselectpart")+" select "+mSqlParts.get("selectcolumnspart")+" from "+mSqlParts.get("frompart")+" "
                             +mSqlParts.get("lastpart");
                 }else if(commonDynCols.equals(""))
-                {
+                {//没有普通动态列，则把group by中普通动态列的占位符去掉
                     Map<String,String> mSqlParts=parseStatiSql(sql);
                     String groupbypart=mSqlParts.get("groupbypart").trim();
                     if(groupbypart.equals(GROUPBY_DYNAMICOLUMNS_PLACEHOLDER))
@@ -184,22 +180,22 @@ public class CrossListReportDynDatasetBean
     
     public ResultSet loadVerticalStatiData(CrossListReportType crossListReportType,Map<String,String> mAllSelectCols)
     {
+        if(this.sql_getVerticalStatisData==null||this.sql_getVerticalStatisData.trim().equals("")) return null;
         if(this.datasetbean.isStoreProcedure()||this.datasetbean.getCustomizeDatasetObj()!=null)
         {
             throw new WabacusRuntimeException("加载交叉统计报表"+this.datasetbean.getReportBean().getPath()+"失败，此报表不是采用SQL语句获取交叉报表数据，因此不支持进行垂直统计");
         }
-        if(this.sql_getVerticalStatisData==null||this.sql_getVerticalStatisData.trim().equals("")) return null;
         String crossStatiDynCols=getDynamicCrossStatiSelectColsWithVerticalStati(mAllSelectCols).trim();
         if(crossStatiDynCols.equals("")) return null;
         ReportRequest rrequest=crossListReportType.getReportRequest();
         ReportBean rbean=crossListReportType.getReportBean();
         String statisql=Tools.replaceAll(this.sql_getVerticalStatisData,this.dynamicColsPlaceholder,crossStatiDynCols);
-        if(!datasetbean.isIndependentDataSet())
+        if(datasetbean.isDependentDataSet())
         {
             List lstReportData=null;
             CacheDataBean cdb=rrequest.getCdb(rbean.getId());
             if(!cdb.isLoadAllReportData())
-            {//如果当前是加载一页数据，且现在是统计子数据集上针对所有报表数据的统计，则必须将父数据集的所有数据全部加载出来
+            {
                 lstReportData=(List)rrequest.getAttribute(rbean.getId()+"wx_all_data_tempory");
                 if(lstReportData==null)
                 {
@@ -213,14 +209,14 @@ public class CrossListReportDynDatasetBean
             String realConExpress=datasetbean.getRealDependsConditionExpression(lstReportData);
             if(realConExpress==null||realConExpress.trim().equals(""))
             {
-                statisql=ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(rbean,statisql,ReportDataSetBean.dependsConditionPlaceHolder);
+                statisql=ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(rbean,statisql,ReportDataSetValueBean.dependsConditionPlaceHolder);
             }else
             {
-                statisql=Tools.replaceAll(statisql,ReportDataSetBean.dependsConditionPlaceHolder,realConExpress);
+                statisql=Tools.replaceAll(statisql,ReportDataSetValueBean.dependsConditionPlaceHolder,realConExpress);
             }
         }
         AbsGetAllDataSetBySQL datasetObj=null;
-        if(datasetbean.isPreparedstatementSql())
+        if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
         {
             datasetObj=new GetAllDataSetByPreparedSQL();
         }else
@@ -365,7 +361,7 @@ public class CrossListReportDynDatasetBean
             tmp=tmp.substring(idxLocal+" group ".length()).trim();
             if(tmp.toLowerCase().startsWith("by "))
             {
-                tmp=tmp.substring(2).trim();//去掉by
+                tmp=tmp.substring(2).trim();
                 break;
             }
             frompart+=" group ";

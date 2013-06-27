@@ -21,7 +21,6 @@ package com.wabacusdemo;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -46,22 +45,22 @@ public class UpdateData_spage1Report3 extends AbsJavaEditActionBean
         PreparedStatement pstmt=null;
         if(updatetype.equals("insert"))
         {
-            pstmt=conn.prepareStatement("insert into tbl_department(guid,deptno,deptname,manager,builtdate,performance) values (?,?,?,?,?,?)");
+            pstmt=conn.prepareStatement("insert into tbl_department(guid,deptno,deptname,manager,performance) values (?,?,?,?,?)");
             pstmt.setString(1,UUIDGenerator.generateID());
             pstmt.setString(2,mRowData.get("deptno"));
             pstmt.setString(3,mRowData.get("deptname"));
             pstmt.setString(4,mRowData.get("manager"));
-            pstmt.setString(5,mRowData.get("builtdate"));
-            pstmt.setString(6,mRowData.get("performance"));
+            //pstmt.setString(5,mRowData.get("builtdate"));
+            pstmt.setString(5,mRowData.get("performance"));
         }else if(updatetype.equals("update"))
         {
-            pstmt=conn.prepareStatement("update tbl_department set deptno=?,deptname=?,manager=?,builtdate=?,performance=? where deptno=?");
+            pstmt=conn.prepareStatement("update tbl_department set deptno=?,deptname=?,manager=?,performance=? where deptno=?");
             pstmt.setString(1,mRowData.get("deptno"));
             pstmt.setString(2,mRowData.get("deptname"));
             pstmt.setString(3,mRowData.get("manager"));
-            pstmt.setString(4,mRowData.get("builtdate"));
-            pstmt.setString(5,mRowData.get("performance"));
-            pstmt.setString(6,mRowData.get("deptno__old"));
+            //pstmt.setString(4,mRowData.get("builtdate"));
+            pstmt.setString(4,mRowData.get("performance"));
+            pstmt.setString(5,mRowData.get("deptno__old"));
         }else
         {//delete
             pstmt=conn.prepareStatement("delete from tbl_department where deptno=?");

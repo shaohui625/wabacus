@@ -71,7 +71,7 @@ public class PopUpInputBoxTag extends TagSupport
         }
         try
         {
-            out.println(popupboxObj.createSelectOkFunction(inputboxid));
+            out.println(popupboxObj.createSelectOkFunction(inputboxid,true));
         }catch(IOException e)
         {
             throw new WabacusRuntimeException("初始化报表"+rbean.getPath()+"的弹出输入框失败",e);

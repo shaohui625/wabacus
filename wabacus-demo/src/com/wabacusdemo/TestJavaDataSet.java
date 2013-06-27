@@ -24,23 +24,21 @@ import java.util.List;
 import java.util.Map;
 
 import com.wabacus.config.component.application.report.ColBean;
-import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.ListReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.dataset.IReportDataSet;
 
 public class TestJavaDataSet implements IReportDataSet
 {
-    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean datasetbean)
+    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean datasetbean)
     {
         System.out.println("获取记录数..........................");
-        return getDisplayData(rrequest,reportTypeObj.getReportBean(),datasetbean).size();
+        return lstTestDeptData.size();
     }
     
-    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean datasetbean,List lstReportData)
+    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean datasetbean,List lstReportData)
     {
         CacheDataBean cdb=rrequest.getCdb(reportTypeObj.getReportBean().getId());
         /**
@@ -51,18 +49,18 @@ public class TestJavaDataSet implements IReportDataSet
          * {
          *   System.out.println(orderbys[0]+" "+orderbys[1]);
          * }*/
-        List<Map<String,String>> lstAllDisplayData=getDisplayData(rrequest,reportTypeObj.getReportBean(),datasetbean);
-        if(cdb.isLoadAllReportData()) return lstAllDisplayData;//本次是加载所有数据（比如数据导出等操作）
-        int startno=(cdb.getFinalPageno()-1)*cdb.getPagesize();
-        int endno=cdb.getFinalPageno()*cdb.getPagesize();
-        System.out.println("显示的起始记录号："+startno+"；结束记录号："+endno);
-        List<Map<String,String>> lstResults=new ArrayList<Map<String,String>>();
-        for(int i=startno;i<endno;i++)
+        if(cdb.isLoadAllReportData()) return lstTestDeptData;//本次是加载所有数据（比如数据导出等操作）
+        int[] startEndRownumArr=cdb.getStartEndRownumOfDataset(datasetbean.getGuid());
+        if(startEndRownumArr==null||startEndRownumArr.length!=2||startEndRownumArr[0]<0||startEndRownumArr[1]<=0||startEndRownumArr[0]==startEndRownumArr[1]) return null;
+        if(startEndRownumArr[0]>=lstTestDeptData.size()) return null;
+        System.out.println("显示的起始记录号："+startEndRownumArr[0]+"；结束记录号："+startEndRownumArr[1]);
+        List<Map<String,String>> lstData=new ArrayList<Map<String,String>>();
+        for(int i=startEndRownumArr[0];i<startEndRownumArr[1];i++)
         {
-            if(i>=lstAllDisplayData.size()) break;
-            lstResults.add(lstAllDisplayData.get(i));
+            if(i==lstTestDeptData.size()) break;
+            lstData.add(lstTestDeptData.get(i));
         }
-        return lstResults;
+        return lstData;
     }
 
     /**
@@ -73,82 +71,82 @@ public class TestJavaDataSet implements IReportDataSet
      * @param mSelectedFilterValues
      * @return
      */
-    public Object getColFilterDataSet(ReportRequest rrequest,ColBean filterColBean,ReportDataSetBean datasetbean,
+    public Object getColFilterDataSet(ReportRequest rrequest,ColBean filterColBean,ReportDataSetValueBean datasetbean,
             Map<String,List<String>> mSelectedFilterValues)
     {
-        System.out.println("本次获取选项数据的过滤列："+filterColBean.getColumn());
-        List<Map<String,String>> lstAllDisplayData=null;
-        if(mSelectedFilterValues!=null&&mSelectedFilterValues.size()>0)
-        {//已经选择了过滤选项数据进行列过滤操作，且当前是获取被选中的数据
-            lstAllDisplayData=getDisplayData(rrequest,filterColBean.getReportBean(),datasetbean);
-        }else
-        {//获取过滤列中所有数据
-            lstAllDisplayData=lstTestDeptData;
-        }
-        List<String> lstResults=new ArrayList<String>();
-        for(Map<String,String> mRowDataTmp:lstAllDisplayData)
-        {
-            if("deptno2".equals(filterColBean.getColumn()))
-            {
-                lstResults.add(mRowDataTmp.get("deptno2"));
-            }else if("deptname2".equals(filterColBean.getColumn()))
-            {
-                lstResults.add(mRowDataTmp.get("deptname2"));
-            }
-        }
-        return lstResults;
+//        System.out.println("本次获取选项数据的过滤列："+filterColBean.getColumn());
+//        List<Map<String,String>> lstAllDisplayData=null;
+//        if(mSelectedFilterValues!=null&&mSelectedFilterValues.size()>0)
+//        {//已经选择了过滤选项数据进行列过滤操作，且当前是获取被选中的数据
+//            lstAllDisplayData=getDisplayData(rrequest,filterColBean.getReportBean(),datasetbean);
+//        }else
+//        {//获取过滤列中所有数据
+//            lstAllDisplayData=lstTestDeptData;
+//        }
+//        List<String> lstResults=new ArrayList<String>();
+//        for(Map<String,String> mRowDataTmp:lstAllDisplayData)
+//        {
+//            if("deptno2".equals(filterColBean.getColumn()))
+//            {
+//                lstResults.add(mRowDataTmp.get("deptno2"));
+//            }else if("deptname2".equals(filterColBean.getColumn()))
+//            {
+//                lstResults.add(mRowDataTmp.get("deptname2"));
+//            }
+//        }
+        return null;
     }
 
-    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetBean svbean,Object typeObj,String sql,
+    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetValueBean svbean,Object typeObj,String sql,
             boolean isStatisticForOnePage)
     {
         return null;
     }
     
-    /**
-     * 获取一共要显示的所有数据
-     * @param rrequest
-     * @param rbean
-     * @param datasetbean
-     * @return
-     */
-    private List<Map<String,String>> getDisplayData(ReportRequest rrequest,ReportBean rbean,ReportDataSetBean datasetbean)
-    {
-        String txtperform=rrequest.getStringAttribute("txtperform","");//取到“表现”条件输入框的值
-        Map<String,List<String>> mColFilterSelectedValue=ListReportAssistant.getInstance().getMFilterColAndFilterValues(rrequest,rbean,datasetbean);//取到已选中的过滤列及选中的选项数据
-        if((mColFilterSelectedValue==null||mColFilterSelectedValue.size()==0)&&txtperform.equals("")) return lstTestDeptData;//如果即没有进行列过滤，也没有输入查询条件进行查询，则返回所有记录
-        List<Map<String,String>> lstResultsData=(List<Map<String,String>>)((ArrayList<Map<String,String>>)lstTestDeptData).clone();
-        if(!txtperform.trim().equals(""))
-        {//在“表现”条件框中输入了条件，则找出符合条件的记录
-            for(int i=lstResultsData.size()-1;i>=0;i--)
-            {
-                if(!txtperform.equals(lstResultsData.get(i).get("performance2")))
-                {//不符合这个条件
-                    lstResultsData.remove(i);
-                }
-            }
-        }
-        if(mColFilterSelectedValue!=null&&mColFilterSelectedValue.size()==1)
-        {//因为一次只会过滤一个列，因此如果有列过滤的话，这里只有一个元素
-            for(int i=lstResultsData.size()-1;i>=0;i--)
-            {
-                if(mColFilterSelectedValue.containsKey("deptno2"))
-                {//是在部门编号上进行列过滤
-                    if(!mColFilterSelectedValue.get("deptno2").contains(lstResultsData.get(i).get("deptno2")))
-                    {
-                        lstResultsData.remove(i);
-                    }
-                }else if(mColFilterSelectedValue.containsKey("deptname2"))
-                {//是在部门名上进行列过滤
-                    if(!mColFilterSelectedValue.get("deptname2").contains(lstResultsData.get(i).get("deptname2")))
-                    {
-                        lstResultsData.remove(i);
-                    }
-                }
-            }
-        }
-        return lstResultsData;
-    }
+//    /**
+//     * 获取一共要显示的所有数据
+//     * @param rrequest
+//     * @param rbean
+//     * @param datasetbean
+//     * @return
+//     */
+//    private List<Map<String,String>> getDisplayData(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean datasetbean)
+//    {
+//        String txtperform=rrequest.getStringAttribute("txtperform","");//取到“表现”条件输入框的值
+//        Map<String,List<String>> mColFilterSelectedValue=ListReportAssistant.getInstance().getMFilterColAndFilterValues(rrequest,rbean,datasetbean);//取到已选中的过滤列及选中的选项数据
+//        if((mColFilterSelectedValue==null||mColFilterSelectedValue.size()==0)&&txtperform.equals("")) return lstTestDeptData;//如果即没有进行列过滤，也没有输入查询条件进行查询，则返回所有记录
+//        List<Map<String,String>> lstResultsData=(List<Map<String,String>>)((ArrayList<Map<String,String>>)lstTestDeptData).clone();
+//        if(!txtperform.trim().equals(""))
+//        {//在“表现”条件框中输入了条件，则找出符合条件的记录
+//            for(int i=lstResultsData.size()-1;i>=0;i--)
+//            {
+//                if(!txtperform.equals(lstResultsData.get(i).get("performance2")))
+//                {//不符合这个条件
+//                    lstResultsData.remove(i);
+//                }
+//            }
+//        }
+//        if(mColFilterSelectedValue!=null&&mColFilterSelectedValue.size()==1)
+//        {//因为一次只会过滤一个列，因此如果有列过滤的话，这里只有一个元素
+//            for(int i=lstResultsData.size()-1;i>=0;i--)
+//            {
+//                if(mColFilterSelectedValue.containsKey("deptno2"))
+//                {//是在部门编号上进行列过滤
+//                    if(!mColFilterSelectedValue.get("deptno2").contains(lstResultsData.get(i).get("deptno2")))
+//                    {
+//                        lstResultsData.remove(i);
+//                    }
+//                }else if(mColFilterSelectedValue.containsKey("deptname2"))
+//                {//是在部门名上进行列过滤
+//                    if(!mColFilterSelectedValue.get("deptname2").contains(lstResultsData.get(i).get("deptname2")))
+//                    {
+//                        lstResultsData.remove(i);
+//                    }
+//                }
+//            }
+//        }
+//        return lstResultsData;
+//    }
     
     private final static List<Map<String,String>> lstTestDeptData=new ArrayList<Map<String,String>>();
     static

@@ -137,7 +137,7 @@ public class DataExportButton extends WabacusButton
                 componentids+=ccbean.getId()+";";
                 includeAppidsTmp=null;
                 if(ccbean.getDataExportsBean()!=null)
-                {//配置了数据导出功能
+                {
                     includeAppidsTmp=ccbean.getDataExportsBean().getIncludeApplicationids(dataexporttype);
                 }
                 if(includeAppidsTmp==null||includeAppidsTmp.trim().equals(""))
@@ -176,7 +176,7 @@ public class DataExportButton extends WabacusButton
         {
             exporturl=Config.showreport_onpdf_url;
         }else
-        {
+        {//Consts.DATAEXPORT_RICHEXCEL
             exporturl=Config.showreport_onrichexcel_url;
         }
         if(rbean!=null&&rbean.getDbean().isColselect())

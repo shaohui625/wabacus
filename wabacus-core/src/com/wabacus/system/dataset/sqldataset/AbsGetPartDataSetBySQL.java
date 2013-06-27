@@ -24,7 +24,7 @@ import java.util.List;
 
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.database.type.SQLSERVER2K;
 import com.wabacus.config.database.type.SQLSERVER2K5;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -41,7 +41,7 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
 {
     private String sqlKernel;
 
-    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean svbean)
+    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean svbean)
     {
         ReportBean rbean=reportTypeObj.getReportBean();
         String datasetid=svbean.getId();
@@ -109,7 +109,7 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
         return recordcount;
     }
     
-    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean svbean,List lstReportData)
+    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean svbean,List lstReportData)
     {
         ReportBean rbean=reportTypeObj.getReportBean();
         if(sqlKernel==null||sqlKernel.trim().equals(""))
@@ -125,11 +125,9 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
             sqlKernel=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sqlKernel,lstConditions,lstConditionsTypes);
         }
         CacheDataBean cdb=rrequest.getCdb(rbean.getId());
-        int pagesize=cdb.getPagesize();
         if(cdb.getPagecount()<=0) return null;
-        int realGetDataCount=cdb.getPageSplitReportDataCount(svbean.getId());//本次实际要获取的记录数
-        if(realGetDataCount==0) return null;
-        int pageno=cdb.getFinalPageno();
+        int[] startEndRownumArr=cdb.getStartEndRownumOfDataset(svbean.getGuid());
+        if(startEndRownumArr==null||startEndRownumArr.length!=2||startEndRownumArr[0]<0||startEndRownumArr[1]<=0||startEndRownumArr[0]==startEndRownumArr[1]) return null;
         String sql=null;
         try
         {
@@ -142,9 +140,9 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
             }
             sql=Tools.replaceAll(sql,Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,sqlKernel);
             sql=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,svbean,sql);
-            sql=Tools.replaceAll(sql,"%START%",String.valueOf((pageno-1)*pagesize));
-            sql=Tools.replaceAll(sql,"%END%",String.valueOf(pageno*pagesize));
-            sql=Tools.replaceAll(sql,"%PAGESIZE%",String.valueOf(realGetDataCount));
+            sql=Tools.replaceAll(sql,"%START%",String.valueOf(startEndRownumArr[0]));
+            sql=Tools.replaceAll(sql,"%END%",String.valueOf(startEndRownumArr[1]));
+            sql=Tools.replaceAll(sql,"%PAGESIZE%",String.valueOf(startEndRownumArr[1]-startEndRownumArr[0]));
             if(rbean.getInterceptor()!=null)
             {
                 Object obj=rbean.getInterceptor().beforeLoadData(rrequest,rbean,svbean,sql);
@@ -163,7 +161,7 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
         }
     }
     
-    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetBean svbean,Object typeObj,String sql,boolean isStatisticForOnePage)
+    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetValueBean svbean,Object typeObj,String sql,boolean isStatisticForOnePage)
     {
         if(lstConditions!=null) lstConditions.clear();
         if(lstConditionsTypes!=null) lstConditionsTypes.clear();
@@ -181,25 +179,23 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
         sqlTmp=Tools.replaceAll(sqlTmp,Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,sqlKernel);
         sqlTmp=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,svbean,sqlTmp);
         CacheDataBean cdb=rrequest.getCdb(rbean.getId());
-        int pagesize=cdb.getPagesize();
-        if(cdb.getPagecount()<=0) return null;
-        int realGetDataCount=cdb.getPageSplitReportDataCount(svbean.getId());
-        if(realGetDataCount==0) return null;
-        int pageno=cdb.getFinalPageno();
-        sqlTmp=Tools.replaceAll(sqlTmp,"%START%",String.valueOf((pageno-1)*pagesize));
-        sqlTmp=Tools.replaceAll(sqlTmp,"%END%",String.valueOf(pageno*pagesize));
-        sqlTmp=Tools.replaceAll(sqlTmp,"%PAGESIZE%",String.valueOf(realGetDataCount));
+        if(cdb.getPagecount()<=0) return null;//没有记录
+        int[] startEndRownumArr=cdb.getStartEndRownumOfDataset(svbean.getGuid());
+        if(startEndRownumArr==null||startEndRownumArr.length!=2||startEndRownumArr[0]<0||startEndRownumArr[1]<=0||startEndRownumArr[0]==startEndRownumArr[1]) return null;
         if(rrequest.getDbType(svbean.getDatasource()) instanceof SQLSERVER2K||rrequest.getDbType(svbean.getDatasource()) instanceof SQLSERVER2K5)
         {
             String sqlTmp2=Tools.removeBracketAndContentInside(sqlTmp,true);
             sqlTmp2=Tools.replaceAll(sqlTmp2,"  "," ");
             if(sqlTmp2.toLowerCase().indexOf("order by")>0)
-            {//sql语句中有order by子句则去掉
+            {
                 int idx_orderby=sqlTmp.toLowerCase().lastIndexOf("order by");
                 sqlTmp=sqlTmp.substring(0,idx_orderby);
             }
         }
         sql=Tools.replaceAll(sql,StatisticItemAndDataSetBean.STATISQL_PLACEHOLDER,sqlTmp);
+        sql=Tools.replaceAll(sql,"%START%",String.valueOf(startEndRownumArr[0]));
+        sql=Tools.replaceAll(sql,"%END%",String.valueOf(startEndRownumArr[1]));
+        sql=Tools.replaceAll(sql,"%PAGESIZE%",String.valueOf(startEndRownumArr[1]-startEndRownumArr[0]));
         if(rbean.getInterceptor()!=null)
         {
             Object obj=rbean.getInterceptor().beforeLoadData(rrequest,rbean,typeObj,sql);

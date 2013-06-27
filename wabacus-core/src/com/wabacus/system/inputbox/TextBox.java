@@ -81,13 +81,13 @@ public class TextBox extends AbsInputBox implements Cloneable
         StringBuffer resultBuf=new StringBuffer();
         if(typePromptBean!=null)
         {
-            resultBuf.append(" onfocus=\"try{initializeTypePromptProperties(this,'"+getTypePromptJsonString(getInputBoxId(rrequest))
+            resultBuf.append(" onfocus=\"try{initializeTypePromptProperties(this,'"+getTypePromptJsonString(rrequest,getInputBoxId(rrequest))
                     +"');}catch(e){logErrorsAsJsFileLoad(e);}\"");
         }
         return resultBuf.toString();
     }
     
-    private String getTypePromptJsonString(String inputboxid)
+    private String getTypePromptJsonString(ReportRequest rrequest,String inputboxid)
     {
         if(typePromptBean==null) return "";
         StringBuffer resultBuf=new StringBuffer("{");
@@ -103,9 +103,9 @@ public class TextBox extends AbsInputBox implements Cloneable
         resultBuf.append(",isSelectBox:").append(typePromptBean.isSelectbox());
         if(this.owner instanceof ConditionBean)
         {
-            if(((ConditionBean)this.owner).getLabelstyle()==1&&((ConditionBean)this.owner).getLabel()!=null) 
+            if(ConditionBean.LABELPOSITION_INNER.equals(((ConditionBean)this.owner).getLabelposition())&&((ConditionBean)this.owner).getLabel(rrequest)!=null)
             {
-                resultBuf.append(",conditionlabel:\"").append(((ConditionBean)this.owner).getLabel()).append("\"");
+                resultBuf.append(",conditionlabel:\"").append(((ConditionBean)this.owner).getLabel(rrequest)).append("\"");
             }
         }
         if(typePromptBean.getCallbackmethod()!=null&&!typePromptBean.getCallbackmethod().trim().equals(""))
@@ -118,7 +118,7 @@ public class TextBox extends AbsInputBox implements Cloneable
             colBuf.append("{");
             colBuf.append("collabel:\"").append(tpColBean.getLabel()).append("\"");
             if(tpColBean.getValue()!=null) colBuf.append(",colvalue:\"").append(tpColBean.getValue()).append("\"");
-            colBuf.append(",coltitle:\"").append(tpColBean.getTitle()==null?"":tpColBean.getTitle()).append("\"");
+            colBuf.append(",coltitle:\"").append(tpColBean.getTitle()==null?"":rrequest.getI18NStringValue(tpColBean.getTitle())).append("\"");
             colBuf.append(",matchmode:").append(tpColBean.getMatchmode());
             colBuf.append(",hidden:").append(tpColBean.isHidden());
             colBuf.append("},");
@@ -139,7 +139,7 @@ public class TextBox extends AbsInputBox implements Cloneable
         
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append(super.initDisplaySpanStart(rrequest));
-        resultBuf.append(" typePrompt=\"").append(getTypePromptJsonString(this.owner.getInputBoxId())).append("\"");
+        resultBuf.append(" typePrompt=\"").append(getTypePromptJsonString(rrequest,this.owner.getInputBoxId())).append("\"");
         return resultBuf.toString();
     }
 
@@ -177,7 +177,7 @@ public class TextBox extends AbsInputBox implements Cloneable
     {
         super.loadInputBoxConfig(ownerbean,eleInputboxBean);
         if(eleInputboxBean==null) return;
-        //加载输入联想配置
+        
         XmlElementBean eleTypeprompt=eleInputboxBean.getChildElementByName("typeprompt");
         if(eleTypeprompt!=null)
         {
@@ -269,6 +269,7 @@ public class TextBox extends AbsInputBox implements Cloneable
         List<TypePromptColBean> lstPColBeans=new ArrayList<TypePromptColBean>();
         boolean isShowTitle=false;
         boolean isHasMatchCol=false;
+        ReportBean rbean=ownerbean.getReportBean();
         TypePromptColBean tpColbeanTmp;
         for(XmlElementBean elePromptColBeanTmp:lstPromptcols)
         {
@@ -281,14 +282,14 @@ public class TextBox extends AbsInputBox implements Cloneable
             String matchexpression=elePromptColBeanTmp.attributeValue("matchexpression");
             if(label==null||label.trim().equals(""))
             {
-                throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()+"<typeprompt/>的子标签<promptcol/>的label属性不能为空");
+                throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"<typeprompt/>的子标签<promptcol/>的label属性不能为空");
             }
             tpColbeanTmp=new TypePromptColBean();
-            tpColbeanTmp.setLabel(label.trim());
+            tpColbeanTmp.setLabel(Config.getInstance().getResourceString(null,rbean.getPageBean(),label.trim(),true));
             if(title!=null&&!title.trim().equals(""))
             {
-                tpColbeanTmp.setTitle(title.trim());
-                isShowTitle=true;
+                tpColbeanTmp.setTitle(Config.getInstance().getResourceString(null,rbean.getPageBean(),title.trim(),true));
+                isShowTitle=true;//此输入联想需要显示标题行
             }
             if(hidden!=null) tpColbeanTmp.setHidden(hidden.toLowerCase().equals("true"));
             if(tpColbeanTmp.isHidden())
@@ -356,7 +357,7 @@ public class TextBox extends AbsInputBox implements Cloneable
                     }
                     valueTmp=eleOptionTmp.attributeValue(nameTmp);
                     valueTmp=valueTmp==null?"":valueTmp.trim();
-                    mOption.put(nameTmp,valueTmp);//将此联想列的名和配置的常量值存入Map中
+                    mOption.put(nameTmp,valueTmp);
                     nameTmp=tcolbeanTmp.getValue();
                     if(nameTmp==null||nameTmp.trim().equals("")||nameTmp.equals(tcolbeanTmp.getLabel())) continue;
                     valueTmp=eleOptionTmp.attributeValue(nameTmp);
@@ -442,11 +443,6 @@ public class TextBox extends AbsInputBox implements Cloneable
                 this.styleproperty=Tools.replaceAll(this.styleproperty,"cls-inputbox-temp-mouseover","cls-inputbox-mouseover");
             }
         }
-    }
-
-    public void setDefaultFillmode(AbsReportType reportTypeObj)
-    {
-        this.fillmode=1;
     }
     
     public Object clone(IInputBoxOwnerBean owner)

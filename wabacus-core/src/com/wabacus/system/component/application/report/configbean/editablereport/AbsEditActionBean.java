@@ -89,7 +89,7 @@ public abstract class AbsEditActionBean
         return paramBean;
     }
     
-    public void setRealParamnamesInDoPostLoadFinally()
+    public void doPostLoadFinally()
     {
     }
     

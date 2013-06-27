@@ -107,7 +107,7 @@ public class TabsPanel extends AbsPanelType
             childidTmp=containerConfigBean.getLstChildrenIDs().get(i);
             if(!rrequest.checkPermission(containerConfigBean.getId(),Consts.DATA_PART,String.valueOf(i),Consts.PERMISSION_TYPE_DISPLAY))  continue;
             tdbeanTmp=new TabItemDisplayBean();
-            tdbeanTmp.setIndex(i);//位置下标
+            tdbeanTmp.setIndex(i);
             tdbeanTmp.setChildid(childidTmp);
             if(rrequest.checkPermission(containerConfigBean.getId(),Consts.DATA_PART,String.valueOf(i),Consts.PERMISSION_TYPE_DISABLED))
             {
@@ -142,7 +142,7 @@ public class TabsPanel extends AbsPanelType
     public void displayOnPage(AbsComponentTag displayTag)
     {
         if(currentSelectedTabItemDisplayBean==null)
-        {
+        {//如果没有要显示的子标签
             wresponse.println("&nbsp;");
             return;
         }
@@ -162,7 +162,7 @@ public class TabsPanel extends AbsPanelType
             {
                 showChildTabItem(this.currentSelectedTabItemDisplayBean,true);
                 for(TabItemDisplayBean tidbeanTmp:lstDisplayedChildren)
-                {//所有显示了标题的，且不是禁用的，都显示出来，切换时只要在客户端切换即可
+                {
                     if(tidbeanTmp.isDisabled()) continue;
                     if(tidbeanTmp.getIndex()==this.currentSelectedTabItemDisplayBean.getIndex()) continue;
                     showChildTabItem(tidbeanTmp,false);
@@ -177,7 +177,7 @@ public class TabsPanel extends AbsPanelType
     {
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("<table cellspacing='0' cellpadding='0' width=\"100%\"");
-        if(containerConfigBean.getHeight()!=null&&!containerConfigBean.getHeight().trim().equals(""))
+        if(!this.containerConfigBean.isScrollY()&&containerConfigBean.getHeight()!=null&&!containerConfigBean.getHeight().trim().equals(""))
         {//容器的高度配置必须放在最里层的<table/>中，否则没办法通过它的<td/>的valign控制子组件的垂直对齐方式
             resultBuf.append(" height=\""+containerConfigBean.getHeight()+"\"");
         }
@@ -273,7 +273,7 @@ public class TabsPanel extends AbsPanelType
 
 
 
-//                resultBuf.append(" align=\"right\"");
+
 
             resultBuf.append(">").append(subtitle.trim()).append("</TD></tr>");
         }
@@ -297,7 +297,7 @@ public class TabsPanel extends AbsPanelType
             return super.showTopBottomTitlePart(isDisplayTopTitleBar);
         }
         String realtabtitle=getTabsTitleInTopAndBottomDisplayValue();
-        if(realtabtitle.trim().equals("")) return super.showTopBottomTitlePart(isDisplayTopTitleBar);
+        if(realtabtitle.trim().equals("")) return super.showTopBottomTitlePart(isDisplayTopTitleBar);//没有标题需要显示，则只考虑按钮的显示
         String buttonsOnTitle=getContainerTopBottomButtonsDisplayValue(isDisplayTopTitleBar);
         String buttonalign=null;
         if(!buttonsOnTitle.trim().equals(""))
@@ -320,7 +320,7 @@ public class TabsPanel extends AbsPanelType
         if(buttonsOnTitle.equals("")||titlealign.equalsIgnoreCase(buttonalign))
         {
             if(!this.tabspanelBean.isAsyn())
-            {//如果不是异步切换tabitem
+            {
                 resultBuf.append(" selectedItemIndex=\"").append(currentSelectedTabItemDisplayBean.getIndex()).append("\"");
             }
             resultBuf.append("><TBODY><TR>");
@@ -412,19 +412,19 @@ public class TabsPanel extends AbsPanelType
 
 
 //        {//标题栏授权为不显示，则只显示上面的功能按钮
-//            return super.showTopBottomTitlePart(isDisplayTopTitleBar);
+
 
 
 //        if(realtabtitle.trim().equals("")) return super.showTopBottomTitlePart(isDisplayTopTitleBar);//没有标题需要显示，则只考虑按钮的显示
 //        String buttonsOnTitle=getContainerTopBottomButtonsDisplayValue(isDisplayTopTitleBar);//要显示在顶部或底部标题栏上的功能按钮
 
 
+//        {
 
 
 
 
 
-//        String titlealign=containerConfigBean.getTitlealign();
 
 
 
@@ -452,7 +452,7 @@ public class TabsPanel extends AbsPanelType
 
 //                resultBuf.append("<td>&nbsp;</td>");
 
-//            }else
+
 //            {//left
 
 //                resultBuf.append("<td>&nbsp;</td>");
@@ -460,14 +460,14 @@ public class TabsPanel extends AbsPanelType
 
 //        {//需要显示标题和功能按钮
 
-
+//            {
 
 
 //                    resultBuf.append("<td width=\"50%\" nowrap align=\"left\">").append(buttonsOnTitle).append("</td>");
 
 //                    resultBuf.append("<td width=\"50%\">&nbsp;</td>");
 
-//                {
+
 //                    resultBuf.append("<td width='50%'>&nbsp;</td>");
 
 //                    resultBuf.append("<td width=\"2px\">&nbsp;</td>");
@@ -506,7 +506,7 @@ public class TabsPanel extends AbsPanelType
 
 //        resultBuf.append("</TR></TBODY></TABLE>");
 //        resultBuf.append("</TD></TR>");
-//        return resultBuf.toString();
+
 
     
     private String getTabsTitleInTopAndBottomDisplayValue()
@@ -548,7 +548,7 @@ public class TabsPanel extends AbsPanelType
                     {
                         resultBuf.append("tabitem_position_type=\"first\"");
                     }else if(i==len-1)
-                    {
+                    {//如果是最后一个标签页
                         resultBuf.append("tabitem_position_type=\"last\"");
                     }else
                     {
@@ -592,7 +592,7 @@ public class TabsPanel extends AbsPanelType
                     }else
                     {
                         if(lstDisplayedChildren.get(i+1).getIndex()==currentSelectedTabItemDisplayBean.getIndex())
-                        {//如果当前tabitem的下一个tabitem就是本次选中显示的tabitem
+                        {
                             resultBuf.append(img_desel_sel);
                         }else
                         {

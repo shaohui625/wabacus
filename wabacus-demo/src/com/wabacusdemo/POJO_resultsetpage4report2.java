@@ -18,12 +18,17 @@
  */
 package com.wabacusdemo;
 
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.format.IFormat;
 
-public class POJO_resultsetpage4report2 implements IFormat
+public class POJO_resultsetpage4report2 extends AbsReportDataPojo
 {
+    public POJO_resultsetpage4report2(ReportRequest rrequest,ReportBean rbean)
+    {
+        super(rrequest,rbean);
+    }
+
     private String no;
 
     private String name;
@@ -120,7 +125,7 @@ public class POJO_resultsetpage4report2 implements IFormat
         this.county=county;
     }
 
-    public void format(ReportRequest rrequest,ReportBean rbean)
+    public void format()
     {
         sex=sex==null?"1":sex.trim();
         if(sex.equals("0"))

@@ -23,23 +23,11 @@ import com.wabacus.config.component.application.report.extendconfig.AbsExtendCon
 
 public class BlockListReportDisplayBean extends AbsExtendConfigBean
 {
-    private String blockstyleproperty;
-    
     private int colsinexportfile;
     
     public BlockListReportDisplayBean(AbsConfigBean owner)
     {
         super(owner);
-    }
-
-    public String getBlockstyleproperty()
-    {
-        return blockstyleproperty;
-    }
-
-    public void setBlockstyleproperty(String blockstyleproperty)
-    {
-        this.blockstyleproperty=blockstyleproperty;
     }
 
     public int getColsinexportfile()

@@ -146,7 +146,7 @@ public class PageType extends AbsContainerType
         if(rrequest.getLstAncestorUrls()!=null&&rrequest.getLstAncestorUrls().size()>0&&clickevent.equals(""))
         {
             if(this.pagebean.getButtonsBean()!=null&&this.pagebean.getButtonsBean().getcertainTypeButton(BackButton.class)!=null)
-            {//如果此页面配置了“返回”按钮，则不在这里自动显示（因为稍后显示按钮时会显示“返回”按钮）
+            {
                 return "";
             }
             BackButton buttonObj=(BackButton)Config.getInstance().getResourceButton(rrequest,rrequest.getPagebean(),Consts.BACK_BUTTON_DEFAULT,
@@ -165,12 +165,12 @@ public class PageType extends AbsContainerType
 
 //            systemheadjs="/webresources/script/wabacus_systemhead.js";
 
+//        {
 
 
 
 
 
-//            }
 //            systemheadjs="/webresources/script/"+encode.toLowerCase()+"/wabacus_systemhead.js";
 
         systemheadjs=Config.webroot+"/webresources/script/wabacus_systemhead.js";
@@ -217,10 +217,32 @@ public class PageType extends AbsContainerType
         }
         if(!rrequest.isLoadedByAjax())
         {
-            String onloadMethods=rrequest.getWResponse().invokeOnloadMethodsFirstTime();
-            if(onloadMethods!=null&&!onloadMethods.trim().equals(""))
+            String confirmessage=rrequest.getWResponse().getMessageCollector().getConfirmmessage();
+            if(confirmessage!=null&&!confirmessage.trim().equals(""))
             {
-                resultBuf.append("<script type=\"text/javascript\">").append(onloadMethods).append("</script>");
+                resultBuf.append("<script type=\"text/javascript\">");
+                resultBuf.append("WX_serverconfirm_key='").append(rrequest.getWResponse().getMessageCollector().getConfirmkey()).append("';");
+                resultBuf.append("WX_serverconfirm_url='").append(rrequest.getWResponse().getMessageCollector().getConfirmurl()).append("';");
+                resultBuf.append("wx_confirm('"+confirmessage+"',null,null,null,okServerConfirm,cancelServerConfirm);");
+                resultBuf.append("</script>");
+            }else
+            {
+                String onloadMethods=rrequest.getWResponse().invokeOnloadMethodsFirstTime();
+                if(onloadMethods!=null&&!onloadMethods.trim().equals(""))
+                {
+                    resultBuf.append("<script type=\"text/javascript\">").append(onloadMethods).append("</script>");
+                }
+                if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&rrequest.getLstReportWithDefaultSelectedRows()!=null
+                        &&rrequest.getLstReportWithDefaultSelectedRows().size()>0)
+                {
+                    resultBuf.append("<script type=\"text/javascript\">");
+                    for(String reportidTmp:rrequest.getLstReportWithDefaultSelectedRows())
+                    {
+                        resultBuf.append("selectDefaultSelectedDataRows(getReportMetadataObj(getComponentGuidById(");
+                        resultBuf.append("'"+this.pagebean.getId()+"','"+reportidTmp+"')));");
+                    }
+                    resultBuf.append("</script>");
+                }
             }
         }
         return resultBuf.toString();

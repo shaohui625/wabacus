@@ -55,7 +55,7 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
     
     private boolean isTreeAsynLoad;
     
-    private List<String> lstTreeclosedimgs;//各层树枝节点收缩时显示的前缀图片
+    private List<String> lstTreeclosedimgs;
     
     private List<String> lstTreexpandimgs;
     
@@ -69,7 +69,7 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
 
     private List<Map<String,String>> lstRowgroupColsAndOrders;
 
-    private List<ColBean> lstRoworderValueCols;
+    private List<ColBean> lstRoworderValueCols;//存放本报表中所有配置了rowordervalue为true的列
     
     private Map<String,AbsListReportFilterBean> mAllFilterBeans;
     
@@ -79,27 +79,10 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
     
     private String treenodeparentid;
     
-//    /**
-//     * 存放当前报表中，所有参与折线标题的列的集合。每个折线标题列对应一个List,存放当前参与当前折线标题的列的集合。
-
-//     * 如果是存放普通报表的折线标题包括的列的集合，则Map的key为0，如果是存放某个分组的折线列标题，则key为相应分组对应的<group/>的id。
-//     */
-
-    
     public AbsListReportDisplayBean(AbsConfigBean owner)
     {
         super(owner);
     }
-
-
-
-
-
-
-
-
-//        this.containsNonConditionFilter=containsNonConditionFilter;
-
 
     public boolean isContainsClickOrderBy()
     {
@@ -329,16 +312,6 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
         this.mouseoverbgcolor=mouseoverbgcolor;
     }
 
-
-
-
-
-
-//    public void setMCurveColids(Map<String,List<String>> curveColids)
-
-
-
-
     public void addRowgroupCol(ColBean cbean)
     {
         if(this.lstRowgroupColsColumn==null) this.lstRowgroupColsColumn=new ArrayList<String>();
@@ -416,12 +389,12 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
             String borderstyle=cbean.getBorderStylePropertyOnColBean();
             if(borderstyle!=null&&!borderstyle.trim().equals(""))
             {
-                cbean.setValuestyleproperty(Tools.mergeHtmlTagPropertyString(cbean.getValuestyleproperty(),"style=\""+borderstyle+"\"",1));
+                cbean.setValuestyleproperty(Tools.mergeHtmlTagPropertyString(cbean.getValuestyleproperty(null,true),"style=\""+borderstyle+"\"",1),true);
             }
             if(!isFirstCol&&this.getRowGroupColsNum()>0&&this.getRowgrouptype()==2&&alrbean.getScrollType()==AbsListReportBean.SCROLLTYPE_VERTICAL)
             {
-                if(Tools.getPropertyValueByName("width",cbean.getValuestyleproperty(),true)!=null
-                        ||Tools.getPropertyValueByName("width",cbean.getLabelstyleproperty(),true)!=null)
+                if(Tools.getPropertyValueByName("width",cbean.getValuestyleproperty(null,true),true)!=null
+                        ||Tools.getPropertyValueByName("width",cbean.getLabelstyleproperty(null,true),true)!=null)
                 {
                     throw new WabacusConfigLoadingException("加载报表"+cbean.getReportBean().getPath()
                             +"失败，此报表是配置了scrollheight的树形报表，因此除第一列之外，其它列均不能配置width属性");
@@ -432,11 +405,11 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
             if(alrcbean==null) continue;
             if(alrcbean.isRequireClickOrderby())
             {
-                if(cbean.getDatasetid()!=null&&!cbean.getDatasetid().trim().equals(""))
+                if(cbean.getDatasetValueId()!=null&&!cbean.getDatasetValueId().trim().equals(""))
                 {
-                    if(!dbean.getReportBean().getSbean().isIndependentDataset(cbean.getDatasetid()))
+                    if(dbean.getReportBean().getSbean().isExistDependentDataset(cbean.getDatasetValueId()))
                     {
-                        throw new WabacusConfigLoadingException("加载报表"+cbean.getReportBean().getPath()+"的列"+cbean.getLabel()
+                        throw new WabacusConfigLoadingException("加载报表"+cbean.getReportBean().getPath()+"的列"+cbean.getLabel(null)
                                 +"失败，当前列是从子数据集中取数据，不能为它配置列排序功能");
                     }
                 }

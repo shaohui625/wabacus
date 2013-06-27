@@ -94,9 +94,9 @@ public class LodopPrintProvider extends AbsPrintProvider
         }else if(ptEleBean.getType()==PrintTemplateElementBean.ELEMENT_TYPE_OTHER)
         {
             String value=(String)ptEleBean.getValueObj();
-            if(Tools.isDefineKey("request",value)||Tools.isDefineKey("session",value))
+            if(WabacusAssistant.getInstance().isGetRequestContextValue(value))
             {
-                this.wresponse.print(WabacusAssistant.getInstance().getRequestSessionValue(rrequest,value,""));
+                this.wresponse.print(WabacusAssistant.getInstance().getRequestContextStringValue(rrequest,value,""));
             }else
             {
                 this.wresponse.print(value==null?"":value);
@@ -113,7 +113,7 @@ public class LodopPrintProvider extends AbsPrintProvider
         List<String> lstParts=(List<String>)ptElebean.getValueObj();
         if(lstParts==null||lstParts.size()==0) return;
         if(lstParts.size()==1)
-        {//applicationid或者this，即打印某个应用整体
+        {
             printApplication(lstParts.get(0));
             return;
         }

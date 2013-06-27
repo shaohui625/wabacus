@@ -52,12 +52,12 @@ import com.wabacus.system.component.application.report.abstractreport.configbean
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportDisplayBean;
 import com.wabacus.system.component.application.report.configbean.ColAndGroupDisplayBean;
 import com.wabacus.system.component.application.report.configbean.ColAndGroupTitlePositionBean;
+import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.system.component.application.report.configbean.UltraListReportColBean;
 import com.wabacus.system.component.application.report.configbean.UltraListReportDisplayBean;
 import com.wabacus.system.component.application.report.configbean.UltraListReportGroupBean;
 import com.wabacus.system.component.container.AbsContainerType;
-import com.wabacus.system.intercept.ColDataByInterceptor;
-import com.wabacus.system.intercept.RowDataByInterceptor;
+import com.wabacus.system.intercept.RowDataBean;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
@@ -91,20 +91,18 @@ public class UltraListReportType extends ListReportType
         int dataheader_rowcount=positionBean.getRowspan();
         List<String> lstDynColids=this.cacheDataBean.getLstDynOrderColids();
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&dbean.isColselect()) mDisplayRealColAndGroupLabels=new HashMap<String,String>();
-        String thstyleproperty=null;
+        String thstyleproperty=this.getRowLabelstyleproperty();
         if(this.rbean.getInterceptor()!=null)
         {
-            RowDataByInterceptor rowdataObj=this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this,rrequest,-1,
-                    this.cacheDataBean.getTotalColCount(),this.getLstDisplayColBeans());
-            if(rowdataObj!=null)
-            {
-                if(rowdataObj.getInsertDisplayRowHtml()!=null) resultBuf.append(rowdataObj.getInsertDisplayRowHtml());
-                thstyleproperty=rowdataObj.getDynTrStyleproperty();
-                if(!rowdataObj.isShouldDisplayThisRow()) return resultBuf.toString();
-            }
+            RowDataBean rowdataObj=new RowDataBean(this,thstyleproperty,this.getLstDisplayColBeans(),null,-1,this.cacheDataBean.getTotalColCount());
+            this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this.rrequest,this.rbean,rowdataObj);
+            if(rowdataObj.getInsertDisplayRowHtml()!=null) resultBuf.append(rowdataObj.getInsertDisplayRowHtml());
+            thstyleproperty=rowdataObj.getRowstyleproperty();
+            if(!rowdataObj.isShouldDisplayThisRow()) return resultBuf.toString();
         }
         if(thstyleproperty==null) thstyleproperty="";
-        resultBuf.append("<tr  class='"+getDataHeaderTrClassName()+"' ").append(thstyleproperty).append(">");
+        if(thstyleproperty.toLowerCase().indexOf("class=")<0) thstyleproperty+=" class='"+getDataHeaderTrClassName()+"'";
+        resultBuf.append("<tr ").append(thstyleproperty).append(">");
         List lstChildren=sortChildrenByDynColOrders(getLstDisplayChildren(ulrdbean),lstDynColids,mColAndGroupTitlePostions);
         String lastDisplayColIdInFirstTitleRow=getLastDisplayColIdInFirstTitleRow(ulrdbean);
         resultBuf.append(showLabel(lstChildren,mColAndGroupTitlePostions,lastDisplayColIdInFirstTitleRow));
@@ -116,7 +114,7 @@ public class UltraListReportType extends ListReportType
         String groupidTmp;
         for(int i=1;i<dataheader_rowcount;i++)
         {
-            resultBuf.append("<tr  class='"+getDataHeaderTrClassName()+"' ").append(thstyleproperty).append(">");
+            resultBuf.append("<tr ").append(thstyleproperty).append(">");
             for(Object obj:lstChildren)
             {
                 if(obj==null||obj instanceof ColBean) continue;
@@ -124,9 +122,9 @@ public class UltraListReportType extends ListReportType
                 groupidTmp=groupBean.getGroupid();
                 positionBeanTmp=mColAndGroupTitlePostions.get(groupidTmp);
                 if(positionBeanTmp==null||positionBeanTmp.getDisplaymode()<=0) continue;
-                    //                Integer layer=mGroupLayers.get(groupidTmp);//取到当前分组当前要显示的层级数
-                    
-                    
+                //                Integer layer=mGroupLayers.get(groupidTmp);//取到当前分组当前要显示的层级数
+                
+                
                 List lstChildrenLocal=getDisplayChildrenOfGroupBean(groupBean.getLstChildren(),mColAndGroupTitlePostions,lstHasDisplayColGroupIds,
                         i+1,groupBean.getRowspan());
                 if(lstChildrenLocal==null||lstChildrenLocal.size()==0) continue;
@@ -155,7 +153,7 @@ public class UltraListReportType extends ListReportType
 
     protected String getLastDisplayColIdInFirstTitleRow(UltraListReportDisplayBean urldbean)
     {
-        String lastColId=this.cacheDataBean.getLastColId();//得到本次显示的最后一个普通列
+        String lastColId=this.cacheDataBean.getLastColId();
         ColBean cb=rbean.getDbean().getColBeanByColId(lastColId);
         UltraListReportColBean urlcbean=(UltraListReportColBean)cb.getExtendConfigDataForReportType(KEY);
         String parentGroupid=urlcbean.getParentGroupid();
@@ -192,7 +190,7 @@ public class UltraListReportType extends ListReportType
             if(idTmp==null) continue;
             positionBeanTmp=mColAndGroupTitlePostions.get(idTmp);
             if(positionBeanTmp!=null&&positionBeanTmp.getDisplaymode()>0&&!lstHasDisplayColGroupIds.contains(idTmp))
-            {
+            {//当前（分组）列需要显示，且还没有显示，则将它加入显示
                 lstHasDisplayColGroupIds.add(idTmp);
                 lstDisplayChildren.add(objTmp);
             }else if(objTmp instanceof UltraListReportGroupBean&&lstHasDisplayColGroupIds.contains(idTmp))
@@ -217,7 +215,7 @@ public class UltraListReportType extends ListReportType
         UltraListReportColBean ulrcbean;
         ColBean colbean;
         UltraListReportGroupBean groupBean;
-        ColDataByInterceptor coldataByInterceptor;
+        ColDisplayData colDisplayData;
         ColAndGroupTitlePositionBean positionBeanTmp;
         String id;
         for(Object obj:lstChildren)
@@ -242,14 +240,14 @@ public class UltraListReportType extends ListReportType
                 ulrcbean=(UltraListReportColBean)colbean.getExtendConfigDataForReportType(KEY);
                 if(ulrcbean!=null) parentGroupid=ulrcbean.getParentGroupid();
                 positionBeanTmp=mColAndGroupTitlePostions.get(colbean.getColid());
-                labelstyleproperty=colbean.getLabelstyleproperty(rrequest);
-                label=colbean.getLabel();
+                labelstyleproperty=getColLabelStyleproperty(colbean,null);
+                label=colbean.getLabel(rrequest);
                 id=colbean.getColid();
             }else if(obj instanceof UltraListReportGroupBean)
             {
                 groupBean=((UltraListReportGroupBean)obj);
-                labelstyleproperty=groupBean.getLabelstyleproperty();
-                label=groupBean.getLabel();
+                labelstyleproperty=groupBean.getLabelstyleproperty(rrequest,false);
+                label=groupBean.getLabel(rrequest);
                 parentGroupid=groupBean.getParentGroupid();
                 positionBeanTmp=mColAndGroupTitlePostions.get(groupBean.getGroupid());
                 id=groupBean.getGroupid();
@@ -263,18 +261,18 @@ public class UltraListReportType extends ListReportType
             {
                 labelstyleproperty=" rowspan='"+positionBeanTmp.getRowspan()+"' "+labelstyleproperty;
             }
-            coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,obj,-1,label);
-            label=ReportAssistant.getInstance().getColGroupLabel(rrequest,label,coldataByInterceptor);
+            colDisplayData=ColDisplayData.getColDataFromInterceptor(this,obj,null,-1,labelstyleproperty,label);
+            label=colDisplayData.getValue();
             if(mDisplayRealColAndGroupLabels!=null) mDisplayRealColAndGroupLabels.put(id,label);
             resultBuf.append("<td class='"+getDataHeaderThClassName()+"' ");
-            resultBuf.append(getColGroupStyleproperty(labelstyleproperty,coldataByInterceptor));
+            resultBuf.append(colDisplayData.getStyleproperty());
             if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
             {
                 if(rbean.getCelldrag()>0)
                 {
                     String dragcolid=null;
                     if(colbean!=null)
-                    {//如果当前报表需要列拖动，且当前单元格不参与普通行分组和树形分组
+                    {
                         if(alrcbean==null||alrcbean.isDragable(alrdbean)) dragcolid=colbean.getColid();
                     }else if(groupBean.isDragable(alrdbean))
                     {
@@ -375,7 +373,7 @@ public class UltraListReportType extends ListReportType
                     cgDisplayBeanTmp.setTitle(this.mDisplayRealColAndGroupLabels.get(cbTmp.getColid()));
                 }else
                 {
-                    cgDisplayBeanTmp.setTitle(rrequest.getI18NStringValue(cbTmp.getLabel()));
+                    cgDisplayBeanTmp.setTitle(cbTmp.getLabel(rrequest));
                 }
                 lstColAndGroupDisplayBeans.add(cgDisplayBeanTmp);
             }else if(objTmp instanceof UltraListReportGroupBean)
@@ -392,7 +390,7 @@ public class UltraListReportType extends ListReportType
                     cgDisplayBeanTmp.setTitle(this.mDisplayRealColAndGroupLabels.get(ulgroupbeanTmp.getGroupid()));
                 }else
                 {
-                    cgDisplayBeanTmp.setTitle(rrequest.getI18NStringValue(ulgroupbeanTmp.getLabel()));
+                    cgDisplayBeanTmp.setTitle(ulgroupbeanTmp.getLabel(rrequest));
                 }
                 lstColAndGroupDisplayBeans.add(cgDisplayBeanTmp);
                 ulgroupbeanTmp.createColAndGroupDisplayBeans(this,mDisplayRealColAndGroupLabels,rrequest,lstDynColids,mColAndGroupTitlePostions,
@@ -455,7 +453,7 @@ public class UltraListReportType extends ListReportType
         if((rrequest.getShowtype()==Consts.DISPLAY_ON_PLAINEXCEL&&lstDynOrderColids!=null&&lstDynOrderColids.size()>0)
                 ||(this.cacheDataBean.getLstDynDisplayColids()!=null&&this.cacheDataBean.getLstDynDisplayColids().size()>0)
                 ||"false".equals(String.valueOf(this.cacheDataBean.getAttributes().get("authroize_col_display")).trim())
-                ||(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&alrbean.hasControllCol()))//当前报表是单选框或复选框方式的行选中，且当前是数据导出（此时因为要去掉行选中的列，所以要重新计算位置）
+                ||(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&alrbean.hasControllCol()))
         {
             mColAndGroupTitlePostions=calPosition(rbean,ulrdbean.getLstChildren(),this.cacheDataBean.getLstDynDisplayColids());
             if(rrequest.getShowtype()==Consts.DISPLAY_ON_PLAINEXCEL)
@@ -477,7 +475,7 @@ public class UltraListReportType extends ListReportType
         CellStyle titleCellStyle=StandardExcelAssistant.getInstance().getTitleCellStyleForStandardExcel(workbook);
         ColBean colbean;
         UltraListReportGroupBean groupBean;
-        ColDataByInterceptor coldataByInterceptor;
+        ColDisplayData colDisplayData;
         ColAndGroupTitlePositionBean positionBeanTmp;
         String id;
         String label=null;
@@ -494,22 +492,21 @@ public class UltraListReportType extends ListReportType
             {
                 colbean=(ColBean)obj;
                 id=colbean.getColid();
-                label=colbean.getLabel();
+                label=colbean.getLabel(rrequest);
                 align=colbean.getLabelalign();
             }else if(obj instanceof UltraListReportGroupBean)
             {
                 groupBean=((UltraListReportGroupBean)obj);
-                label=groupBean.getLabel();
+                label=groupBean.getLabel(rrequest);
                 id=groupBean.getGroupid();
             }
             positionBeanTmp=mColAndGroupTitlePostions.get(id);
             if(positionBeanTmp==null||positionBeanTmp.getDisplaymode()<=0) continue;
-            coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,obj,-1,label);
-            label=ReportAssistant.getInstance().getColGroupLabel(rrequest,label,coldataByInterceptor);
+            colDisplayData=ColDisplayData.getColDataFromInterceptor(this,obj,null,-1,null,label);
             region=new CellRangeAddress(positionBeanTmp.getStartrowindex(),positionBeanTmp.getStartrowindex()+positionBeanTmp.getRowspan()-1,
                     positionBeanTmp.getStartcolindex(),positionBeanTmp.getStartcolindex()+positionBeanTmp.getColspan()-1);
             StandardExcelAssistant.getInstance().setRegionCellStringValue(workbook,sheet,region,
-                    StandardExcelAssistant.getInstance().setCellAlign(titleCellStyle,align),label);
+                    StandardExcelAssistant.getInstance().setCellAlign(titleCellStyle,align),colDisplayData.getValue());
         }
     }
 
@@ -524,7 +521,7 @@ public class UltraListReportType extends ListReportType
         List<String> lstDynOrderColids=cacheDataBean.getLstDynOrderColids();
         Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions=getRuntimeColAndGroupPosition(ulrdbean);
         ColAndGroupTitlePositionBean positionBean=mColAndGroupTitlePostions.get(MAX_TITLE_ROWSPANS);
-        int dataheader_rowcount=positionBean.getRowspan();
+        int dataheader_rowcount=positionBean.getRowspan();//取到标题部分所占的行数
         List lstChildren=sortChildrenByDynColOrders(getLstDisplayChildren(ulrdbean),lstDynOrderColids,mColAndGroupTitlePostions);
         showLabelInPdf(lstChildren,mColAndGroupTitlePostions);
         UltraListReportGroupBean groupBean;
@@ -553,7 +550,7 @@ public class UltraListReportType extends ListReportType
     {
         ColBean colbean;
         UltraListReportGroupBean groupBean;
-        ColDataByInterceptor coldataByInterceptor;
+        ColDisplayData colDisplayData;
         ColAndGroupTitlePositionBean positionBeanTmp;
         String id;
         String label=null;
@@ -569,20 +566,19 @@ public class UltraListReportType extends ListReportType
             {
                 colbean=(ColBean)obj;
                 id=colbean.getColid();
-                label=colbean.getLabel();
+                label=colbean.getLabel(rrequest);
                 align=colbean.getLabelalign();
             }else if(obj instanceof UltraListReportGroupBean)
             {
                 groupBean=((UltraListReportGroupBean)obj);
-                label=groupBean.getLabel();
+                label=groupBean.getLabel(rrequest);
                 id=groupBean.getGroupid();
             }
             positionBeanTmp=mColAndGroupTitlePostions.get(id);
             if(positionBeanTmp==null||positionBeanTmp.getDisplaymode()<=0) continue;
-            coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,obj,-1,label);
-            label=ReportAssistant.getInstance().getColGroupLabel(rrequest,label,coldataByInterceptor);
-            this.addDataHeaderCell(obj,label,positionBeanTmp.getRowspan(),positionBeanTmp.getColspan(),this.getPdfCellAlign(align,
-                    Element.ALIGN_CENTER));
+            colDisplayData=ColDisplayData.getColDataFromInterceptor(this,obj,null,-1,null,label);
+            this.addDataHeaderCell(obj,colDisplayData.getValue(),positionBeanTmp.getRowspan(),positionBeanTmp.getColspan(),this.getPdfCellAlign(
+                    align,Element.ALIGN_CENTER));
         }
     }
 
@@ -614,7 +610,7 @@ public class UltraListReportType extends ListReportType
                 {
                     continue;
                 }else if(tmp==-3)
-                {//objs[i+1]不参与本次显示
+                {
                     int j=i+2;
                     for(;j<=index;j++)
                     {
@@ -658,13 +654,13 @@ public class UltraListReportType extends ListReportType
         }else
         {
             if(mColAndGroupTitlePostions.get(((UltraListReportGroupBean)obj1).getGroupid()).getDisplaymode()<=0) return -2;
-            colid1=((UltraListReportGroupBean)obj1).getFirstColId(lstDynColids);//只要比较其中一个数据列的位置即可。
+            colid1=((UltraListReportGroupBean)obj1).getFirstColId(lstDynColids);
             
         }
         if(obj2 instanceof ColBean)
         {
             colid2=((ColBean)obj2).getColid();
-            if(mColAndGroupTitlePostions.get(colid2).getDisplaymode()<=0) return -3;
+            if(mColAndGroupTitlePostions.get(colid2).getDisplaymode()<=0) return -3;//被比较的当前普通列不显示，则不比较
             
         }else
         {
@@ -723,7 +719,7 @@ public class UltraListReportType extends ListReportType
         if(alrdbean!=null) alrdbean.clearChildrenInfo();
         if(lstColAndGroups==null||lstColAndGroups.size()==0) return 0;
         List lstChildren=new ArrayList();
-        ulrdbean.setLstChildren(lstChildren);//先设置进去，以便后面加载时可以调用UltraListReportDisplayBean类的getGroupBeanById()方法
+        ulrdbean.setLstChildren(lstChildren);
         for(XmlElementBean eleChildBeanTmp:lstColAndGroups)
         {
             if(eleChildBeanTmp.getName().equalsIgnoreCase("col"))
@@ -784,9 +780,11 @@ public class UltraListReportType extends ListReportType
         label=label==null?"":label.trim();
         String labelstyleproperty=eleGroupBean.attributeValue("labelstyleproperty");
         labelstyleproperty=labelstyleproperty==null?"":labelstyleproperty.trim();
+        groupBean.setLabelstyleproperty(labelstyleproperty,false);
+        labelstyleproperty=groupBean.getLabelstyleproperty(null,true);
         labelstyleproperty=Tools.addPropertyValueToStylePropertyIfNotExist(labelstyleproperty,"align","center");
         labelstyleproperty=Tools.addPropertyValueToStylePropertyIfNotExist(labelstyleproperty,"valign","middle");
-        groupBean.setLabelstyleproperty(labelstyleproperty);
+        groupBean.setLabelstyleproperty(labelstyleproperty,true);
         if(label!=null)
         {
             label=label.trim();
@@ -824,7 +822,7 @@ public class UltraListReportType extends ListReportType
                 
                 //                {//如果当前普通列是永远显示，则其所有层级的父分组也必须设置为永远显示
                 
-                
+                //                }
                 AbsListReportColBean alrcbean=(AbsListReportColBean)colbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
                 AbsListReportDisplayBean alrdbeanTmp=(AbsListReportDisplayBean)disbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
                 if(alrdbeanTmp!=null&&alrdbeanTmp.getRowgrouptype()==2&&alrcbean!=null&&alrcbean.isRowgroup())
@@ -896,8 +894,10 @@ public class UltraListReportType extends ListReportType
         UltraListReportDisplayBean ulrdbean=(UltraListReportDisplayBean)disbean.getExtendConfigDataForReportType(KEY);
         if(ulrdbean==null) return cbResults;
         if(alrbean.getRowSelectType()==null
-                ||(!alrbean.getRowSelectType().trim().equals(Consts.ROWSELECT_CHECKBOX)&&!alrbean.getRowSelectType().trim().equals(
-                        Consts.ROWSELECT_RADIOBOX)))
+                ||(!alrbean.getRowSelectType().trim().equals(Consts.ROWSELECT_CHECKBOX)
+                        &&!alrbean.getRowSelectType().trim().equals(Consts.ROWSELECT_RADIOBOX)
+                        &&!alrbean.getRowSelectType().trim().equals(Consts.ROWSELECT_MULTIPLE_CHECKBOX)&&!alrbean.getRowSelectType().trim().equals(
+                        Consts.ROWSELECT_SINGLE_RADIOBOX)))
         {//当前报表要么没有提供行选中功能，要么提供的不是复选框/单选框的行选择功能
             ulrdbean.removeChildColBeanByColumn(Consts_Private.COL_ROWSELECT,true);
         }
@@ -914,7 +914,7 @@ public class UltraListReportType extends ListReportType
         cbResults[0].setExtendConfigDataForReportType(KEY,ulrcbean);
         List lstChildren=this.getLstDisplayChildren(ulrdbean);
         if(cbResults[1]==null)
-        {//生成的行选择列是放在最后一列
+        {
             lstChildren.add(cbResults[0]);
             return cbResults;
         }
@@ -1043,11 +1043,11 @@ public class UltraListReportType extends ListReportType
             Map<String,ColAndGroupTitlePositionBean> mColAndGroupTitlePostions)
     {
         if(lstChildren==null||lstChildren.size()==0) return;
-        lstChildren=sortChildrenByDynColOrders(lstChildren,lstDynColids,mColAndGroupTitlePostions);//如果用户进行了列拖动的话，先按要求排好序
+        lstChildren=sortChildrenByDynColOrders(lstChildren,lstDynColids,mColAndGroupTitlePostions);
         ColBean cbTmp;
         UltraListReportGroupBean groupBeanTmp;
         ColAndGroupTitlePositionBean positionBeanTmp;
-        int startcolidx=0;
+        int startcolidx=0;//起始列号
         for(Object objTmp:lstChildren)
         {
             if(objTmp instanceof ColBean)

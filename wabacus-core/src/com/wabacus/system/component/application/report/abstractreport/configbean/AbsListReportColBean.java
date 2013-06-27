@@ -107,21 +107,6 @@ public class AbsListReportColBean extends AbsExtendConfigBean
     }
 
 
-//    {
-
-
-
-
-
-
-
-
-
-//    {
-
-
-
-
 
 
 
@@ -137,12 +122,27 @@ public class AbsListReportColBean extends AbsExtendConfigBean
 
 
 
+
+
+
+
+
 //    {
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+//    {
 
 
 
@@ -198,7 +198,7 @@ public class AbsListReportColBean extends AbsExtendConfigBean
     public boolean isDragable(AbsListReportDisplayBean alrdbean)
     {
         if(this.isFixedCol) return false;
-        if(alrdbean==null||alrdbean.getRowgrouptype()<=0||alrdbean.getRowGroupColsNum()<=0) return true;//不是行分组或树形分组报表
+        if(alrdbean==null||alrdbean.getRowgrouptype()<=0||alrdbean.getRowGroupColsNum()<=0) return true;
         if(this.isRowgroup()) return false;
         return true;
     }

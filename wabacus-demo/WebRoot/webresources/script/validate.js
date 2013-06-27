@@ -17,12 +17,12 @@ String.prototype.trim = function()
     return this.replace( /(^\s*)|(\s*$)/g, "" );
 };
 
-function isAlphaNumeric( strValue,boxObj)
+function isAlphaNumeric( strValue,boxObj,paramsObj)
 {
 	return checkExp( /^\w*$/gi, strValue );
 }
 
-function isDate( strValue,boxObj )
+function isDate( strValue,boxObj,paramsObj )
 {
 	if( isEmpty( strValue ) ) {return true;}
 
@@ -69,7 +69,7 @@ function isDate( strValue,boxObj )
 	return true;
 }
 
-function isShortDate( strValue,boxObj )
+function isShortDate( strValue,boxObj,paramsObj )
 {
 	var DATETIME = strValue;
 	if( isEmpty( strValue ) ) return true;
@@ -98,7 +98,7 @@ function isShortDate( strValue,boxObj )
 	return true;
 }
 
-function isEmail( strValue,boxObj )
+function isEmail( strValue,boxObj ,paramsObj)
 {
 	if( isEmpty( strValue ) ) return true;
 	
@@ -107,7 +107,7 @@ function isEmail( strValue,boxObj )
 	
 }
 
-function isNumeric( strValue,boxObj )
+function isNumeric( strValue,boxObj,paramsObj )
 {
 	if( isEmpty( strValue ) ) return true;
 	if( !checkExp( /^[+-]?\d+(\.\d+)?$/g, strValue ))
@@ -117,7 +117,7 @@ function isNumeric( strValue,boxObj )
 	return true;
 }
 
-function isMoney( strValue,boxObj )
+function isMoney( strValue,boxObj,paramsObj )
 {
 	if( isEmpty( strValue ) ) return true;
 	
@@ -131,7 +131,7 @@ function isPhone( strValue,boxObj )
 	return checkExp( /(^\(\d{3,5}\)\d{6,8}(-\d{2,8})?$)|(^\d+-\d+$)|(^(130|131|135|136|137|138|139)\d{8}$)/g, strValue );
 }
 
-function isPostalCode( strValue,boxObj )
+function isPostalCode( strValue,boxObj,paramsObj )
 {
 	if( isEmpty( strValue ) ) return true;
 	if(!checkExp( /(^$)|(^\d{6}$)/gi, strValue ))
@@ -141,7 +141,7 @@ function isPostalCode( strValue,boxObj )
 	return true;
 }
 
-function isURL( strValue,boxObj )
+function isURL( strValue,boxObj ,paramsObj)
 {
 	if( isEmpty( strValue ) ) return true;
 	
@@ -167,7 +167,7 @@ function trim(strValue)
 	return strValue;
 }
 
-function isNotEmpty( strValue,boxObj )
+function isNotEmpty( strValue,boxObj,paramsObj )
 {
 	strValue=trim(strValue);
 	if( !strValue||strValue == '' )
@@ -176,7 +176,7 @@ function isNotEmpty( strValue,boxObj )
 		return true;
 }
 
-function isEmpty( strValue,boxObj )
+function isEmpty( strValue,boxObj,paramsObj )
 {
 	strValue=trim(strValue);
 	if( strValue == "" )

@@ -67,7 +67,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
 
     protected List<String> lstIncludeApplicationIds;
 
-    protected String includeApplicationids;//运行时由lstApplicationIds生成
+    protected String includeApplicationids;
 
     protected Map<String,Integer> mReportidAndPagesize;
     
@@ -102,18 +102,12 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
     {
         String realjobname=null;
         if(jobname==null||jobname.trim().equals(""))
-        {
+        {//没有配置任务名
             realjobname=this.owner.getTitle(rrequest);
             if(realjobname==null||realjobname.trim().equals("")) realjobname=this.owner.getId();
         }else
         {
-            if(this.mDynJobnameParts==null||this.mDynJobnameParts.size()==0)
-            {
-                realjobname=this.jobname;
-            }else
-            {
-                realjobname=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.jobname,this.mDynJobnameParts);
-            }
+            realjobname=WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.jobname,this.mDynJobnameParts,"");
         }
         return realjobname;
     }
@@ -223,16 +217,9 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
         {
             jobname=Config.getInstance().getResourceString(null,this.owner.getPageBean(),jobname.trim(),true);
             jobname=jobname.trim();
-            if(jobname.equals(""))
-            {
-                this.jobname=null;
-                this.mDynJobnameParts=null;
-            }else
-            {
-                this.mDynJobnameParts=new HashMap<String,String>();
-                this.jobname=WabacusAssistant.getInstance().parseStringWithDynPart(jobname,this.mDynJobnameParts);
-                if(this.mDynJobnameParts.size()==0) this.mDynJobnameParts=null;
-            }
+            Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(jobname);
+            this.jobname=(String)objArr[0];
+            this.mDynJobnameParts=(Map<String,String>)objArr[1];
         }
         XmlElementBean elePageinfoBean=elePrintBean.getChildElementByName("pageinfo");
         if(elePageinfoBean!=null)
@@ -247,7 +234,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
         }
         
         
-        //        width=width==null?"":width.trim();
+        
         this.elePrintBean=elePrintBean;
     }
 

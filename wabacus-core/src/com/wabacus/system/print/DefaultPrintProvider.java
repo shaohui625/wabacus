@@ -67,7 +67,7 @@ public class DefaultPrintProvider extends AbsPrintProvider
         String serverName=rrequest.getRequest().getServerName();
         String serverPort=String.valueOf(rrequest.getRequest().getServerPort());
         String printimg=Config.webroot+"/webresources/skin/"+rrequest.getPageskin()+"/images/print.gif";
-        printimg="http://"+serverName+":"+serverPort+"/"+Tools.replaceAll(printimg,"//","/");
+        printimg="http://"+serverName+":"+serverPort+Tools.replaceAll("/"+printimg,"//","/");
         buf.append("<img style=\"vertical-align:bottom\" src=\""+printimg+"\" onclick=\"window.print()\" onmouseover=\"this.style.cursor='pointer'\"/>");
         buf.append("</div>");
         buf.append("<div id=\"WX_PRINT_CONTENT_ID\" ");//显示打印内容所在<div/>

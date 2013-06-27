@@ -18,18 +18,12 @@
  */
 package com.wabacus.system.component.application.report.configbean.crosslist;
 
-import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtMethod;
-import javassist.CtNewMethod;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,11 +32,12 @@ import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.application.report.AbsConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
@@ -51,8 +46,6 @@ import com.wabacus.config.database.type.SQLSERVER2K5;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.ClassPoolAssistant;
-import com.wabacus.system.assistant.ListReportAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.component.application.report.CrossListReportType;
 import com.wabacus.system.component.application.report.configbean.UltraListReportGroupBean;
@@ -61,10 +54,8 @@ import com.wabacus.system.dataset.ISqlDataSet;
 import com.wabacus.system.dataset.sqldataset.GetAllDataSetByPreparedSQL;
 import com.wabacus.system.dataset.sqldataset.GetAllDataSetBySQL;
 import com.wabacus.system.datatype.IDataType;
-import com.wabacus.system.format.IFormat;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
-import com.wabacus.util.UniqueArrayList;
 
 public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigBean
 {
@@ -92,11 +83,11 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
 
     private List<Map<String,String>> lstDynCols;
 
-    private String dataheaderformatContent;//对动态标题进行格式化的代码
+    private String dataheaderformatContent;
 
     private List<String> lstDataHeaderFormatImports;
 
-    private Class dataHeaderPojoClass;
+    protected Class dataHeaderPojoClass;
 
     protected AbsDynamicColGroupBean dynColGroupSpecificBean;
 
@@ -201,7 +192,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
         {
             this.dynColGroupSpecificBean=dynColGroupSpecificBean;
         }
-        
+        //即使父分组列不是动态列，也要调用它的此方法，因为在CrossListReportGroupBean的此方法中还要设置这种列有没有包含子动态列
         if(this.parentCrossGroupBean!=null) this.parentCrossGroupBean.setDynColGroupSpecificBean(dynColGroupSpecificBean);
     }
 
@@ -271,7 +262,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
 
     protected boolean hasDisplayStatisBeansOfReport(Map<String,Boolean> mDynamicColGroupDisplayType)
     {
-        if(this.lstDisplayStatisBeansOfReport==null||this.lstDisplayStatisBeansOfReport.size()==0) return false;//没有有针对本（分组）列的统计
+        if(this.lstDisplayStatisBeansOfReport==null||this.lstDisplayStatisBeansOfReport.size()==0) return false;
         for(CrossListReportStatiDisplayBean cslsdbeanTmp:this.lstDisplayStatisBeansOfReport)
         {
             if(mDynamicColGroupDisplayType.get(cslsdbeanTmp.getStatiBean().getId()).booleanValue())
@@ -294,7 +285,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
         return lstResults;
     }
 
-    protected void getRealDisplayLabel(Object headDataObj,List lstDynChildren)
+    protected void getRealDisplayLabel(ReportRequest rrequest,AbsReportDataPojo headDataObj,List lstDynChildren)
     {
         if(lstDynChildren==null||lstDynChildren.size()==0) return;
         for(Object objBeanTmp:lstDynChildren)
@@ -302,28 +293,26 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             String label;
             if(objBeanTmp instanceof ColBean)
             {
-                label=((ColBean)objBeanTmp).getLabel();
+                label=((ColBean)objBeanTmp).getLabel(rrequest);
                 if(label!=null&&label.indexOf("_")==0&&label.substring(1).indexOf("_")>0)
                 {
-                    ((ColBean)objBeanTmp).setLabel((String)ReportAssistant.getInstance().getCrossDynamicColDataFromPOJO(
-                            this.getOwner().getReportBean(),headDataObj,label));
+                    ((ColBean)objBeanTmp).setLabel((String)headDataObj.getDynamicColData(label));
                 }
             }else
             {
-                getRealDisplayLabel((UltraListReportGroupBean)objBeanTmp,headDataObj);
+                getRealDisplayLabel(rrequest,(UltraListReportGroupBean)objBeanTmp,headDataObj);
             }
         }
     }
 
-    private void getRealDisplayLabel(UltraListReportGroupBean objBeanTmp,Object headDataObj)
+    private void getRealDisplayLabel(ReportRequest rrequest,UltraListReportGroupBean objBeanTmp,AbsReportDataPojo headDataObj)
     {
-        String label=objBeanTmp.getLabel();
+        String label=objBeanTmp.getLabel(rrequest);
         if(label!=null&&label.indexOf("_")==0&&label.substring(1).indexOf("_")>0)
         {
-            objBeanTmp.setLabel((String)ReportAssistant.getInstance().getCrossDynamicColDataFromPOJO(this.getOwner().getReportBean(),headDataObj,
-                    label));
+            objBeanTmp.setLabel((String)headDataObj.getDynamicColData(label));
         }
-        getRealDisplayLabel(headDataObj,objBeanTmp.getLstChildren());
+        getRealDisplayLabel(rrequest,headDataObj,objBeanTmp.getLstChildren());
     }
 
     protected ColBean createDynamicCrossStatiColBean(DisplayBean disbean,String label,String labelstyleproperty,String valuestyleproperty,
@@ -331,9 +320,9 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
     {
         ColBean cbResult=new ColBean(disbean,colidx);
         cbResult.setLabel(label);
-        cbResult.setDatasetid(this.getDatasetBean().getDatasetbean().getId());
-        cbResult.setLabelstyleproperty(labelstyleproperty);
-        cbResult.setValuestyleproperty(valuestyleproperty);
+        cbResult.setDatasetValueId(this.getDatasetBean().getDatasetbean().getId());
+        cbResult.setLabelstyleproperty(labelstyleproperty,false);
+        cbResult.setValuestyleproperty(valuestyleproperty,false);
         cbResult.setDatatypeObj(dataTypeObj);
         cbResult.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
         cbResult.setProperty("[DYN_COL_DATA]");
@@ -346,17 +335,14 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
 
     protected void afterGetRuntimeColGroups(CrossListReportType crossListReportType,Map<String,Boolean> mDynamicColGroupDisplayType,
             StringBuffer allDynColConditonsBuf,StringBuffer dynSelectedColsBuf,List lstAllRuntimeChildren,List<ColBean> lstAllRuntimeColBeans,
-            List lstDynChildren,Object headDataObj)
+            List lstDynChildren,AbsReportDataPojo headDataObj)
     {
         ReportBean rbean=crossListReportType.getReportBean();
         ReportRequest rrequest=crossListReportType.getReportRequest();
         if(headDataObj!=null)
         {
-            if(headDataObj instanceof IFormat)
-            {
-                ((IFormat)headDataObj).format(rrequest,rbean);
-            }
-            getRealDisplayLabel(headDataObj,lstDynChildren);
+            headDataObj.format();
+            getRealDisplayLabel(crossListReportType.getReportRequest(),headDataObj,lstDynChildren);
         }
         if(dynSelectedColsBuf.length()>0&&dynSelectedColsBuf.charAt(dynSelectedColsBuf.length()-1)==',')
         {
@@ -398,7 +384,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             if(!mDynamicColGroupDisplayType.get(statisdBeanTmp.getStatiBean().getId())) continue;
             int colidx=crossListReportType.generateColGroupIdxId();
             lstChildren.add(createDynamicCrossStatiColBean(disbean,rrequest.getI18NStringValue(statisdBeanTmp.getLabel()),statisdBeanTmp
-                    .getLabelstyleproperty(),statisdBeanTmp.getValuestyleproperty(),statisdBeanTmp.getStatiBean().getDatatypeObj(),colidx));
+                    .getLabelstyleproperty(rrequest),statisdBeanTmp.getValuestyleproperty(rrequest),statisdBeanTmp.getStatiBean().getDatatypeObj(),colidx));
             dynselectedColsBuf.append(statisdBeanTmp.getStatiBean().getType()+"(");
             if(!allColConditions.trim().equals(""))
             {
@@ -444,7 +430,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
         if(this.lstStatiConditions!=null&&this.lstStatiConditions.size()>0)
         {
             ReportBean rbean=crossListReportType.getReportBean();
-            ReportDataSetBean datasetbean=rbean.getSbean().getDatasetBeanById(this.getRootCrossColGroupBean().getDatasetid());
+            ReportDataSetValueBean datasetbean=rbean.getSbean().getLstDatasetBeans().get(0).getDatasetValueBeanById(this.getRootCrossColGroupBean().getDatasetid());
             String othercondition=ReportAssistant.getInstance().addDynamicConditionExpressionsToSql(crossListReportType.getReportRequest(),rbean,
                     datasetbean,"{#condition#}",this.lstStatiConditions,null,null);
             if(othercondition!=null&&!othercondition.trim().equals("")&&!othercondition.trim().equals("{#condition#}"))
@@ -453,18 +439,6 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             }
         }
         return Tools.replaceAll(myConditionTmp,"#data#",myRealLabelValue);
-    }
-
-    protected Object getDataHeadPojoInstance()
-    {
-        try
-        {
-            if(this.dataHeaderPojoClass!=null) return this.dataHeaderPojoClass.newInstance();
-        }catch(Exception e)
-        {
-            throw new WabacusRuntimeException("创建存放报表"+this.getOwner().getReportBean().getPath()+"的动态表头数据的对象失败",e);
-        }
-        return null;
     }
 
     public void getVerticalStatisticColBeanAndData(CrossListReportType crossListReportType,List<ColBean> lstAllRuntimeColBeans)
@@ -493,7 +467,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
         {
             
             AbsDatabaseType dbtype=rrequest.getDbType(this.getDatasetBean().getDatasetbean().getDatasource());
-            Object dataObj=rbean.getPojoclass().newInstance();
+            AbsReportDataPojo pojoData=ReportAssistant.getInstance().getPojoClassInstance(rrequest,rbean,rbean.getPojoClassObj());
             Object objVal;
             for(ColBean cbeanTmp:lstColsTmp)
             {
@@ -504,16 +478,12 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
                 {
                     objVal=null;
                 }
-                Method setMDataMethodForJava=rbean.getPojoclass().getMethod("setDynamicColData",new Class[] { String.class, Object.class });
-                setMDataMethodForJava.invoke(dataObj,new Object[] { cbeanTmp.getColumn(), objVal });
+                pojoData.setDynamicColData(cbeanTmp.getColumn(),objVal);
             }
-            if(dataObj instanceof IFormat)
-            {
-                ((IFormat)dataObj).format(rrequest,rbean);
-            }
+            pojoData.format();
             for(ColBean cbeanTmp:lstColsTmp)
-            {//将每个动态列对象及其显示值存入lstVerticalStatiColBeansAndValues中进行显示用
-                crossListReportType.addVerticalCrossStatisticColData(cbeanTmp,cbeanTmp.getRealTypeValue(dataObj,rrequest),1);
+            {
+                crossListReportType.addVerticalCrossStatisticColData(cbeanTmp,pojoData.getColValue(cbeanTmp),1);
             }
         }catch(SQLException sqle)
         {
@@ -526,12 +496,12 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
 
     public void processColGroupRelationStart()
     {
+        ReportBean reportbean=this.getOwner().getReportBean();
         if(this.configDynColGroupTitleDataset!=null&&!this.configDynColGroupTitleDataset.trim().equals(""))
         {
             if(parentCrossGroupBean!=null&&parentCrossGroupBean.isDynamicColGroup())
             {
-                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()
-                        +"配置失败，如果父分组列是动态列，则子（分组）列不能再配置dataset，它的数据必须来源于其所在的顶层动态列的dataset");
+                throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"配置失败，如果父分组列是动态列，则子（分组）列不能再配置dataset，它的数据必须来源于其所在的顶层动态列的dataset");
             }
             this.configDynColGroupTitleDataset=this.configDynColGroupTitleDataset.trim();
             if(this.configDynColGroupTitleDataset.equals(""))
@@ -552,11 +522,11 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
                         obj=c.newInstance();
                     }catch(Exception e)
                     {
-                        throw new WabacusConfigLoadingException("实例化报表"+this.getOwner().getReportBean().getPath()+"查询动态标题的类"+configdataset+"失败",e);
+                        throw new WabacusConfigLoadingException("实例化报表"+reportbean.getPath()+"查询动态标题的类"+configdataset+"失败",e);
                     }
                     if(!(obj instanceof IDynamicColGroupDataSet))
                     {
-                        throw new WabacusConfigLoadingException("报表"+this.getOwner().getReportBean().getPath()+"查询动态标题的类"+configdataset+"没有实现"
+                        throw new WabacusConfigLoadingException("报表"+reportbean.getPath()+"查询动态标题的类"+configdataset+"没有实现"
                                 +IDynamicColGroupDataSet.class.getName()+"接口");
                     }
                     this.dynColgroupTitleDatasetObj=(IDynamicColGroupDataSet)obj;
@@ -571,7 +541,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
                         configDynColGroupTitleDataset="select * from "+configDynColGroupTitleDataset+" where {#condition#}";
                     }else if(configDynColGroupTitleDataset.toLowerCase().trim().indexOf("{#condition#}")<0)
                     {
-                        throw new WabacusConfigLoadingException("加载交叉报表"+this.getOwner().getReportBean().getPath()
+                        throw new WabacusConfigLoadingException("加载交叉报表"+reportbean.getPath()
                                 +"失败，为其配置了<datasetconditions/>，但没有在dataset属性配置的SQL语句中指定{#condition#}动态条件占位符");
                     }
                 }
@@ -584,7 +554,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             String column=this.getColumn();
             if(column==null||column.trim().equals(""))
             {
-                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel()
+                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel(null)
                         +"配置失败，此列是动态获取数据列，必须为其配置column属性，指定从哪个字段获取动态列数据");
             }
             if(this.isRootDynamicColGroup())
@@ -594,8 +564,9 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
                 {
                     this.dataHeaderPojoClass=null;
                 }else
-                {
-                    createDataHeaderPojoClass();
+                {//创建存放动态表头数据的POJO对象，以便于进行格式化显示
+                    this.dataHeaderPojoClass=ReportAssistant.getInstance().buildPOJOClass(reportbean,null,this.lstDataHeaderFormatImports,
+                            dataheaderformatContent,"DataHeaderPojo_"+reportbean.getPageBean().getId()+reportbean.getId()+"_"+column);
                     this.lstDataHeaderFormatImports=null;
                     this.dataheaderformatContent=null;
                 }
@@ -606,44 +577,9 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
                 String datasetid2=parentCrossGroupBean.getDatasetid()==null?"":parentCrossGroupBean.getDatasetid().trim();
                 if(!datasetid1.equals("")&&!datasetid1.equals(datasetid2))
                 {
-                    throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel()
-                            +"分组动态列与子列配置的数据集ID不一致");
+                    throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的列"+this.getLabel(null)+"分组动态列与子列配置的数据集ID不一致");
                 }
             }
-        }
-    }
-
-    private void createDataHeaderPojoClass()
-    {
-        ReportBean reportbean=this.getOwner().getReportBean();
-        try
-        {
-            String column=this.getColumn().trim();
-            ClassPool pool=ClassPoolAssistant.getInstance().createClassPool();
-            String className=Consts.BASE_PACKAGE_NAME+".DataHeaderPojo_"+reportbean.getPageBean().getId()+reportbean.getId()+"_"+column;
-            CtClass cclass=pool.makeClass(className);
-            if(this.lstDataHeaderFormatImports==null) lstDataHeaderFormatImports=new UniqueArrayList<String>();
-            lstDataHeaderFormatImports.add("com.wabacus.system.format");
-            lstDataHeaderFormatImports.add("java.util");
-            ClassPoolAssistant.getInstance().addImportPackages(pool,lstDataHeaderFormatImports);
-            if(!this.dataheaderformatContent.equals(""))
-            {
-                cclass.setInterfaces(new CtClass[] { pool.get(IFormat.class.getName()) });
-            }
-            ListReportAssistant.getInstance().addMDataFieldToClass(pool,cclass);
-            if(!dataheaderformatContent.equals(""))
-            {
-                CtMethod formatMethod=CtNewMethod.make("public void format("+ReportRequest.class.getName()+"  rrequest,"+ReportBean.class.getName()
-                        +" rbean){"+dataheaderformatContent+" }",cclass);
-                cclass.addMethod(formatMethod);
-            }
-            this.dataHeaderPojoClass=ConfigLoadManager.currentDynClassLoader.loadClass(className,cclass.toBytecode());
-            cclass.detach();
-            pool.clearImportedPackages();
-            pool=null;
-        }catch(Exception e)
-        {
-            throw new WabacusConfigLoadingException("为报表"+reportbean.getPath()+"生成数据表头字节码失败",e);
         }
     }
 
@@ -655,13 +591,13 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
         {
             if(this.staticondition!=null&&!this.staticondition.trim().equals(""))
             {
-                log.warn("报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel()+"为普通动态列，不需要配置staticondition属性");
+                log.warn("报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel(null)+"为普通动态列，不需要配置staticondition属性");
             }
         }else if(this.isStatisticCrossColGroup())
         {
             if(this.staticondition==null||this.staticondition.trim().equals(""))
             {
-                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel()
+                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel(null)
                         +"失败，此列为交叉统计列，必须为它配置staticondition属性");
             }
             if(this.getColumn().equals(CrossListReportStatiBean.STATICS_FOR_WHOLEREPORT))
@@ -681,7 +617,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             }
             initConditions(this.lstDatasetConditions,false);
             if(this.isStatisticCrossColGroup())
-            {//当前是交叉统计列，分析一下各统计项都是针对哪些（分组）列或整个报表进行统计，并把它们添加到相应的配置对象中
+            {
 
 
 
@@ -741,10 +677,10 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
         {//如果在最里层的<col/>中要显示多个统计，或只显示一个统计，但配置了label，则当前列要显示两行，一行显示<col/>的label，一行显示统计的label
             ColBean cbOwner=(ColBean)clrcbean.getOwner();
             clrcbean.setShouldShowStaticLabel(true);
-            String labelstyleproperty=cbOwner.getLabelstyleproperty();
+            String labelstyleproperty=cbOwner.getLabelstyleproperty(null,true);
             labelstyleproperty=Tools.addPropertyValueToStylePropertyIfNotExist(labelstyleproperty,"align","center");
             labelstyleproperty=Tools.addPropertyValueToStylePropertyIfNotExist(labelstyleproperty,"valign","middle");
-            cbOwner.setLabelstyleproperty(labelstyleproperty);
+            cbOwner.setLabelstyleproperty(labelstyleproperty,true);
             String rowspan=Tools.getPropertyValueByName("rowspan",labelstyleproperty,true);
             if(rowspan!=null&&!rowspan.trim().equals(""))
             {
@@ -801,7 +737,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
                 {
                     cbTmp.setConditionExpression(cbRefered.getConditionExpression());
                     
-                }else if(this.getDatasetBean().getDatasetbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT&&!isStatementOnly)
+                }else if(sqlbean.getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT&&!isStatementOnly)
                 {
                     cbTmp.getConditionExpression().parseConditionExpression();
                 }
@@ -811,7 +747,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
                     throw new WabacusConfigLoadingException("报表"+reportbean.getPath()+"在<datasetconditions/>、<staticonditions/>中配置的name为"
                             +cbTmp.getName()+"的查询条件引用的查询条件没有配置条件表达式");
                 }
-            }else if(this.getDatasetBean().getDatasetbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT&&!isStatementOnly)
+            }else if(sqlbean.getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT&&!isStatementOnly)
             {
                 cbTmp.getConditionExpression().parseConditionExpression();
             }
@@ -822,7 +758,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
 
     public abstract String getColumn();
 
-    public abstract String getLabel();
+    public abstract String getLabel(ReportRequest rrequest);
 
     public abstract boolean hasDynamicColGroupChild();
 
@@ -959,22 +895,29 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
 
         public void initFetchDynColSql()
         {
-            if(configDataset==null||configDataset.trim().equals("")) return;//没有配置动态统计列，只是一个普通的列表报表
+            if(configDataset==null||configDataset.trim().equals("")) return;
             String[] selectColsAndOrderbyArr=AbsCrossListReportColAndGroupBean.this.dynColGroupSpecificBean
                     .getSelectColumnsAndOrderbyClause(getMOrderbysFromDatasetSql());
             if(selectColsAndOrderbyArr==null||selectColsAndOrderbyArr.length==0) return;
-            StringBuffer getDyncolsSqlBuf=new StringBuffer();
-            getDyncolsSqlBuf.append("select distinct ").append(selectColsAndOrderbyArr[0]);
-            getDyncolsSqlBuf.append(" from ");
-            if(configDataset.toLowerCase().trim().indexOf("select ")>=0&&configDataset.toLowerCase().indexOf(" from ")>0)
-            {
-                getDyncolsSqlBuf.append(" (").append(configDataset).append(")  tbl_getdyncol");
+            if((selectColsAndOrderbyArr[1]==null||selectColsAndOrderbyArr[1].trim().equals(""))
+                    &&(configDataset.toLowerCase().trim().indexOf("select ")>=0&&configDataset.toLowerCase().indexOf(" from ")>0))
+            {//没有order by，说明交叉统计列是单个<col/>，没有<group/>，且直接配置的是SQL语句，此时不用对SQL语句进行解析，以名丢失了它的order by
+                this.sql_getcols=configDataset;
             }else
             {
-                getDyncolsSqlBuf.append(configDataset);
+                StringBuffer getDyncolsSqlBuf=new StringBuffer();
+                getDyncolsSqlBuf.append("select distinct ").append(selectColsAndOrderbyArr[0]);
+                getDyncolsSqlBuf.append(" from ");
+                if(configDataset.toLowerCase().trim().indexOf("select ")>=0&&configDataset.toLowerCase().indexOf(" from ")>0)
+                {
+                    getDyncolsSqlBuf.append(" (").append(configDataset).append(")  tbl_getdyncol");
+                }else
+                {
+                    getDyncolsSqlBuf.append(configDataset);
+                }
+                getDyncolsSqlBuf.append(" ").append(selectColsAndOrderbyArr[1]);
+                this.sql_getcols=getDyncolsSqlBuf.toString();
             }
-            getDyncolsSqlBuf.append(selectColsAndOrderbyArr[1]);
-            this.sql_getcols=getDyncolsSqlBuf.toString();
         }
 
         private Map<String,String> getMOrderbysFromDatasetSql()
@@ -987,7 +930,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             {
                 AbsDatabaseType dbtype=Config.getInstance().getDataSource(AbsCrossListReportColAndGroupBean.this.getDatasetBean().getDatasetbean().getDatasource()).getDbType();
                 if(dbtype instanceof SQLSERVER2K||dbtype instanceof SQLSERVER2K5)
-                {
+                {//这两种数据库类型需要把order by子句去掉，否则做为子查询时会报错
                     this.configDataset=Tools.replaceAll(this.configDataset,"  "," ");
                     this.configDataset=this.configDataset.substring(0,this.configDataset.toLowerCase().lastIndexOf("order by"));
                 }
@@ -1006,7 +949,7 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
                         ordercolumn=orderby_tmp.substring(0,idx).trim();
                         ordertype=orderby_tmp.substring(idx+1).trim();
                     }else
-                    {//没有空格，说明没有指定，则默认是asc顺序
+                    {
                         ordercolumn=orderby_tmp;
                         ordertype="asc";
                     }
@@ -1016,11 +959,11 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             return mResults;
         }
 
-        public List<Map<String,String>> getDynamicColGroupDataSet(CrossListReportType crossListReportTypeObj,ReportDataSetBean datasetbean,
+        public List<Map<String,String>> getDynamicColGroupDataSet(CrossListReportType crossListReportTypeObj,ReportDataSetValueBean datasetbean,
                 List<ConditionBean> lstDatasetConditions)
         {
             ISqlDataSet datasetObj=null;
-            if(datasetbean.isPreparedstatementSql())
+            if(datasetbean.getReportBean().getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
             {
                 datasetObj=new GetAllDataSetByPreparedSQL();
             }else

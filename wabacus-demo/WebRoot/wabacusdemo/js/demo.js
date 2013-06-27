@@ -13,7 +13,7 @@ function testcallbacufunc(pageid,reportid,selectedTrObjArr,deselectedTrObjArr)
 	{
 		alert('本次选中的行：'+str);
 	}
-	var allSelectedTrObjsArr=getAllSelectedTrObjs(pageid,reportid);//取到所有选中的行对象
+	var allSelectedTrObjsArr=getListReportSelectedTrObjs(pageid,reportid);//取到所有选中的行对象
 	str=getTrObjsValue(allSelectedTrObjsArr);
 	if(str!=null&&str!='')
 	{
@@ -58,11 +58,10 @@ function testTypePromptCallBack(textObj,colvaluesArr)
 	 */
 }
 
-function otherdata_clientpage1_beforesave(pageid,reportid,updatetype,dataObjArr)
+function otherdata_clientpage1_beforesave(pageid,reportid,dataObjArr)
 {
 	if(dataObjArr!=null)
 	{
-		var currentdate='2011-10-22 11:11:11';
 		var mess='';
 		var dataObjTmp;
 		for(var i=0;i<dataObjArr.length;i++)
@@ -72,12 +71,12 @@ function otherdata_clientpage1_beforesave(pageid,reportid,updatetype,dataObjArr)
 			//alert(myupdatetype);
 			if(myupdatetype=='delete')
 			{//对本记录做删除操作
-				mess=mess+'删除的部门编号：'+dataObjTmp['deptno_old'];
-				mess=mess+';;;删除的部门名：'+dataObjTmp['deptname_old'];
+				mess=mess+'删除的部门编号：'+dataObjTmp['deptno__old'];
+				mess=mess+';;;删除的部门名：'+dataObjTmp['deptname__old'];
 			}else if(myupdatetype=='update')
 			{//对本记录做修改操作
-				mess=mess+'修改的旧部门编号：'+dataObjTmp['deptno_old']+';;;新部门编号：'+dataObjTmp['deptno'];
-				mess=mess+';;;修改的旧部门名：'+dataObjTmp['deptname_old']+';;;新部门名：'+dataObjTmp['deptname'];
+				mess=mess+'修改的旧部门编号：'+dataObjTmp['deptno__old']+';;;新部门编号：'+dataObjTmp['deptno'];
+				mess=mess+';;;修改的旧部门名：'+dataObjTmp['deptname__old']+';;;新部门名：'+dataObjTmp['deptname'];
 			}else if(myupdatetype=='add')
 			{//对本记录做添加操作
 				mess=mess+'添加的部门编号：'+dataObjTmp['deptno'];
@@ -85,6 +84,10 @@ function otherdata_clientpage1_beforesave(pageid,reportid,updatetype,dataObjArr)
 			}
 		}
 		//调用框架添加自定义数据的方法传入后台保存时使用
+		var now=new Date();
+		var yy=now.getYear();
+		if(yy<1000) yy=yy+1900;
+      var currentdate=yy+'-'+(now.getMonth()+1)+'-'+(now.getDay()+2)+' 00:00:00.0';
 		setCustomizeParamValue(pageid,reportid,'testdate',currentdate);
 		setCustomizeParamValue(pageid,reportid,'logcontent',mess);
 	}	
@@ -258,4 +261,55 @@ function testInvokeCallbackMethod_autodbpage13(datasObj)
 function myCancelButtonEvent()
 {
 	alert('点击了\'取消\'按钮，执行取消事件');
+}
+
+function addCustomizeDataToButton(datasArr,paramsObj)
+{
+	if(datasArr==null||datasArr.length==0) return false;//没有传入报表数据，则中止调用
+	var nameStrs='';
+	for(var i=0;i<datasArr.length;i++)
+	{
+		var datasObj=datasArr[i];//取到存放当前记录数据的对象
+		nameStrs+=datasObj['name'];//取到姓名列的值
+	}
+	paramsObj['logcontent']='更新姓名为'+nameStrs+'的记录的性别为女';
+	paramsObj['updatetype']='设置性别';
+	return true;
+}
+
+function setValidateErrorMessage(paramsObj)
+{
+	if(paramsObj.isSuccess===true)
+	{
+		alert('校验成功');
+	}else
+	{
+		alert('校验失败');
+	}
+	if(paramsObj.serverDataObj==null||paramsObj.serverDataObj.errormessage==null||paramsObj.serverDataObj.errormessage=='')
+	{//服务器端没有返回要显示的数据
+		if(paramsObj.validatetype=='onblur')
+		{
+			document.getElementById('deptnomessid').innerHTML='';
+		}
+	}else
+	{
+		if(paramsObj.validatetype=='onblur')
+		{
+			document.getElementById('deptnomessid').innerHTML="<font color='red' size='2'>"+paramsObj.serverDataObj.errormessage+"</font>";
+		}else
+		{
+			wx_warn(paramsObj.serverDataObj.errormessage);
+		}
+	}
+}
+function testConfigLinkedChart(paramsObj)
+{
+	FusionCharts(paramsObj.chartid).configureLink(
+		{
+			swfUrl:paramsObj.customizeData.swfUrl,    
+			"renderAt":paramsObj.customizeData.targetId,    
+			overlayButton: { show : false }
+		}
+	);
 }

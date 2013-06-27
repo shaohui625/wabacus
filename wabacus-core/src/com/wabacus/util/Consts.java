@@ -28,7 +28,7 @@ public class Consts
     /***************************************************************************
      * 生成报表pojo字节码存放的包名
      **************************************************************************/
-    public final static String BASE_PACKAGE_NAME="com.wabacus.reportpojo";
+    public final static String BASE_PACKAGE_NAME="com.wabacus.generateclass";
 
     /***************************************************************************
      * 报表数据显示类型
@@ -54,7 +54,7 @@ public class Consts
     
     public final static String DATAEXPORT_WORD="word";
     
-    public final static String DATAEXPORT_RICHEXCEL="richexcel";//导出富Excel文件
+    public final static String DATAEXPORT_RICHEXCEL="richexcel";
     
     public final static String DATAEXPORT_PLAINEXCEL="plainexcel";
     
@@ -112,7 +112,7 @@ public class Consts
     /***************************************************************************
      * 报表系统级资源项约定好的KEY
      **************************************************************************/
-    public final static String SEARCHBOX_PREX_KEY="searchbox.prex";
+    public final static String SEARCHBOX_PREX_KEY="searchbox.prex";//查询框前导
 
     public final static String NODATA_PROMPT_KEY="nodata.mess";
 
@@ -122,7 +122,7 @@ public class Consts
 
     public final static String WORD_LABEL="word.label";
     
-    public final static String RICHEXCEL_LABEL="richexcel.label";//显示“下载EXCEL”的label
+    public final static String RICHEXCEL_LABEL="richexcel.label";
     
     public final static String PLAINEXCEL_LABEL="plainexcel.label";
     
@@ -186,7 +186,7 @@ public class Consts
 
     public final static String LISTREPORT_NAVIGATE_DEFAULT="listreport.navigate.default";
     
-    public final static String DETAILREPORT_NAVIGATE_DEFAULT="detailreport.navigate.default";//默认数据细览报表的翻页导航栏静态模板资源项的KEY
+    public final static String DETAILREPORT_NAVIGATE_DEFAULT="detailreport.navigate.default";
     
     public final static String SEARCH_BUTTON_DEFAULT="search.button.default";
 
@@ -196,7 +196,7 @@ public class Consts
 
     public final static String DELETE_BUTTON_DEFAULT="delete.button.default";
 
-    public final static String SAVE_BUTTON_DEFAULT="save.button.default";
+    public final static String SAVE_BUTTON_DEFAULT="save.button.default";//默认保存按钮资源项的KEY
 
     public final static String CANCEL_BUTTON_DEFAULT="cancel.button.default";
 
@@ -206,7 +206,7 @@ public class Consts
     
     public final static String DATAIMPORT_BUTTON_DEFAULT="dataimport.button.default";
     
-    public final static Map<String,String> M_DATAEXPORT_DEFAULTBUTTONS=new HashMap<String,String>();//存放每个导出类型中相应默认按钮KEY
+    public final static Map<String,String> M_DATAEXPORT_DEFAULTBUTTONS=new HashMap<String,String>();
     static
     {
         M_DATAEXPORT_DEFAULTBUTTONS.put(DATAEXPORT_WORD,"word.button.default");
@@ -264,11 +264,15 @@ public class Consts
 
     public final static String ROWSELECT_SINGLE="single";
 
-    public final static String ROWSELECT_MULTIPLY="multiply";
+    public final static String ROWSELECT_MULTIPLE="multiple";
 
     public final static String ROWSELECT_CHECKBOX="checkbox";
     
+    public final static String ROWSELECT_MULTIPLE_CHECKBOX="multiple-checkbox";
+    
     public final static String ROWSELECT_RADIOBOX="radiobox";
+    
+    public final static String ROWSELECT_SINGLE_RADIOBOX="single-radiobox";
     
     public final static List<String> lstAllRowSelectTypes=new ArrayList<String>();
     
@@ -276,21 +280,23 @@ public class Consts
     {
         lstAllRowSelectTypes.add(ROWSELECT_NONE);
         lstAllRowSelectTypes.add(ROWSELECT_SINGLE);
-        lstAllRowSelectTypes.add(ROWSELECT_MULTIPLY);
+        lstAllRowSelectTypes.add(ROWSELECT_MULTIPLE);
         lstAllRowSelectTypes.add(ROWSELECT_CHECKBOX);
         lstAllRowSelectTypes.add(ROWSELECT_RADIOBOX);
+        lstAllRowSelectTypes.add(ROWSELECT_MULTIPLE_CHECKBOX);
+        lstAllRowSelectTypes.add(ROWSELECT_SINGLE_RADIOBOX);
     }
     
     /*********************************************************************************
      * 行排序的类型
      ********************************************************************************/
-    public final static String ROWORDER_DRAG="drag";//通过拖动记录行进行排序
+    public final static String ROWORDER_DRAG="drag";
     
     public final static String ROWORDER_ARROW="arrow";
     
     public final static String ROWORDER_INPUTBOX="inputbox";
     
-    public final static String ROWORDER_TOP="top";
+    public final static String ROWORDER_TOP="top";//通过置顶方式进行排序
     
     public final static List<String> lstAllRoworderTypes=new ArrayList<String>();
     
@@ -324,7 +330,7 @@ public class Consts
     /*************************************************************************************
      * <col/>和<group/>的显示类型
      ************************************************************************************/
-    public final static String COL_DISPLAYTYPE_INITIAL="initial";//第一次访问时显示，可以通过列选择功能变为不显示
+    public final static String COL_DISPLAYTYPE_INITIAL="initial";
     
     public final static String COL_DISPLAYTYPE_OPTIONAL="optional";
     
@@ -346,7 +352,7 @@ public class Consts
      *************************************************************************************/
     public final static int UPDATETYPE_INSERT=1;
 
-    public final static int UPDATETYPE_UPDATE=2;
+    public final static int UPDATETYPE_UPDATE=2;//当前是做修改记录的操作（即保存修改的记录）
 
     public final static int UPDATETYPE_DELETE=3;
 }

@@ -38,9 +38,14 @@ function printSavingData(dataObjArr)
 	}
 }
 
-function testonload(pageid,reportid)
+function testonload(pageid,componentid)
 {
-	alert('加载完报表页面ID：'+pageid+'；报表ID：'+reportid);
+	alert('加载完页面ID：'+pageid+'；组件ID：'+componentid);
+}
+
+function testDynamicOnload(paramsObj)
+{
+	alert('动态添加的onload提示信息：\n加载完页面ID：'+paramsObj.pageid+'；\n报表ID：'+paramsObj.reportid+'；\n提示信息：'+paramsObj.message);
 }
 
 function validateRedundantboxpage1BirthdayInput(pageid,reportid,dataObjArr)
@@ -65,4 +70,13 @@ function testBeforeSearch(pageid,reportid,searchurl)
 	alert('执行查询数据的URL：'+searchurl);
 	//开发人员可以修改这里的URL中的参数，然后返回修改后的URL。如果返回null，则中断本次查询操作
 	return searchurl;
+}
+function addNewRowCallback(trObj)
+{
+	alert('新增的记录行ID：'+trObj.getAttribute('id'));
+}
+
+function testConfigLinkedChart2(paramsObj)
+{
+	alert('显示的图表ID：'+paramsObj.chartid+'；图形对象：'+paramsObj.chartObj+'；自定义参数：[param1='+paramsObj.customizeData.param1+';param2='+paramsObj.customizeData.param2+']');
 }

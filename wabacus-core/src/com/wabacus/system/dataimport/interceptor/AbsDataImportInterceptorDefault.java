@@ -18,34 +18,29 @@
  */
 package com.wabacus.system.dataimport.interceptor;
 
-import java.io.File;
 import java.sql.Connection;
 import java.util.List;
 
-import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
+import com.wabacus.system.dataimport.DataImportItem;
 
-public abstract class AbsDataImportInterceptorDefault implements IDataImportInterceptor
+public  class AbsDataImportInterceptorDefault implements IDataImportInterceptor
 {
-
-    public void afterImportRow(Connection conn,AbsDataImportConfigBean configBean,
-            List lstColTitles,List lstColValues)
+    public void afterImportRow(Connection conn,DataImportItem dataImportItem,List<String> lstColNames,List lstColValues)
     {
-
+        
     }
 
-    public boolean beforeImportRow(Connection conn,AbsDataImportConfigBean configBean,
-            List lstColTitles,List lstColValues)
+    public boolean beforeImportRow(Connection conn,DataImportItem dataImportItem,List<String> lstColNames,List lstColValues)
     {
         return true;
     }
 
-    public void doImportEnd(int statuscode,AbsDataImportConfigBean dibean,File dataFileObj,
-            Exception e)
+    public void doImportEnd(int statuscode,DataImportItem dataImportItem,Exception e)
     {
-
+        
     }
 
-    public boolean doImportStart(AbsDataImportConfigBean dibean,File dataFileObj)
+    public boolean doImportStart(DataImportItem dataImportItem)
     {
         return true;
     }

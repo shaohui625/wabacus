@@ -97,7 +97,7 @@ public class SelectBox extends AbsSelectBox
 
 
 //        {//如果是点击时再填充
-//            return super.getDefaultvalue(rrequest);
+
 
 //        //下面处理显示时就直接填充的情况，此时如果没有配置默认值，则以第一个下拉选项做为默认值
 
@@ -131,7 +131,7 @@ public class SelectBox extends AbsSelectBox
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("if(boxObj.options.length==0){value='';label='';return;}");
         resultBuf.append("var separator=boxObj.getAttribute('separator');");
-        resultBuf.append("if(separator==null||separator==''){");
+        resultBuf.append("if(separator==null||separator==''){");//单选下拉框
         resultBuf.append("  value=boxObj.options[boxObj.options.selectedIndex].value;");
         resultBuf.append("  label=boxObj.options[boxObj.options.selectedIndex].text;");
         resultBuf.append("}else{");
@@ -179,7 +179,7 @@ public class SelectBox extends AbsSelectBox
         resultBuf.append("var selectboxObj=document.getElementById(id);");
         resultBuf.append("if(selectboxObj==null||selectboxObj.options.length==0){return;}");
         resultBuf.append("var separator=selectboxObj.getAttribute('separator');");
-        resultBuf.append("if(separator!=null&&separator!=''){");//如果是复选的下拉框
+        resultBuf.append("if(separator!=null&&separator!=''){");
         resultBuf.append("  for(var j=0,len=selectboxObj.options.length;j<len;j++){");
         resultBuf.append("      if(selectboxObj.options[j].selected&&selectboxObj.options[j].value==newvalue){return;}");
         resultBuf.append("  }");

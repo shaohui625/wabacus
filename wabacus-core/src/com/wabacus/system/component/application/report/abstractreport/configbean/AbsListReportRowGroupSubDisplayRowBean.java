@@ -135,7 +135,7 @@ public class AbsListReportRowGroupSubDisplayRowBean extends AbsListReportSubDisp
                 }
             }
         }else
-        {//没有配置having的条件，则依次将父分组及自己的column做为拼凑为本分组统计的having中的条件
+        {
             ColBean[] cbeansArr=getParentAndMyOwnRowGroupColBeans(dbean);
             StringBuffer conditionBuf=new StringBuffer();
             ColBean cbTmp;

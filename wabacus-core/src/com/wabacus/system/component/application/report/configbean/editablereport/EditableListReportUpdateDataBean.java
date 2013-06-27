@@ -18,10 +18,9 @@
  */
 package com.wabacus.system.component.application.report.configbean.editablereport;
 
-import java.util.List;
 import java.util.Map;
 
-import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.EditableListReportType;
@@ -48,6 +47,11 @@ public class EditableListReportUpdateDataBean extends EditableReportUpdateDataBe
 
     public int parseActionscripts(String reportTypeKey)
     {
+        return 1;
+    }
+
+    public void doPostLoadFinally()
+    {
         if(this.realUpdateBean.getLstUrlParams()!=null)
         {
             for(Map<String,String> mParamTmp:this.realUpdateBean.getLstUrlParams())
@@ -60,22 +64,12 @@ public class EditableListReportUpdateDataBean extends EditableReportUpdateDataBe
                 }
             }
         }
-        return 1;
+        this.realUpdateBean.doPostLoadFinally();
     }
-
-    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,Object dataObj)
+    
+    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
     {
         return this.realUpdateBean.assembleAccessPageUrl(rrequest,reportTypeObj,dataObj);
-    }
-
-    public void doPostLoad()
-    {
-       this.realUpdateBean.doPostLoad();
-    }
-
-    public void setRealParamnamesInDoPostLoadFinally()
-    {
-        
     }
     
     public Object clone(IEditableReportEditGroupOwnerBean newowner)

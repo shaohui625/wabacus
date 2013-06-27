@@ -26,6 +26,7 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.system.buttons.EditableReportSQLButtonDataBean;
 import com.wabacus.util.Tools;
 
 public class InsertSqlActionBean extends AbsEditSqlActionBean
@@ -46,7 +47,11 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
             addInsertSqlActionBean(realsql,lstDynParamsTmp,this.returnValueParamname);
         }else
         {
-            AbsDatabaseType dbtype=this.ownerGroupBean.getDbType();
+            AbsDatabaseType dbtype=Config.getInstance().getDataSource(this.ownerGroupBean.getDatasource()).getDbType();
+            if(dbtype==null)
+            {
+                throw new WabacusConfigLoadingException("没有实现数据源"+this.ownerGroupBean.getDatasource()+"对应数据库类型的相应实现类");
+            }
             dbtype.constructInsertSql(actionscript,this.ownerGroupBean.getOwnerUpdateBean().getOwner().getReportBean(),reportTypeKey,this);
         }
     }
@@ -62,12 +67,13 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
             configInsertSql=configInsertSql.substring("into".length()).trim();
         }
         int idxleft=configInsertSql.indexOf("(");
-        if(idxleft<0)
+        if(idxleft<0||configInsertSql.endsWith("()"))
         {//没有指定要更新的字段，则将所有符合要求的从数据库取数据的<col/>全部更新到表中
             if(!this.ownerGroupBean.getOwnerUpdateBean().isAutoReportdata())
             {
                 throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，在autoreportdata属性为false的<button/>中，不能配置insert into table这种格式的SQL语句");
             }
+            if(configInsertSql.endsWith("()")) configInsertSql=configInsertSql.substring(0,configInsertSql.length()-2).trim();
             sqlBuffer.append(configInsertSql).append("(");
             for(ColBean cbean:rbean.getDbean().getLstCols())
             {
@@ -122,7 +128,8 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
                         sqlBuffer.append(cb.getColumn()+",");
                         lstParams.add(createParamBeanByColbean(updatecol,reportTypeKey,true,true));
                     }else
-                    {
+                    {//对于直接配置更新脚本的<button/>，且@{}数据来自于客户端传入的
+                        ((EditableReportSQLButtonDataBean)this.getOwnerGroupBean().getOwnerUpdateBean()).setHasReportDataParams(true);
                         EditableReportParamBean paramBean=new EditableReportParamBean();
                         paramBean.setParamname(updatecol);
                         lstParams.add(paramBean);
@@ -172,12 +179,35 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
         if(insertsql.equals("")) return true;
         insertsql=Tools.replaceCharacterInQuote(insertsql,'(',"$_LEFTBRACKET_$",true);
         insertsql=Tools.replaceCharacterInQuote(insertsql,')',"$_RIGHTBRACKET_$",true);
+        
         int idx=insertsql.indexOf("(");
         if(idx<=0) return false;
         insertsql=insertsql.substring(idx+1).trim();
-        idx=insertsql.indexOf(")");
-        if(idx<=0) return true;
-        insertsql=insertsql.substring(idx+1).trim();
+        int idxleft=1;
+        int idxRightBacket=-1;
+        for(int i=0;i<insertsql.length();i++)
+        {
+            if(insertsql.charAt(i)=='(')
+            {
+                idxleft++;
+            }else if(insertsql.charAt(i)==')')
+            {
+                if(idxleft==1)
+                {
+                    idxRightBacket=i;
+                    break;
+                }else if(idxleft<=0)
+                {
+                    return true;
+                }else
+                {
+                    idxleft--;
+                }
+            }
+        }
+        if(idxRightBacket==-1) return true;
+        if(idxRightBacket==0&&(insertsql.equals(")")||insertsql.substring(1).trim().startsWith("where "))) return false;
+        insertsql=insertsql.substring(idxRightBacket+1).trim();
         if(insertsql.equals("")||insertsql.startsWith("where ")) return false;
         return true;
     }

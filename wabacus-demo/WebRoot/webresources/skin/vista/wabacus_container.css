@@ -119,6 +119,42 @@ TD {
 }
 
 /*tab标题显示在顶部，且titlestyle为2的标签标题样式*/
+.cls-tabtitle-top3-selected {
+	text-align:center;
+	vertical-align:middle;
+	font-weight:bold;
+	COLOR:#ffffff; 
+	background-color:rgb(91, 102, 204);
+	PADDING-RIGHT: 3px; 
+	PADDING-LEFT: 3px; 
+	PADDING-TOP: 1px; 
+	PADDING-BOTTOM: 1px; 
+}
+.cls-tabtitle-top3-deselected {
+	cursor:pointer;
+	text-align:center;
+	vertical-align:middle;
+	font-weight:bold;
+	color: rgb(114, 110, 121); 
+	background-color:rgb(181, 183, 195); 
+	PADDING-RIGHT: 3px; 
+	PADDING-LEFT: 3px; 
+	PADDING-TOP: 1px; 
+	PADDING-BOTTOM: 1px; 
+}
+.cls-tabtitle-top3-disabled {
+	text-align:center;
+	vertical-align:middle;
+	font-weight:bold;
+	COLOR:#a0a0a0; 
+	background-color:#b9c6f0;
+	PADDING-RIGHT: 3px; 
+	PADDING-LEFT: 3px; 
+	PADDING-TOP: 1px; 
+	PADDING-BOTTOM: 1px; 
+}
+
+/*tab标题显示在顶部，且titlestyle为2的标签标题样式*/
 .cls-tabtitle-top2-selected {
 	text-align:center;
 	vertical-align:middle;

@@ -122,12 +122,16 @@ public class ColumnMapBean
                 throw new WabacusConfigLoadingException("加载KEY为"+key
                         +"的数据导入资源项失败，为<columnmap/>配置的映射字段"+colMaps+"不合法");
             }
-            String dbcol=lstTmp.get(0).trim();
+            String dbcol=lstTmp.get(0).toUpperCase().trim();
             String filecol=lstTmp.get(1).trim();
             if(dbcol.equals("")||filecol.equals(""))
             {
                 throw new WabacusConfigLoadingException("加载KEY为"+key
                         +"的数据导入资源项失败，为<columnmap/>配置的映射字段"+colMaps+"不合法");
+            }
+            if(!Tools.isDefineKey("request",filecol)&&!Tools.isDefineKey("session",filecol))
+            {
+                filecol=filecol.toUpperCase();
             }
             if(mColMapTmp.containsKey(dbcol))
             {
@@ -142,15 +146,17 @@ public class ColumnMapBean
                 }
             }
             mColTmp=new HashMap();
+            
             if(maptype==ColumnMapBean.MAPTYPE_INDEX_INDEX)
             {
-                mColTmp.put(Integer.parseInt(dbcol),Integer.parseInt(filecol));
+                mColTmp.put(Integer.parseInt(dbcol),Tools.isDefineKey("request",filecol)||Tools.isDefineKey("session",filecol)?filecol:Integer
+                        .parseInt(filecol));
             }else if(maptype==ColumnMapBean.MAPTYPE_INDEX_NAME)
             {
                 mColTmp.put(Integer.parseInt(dbcol),filecol);
             }else if(maptype==ColumnMapBean.MAPTYPE_NAME_INDEX)
             {
-                mColTmp.put(dbcol,Integer.parseInt(filecol));
+                mColTmp.put(dbcol,Tools.isDefineKey("request",filecol)||Tools.isDefineKey("session",filecol)?filecol:Integer.parseInt(filecol));
             }else
             {
                 mColTmp.put(dbcol,filecol);
@@ -176,7 +182,7 @@ public class ColumnMapBean
                 throw new WabacusConfigLoadingException("表"+diconfigbean.getTablename()+"没有列，不能对其进行传输");
             }
             Map<String,String> mAllColAndTypes=new HashMap<String,String>();
-            List<Map<String,String>> lstAllColsAndTypes=new ArrayList<Map<String,String>>();//存放所有字段及类型，每个字段存在一个Map中，键为字段名，值为字段类型。
+            List<Map<String,String>> lstAllColsAndTypes=new ArrayList<Map<String,String>>();
             Map<String,String> mTmp;
             for(int i=1;i<=colcount;i++)
             {
@@ -197,7 +203,7 @@ public class ColumnMapBean
                 {
                     importSbean.setSql("delete from "+diconfigbean.getTablename());
                 }else
-                {
+                {//append模式，且配置了keyfields，且数据文件中有数据，则删除数据文件中对应数据的记录（数据文件没数据时，客户端不会调用这个方法来构造删除SQL语句）
                     importSbean=createDelOldRecordsSql(mAllColAndTypes,lstAllColsAndTypes,dbtype,
                             Consts_Private.DATAIMPORTTYPE_APPEND);
                 }
@@ -235,13 +241,11 @@ public class ColumnMapBean
         {
             importSbean.setSql("delete from "+diconfigbean.getTablename());
         }else
-        {//append模式或者是append模式下动态指定的delete模式
+        {
             List<String> lstKeyfields=diconfigbean.getLstKeyfields();
             if(lstKeyfields==null||lstKeyfields.size()==0)
             {
                 return null;
-
-
             }
             StringBuffer sqlTmpBuf=new StringBuffer();
             sqlTmpBuf.append("delete from "+diconfigbean.getTablename()+" where ");
@@ -271,10 +275,7 @@ public class ColumnMapBean
                 lstParamColsInFile.add(objTmp);
             }
             String sql=sqlTmpBuf.toString().trim();
-            if(sql.endsWith("and"))
-            {
-                sql=sql.substring(0,sql.length()-3);
-            }
+            if(sql.endsWith("and")) sql=sql.substring(0,sql.length()-3);
             importSbean.setSql(sql);
             importSbean.setLstParamTypes(lstParamTypes);
             importSbean.setLstParamColsInFile(lstParamColsInFile);
@@ -374,7 +375,6 @@ public class ColumnMapBean
             Entry entry=(Entry)mColTmp.entrySet().iterator().next();
             Object dbcol=entry.getKey();
             Object filecol=entry.getValue();
-
             String dbcolname=null;
             if(dbcoltype.equals("index"))
             {
@@ -403,14 +403,8 @@ public class ColumnMapBean
             colsBuf.append("?,");
             lstParamColsInFile.add(filecol);
         }
-        if(sqlBuf.charAt(sqlBuf.length()-1)==',')
-        {
-            sqlBuf.deleteCharAt(sqlBuf.length()-1);
-        }
-        if(colsBuf.charAt(colsBuf.length()-1)==',')
-        {
-            colsBuf.deleteCharAt(colsBuf.length()-1);
-        }
+        if(sqlBuf.charAt(sqlBuf.length()-1)==',') sqlBuf.deleteCharAt(sqlBuf.length()-1);
+        if(colsBuf.charAt(colsBuf.length()-1)==',')  colsBuf.deleteCharAt(colsBuf.length()-1);
         sqlBuf.append(") values(").append(colsBuf.toString()).append(")");
         DataImportSqlBean importSqlBean=new DataImportSqlBean();
         importSqlBean.setSql(sqlBuf.toString());
@@ -448,7 +442,7 @@ public class ColumnMapBean
             case MAPTYPE_INDEX_INDEX:
                 int dbcolidx=-1;
                 for(int i=0;i<lstAllColsAndTypes.size();i++)
-                {//根据数据库字段名取到它的序号
+                {
                     if(lstAllColsAndTypes.get(i).containsKey(dbColName))
                     {
                         dbcolidx=i;

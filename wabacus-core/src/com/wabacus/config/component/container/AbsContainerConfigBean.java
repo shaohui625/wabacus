@@ -33,6 +33,7 @@ import com.wabacus.config.component.other.ButtonsBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.JavaScriptAssistant;
+import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.buttons.AbsButtonType;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
@@ -58,7 +59,9 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
     
     protected boolean scrollX;
     
-    protected boolean scrollY;//是否显示纵向滚动条
+    protected boolean scrollY;
+
+//    protected String contentHeight;//显示内容的高度（当有垂直滚动条时除掉了margin-top和margin-bottom部分的高度）
     
     protected int colspan_total;
 
@@ -375,8 +378,26 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
                 }
             }
         }
-        processContainerButtonsEnd();
+        processContainerButtonsEnd();//这个方法要放在所有子组件都doPostLoad()完成后再调用，因为很多报表按钮是在doPostLoad()方法时才会新建的。
         JavaScriptAssistant.getInstance().createComponentOnloadScript(this);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//            {
+
+
+
     }
 
     public void doPostLoadFinally()
@@ -443,7 +464,7 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
                 throw new WabacusConfigLoadingException("容器"+this.getPath()+"配置的按钮"+buttonObjTmp.getName()+"的refer属性："+refer+"引用的报表没有配置按钮");
             }
             if(Tools.isDefineKey("type",referButton))
-            {//指定的是按钮的type
+            {
                 List<AbsButtonType> lstButtonsObjTmp=bbeansTmp.getLstButtonsByTypeName(Tools.getRealKeyByDefine("type",referButton));
                 if(lstButtonsObjTmp==null||lstButtonsObjTmp.size()==0)
                 {

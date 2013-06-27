@@ -90,7 +90,6 @@ public class JspTemplateApp extends AbsApplicationType
             wresponse.println(jspContent);
         }else
         {
-            rrequest.getRequest().setAttribute("WX_REPORTREQUEST",rrequest);
             rrequest.getRequest().setAttribute("WX_JSPCOMPONENTBEAN",this.jspConfigBean);
             if(this.jspConfigBean.getBelongToCcbean() instanceof ReportBean)
             {
@@ -154,12 +153,11 @@ public class JspTemplateApp extends AbsApplicationType
             }
         }else
         {
-            rrequest.getRequest().setAttribute("WX_REPORTREQUEST",rrequest);
             rrequest.getRequest().setAttribute("WX_JSPCOMPONENTBEAN",this.jspConfigBean);
             if(this.jspConfigBean.getBelongToCcbean() instanceof ReportBean)
             {
                 AbsReportType reportTypeObj=rrequest.getDisplayReportTypeObj(this.jspConfigBean.getBelongToCcbean().getId());
-                rrequest.getRequest().setAttribute("WX_COMPONENT_OBJ",reportTypeObj);//存进去，以便JSP中的自定义标签能正常使用
+                rrequest.getRequest().setAttribute("WX_COMPONENT_OBJ",reportTypeObj);
             }
             jspUrl=jspConfigBean.getUrl().trim();
         }

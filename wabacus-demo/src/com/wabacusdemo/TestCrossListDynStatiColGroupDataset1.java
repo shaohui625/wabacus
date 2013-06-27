@@ -24,14 +24,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.wabacus.config.component.application.report.ConditionBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.system.component.application.report.CrossListReportType;
 import com.wabacus.system.dataset.IDynamicColGroupDataSet;
 
 public class TestCrossListDynStatiColGroupDataset1 implements IDynamicColGroupDataSet
 {
 
-    public List<Map<String,String>> getDynamicColGroupDataSet(CrossListReportType crossListReportTypeObj,ReportDataSetBean datasetbean,
+    public List<Map<String,String>> getDynamicColGroupDataSet(CrossListReportType crossListReportTypeObj,ReportDataSetValueBean datasetbean,
             List<ConditionBean> lstDatasetConditions)
     {
         //此类只演示单行标题的动态列

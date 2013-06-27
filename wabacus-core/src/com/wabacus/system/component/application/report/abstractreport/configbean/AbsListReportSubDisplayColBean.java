@@ -19,6 +19,10 @@
 package com.wabacus.system.component.application.report.abstractreport.configbean;
 
 import java.lang.reflect.Method;
+import java.util.List;
+
+import com.wabacus.system.ReportRequest;
+import com.wabacus.system.assistant.WabacusAssistant;
 
 public class AbsListReportSubDisplayColBean implements Cloneable
 {
@@ -27,8 +31,10 @@ public class AbsListReportSubDisplayColBean implements Cloneable
     
     private int plainexcel_colspan;
 
-    private String valuestyleproperty="";
-
+    private String valuestyleproperty;
+    
+    private List<String> lstDynValuestylepropertyParts;
+    
     private Method getMethod;
     
     public int getPlainexcel_startcolidx()
@@ -50,15 +56,24 @@ public class AbsListReportSubDisplayColBean implements Cloneable
     {
         this.plainexcel_colspan=plainexcel_colspan;
     }
-
-    public String getValuestyleproperty()
+    
+    public String getValuestyleproperty(ReportRequest rrequest,boolean isStaticPart)
     {
-        return valuestyleproperty;
+        if(isStaticPart) return this.valuestyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.valuestyleproperty,this.lstDynValuestylepropertyParts,"");
     }
 
-    public void setValuestyleproperty(String valuestyleproperty)
+    public void setValuestyleproperty(String valuestyleproperty,boolean isStaticPart)
     {
-        this.valuestyleproperty=valuestyleproperty;
+        if(isStaticPart)
+        {
+            this.valuestyleproperty=valuestyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(valuestyleproperty);
+            this.valuestyleproperty=(String)objArr[0];
+            this.lstDynValuestylepropertyParts=(List<String>)objArr[1];
+        }
     }
 
     public String getProperty()

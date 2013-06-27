@@ -29,6 +29,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.component.application.report.AbsConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
@@ -66,9 +67,9 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         return column;
     }
 
-    public String getLabel()
+    public String getLabel(ReportRequest rrequest)
     {
-        return ((UltraListReportGroupBean)this.getOwner()).getLabel();
+        return ((UltraListReportGroupBean)this.getOwner()).getLabel(rrequest);
     }
     
     public void setDynColGroupSpecificBean(AbsDynamicColGroupBean dynColGroupSpecificBean)
@@ -152,7 +153,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         ReportBean rbean=crossListReportType.getReportBean();
         ReportRequest rrequest=crossListReportType.getReportRequest();
         if(this.isDynamicColGroup())
-        {//当前分组列是动态分组列
+        {
             if(!mDynamicColGroupDisplayType.get(groupBean.getGroupid())
                     &&(!this.hasDisplayStatisBeansOfReport(mDynamicColGroupDisplayType)||this.lstDatasetConditions==null||this.lstDatasetConditions
                             .size()==0)) 
@@ -167,12 +168,12 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
                 return;
             }
             StringBuffer allDynColConditonsBuf=new StringBuffer();
-            StringBuffer dynSelectedColsBuf=new StringBuffer();
+            StringBuffer dynSelectedColsBuf=new StringBuffer();//存放查询动态统计数据的字段列表
             StringBuffer conditionBuf;
             Map<String,String> mCurrentGroupValues=new HashMap<String,String>();//用于存放每个<group/>上一个行的显示值，以便它们决定是否要新开一个GroupBean
             Map<String,String> mAllColConditionsInGroup=new HashMap<String,String>();//存放当前正在处理的每个分组包括的所有<col/>对应的条件,并用or拼凑在一起,以便对整个分组进行统计时能取到此分组的条件
             List lstDynChildren=new ArrayList();
-            Object headDataObj=getDataHeadPojoInstance();
+            AbsReportDataPojo headDataObj=ReportAssistant.getInstance().getPojoClassInstance(rrequest,rbean,this.dataHeaderPojoClass);
             for(Map<String,String> mRowDataTmp:lstDynamicColGroupLabelData)
             {
                 conditionBuf=new StringBuffer();
@@ -189,7 +190,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         }else
         {
             UltraListReportGroupBean groupBeanTmp=(UltraListReportGroupBean)groupBean.clone(rbean.getDbean());
-            List lstChildrenTmp=new ArrayList();//存放此分组列包含的子列
+            List lstChildrenTmp=new ArrayList();
             crossListReportType.getAllRuntimeColGroupBeans(groupBean.getLstChildren(),lstChildrenTmp,lstAllRuntimeColBeans,mDynamicColGroupDisplayType);
             if(lstChildrenTmp.size()>0)
             {
@@ -209,7 +210,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
     }
     
     private void getRuntimeGroupBeans(CrossListReportType crossListReportType,Map<String,String> mRowDataTmp,Map<String,String> mCurrentGroupValues,Map<String,String> mAllColConditionsInGroup,
-            StringBuffer dynSelectedColsBuf,StringBuffer conditionBuf,StringBuffer allDynColConditonsBuf,List lstDynChildren,Object headDataObj,
+            StringBuffer dynSelectedColsBuf,StringBuffer conditionBuf,StringBuffer allDynColConditonsBuf,List lstDynChildren,AbsReportDataPojo headDataObj,
             Map<String,Boolean> mDynamicColGroupDisplayType)
     {
         String myLabelValue=mRowDataTmp.get(column);
@@ -245,13 +246,12 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
                     if(headDataObj!=null)
                     {
                         groupBean.setLabel("_"+column+"_"+colidx);
-                        ReportAssistant.getInstance().setCrossDynamicColDataToPOJO(crossListReportType.getReportBean(),headDataObj,
-                                "_"+column+"_"+colidx,myLabelValue);
+                        headDataObj.setDynamicColData("_"+column+"_"+colidx,myLabelValue);
                     }else
                     {
                         groupBean.setLabel(myLabelValue);
                     }
-                    groupBean.setLabelstyleproperty(this.getGroupBeanOwner().getLabelstyleproperty());
+                    groupBean.setLabelstyleproperty(this.getGroupBeanOwner().getLabelstyleproperty(crossListReportType.getReportRequest(),false),false);
                     groupBean.setLstChildren(new ArrayList());
                     groupBean.setRowspan(this.getGroupBeanOwner().getRowspan());
                     lstDynChildren.add(groupBean);
@@ -289,8 +289,9 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
             if(!mDynamicColGroupDisplayType.get(statisdBeanTmp.getStatiBean().getId())) continue;
             int colidx=crossListReportType.generateColGroupIdxId();
             groupBean.getLstChildren().add(
-                    createDynamicCrossStatiColBean(crossListReportType.getReportBean().getDbean(),crossListReportType.getReportRequest().getI18NStringValue(
-                            statisdBeanTmp.getLabel()),statisdBeanTmp.getLabelstyleproperty(),statisdBeanTmp.getValuestyleproperty(),statisdBeanTmp
+                    createDynamicCrossStatiColBean(crossListReportType.getReportBean().getDbean(),crossListReportType.getReportRequest()
+                            .getI18NStringValue(statisdBeanTmp.getLabel()),statisdBeanTmp.getLabelstyleproperty(crossListReportType
+                            .getReportRequest()),statisdBeanTmp.getValuestyleproperty(crossListReportType.getReportRequest()),statisdBeanTmp
                             .getStatiBean().getDatatypeObj(),colidx));
             dynSelectedColsBuf.append(statisdBeanTmp.getStatiBean().getType()+"(");
             dynSelectedColsBuf.append("case when ").append(groupConditions).append(" then ").append(statisdBeanTmp.getStatiBean().getColumn())
@@ -308,7 +309,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         {
             if(this.column==null||this.column.trim().equals(""))
             {
-                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的分组列"+groupBean.getLabel()
+                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的分组列"+groupBean.getLabel(null)
                         +"配置失败，其父分组列为动态列，则此分组列也必须是动态分组列，必须为其配置column属性，指定从哪个字段中取此分组的动态列头数据");
             }
         }
@@ -316,7 +317,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         {
             if(groupBean.getLstChildren().size()!=1)
             {
-                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的分组列"+groupBean.getLabel()
+                throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"的分组列"+groupBean.getLabel(null)
                         +"配置失败，此分组列是动态分组列，其下子能配置一个动态子分组列或动态子列");
             }
             this.childCrossColGroupBeans=ListReportAssistant.getInstance().getCrossColAndGroupBean(groupBean.getLstChildren().get(0));
@@ -329,7 +330,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         {
             if(this.realvalue!=null&&!this.realvalue.trim().equals(""))
             {
-                log.warn("报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel()+"为普通动态分组列，因为不需要查询它的显示数据，因此不需要配置realvalue属性");
+                log.warn("报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel(null)+"为普通动态分组列，因为不需要查询它的显示数据，因此不需要配置realvalue属性");
                 this.realvalue=null;
             }
         }

@@ -155,7 +155,7 @@ public class ComponentConfigLoadAssistant
         if(ccbeanOwner instanceof AbsContainerConfigBean)
         {
             if(lstConfigApplicationids==null||lstConfigApplicationids.size()==0)
-            {//如果没有配置include属性，则取其下包括的所有子应用ID
+            {
                 lstConfigApplicationids=((AbsContainerConfigBean)ccbeanOwner).getLstAllChildApplicationIds(true);
             }
         }else if(lstConfigApplicationids==null||lstConfigApplicationids.size()==0)
@@ -182,7 +182,7 @@ public class ComponentConfigLoadAssistant
                 if(!pagesize.equals("")) ipagesize=Integer.parseInt(pagesize);
             }
             ReportBean rbean=ccbeanOwner.getPageBean().getReportChild(appidTmp,true);
-            if(rbean!=null) mReportidsAndPagesize.put(appidTmp,ipagesize);
+            if(rbean!=null) mReportidsAndPagesize.put(appidTmp,ipagesize);//当前应用是报表
             if(ccbeanOwner.getPageBean().getApplicationChild(appidTmp,true)==null)
             {
                 throw new WabacusConfigLoadingException("加载组件"+ccbeanOwner.getPath()+"上的打印配置失败，其include属性配置的应用ID"+appidTmp+"不存在");

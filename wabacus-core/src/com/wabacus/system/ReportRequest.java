@@ -98,7 +98,7 @@ public class ReportRequest
 
     private WabacusResponse wresponse;
 
-    private Map<String,IConnection> connections=new HashMap<String,IConnection>();
+    private Map<String,Connection> connections=new HashMap<String,Connection>();
 
     private Map<String,AbsDatabaseType> mDbTypes=new HashMap<String,AbsDatabaseType>();
 
@@ -108,7 +108,7 @@ public class ReportRequest
 
     private String url;
     
-    private List<String> lstAncestorUrls;//所有层级跳转的URL列表，以堆栈的形式存放它们的跳转关系，即下标为0的元素对应的URL为当前页面的父页面，下标为1的元素对应的URL为父页面的父页面，等等
+    private List<String> lstAncestorUrls;
 
     private String actiontype=Consts.SHOWREPORT_ACTION;
 
@@ -122,7 +122,7 @@ public class ReportRequest
 
     private IComponentConfigBean refreshComponentBean;
 
-    private IComponentType refreshComponentTypeObj;
+    private IComponentType refreshComponentTypeObj;//本次加载更新的组件类型对象
 
     private Map<String,List<ColAndGroupDisplayBean>> mColAndGroupDisplayBeans;
 
@@ -132,13 +132,17 @@ public class ReportRequest
     
     private List<String> lstSearchReportIds;
     
-    private UpdateComponentDataServerActionBean serverActionBean;//针对页面或报表调用服务器端处理类
+    private UpdateComponentDataServerActionBean serverActionBean;
     
     private Map<String,Set<String>> mShouldAddToUrlAttriuteNames=null;
     
     private TransactionTypeWrapper transactionWrapper=null;
     
     private Map<String,String> mTransactionLevels;
+    
+    private List<String> lstReportWithDefaultSelectedRows;
+    
+    private Map<String,String> mServerValidateDatas;
     
     public ReportRequest(HttpServletRequest request,int _showtype)
     {
@@ -192,6 +196,7 @@ public class ReportRequest
         }
         this.showtype=_showtype;
         this.request=request;
+        request.setAttribute("WX_REPORTREQUEST",this);
         this.actiontype=Tools.getRequestValue(request,"ACTIONTYPE",Consts.SHOWREPORT_ACTION);
     }
 
@@ -215,90 +220,12 @@ public class ReportRequest
         
     }
 
-    public void initGetFilterDataList(String pageid,String reportid)
+    public void initGetFilterDataList()
     {
-        pageid=pageid==null?"":pageid.trim();
-        reportid=reportid==null?"":reportid.trim();
-        if(pageid.equals(""))
-        {
-            this.wresponse.getMessageCollector().warn("页面ID不能为空",true,Consts.STATECODE_FAILED);
-        }
-        this.pagebean=Config.getInstance().getPageBean(pageid);
-        if(pagebean==null)
-        {
-            this.wresponse.getMessageCollector().warn("没有配置页面ID为："+pageid+"的报表",true,Consts.STATECODE_FAILED);
-        }
-        if(reportid.trim().equals(""))
-        {
-            this.wresponse.getMessageCollector().warn("没有传入要获取数据的报表ID",true,Consts.STATECODE_FAILED);
-        }
-        lstAllReportBeans=new ArrayList<ReportBean>();
-        ReportBean rbean=this.pagebean.getReportChild(reportid,true);
-        if(rbean==null)
-        {
-            this.wresponse.getMessageCollector().warn("页面："+pageid+"中没有配置ID为"+reportid+"的报表",true,Consts.STATECODE_FAILED);
-        }
-        lstAllReportBeans.add(rbean);
-        this.url="";
+        initReportCommon();
+        ReportBean rbean=this.lstAllReportBeans.get(0);
         rbean.getSbean().initConditionValues(this);
         setFilterCondition(rbean);
-    }
-
-    public void initGetTypePromptDataList()
-    {
-        String pageid=getStringAttribute("PAGEID","");
-        String reportid=getStringAttribute("REPORTID","");
-        pageid=pageid==null?"":pageid.trim();
-        reportid=reportid==null?"":reportid.trim();
-        if(pageid.equals(""))
-        {
-            this.wresponse.getMessageCollector().warn("页面ID不能为空",true,Consts.STATECODE_FAILED);
-        }
-        this.pagebean=Config.getInstance().getPageBean(pageid);
-        if(pagebean==null)
-        {
-            this.wresponse.getMessageCollector().warn("没有配置页面ID为："+pageid+"的报表",true,Consts.STATECODE_FAILED);
-        }
-        if(reportid.trim().equals(""))
-        {
-            this.wresponse.getMessageCollector().warn("没有传入要获取数据的报表ID",true,Consts.STATECODE_FAILED);
-        }
-        lstAllReportBeans=new ArrayList<ReportBean>();
-        ReportBean rbean=this.pagebean.getReportChild(reportid,true);
-        if(rbean==null)
-        {
-            this.wresponse.getMessageCollector().warn("页面："+pageid+"中没有配置ID为"+reportid+"的报表",true,Consts.STATECODE_FAILED);
-        }
-        lstAllReportBeans.add(rbean);
-        this.url="";
-    }
-
-    public void initGetSelectBoxDataList()
-    {
-        String pageid=getStringAttribute("PAGEID","");
-        String reportid=getStringAttribute("REPORTID","");
-        pageid=pageid==null?"":pageid.trim();
-        if(pageid.equals(""))
-        {
-            this.wresponse.getMessageCollector().warn("页面ID不能为空",true,Consts.STATECODE_FAILED);
-        }
-        this.pagebean=Config.getInstance().getPageBean(pageid);
-        if(pagebean==null)
-        {
-            this.wresponse.getMessageCollector().warn("没有配置页面ID为："+pageid+"的报表",true,Consts.STATECODE_FAILED);
-        }
-        if(reportid==null||reportid.equals(""))
-        {
-            this.wresponse.getMessageCollector().warn("传入的报表ID："+reportid+"不合法，没有取到报表ID",true,Consts.STATECODE_FAILED);
-        }
-        lstAllReportBeans=new ArrayList<ReportBean>();
-        ReportBean rbean=this.pagebean.getReportChild(reportid,true);
-        if(rbean==null)
-        {
-            this.wresponse.getMessageCollector().warn("页面："+pageid+"中没有配置ID为"+reportid+"的报表",true,Consts.STATECODE_FAILED);
-        }
-        lstAllReportBeans.add(rbean);
-        this.url="";
     }
 
     private AbsInputBox autoCompleteSourceInputBoxObj;
@@ -309,6 +236,27 @@ public class ReportRequest
     }
 
     public void initGetAutoCompleteColValues()
+    {
+        initReportCommon();
+        String inputboxid=this.getStringAttribute("INPUTBOXID","");
+        if(inputboxid.equals(""))
+        {
+            throw new WabacusRuntimeException("没有取到源输入框ID，无法完成其它列的数据自动填充");
+        }
+        autoCompleteSourceInputBoxObj=this.lstAllReportBeans.get(0).getInputboxWithAutoComplete(inputboxid);
+        if(autoCompleteSourceInputBoxObj==null)
+        {
+            throw new WabacusRuntimeException("没有取到源输入框ID为"+inputboxid+"对应的输入框对象，无法完成其它列的数据自动填充");
+        }
+    }
+    
+    public void initGetChartDataString()
+    {
+        initReportCommon();
+        this.lstAllReportBeans.get(0).getSbean().initConditionValues(this);
+    }
+    
+    public void initReportCommon()
     {
         String pageid=getStringAttribute("PAGEID","");
         String reportid=getStringAttribute("REPORTID","");
@@ -335,16 +283,6 @@ public class ReportRequest
         }
         lstAllReportBeans.add(rbean);
         this.url="";
-        String inputboxid=this.getStringAttribute("INPUTBOXID","");
-        if(inputboxid.equals(""))
-        {
-            throw new WabacusRuntimeException("没有取到源输入框ID，无法完成其它列的数据自动填充");
-        }
-        autoCompleteSourceInputBoxObj=rbean.getInputboxWithAutoComplete(inputboxid);
-        if(autoCompleteSourceInputBoxObj==null)
-        {
-            throw new WabacusRuntimeException("没有取到源输入框ID为"+inputboxid+"对应的输入框对象，无法完成其它列的数据自动填充");
-        }
     }
     
     public void init(String pageid)
@@ -375,7 +313,7 @@ public class ReportRequest
         lstPageInterceptors.addAll(Config.getInstance().getLstGlobalPageInterceptors(pageid));
         lstPageInterceptors.addAll(pagebean.getLstInterceptors());
         for(AbsPageInterceptor interceptorTmp:lstPageInterceptors)
-        {
+        {//依次执行所有全局级页面拦截器
             interceptorTmp.doStart(this);
         }
         this.pageskin=Config.getInstance().getSkin(this.request,this.pagebean);
@@ -390,7 +328,7 @@ public class ReportRequest
 
     private void initDisplayOnPage(String pageid)
     {
-        UpdateComponentDataServerActionBean.initServerActionBean(this);//初始化客户端调用服务器端处理类的对象
+        UpdateComponentDataServerActionBean.initServerActionBean(this);
         String ancestorUrls=getStringAttribute("ancestorPageUrls","");
         if(!ancestorUrls.equals(""))
         {
@@ -451,7 +389,7 @@ public class ReportRequest
                 ((AbsReportType)refreshComponentTypeObj).init();
                 ((AbsReportType)refreshComponentTypeObj).loadReportData(true);
             }else if(refreshComponentTypeObj instanceof AbsContainerType)
-            {//当前是更新某个容器
+            {
                 this.lstAllReportBeans=((AbsContainerType)refreshComponentTypeObj).initDisplayOnPage();
             }else
             {
@@ -474,7 +412,7 @@ public class ReportRequest
         {
             if(cidTmp==null||cidTmp.trim().equals("")) continue;
             if(cidTmp.equals(pagebean.getId()))
-            {
+            {//如果当前组件ID是页面ID，则不用再看其它组件了，本次就是刷新整个页面
                 refreshId=pagebean.getId();
                 break;
             }
@@ -583,7 +521,7 @@ public class ReportRequest
                 {
                     for(String appidTmp:pdfbeanTmp.getLstIncludeApplicationids())
                     {
-                        this.mReportidsInPdfTemplate.put(appidTmp,"true");//这里不判断是否是报表ID，因为是其它应用类型的ID放进去也没关系
+                        this.mReportidsInPdfTemplate.put(appidTmp,"true");
                     }
                 }
             }
@@ -814,7 +752,7 @@ public class ReportRequest
     public void setAttribute(String reportid,String name,Object value)
     {
         if(this.isShouldAddToUrlAttributeName(reportid,name))
-        {
+        {//如果需要更新到URL中
             if(value==null)
             {
                 this.addParamToUrl(name,null,true);
@@ -839,7 +777,7 @@ public class ReportRequest
     }
 
 
-//    {
+
 //        //        CacheDataBean cdb = this.getCdb(reportid);
 //        //        if (cdb == null || !(value instanceof String)) return;
 
@@ -872,26 +810,12 @@ public class ReportRequest
     {
         if(this.showtype==Consts.DISPLAY_ON_PAGE) return true;
         if(this.showtype==Consts.DISPLAY_ON_PRINT&&this.lstComponentBeans.get(0).getPrintBean() instanceof DefaultPrintProviderConfigBean)
-        {//默认打印模式
+        {
             return true;
         }
         return false;
     }
     
-    public IComponentType getComponentTypeObj(IComponentConfigBean componentConfigBean,AbsContainerType parentContainer,boolean createNew)
-    {
-        if(this.mComponentTypeObjs==null) mComponentTypeObjs=new HashMap<String,IComponentType>();
-        IComponentType typeObj=mComponentTypeObjs.get(componentConfigBean.getId());
-        if(parentContainer!=null&&typeObj!=null&&typeObj.getParentContainerType()==null)
-        {
-            typeObj.setParentContainerType(parentContainer);
-        }
-        if(!createNew||typeObj!=null) return typeObj;
-        typeObj=componentConfigBean.createComponentTypeObj(this,parentContainer);
-        mComponentTypeObjs.put(componentConfigBean.getId(),typeObj);
-        return typeObj;
-    }
-
     public IComponentType getComponentTypeObj(String componentId,AbsContainerType parentContainer,boolean createNew)
     {
         if(mComponentTypeObjs!=null&&mComponentTypeObjs.containsKey(componentId))
@@ -910,7 +834,21 @@ public class ReportRequest
         if(ccbean==null) return null;
         return getComponentTypeObj(ccbean,parentContainer,createNew);
     }
-
+    
+    public IComponentType getComponentTypeObj(IComponentConfigBean componentConfigBean,AbsContainerType parentContainer,boolean createNew)
+    {
+        if(this.mComponentTypeObjs==null) mComponentTypeObjs=new HashMap<String,IComponentType>();
+        IComponentType typeObj=mComponentTypeObjs.get(componentConfigBean.getId());
+        if(parentContainer!=null&&typeObj!=null&&typeObj.getParentContainerType()==null)
+        {
+            typeObj.setParentContainerType(parentContainer);
+        }
+        if(!createNew||typeObj!=null) return typeObj;
+        typeObj=componentConfigBean.createComponentTypeObj(this,parentContainer);
+        mComponentTypeObjs.put(componentConfigBean.getId(),typeObj);
+        return typeObj;
+    }
+    
     public AbsReportType getDisplayReportTypeObj(String reportid)
     {
         if(reportid==null||reportid.trim().equals("")) return null;
@@ -922,6 +860,16 @@ public class ReportRequest
         return (AbsReportType)reportObj;
     }
 
+    public AbsReportType getDisplayReportTypeObj(ReportBean rbean)
+    {
+        IComponentType reportObj=getComponentTypeObj(rbean,null,false);
+        if(reportObj==null||!(reportObj instanceof AbsReportType))
+        {
+            throw new WabacusRuntimeException("在页面"+this.pagebean.getPath()+"中没有取到"+rbean.getPath()+"报表");
+        }
+        return (AbsReportType)reportObj;
+    }
+    
     public List<String> getLstApplicationIds()
     {
         return lstApplicationIds;
@@ -964,35 +912,17 @@ public class ReportRequest
             }
             CacheDataBean cdb=new CacheDataBean(this);
             cdb.setReportBean(rbtemp);
-            AbsListReportBean alrbean=(AbsListReportBean)rbtemp.getExtendConfigDataForReportType(AbsListReportType.KEY);
-            if(alrbean!=null)
-            {
-                cdb.setRowSelectType(alrbean.getRowSelectType());
-                cdb.setLstRowSelectCallBackFuncs(alrbean.getLstRowSelectCallBackFuncs());
-            }
             this.mCacheDataBeans.put(rbtemp.getId(),cdb);
         }
         return (CacheDataBean)mCacheDataBeans.get(reportid);
     }
     
-
-    /**
-     *  @Deprecated 采改getIConnection以支持其它数源
-     */
-     @Deprecated 
-     public Connection getConnection(String datasource){
-         return ( (JdbcConnection)getIConnection(datasource) ).getNativeConnection();
-     }
-
-     /**
-      * @Deprecated 采改getIConnection以支持其它数源
-      */
-     public Connection getConnection()
-     {
-         return getConnection(Config.getInstance().getDefault_datasourcename());
-     }
+    public Connection getConnection()
+    {
+        return getConnection(Config.getInstance().getDefault_datasourcename());
+    }
     
-    public IConnection getIConnection(String datasource)
+    public Connection getConnection(String datasource)
     {
         if(Tools.isDefineKey("i18n",datasource))
         {
@@ -1000,10 +930,10 @@ public class ReportRequest
             if(this.locallanguage!=null&&!this.locallanguage.trim().equals(""))
             {
                 String dsTemp=datasource+"_"+this.locallanguage;
-                IConnection conn=connections.get(dsTemp);
+                Connection conn=connections.get(dsTemp);
                 if(conn==null)
                 {
-                    conn=Config.getInstance().getDataSource(dsTemp).getIConnection();
+                    conn=Config.getInstance().getDataSource(dsTemp).getConnection();
                     connections.put(dsTemp,conn);
                 }
                 if(conn!=null)
@@ -1019,7 +949,7 @@ public class ReportRequest
         if(datasource==null||datasource.trim().equals("")||datasource.trim().equals(Consts.DEFAULT_KEY)) datasource=Config.getInstance().getDefault_datasourcename();
         if(connections.get(datasource)==null)
         {
-            connections.put(datasource,Config.getInstance().getDataSource(datasource).getIConnection());
+            connections.put(datasource,Config.getInstance().getDataSource(datasource).getConnection());
         }
         return connections.get(datasource);
     }
@@ -1097,7 +1027,7 @@ public class ReportRequest
     public String addParamToUrl(String paramname,String paramvalue,boolean overwrite)
     {
         if(!overwrite&&(url.indexOf("&"+paramname+"=")>=0||url.indexOf("?"+paramname+"=")>=0))
-        {
+        {//如果不覆盖，且URL中已经存在此参数名的参数，则不将新参数加入
             return url;
         }
         if(Tools.isDefineKey("rrequest",paramvalue))
@@ -1140,7 +1070,7 @@ public class ReportRequest
                 if(Consts.DATA_PART.equals(parttype)&&Consts.PERMISSION_TYPE_DISPLAY.equals(permissiontype)
                         &&"false".equalsIgnoreCase(permissionvalue)&&partid!=null&&!partid.trim().equals("")&&ccbean instanceof ReportBean)
                 {
-                    this.setAttribute(componentId,"authroize_col_display","false");//记录下来，因为针对某一列设置了此权限的话，需要重新计算列位置
+                    this.setAttribute(componentId,"authroize_col_display","false");
                 }
                 cabean=new ComponentPermissionBean(ccbean);
             }
@@ -1195,7 +1125,7 @@ public class ReportRequest
         if(permission==Consts.CHKPERMISSION_NO)
         {
             this.setAttribute(myPermissionKey,false);
-            return false;
+            return false;//显示授的权限值不是当前权限值
         }
         
         IComponentConfigBean ccbean=null;
@@ -1218,7 +1148,7 @@ public class ReportRequest
             this.setAttribute(myPermissionKey,false);
             return false;//显示授了此组件/元素不具有此默认权限值
         }
-        //即没有在运行时为此组件授此权限类型的值，也没有给它赋默认值，则返回此权限类型自己的默认值
+        
         boolean defaultpermission=AuthorizationAssistant.getInstance().checkDefaultPermissionTypeValue(permissiontype,permissionvalue);
         this.setAttribute(myPermissionKey,defaultpermission);
         return defaultpermission;
@@ -1298,7 +1228,7 @@ public class ReportRequest
                 for(ReportBean rbeanTemp:lstAllReportBeans)
                 {
                     if(rbeanTemp!=null&&rbeanTemp.getInterceptor()!=null)
-                    {//执行后置动作
+                    {
                         rbeanTemp.getInterceptor().doEnd(this,rbeanTemp);
                     }
                 }
@@ -1331,7 +1261,7 @@ public class ReportRequest
             while(itConns.hasNext())
             {
                 name=itConns.next();
-                WabacusAssistant.getInstance().release(connections.get(name));
+                WabacusAssistant.getInstance().release(connections.get(name),null);
             }
             connections.clear();
         }
@@ -1473,7 +1403,7 @@ public class ReportRequest
     public List<Map<String,String>> getLstInvokeServerActionParams(String componentid)
     {
         if(this.serverActionBean==null||componentid==null||componentid.trim().equals("")) return null;
-        if(!componentid.equals(this.serverActionBean.getComponentid())) return null;
+        if(!componentid.equals(this.serverActionBean.getComponentid())) return null;//当前调用服务器端操作不是针对componentid对应的组件
         return this.serverActionBean.getLstParams();
     }
     
@@ -1485,7 +1415,7 @@ public class ReportRequest
         if(rowidx>=reportObj.getLstReportData().size()) return null;
         ColBean cbean=reportObj.getReportBean().getDbean().getColBeanByColProperty(property);
         if(cbean==null) throw new WabacusRuntimeException("在报表"+reportObj.getReportBean().getPath()+"中没有找到property为"+property+"的列");
-        return cbean.getDisplayValue(reportObj.getLstReportData().get(rowidx),this);
+        return reportObj.getLstReportData().get(rowidx).getColStringValue(cbean);
     }
 
     public Object getColRealValue(String reportid,String property,int rowidx)
@@ -1496,7 +1426,7 @@ public class ReportRequest
         if(rowidx>=reportObj.getLstReportData().size()) return null;
         ColBean cbean=reportObj.getReportBean().getDbean().getColBeanByColProperty(property);
         if(cbean==null) throw new WabacusRuntimeException("在报表"+reportObj.getReportBean().getPath()+"中没有找到property为"+property+"的列");
-        return cbean.getRealTypeValue(reportObj.getLstReportData().get(rowidx),this);
+        return reportObj.getLstReportData().get(rowidx).getColValue(cbean);
     }
 
     public int getReportDataListSize(String reportid)
@@ -1761,5 +1691,50 @@ public class ReportRequest
     public List<IComponentConfigBean> getLstComponentBeans()
     {
         return this.lstComponentBeans;
+    }
+
+    private Set<String> setSaveSlaveReportIds;
+    
+    public Set<String> getSaveSlaveReportIdsSet()
+    {
+        if(setSaveSlaveReportIds==null)
+        {
+            setSaveSlaveReportIds=new HashSet<String>();
+            String saveSlaveReportIds=this.getStringAttribute("SAVEDSLAVEREPORT_ROOTREPORT_IDS","");
+            setSaveSlaveReportIds.addAll(Tools.parseStringToList(saveSlaveReportIds,";",false));
+        }
+        return setSaveSlaveReportIds;
+    }
+    
+    public void addListReportWithDefaultSelectedRows(ReportBean rbean,boolean isSelected)
+    {
+        if(rbean==null) return;
+        AbsListReportBean alrbean=(AbsListReportBean)rbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
+        if(alrbean==null||alrbean.getRowSelectType()==null||alrbean.getRowSelectType().trim().equals("")
+                ||Consts.ROWSELECT_NONE.equals(alrbean.getRowSelectType())) return;
+        if(isSelected)
+        {
+            if(this.lstReportWithDefaultSelectedRows==null) this.lstReportWithDefaultSelectedRows=new ArrayList<String>();
+            if(!this.lstReportWithDefaultSelectedRows.contains(rbean.getId())) this.lstReportWithDefaultSelectedRows.add(rbean.getId());
+        }else if(this.lstReportWithDefaultSelectedRows!=null&&this.lstReportWithDefaultSelectedRows.contains(rbean.getId()))
+        {
+            this.lstReportWithDefaultSelectedRows.remove(rbean.getId());
+        }
+    }
+
+    public List<String> getLstReportWithDefaultSelectedRows()
+    {
+        return lstReportWithDefaultSelectedRows;
+    }
+    
+    public void addServerValidateParams(String paramname,String paramvalue)
+    {
+        if(this.mServerValidateDatas==null) this.mServerValidateDatas=new HashMap<String,String>();
+        this.mServerValidateDatas.put(paramname,paramvalue);
+    }
+
+    public Map<String,String> getMServerValidateDatas()
+    {
+        return mServerValidateDatas;
     }
 }

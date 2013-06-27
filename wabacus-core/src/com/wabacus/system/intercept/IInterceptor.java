@@ -18,12 +18,10 @@
  */
 package com.wabacus.system.intercept;
 
-import java.util.List;
 import java.util.Map;
 
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 import com.wabacus.util.Consts;
@@ -58,11 +56,11 @@ public interface IInterceptor
 
     public Object afterLoadData(ReportRequest rrequest,ReportBean rbean,Object typeObj,Object dataObj);
 
-    public RowDataByInterceptor beforeDisplayReportDataPerRow(AbsReportType reportTypeObj,ReportRequest rrequest,int rowindex,int colspans,
-            List lstColBeans);
+    public void beforeDisplayReportData(ReportRequest rrequest,ReportBean rbean,ReportDataBean reportDataBean);
 
-    public ColDataByInterceptor beforeDisplayReportDataPerCol(AbsReportType reportTypeObj,ReportRequest rrequest,Object displayColBean,int rowindex,
-            String value);
+    public void beforeDisplayReportDataPerRow(ReportRequest rrequest,ReportBean rbean,RowDataBean rowDataBean);
+
+    public void beforeDisplayReportDataPerCol(ReportRequest rrequest,ReportBean rbean,ColDataBean colDataBean);
 
     public void doEnd(ReportRequest rrequest,ReportBean rbean);
 }

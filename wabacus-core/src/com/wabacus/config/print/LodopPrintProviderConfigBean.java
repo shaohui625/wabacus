@@ -137,7 +137,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
                         throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的打印配置失败，此组件不是报表，不能在其打印内容中出现this关键字");
                     }
                     appidTmp=this.owner.getId();
-                    lstConfigValues.remove(0);//将this替换成真正的reportid
+                    lstConfigValues.remove(0);
                     lstConfigValues.add(0,appidTmp);
                 }
                 parseTplApplicationElement(lstConfigValues);
@@ -189,7 +189,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
                 throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的打印配置失败，在wx_content{}中指定打印报表的"+lstConfigValues.get(1)+"部分不存在");
             }
             if(lstConfigValues.size()==2&&Consts.BUTTON_PART.equals(lstConfigValues.get(1)))
-            {
+            {//即this.button格式
                 throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的打印配置失败，在wx_content{"+lstConfigValues.get(0)
                         +".button}中没有指定要打印的按钮");
             }
@@ -199,10 +199,10 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
                 if(lstConfigValues.size()==2) return true;
                 if(lstConfigValues.get(2).equals("[title]")||lstConfigValues.get(2).equals("[data]"))
                 {
-                    if(rbean.isDetailReportType())
+                    if(rbean.isDetailReportType()||rbean.isChartReportType())
                     {
                         throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的打印配置失败，id为"+rbean.getId()
-                                +"的报表为细览报表，不能指定为reportid.data.[title]/reportid.data.[data]格式");
+                                +"的报表为细览/图形报表，不能指定为reportid.data.[title]/reportid.data.[data]格式");
                     }
                     if(lstConfigValues.size()>3)
                     {
@@ -218,7 +218,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
                             +lstConfigValues.get(2)+"的<col/>，无法打印其内容");
                 }
                 
-                if(lstConfigValues.size()==3) return true;//reportid.data.col格式
+                if(lstConfigValues.size()==3) return true;
                 if(!lstConfigValues.get(3).equals("label")&&!lstConfigValues.get(3).equals("value"))
                 {
                     throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的打印配置失败，不能指定为reportid.data.col."+lstConfigValues.get(3));
@@ -320,7 +320,7 @@ public class LodopPrintProviderConfigBean extends AbsPrintProviderConfigBean
         String content=this.printPageInfo;
         content=Tools.replaceAll(content,"wx_content{pageno}","currentpageno");
         content=Tools.replaceAll(content,"wx_content{pagecount}","totalpagecount");
-        if(content.startsWith("LODOP_OBJ.")) return content;//直接配置的是lodop代码
+        if(content.startsWith("LODOP_OBJ.")) return content;
         return "LODOP_OBJ.ADD_PRINT_HTM('96%', 1, '100%', '100%',"+content+");";
     }
 }

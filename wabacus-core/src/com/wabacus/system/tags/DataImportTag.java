@@ -39,9 +39,13 @@ public class DataImportTag extends BodyTagSupport
 
     private String ref;
 
+    private String asyn;
+    
     private String dataimportinitsize;//初始大小，可配置值包括max/normal，分别表示最大化、最小化、正常窗口大小（即上面pagewidth/pageheight配置的大小）
     
     private String popupparams;
+    
+    private String interceptor;
     
     public String getRef()
     {
@@ -51,6 +55,11 @@ public class DataImportTag extends BodyTagSupport
     public void setRef(String ref)
     {
         this.ref=ref;
+    }
+
+    public void setAsyn(String asyn)
+    {
+        this.asyn=asyn;
     }
 
     public void setDataimportinitsize(String dataimportinitsize)
@@ -66,6 +75,11 @@ public class DataImportTag extends BodyTagSupport
     public void setPopupparams(String popupparams)
     {
         this.popupparams=popupparams;
+    }
+
+    public void setInterceptor(String interceptor)
+    {
+        this.interceptor=interceptor;
     }
 
     public int doStartTag() throws JspException
@@ -85,7 +99,7 @@ public class DataImportTag extends BodyTagSupport
         JspWriter out=pageContext.getOut();
         try
         {
-            out.println(TagAssistant.getInstance().getDataImportDisplayValue(ref,this.popupparams,this.dataimportinitsize,label,
+            out.println(TagAssistant.getInstance().getDataImportDisplayValue(ref,this.asyn,this.popupparams,this.dataimportinitsize,label,this.interceptor,
                     (HttpServletRequest)pageContext.getRequest()));
         }catch(IOException e)
         {

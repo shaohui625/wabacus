@@ -19,16 +19,20 @@
 package com.wabacus.util;
 
 import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Map;
+
+import com.wabacus.system.ReportRequest;
 
 public class ValidateTools
 {
-    public static boolean isNotEmpty(String value)
+    public static boolean isNotEmpty(ReportRequest rrequest,String value,Map<String,String> mValues,List<String> lstErrorMessages)
     {
         if(value==null||value.trim().equals("")) return false;
         return true;
     }
 
-    public static boolean isNumeric(String num)
+    public static boolean isNumeric(ReportRequest rrequest,String num,Map<String,String> mValues,List<String> lstErrorMessages)
     {
         if(num==null||num.trim().equals(""))
         {
@@ -67,7 +71,7 @@ public class ValidateTools
 
     }
 
-    public static boolean isInteger(String str)
+    public static boolean isInteger(ReportRequest rrequest,String str,Map<String,String> mValues,List<String> lstErrorMessages)
     {
         if(str==null||str.trim().equals(""))
         {
@@ -84,7 +88,7 @@ public class ValidateTools
 
     }
 
-    public static boolean isDate(String date)
+    public static boolean isDate(ReportRequest rrequest,String date,Map<String,String> mValues,List<String> lstErrorMessages)
     {
         if(date==null||date.trim().equals(""))
         {
@@ -131,7 +135,7 @@ public class ValidateTools
         return isDate(date,"yyyy-MM-dd");
     }
 
-    public static boolean isShortDate(String date)
+    public static boolean isShortDate(ReportRequest rrequest,String date,Map<String,String> mValues,List<String> lstErrorMessages)
     {
 
         if(date==null||date.trim().equals(""))
@@ -169,7 +173,7 @@ public class ValidateTools
         return isDate(date,"yyyy-MM");
     }
 
-    public static boolean isDateTime(String date)
+    public static boolean isDateTime(ReportRequest rrequest,String date,Map<String,String> mValues,List<String> lstErrorMessages)
     {
         return isDate(date,"yyyy-MM-dd HH:mm:ss");
     }

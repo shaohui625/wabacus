@@ -41,6 +41,8 @@ public class AbsListReportBean extends AbsExtendConfigBean
     public final static int SCROLLTYPE_ALL=4;
     
     private String rowSelectType;
+    
+    private boolean isSelectRowCrossPages;
 
     private List<String> lstRowSelectCallBackFuncs;
 
@@ -48,7 +50,7 @@ public class AbsListReportBean extends AbsExtendConfigBean
     
     private IListReportRoworderPersistence loadStoreRoworderObject;
     
-    private int fixedrows;//被冻结的行数，如果值为Integer.MAX_VALUE，则表示fixedrows配置为title。即表示冻结整个标题行，如果指定为大于0的数，则表示指定要冻结的行数
+    private int fixedrows;
     
     private int fixedcols;
     
@@ -67,6 +69,16 @@ public class AbsListReportBean extends AbsExtendConfigBean
     public void setRowSelectType(String rowSelectType)
     {
         this.rowSelectType=rowSelectType;
+    }
+
+    public boolean isSelectRowCrossPages()
+    {
+        return isSelectRowCrossPages;
+    }
+
+    public void setSelectRowCrossPages(boolean isSelectRowCrossPages)
+    {
+        this.isSelectRowCrossPages=isSelectRowCrossPages;
     }
 
     public List<String> getLstRowSelectCallBackFuncs()
@@ -137,7 +149,7 @@ public class AbsListReportBean extends AbsExtendConfigBean
         {
             this.fixedcols=fixedcols;
         }else
-        {
+        {//是运行时设置fixedcols（目前只有交叉动态列报表是这种情况，在运行时计算固定列）
             rrequest.setAttribute(this.getOwner().getReportBean().getId(),"DYNAMIC_FIXED_COLSCOUNT",fixedcols);
         }
     }
@@ -165,7 +177,8 @@ public class AbsListReportBean extends AbsExtendConfigBean
     
     public boolean hasControllCol()
     {
-        if(Consts.ROWSELECT_CHECKBOX.equalsIgnoreCase(this.rowSelectType)||Consts.ROWSELECT_RADIOBOX.equalsIgnoreCase(this.rowSelectType))
+        if(Consts.ROWSELECT_CHECKBOX.equalsIgnoreCase(this.rowSelectType)||Consts.ROWSELECT_RADIOBOX.equalsIgnoreCase(this.rowSelectType)
+                ||Consts.ROWSELECT_MULTIPLE_CHECKBOX.equalsIgnoreCase(this.rowSelectType)||Consts.ROWSELECT_SINGLE_RADIOBOX.equalsIgnoreCase(this.rowSelectType))
             return true;
         if(this.lstRoworderTypes!=null&&(this.lstRoworderTypes.contains(Consts.ROWORDER_ARROW)
                 ||this.lstRoworderTypes.contains(Consts.ROWORDER_INPUTBOX)||this.lstRoworderTypes.contains(Consts.ROWORDER_TOP))) return true;

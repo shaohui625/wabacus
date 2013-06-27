@@ -55,7 +55,7 @@ public class PDFExportBean extends AbsDataExportBean
     
     private boolean isPrint;
     
-    private AbsPdfInterceptor interceptorObj;//拦截器对象
+    private AbsPdfInterceptor interceptorObj;
     
     public PDFExportBean(IComponentConfigBean owner,String type)
     {
@@ -223,7 +223,7 @@ public class PDFExportBean extends AbsDataExportBean
                 }
                 if(this.owner instanceof AbsContainerConfigBean)
                 {
-                    buttonObj.setPosition("top");
+                    buttonObj.setPosition("top");//对于容器，默认位置在顶部
                 }
                 ComponentConfigLoadManager.addButtonToPositions(this.owner,buttonObj);
             }

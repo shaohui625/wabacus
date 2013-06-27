@@ -50,7 +50,7 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
 
     protected int positionorder;
     
-    protected String refer;//只对显示在容器中的按钮有效，用于指定引用某个报表上的按钮进行显示
+    protected String refer;
     
     protected AbsButtonType referedButtonObj;
     
@@ -60,7 +60,7 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     
     protected String confirmessage;
     
-    protected String confirmtitle;
+    protected String confirmtitle;//点击此按钮弹出确认提示信息窗口的标题
     
     protected String cancelmethod;
     
@@ -129,6 +129,11 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     public void setCcbean(IComponentConfigBean ccbean)
     {
         this.ccbean=ccbean;
+    }
+    
+    public IComponentConfigBean getCcbean()
+    {
+        return ccbean;
     }
 
     public String getDisabledstyleproperty()
@@ -221,7 +226,7 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
         if(clickhandler==null) return "";
         if(clickhandler instanceof IButtonClickeventGenerate)
         {
-            String dynclickevent=Tools.formatStringBlank(((IButtonClickeventGenerate)clickhandler).generateClickEvent(rrequest));
+            String dynclickevent=Tools.formatStringBlank(((IButtonClickeventGenerate)clickhandler).generateClickEvent(rrequest,this));
             if(dynclickevent.indexOf('\"')>=0)
             {
                 throw new WabacusRuntimeException("显示组件"+ccbean.getPath()+"的按钮"+this.name+"失败，动态生成的按钮事件不能用双引号，只能用单引用，如果有多级，可以加上转义字符\\");
@@ -270,7 +275,7 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     public abstract String showButton(ReportRequest rrequest,String dynclickevent);
 
 //    /**
-//     * 显示按钮，客户端提供所有要执行的onLoad回调函数
+
 
 
 

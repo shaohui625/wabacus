@@ -66,6 +66,16 @@ public class FileInputBoxUpload extends AbsFileUpload
         {
             throw new WabacusRuntimeException("报表"+rbean.getPath()+"下面不存在ID为"+boxid+"的文件上传输入框");
         }
+        String parentWindowName;
+        if(Config.getInstance().getSystemConfigValue("prompt-dialog-type","artdialog").equals("artdialog"))
+        {
+            out.print("<script type=\"text/javascript\"  src=\""+Config.webroot+"webresources/component/artDialog/artDialog.js\"></script>");
+            out.print("<script type=\"text/javascript\"  src=\""+Config.webroot+"webresources/component/artDialog/plugins/iframeTools.js\"></script>");
+            parentWindowName="artDialog.open.origin";
+        }else
+        {
+            parentWindowName="parent";
+        }
         out.print("<input type='hidden' name='INPUTBOXID' value='"+inputboxid+"'/>");
         out.print("<input type='hidden' name='PAGEID' value='"+pageid+"'/>");
         out.print("<input type='hidden' name='REPORTID' value='"+reportid+"'/>");
@@ -91,7 +101,7 @@ public class FileInputBoxUpload extends AbsFileUpload
             if(fileboxObj.getDeletetype()==1)
             {
                 out.print("&nbsp;&nbsp;<input type=\"button\" value=\"删除\"");
-                out.print(" onclick=\"parent.setPopUpBoxValueToParent('','");
+                out.print(" onclick=\""+parentWindowName+".setPopUpBoxValueToParent('','");
                 out.print(inputboxid+"','");
                 out.print(fileboxObj.getFillmode()+"','");
                 out.print(rbean.getGuid()+"','");
@@ -134,7 +144,7 @@ public class FileInputBoxUpload extends AbsFileUpload
         }
     }
 
-    public String doFileUpload(List lstFieldItems,Map<String,String> mFormFieldValues,PrintWriter out)
+    public String doFileUpload(List lstFieldItems,PrintWriter out)
     {
         String pageid=mFormFieldValues.get("PAGEID");
         String reportid=mFormFieldValues.get("REPORTID");
@@ -164,8 +174,8 @@ public class FileInputBoxUpload extends AbsFileUpload
         {
             throw new WabacusRuntimeException("报表"+rbean.getPath()+"下面不存在ID为"+boxid+"的文件上传输入框");
         }
-        out.println(fileboxObj.createSelectOkFunction(inputboxid));
-        request.setAttribute("WX_FILE_UPLOAD_FIELDVALUES",mFormFieldValues);
+        this.interceptorObj=fileboxObj.getInterceptor();
+        out.println(fileboxObj.createSelectOkFunction(inputboxid,false));
         String configAllowTypes=fileboxObj.getAllowTypes();
         if(configAllowTypes==null) configAllowTypes="";
         List<String> lstConfigAllowTypes=getFileSuffixList(configAllowTypes);
@@ -185,10 +195,9 @@ public class FileInputBoxUpload extends AbsFileUpload
             mFormFieldValues.put(AbsFileUploadInterceptor.FILENAME_KEY,destfilename);
             mFormFieldValues.put(AbsFileUploadInterceptor.SAVEPATH_KEY,fileboxObj.getSavePath());
             boolean shouldUpload=true;
-            if(fileboxObj.getInterceptor()!=null)
+            if(this.interceptorObj!=null)
             {
-                request.setAttribute("WX_FILE_UPLOAD_INTERCEPTOR",fileboxObj.getInterceptor());//保存拦截器存取来，以便在WabacusFacade中可以直接使用
-                shouldUpload=fileboxObj.getInterceptor().beforeFileUpload(request,item,mFormFieldValues,out);
+                shouldUpload=this.interceptorObj.beforeFileUpload(request,item,mFormFieldValues,out);
             }
             if(shouldUpload)
             {
@@ -224,5 +233,18 @@ public class FileInputBoxUpload extends AbsFileUpload
             return "请选择要上传的文件!";
         }
         return null;
+    }
+    
+    public void promptSuccess(PrintWriter out,boolean isArtDialog)
+    {
+        if(isArtDialog)
+        {
+            out.println("artDialog.open.origin.wx_success('上传文件成功');");
+            out.println("art.dialog.close();");
+        }else
+        {
+            out.println("parent.wx_success('上传文件成功');");
+            out.println("parent.closePopupWin();");
+        }
     }
 }

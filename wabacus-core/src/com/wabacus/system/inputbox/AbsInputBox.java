@@ -31,12 +31,12 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SubmitFunctionParamBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.JavaScriptAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.EditableDetailReportType2;
 import com.wabacus.system.component.application.report.EditableListFormReportType;
 import com.wabacus.system.component.application.report.EditableListReportType2;
@@ -49,6 +49,12 @@ public abstract class AbsInputBox implements Cloneable
 {
     private static Log log=LogFactory.getLog(AbsInputBox.class);
 
+    public final static String VALIDATE_TYPE_ONBLUR="onblur";
+
+    public final static String VALIDATE_TYPE_ONSUBMIT="onsubmit";
+
+    public final static String VALIDATE_TYPE_BOTH="both";
+
     protected String defaultvalue;//输入框的默认显示值，如果当前输入框没有数据进行显示时，将显示这里配置的默认值，只有此输入框属于编辑列，即配置在<col/>下时，此默认值才有效，当为查询条件下的输入框时，此属性无效。
 
     protected String defaultstyleproperty;//在wabacus.cfg.xml中配置的默认样式字符串，在editablelist2/editabledetail2两种报表类型的编辑列输入框中不会用到这里的样式，在其它任意场合的输入框中都会用到这里的样式，且不会被覆盖
@@ -57,27 +63,37 @@ public abstract class AbsInputBox implements Cloneable
 
     protected String styleproperty;
 
+    private List<String> lstDynStylepropertyParts;
+
     protected String styleproperty2;
 
     private String beforedescription;
-    
+
+    private Map<String,String> mDynBeforedescriptionParts;
+
     private String afterdescription;
-    
+
+    private Map<String,String> mDynAfterdescriptionParts;
+
     private String tip;
 
     protected Map<String,String> mStyleProperties2;
 
     protected String language;
 
-    private String jsvalidate=null;
+    private String jsvalidate;
 
-    protected String[][] servervalidate=null;
+    private String jsvalidatetype;
+
+    private String servervalidate;//服务器端校验
+
+    private String servervalidatetype;
+
+    private String servervalidateCallback;
 
     protected String typename;
 
-    protected IInputBoxOwnerBean owner;//当前输入框的持有者
-
-    protected List<SubmitFunctionParamBean> lstSubmitFunctionParams;
+    protected IInputBoxOwnerBean owner;
 
     private AutoCompleteBean autoCompleteBean;
 
@@ -126,6 +142,17 @@ public abstract class AbsInputBox implements Cloneable
         return Tools.htmlEncode(value);
     }
 
+    public String getJsvalidatetype()
+    {
+        return jsvalidatetype;
+    }
+
+    protected boolean isJsvalidateOnblur()
+    {
+        if(this.jsvalidate==null||this.jsvalidate.trim().equals("")) return false;
+        return this.VALIDATE_TYPE_BOTH.equals(this.jsvalidatetype)||this.VALIDATE_TYPE_ONBLUR.equals(this.jsvalidatetype);
+    }
+
     public String getLanguage()
     {
         return language;
@@ -152,6 +179,98 @@ public abstract class AbsInputBox implements Cloneable
         this.autoCompleteBean=autoCompleteBean;
     }
 
+    public String getTypename()
+    {
+        return typename;
+    }
+
+    private String getStyleproperty(ReportRequest rrequest)
+    {
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.styleproperty,this.lstDynStylepropertyParts,"");
+    }
+
+    private String getStyleproperty2(ReportRequest rrequest)
+    {
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.styleproperty2,this.lstDynStylepropertyParts,"");
+    }
+    
+    private void setStyleproperty(String styleproperty)
+    {
+        Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(styleproperty);
+        this.styleproperty=(String)objArr[0];
+        this.lstDynStylepropertyParts=(List<String>)objArr[1];
+    }
+
+    public String getJsvalidate()
+    {
+        return jsvalidate;
+    }
+
+    private void setBeforedescription(String beforedescription)
+    {
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(beforedescription);
+        this.beforedescription=(String)objArr[0];
+        this.mDynBeforedescriptionParts=(Map<String,String>)objArr[1];
+    }
+
+    private void setAfterdescription(String afterdescription)
+    {
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(afterdescription);
+        this.afterdescription=(String)objArr[0];
+        this.mDynAfterdescriptionParts=(Map<String,String>)objArr[1];
+    }
+
+    public String getBeforedescription(ReportRequest rrequest)
+    {
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.beforedescription,this.mDynBeforedescriptionParts,"");
+    }
+
+    public String getAfterdescription(ReportRequest rrequest)
+    {
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.afterdescription,this.mDynAfterdescriptionParts,"");
+    }
+
+    protected boolean hasDescription()
+    {
+        if(this.beforedescription!=null&&!this.beforedescription.trim().equals("")) return true;
+        if(this.afterdescription!=null&&!this.afterdescription.trim().equals("")) return true;
+        return false;
+    }
+
+    public String getTip(ReportRequest rrequest)
+    {
+        if(this.tip!=null&&!this.tip.trim().equals(""))
+        {
+            return rrequest.getI18NStringValue(this.tip);
+        }
+        return "";
+    }
+
+    public int getFillmode()
+    {
+        return fillmode;
+    }
+
+    public void setFillmode(int fillmode)
+    {
+        this.fillmode=fillmode;
+    }
+
+    public int getDisplaymode()
+    {
+        return displaymode;
+    }
+
+    public void setDisplaymode(int displaymode)
+    {
+        this.displaymode=displaymode;
+    }
+
+    public String getDisplayon()
+    {
+        return displayon;
+    }
+    
     public String getDefaultlabel(ReportRequest rrequest)
     {
         if(defaultvalue!=null) return ReportAssistant.getInstance().getColAndConditionDefaultValue(rrequest,defaultvalue);
@@ -160,12 +279,7 @@ public abstract class AbsInputBox implements Cloneable
 
     public String getDisplayStringValue(ReportRequest rrequest,String value,String dynstyleproperty,boolean isReadonly)
     {
-        if(this.isJsValidateOnBlur())
-        {
-            dynstyleproperty=Tools.mergeHtmlTagPropertyString(dynstyleproperty,"onblur=\"try{"+this.getBlurValidateEvent(rrequest)
-                    +"}catch(e){logErrorsAsJsFileLoad(e);}\"",1);
-        }
-        return doGetDisplayStringValue(rrequest,value,Tools.mergeHtmlTagPropertyString(this.styleproperty,dynstyleproperty,1),isReadonly);
+        return doGetDisplayStringValue(rrequest,value,Tools.mergeHtmlTagPropertyString(this.getStyleproperty(rrequest),dynstyleproperty,1),isReadonly);
     }
 
     public void setDefaultstyleproperty(String defaultstyleproperty)
@@ -183,7 +297,7 @@ public abstract class AbsInputBox implements Cloneable
     protected abstract String getDefaultStylePropertyForDisplayMode2();
 
     public abstract String getInputboxInnerType();
-    
+
     public void setDefaultFillmode(AbsReportType reportTypeObj)
     {
         if(reportTypeObj instanceof EditableListFormReportType)
@@ -212,9 +326,20 @@ public abstract class AbsInputBox implements Cloneable
     {
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("<span id=\"span_"+this.owner.getInputBoxId()+"_span\" style=\"display:none;\"");
-        if(this.styleproperty2!=null&&!this.styleproperty2.trim().equals(""))
+        if(this.owner instanceof EditableReportColBean)
         {
-            resultBuf.append(" styleproperty=\""+Tools.jsParamEncode(this.styleproperty2)+"\"");
+            String formatemplate=((EditableReportColBean)this.owner).getFormatemplate(rrequest);
+            if(formatemplate!=null&&!formatemplate.trim().equals(""))
+            {
+                resultBuf.append(" formatemplate=\"").append(Tools.onlyHtmlEncode(formatemplate)).append("\"");
+                resultBuf.append(" formatemplate_dyncols=\"").append(
+                        ((EditableReportColBean)this.owner).getColPropertyAndPlaceHoldersInFormatemplate()).append("\"");
+            }
+        }
+        String style2=this.getStyleproperty2(rrequest);
+        if(style2!=null&&!style2.trim().equals(""))
+        {
+            resultBuf.append(" styleproperty=\""+Tools.jsParamEncode(style2)+"\"");
         }
         if(this.mStyleProperties2!=null)
         {
@@ -223,10 +348,6 @@ public abstract class AbsInputBox implements Cloneable
                 if(entryTmp.getValue()==null||entryTmp.getValue().trim().equals("")) continue;
                 resultBuf.append(" ").append(entryTmp.getKey()).append("_propertyvalue=\"").append(entryTmp.getValue()).append("\"");
             }
-        }
-        if(this.isJsValidateOnBlur())
-        {
-            resultBuf.append(" jsvalidate_onblur_method=\"").append(this.getBlurValidateEvent(rrequest)).append("\"");
         }
         if(this.inputboxparams!=null&&!this.inputboxparams.trim().equals(""))
         {
@@ -285,26 +406,12 @@ public abstract class AbsInputBox implements Cloneable
 
     public String createGetLabelByIdJs()
     {
-        return "return getInputBoxValue(id,type);";//默认输入框的value和label一致
+        return "return getInputBoxValue(id,type);";
     }
-    
+
     public String createGetValueByInputBoxObjJs()
     {
         return "value=boxObj.value; label=boxObj.value;";
-    }
-
-    protected boolean isJsValidateOnBlur()
-    {
-        if(this.getOwner()==null) return false;
-        if(this.getOwner().getReportBean().getJsvalidatetype()==0||this.getJsvalidate()==null||this.getJsvalidate().trim().equals("")) return false;
-        return true;
-    }
-
-    protected String getBlurValidateEvent(ReportRequest rrequest)
-    {
-        if(!isJsValidateOnBlur()) return "";
-        return "validate_"+this.owner.getInputBoxId()+"(this,'"
-                +JavaScriptAssistant.getInstance().getRuntimeParamsValueJsonString(rrequest,lstSubmitFunctionParams)+"');";
     }
 
     protected String getInputBoxId(ReportRequest rrequest)
@@ -315,14 +422,14 @@ public abstract class AbsInputBox implements Cloneable
     }
 
     
-    
+    //    {
     
     
     
     
     
     //            {//没有在styleproperty中指定onkeypress事件，则加上默认的事件
-    //                if(this.displaymode==1)
+    
     //                {//如果要显示输入框边框，由按回车键时，跳到下一个输入框（一般是输入框显示在表单中的情况）
     
     
@@ -333,8 +440,8 @@ public abstract class AbsInputBox implements Cloneable
     
     
     
+    //            resultStr=resultStr+"if(displaymode==1){boxstr=boxstr+\" onkeypress='return onInputBoxKeyPress(event)' \";}";
     
-    //            resultStr=resultStr+"else if(displaymode==2){boxstr=boxstr+\" onkeypress='return onKeyEvent(event)' \";}";
     
     
     
@@ -345,18 +452,18 @@ public abstract class AbsInputBox implements Cloneable
     
     //        {//如果是被getDisplayStringValue()调用
     
-    //            {
     
     
     
     
+    //                classname="cls-inputbox-textbox2";
     
     
     //        {//如果是被filledInContainer()调用
     
     
     
-    //    }
+    
     protected String addReadonlyToStyleProperty1(String style_property)
     {
         if(style_property==null)
@@ -381,110 +488,6 @@ public abstract class AbsInputBox implements Cloneable
         return style_property+" disabled ";
     }
 
-    public String getTypename()
-    {
-        return typename;
-    }
-
-    public String getStyleproperty()
-    {
-        return styleproperty;
-    }
-
-    public void setStyleproperty(String styleproperty)
-    {
-        this.styleproperty=styleproperty;
-    }
-
-    public String getJsvalidate()
-    {
-        return jsvalidate;
-    }
-
-    protected void setJsvalidate(String jsvalidate)
-    {
-        this.jsvalidate=jsvalidate;
-    }
-
-    public String getBeforedescription(ReportRequest rrequest)
-    {
-        if(this.beforedescription!=null&&!this.beforedescription.trim().equals(""))
-        {
-            return rrequest.getI18NStringValue(this.beforedescription);
-        }
-        return "";
-    }
-
-    public String getAfterdescription(ReportRequest rrequest)
-    {
-        if(this.afterdescription!=null&&!this.afterdescription.trim().equals(""))
-        {
-            return rrequest.getI18NStringValue(this.afterdescription);
-        }
-        return "";
-    }
-
-    protected boolean hasDescription()
-    {
-        if(this.beforedescription!=null&&!this.beforedescription.trim().equals("")) return true;
-        if(this.afterdescription!=null&&!this.afterdescription.trim().equals("")) return true;
-        return false;
-    }
-    
-    public String getTip(ReportRequest rrequest)
-    {
-        if(this.tip!=null&&!this.tip.trim().equals(""))
-        {
-            return rrequest.getI18NStringValue(this.tip);
-        }
-        return "";
-    }
-
-    public List<SubmitFunctionParamBean> getLstSubmitFunctionParams()
-    {
-        return lstSubmitFunctionParams;
-    }
-
-    public void setLstSubmitFunctionParams(List<SubmitFunctionParamBean> lstSubmitFunctionParams)
-    {
-        this.lstSubmitFunctionParams=lstSubmitFunctionParams;
-    }
-
-    public String[][] getServervalidate()
-    {
-        return servervalidate;
-    }
-
-    protected void setServervalidate(String[][] servervalidate)
-    {
-        this.servervalidate=servervalidate;
-    }
-
-    public int getFillmode()
-    {
-        return fillmode;
-    }
-
-    public void setFillmode(int fillmode)
-    {
-        this.fillmode=fillmode;
-    }
-
-    public int getDisplaymode()
-    {
-        return displaymode;
-    }
-
-    public void setDisplaymode(int displaymode)
-    {
-        this.displaymode=displaymode;
-    }
-
-    public String getDisplayon()
-    {
-        return displayon;
-    }
-
     public void loadInputBoxConfig(IInputBoxOwnerBean ownerbean,XmlElementBean eleInputboxBean)
     {
         this.owner=ownerbean;
@@ -504,62 +507,79 @@ public abstract class AbsInputBox implements Cloneable
         String beforedescription=eleInputboxBean.attributeValue("beforedescription");
         if(beforedescription!=null)
         {
-            this.beforedescription=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),beforedescription,true);
+            this.setBeforedescription(Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),beforedescription,true));
         }
         String afterdescription=eleInputboxBean.attributeValue("afterdescription");
         if(afterdescription!=null)
         {
-            this.afterdescription=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),afterdescription,true);
+            this.setAfterdescription(Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),afterdescription,true));
         }
         String tip=eleInputboxBean.attributeValue("tip");
         if(tip!=null)
         {
             this.tip=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),tip,true);
         }
-        styleproperty=eleInputboxBean.attributeValue("styleproperty");
-        styleproperty=styleproperty==null?"":Tools.formatStringBlank(styleproperty.trim());
-        String jsvalidate=eleInputboxBean.attributeValue("jsvalidate");
-        if(jsvalidate!=null)
+        String styleproperty=eleInputboxBean.attributeValue("styleproperty");
+        if(styleproperty!=null)
         {
-            this.setJsvalidate(jsvalidate.trim());
+            this.setStyleproperty(Tools.formatStringBlank(styleproperty.trim()));
+        }
+        String jsvalidate=eleInputboxBean.attributeValue("jsvalidate");
+        if(jsvalidate!=null&&!jsvalidate.trim().equals(""))
+        {
+            this.jsvalidate=jsvalidate.trim();
+            String jsvalidatetype=eleInputboxBean.attributeValue("jsvalidatetype");
+            if(jsvalidatetype!=null&&!jsvalidatetype.trim().equals(""))
+            {
+                jsvalidatetype=jsvalidatetype.toLowerCase().trim();
+                if(!jsvalidatetype.equals(VALIDATE_TYPE_BOTH)&&!jsvalidatetype.equals(VALIDATE_TYPE_ONBLUR)
+                        &&!jsvalidatetype.equals(VALIDATE_TYPE_ONSUBMIT))
+                {
+                    throw new WabacusConfigLoadingException("加载报表"+ownerbean.getReportBean().getPath()+"上的输入框"+ownerbean.getInputBoxId()
+                            +"失败，配置的jsvalidatetype无效");
+                }
+                this.jsvalidatetype=jsvalidatetype;
+            }else
+            {
+                this.jsvalidatetype=Config.getInstance().getSystemConfigValue("default-jsvalidatetype",VALIDATE_TYPE_BOTH);
+                if(!this.jsvalidatetype.equals(VALIDATE_TYPE_BOTH)&&!this.jsvalidatetype.equals(VALIDATE_TYPE_ONBLUR)
+                        &&!this.jsvalidatetype.equals(VALIDATE_TYPE_ONSUBMIT))
+                {
+                    throw new WabacusConfigLoadingException("在wabacus.cfg.xml系统级配置文件配置的default-jsvalidatetype配置项无效");
+                }
+            }
         }
         String servervalidate=eleInputboxBean.attributeValue("servervalidate");
         if(servervalidate!=null&&!servervalidate.trim().equals(""))
         {
-            List<String> lstMethods=Tools.parseStringToList(servervalidate.trim(),',','\"');
-            String[][] tempArray=new String[lstMethods.size()][2];
-            int k=0;
-            for(String methodname:lstMethods)
+            this.servervalidate=servervalidate.trim();
+            String servervalidatetype=eleInputboxBean.attributeValue("servervalidatetype");
+            if(servervalidatetype!=null&&!servervalidatetype.trim().equals(""))
             {
-                methodname=methodname==null?"":methodname.trim();
-                if(methodname.trim().equals("")) continue;
-                String finalmethodname=methodname;
-                String errormsg=null;
-                int lidx=methodname.indexOf("(");
-                int ridx=methodname.indexOf(")");
-                if(lidx>0&&lidx<ridx)
+                servervalidatetype=servervalidatetype.toLowerCase().trim();
+                if(!servervalidatetype.equals(VALIDATE_TYPE_BOTH)&&!servervalidatetype.equals(VALIDATE_TYPE_ONBLUR)
+                        &&!servervalidatetype.equals(VALIDATE_TYPE_ONSUBMIT))
                 {
-                    finalmethodname=methodname.substring(0,lidx);
-                    errormsg=methodname.substring(lidx+1,ridx).trim();
-                    
-                    errormsg=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),errormsg,true);
+                    throw new WabacusConfigLoadingException("加载报表"+ownerbean.getReportBean().getPath()+"上的输入框"+ownerbean.getInputBoxId()
+                            +"失败，配置的servervalidatetype无效");
                 }
-                if(finalmethodname==null||finalmethodname.trim().equals("")) continue;
-                if(errormsg==null||errormsg.trim().equals(""))
+                this.servervalidatetype=servervalidatetype;
+            }else
+            {
+                this.servervalidatetype=Config.getInstance().getSystemConfigValue("default-servervalidatetype",VALIDATE_TYPE_ONSUBMIT);
+                if(!this.servervalidatetype.equals(VALIDATE_TYPE_BOTH)&&!this.servervalidatetype.equals(VALIDATE_TYPE_ONBLUR)
+                        &&!this.servervalidatetype.equals(VALIDATE_TYPE_ONSUBMIT))
                 {
-                    if(finalmethodname.trim().equalsIgnoreCase("isnotempty"))
-                    {
-                        errormsg="查询条件{0}不能为空";
-                    }else
-                    {
-                        errormsg="输入的查询条件{0}不合要求";
-                    }
+                    throw new WabacusConfigLoadingException("在wabacus.cfg.xml系统级配置文件配置的default-servervalidatetype配置项无效");
                 }
-                tempArray[k][0]=finalmethodname;
-                tempArray[k++][1]=errormsg;
             }
-            this.setServervalidate(tempArray);
         }
+        String serverValidateCallback=eleInputboxBean.attributeValue("servervalidatecallback");
+        if(serverValidateCallback!=null&&!serverValidateCallback.trim().equals(""))
+        {
+            this.servervalidateCallback=serverValidateCallback.trim();
+        }
+        if(this.servervalidateCallback==null||this.servervalidateCallback.trim().equals("")) this.servervalidateCallback="null";
         String inputboxparams=eleInputboxBean.attributeValue("inputboxparams");
         if(inputboxparams!=null) this.inputboxparams=inputboxparams.trim();
         String _language=eleInputboxBean.attributeValue("language");
@@ -655,6 +675,11 @@ public abstract class AbsInputBox implements Cloneable
             styleproperty=Tools.mergeHtmlTagPropertyString(styleproperty,"onblur=\"try{"+blurEventBuf.toString()
                     +"}catch(e){logErrorsAsJsFileLoad(e);}\"",1);
         }
+        if(this.jsvalidate!=null&&!this.jsvalidate.trim().equals(""))
+        {
+            JavaScriptAssistant.getInstance().createInputBoxValidateMethod(this);
+        }
+        processServerValidate();
         processStylePropertyAfterMerged(reportTypeObj,ownerbean);
         if((ownerbean instanceof EditableReportColBean)
                 &&(reportTypeObj instanceof EditableDetailReportType2||reportTypeObj instanceof EditableListReportType2))
@@ -672,11 +697,54 @@ public abstract class AbsInputBox implements Cloneable
                 ((EditableReportColBean)this.owner).setEditableWhenUpdate(1);
             }
         }
+        if(this.defaultvalue!=null&&Tools.isDefineKey("url",this.defaultvalue))
+        {
+            this.owner.getReportBean().addParamNameFromURL(Tools.getRealKeyByDefine("url",this.defaultvalue));
+        }
+    }
+
+    private void processServerValidate()
+    {
+        if(this.servervalidate==null||this.servervalidate.trim().equals("")) return;
+        List<String> lstValidateMethods=Tools.parseStringToList(servervalidate.trim(),';','\'');
+        if(lstValidateMethods==null||lstValidateMethods.size()==0) return;
+        ServerValidateBean svbean=new ServerValidateBean(this);
+        svbean.setValidatetype(this.servervalidatetype);
+        svbean.setServervalidateCallback(this.servervalidateCallback);
+        String methodnameTmp, errormsgTmp;
+        for(String methodTmp:lstValidateMethods)
+        {
+            methodTmp=methodTmp.trim();
+            methodnameTmp=methodTmp;
+            errormsgTmp=null;
+            int lidx=methodTmp.indexOf("(");
+            int ridx=methodTmp.lastIndexOf(")");
+            if(lidx>0&&lidx<ridx)
+            {
+                methodnameTmp=methodTmp.substring(0,lidx);
+                if(methodnameTmp.equals("")) continue;
+                errormsgTmp=methodTmp.substring(lidx+1,ridx).trim();
+                errormsgTmp=Config.getInstance().getResourceString(null,this.owner.getReportBean().getPageBean(),errormsgTmp,true);
+            }
+            svbean.addValidateMethod(this.owner.getReportBean(),methodnameTmp,errormsgTmp);
+        }
+        if(svbean.getLstParams()!=null&&svbean.getLstParams().size()>0)
+        {
+            this.owner.setServerValidateBean(svbean);
+            if(!VALIDATE_TYPE_ONSUBMIT.equals(this.servervalidatetype))
+            {//当前校验不是只在提交时进行校验，即在onblur时也要进行校验
+                this.owner.getReportBean().addServerValidateBeanOnBlur(this.owner.getInputBoxId(),svbean);
+                String onblur="onblur=\"wx_onblurValidate('"+this.owner.getReportBean().getGuid()+"',this,";
+                onblur+=(this.owner instanceof ConditionBean)+",true,";
+                onblur+=this.servervalidateCallback+")\"";
+                this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,onblur,1);
+            }
+        }
     }
 
     protected void processRelativeInputBoxes()
     {
-        if(this.lstChildids==null||this.lstChildids.size()==0) return;//如果没有依赖此输入框的子下拉框
+        if(this.lstChildids==null||this.lstChildids.size()==0) return;
         ReportBean rbean=this.owner.getReportBean();
         if(this.displaymode==1)
         {
@@ -711,7 +779,7 @@ public abstract class AbsInputBox implements Cloneable
     {
         return "onblur";
     }
-    
+
     private void setDisplaymode(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
     {
         if(ownerbean instanceof EditableReportColBean
@@ -737,20 +805,17 @@ public abstract class AbsInputBox implements Cloneable
                     +this.getOwner().getReportBean().getGuid()+"',this);}catch(e){logErrorsAsJsFileLoad(e);}\"",1);
         }
     }
-    
+
     protected void addJsValidateOnBlurEvent(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
     {
-        if(isJsValidateOnBlur())
+        if(this.isJsvalidateOnblur())
         {
-            this.styleproperty=Tools
-                    .mergeHtmlTagPropertyString(
-                            this.styleproperty,
-                            "onfocus=\"try{if(this.errorPromptObj==null){this.errorPromptObj=createJsValidateTipObj(this);}}catch(e){logErrorsAsJsFileLoad(e);}\"",
-                            1);
+            String onblur="onblur=\"wx_onblurValidate('"+this.owner.getReportBean().getGuid()+"',this,";
+            onblur+=(this.owner instanceof ConditionBean)+",false,null)\"";
+            this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,onblur,1);
         }
     }
-    
-    
+
     protected void processStylePropertyForFillInContainer()
     {
         this.mStyleProperties2=new HashMap<String,String>();
@@ -765,7 +830,7 @@ public abstract class AbsInputBox implements Cloneable
         if(style!=null&&!style.trim().equals("")) this.mStyleProperties2.put("style",style);
         this.styleproperty2=Tools.removePropertyValueByName("style",this.styleproperty2);
     }
-    
+
     protected Object clone() throws CloneNotSupportedException
     {
         return super.clone();

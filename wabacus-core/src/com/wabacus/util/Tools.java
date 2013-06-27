@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -252,7 +253,7 @@ public class Tools
             return definekey;
         }
         realkey=realkey.substring(1,realkey.length()-1).trim();
-        //        if (realkey.equals(""))
+        
         
         
         
@@ -307,6 +308,41 @@ public class Tools
         return result.toString();
     }
 
+    public static String onlyHtmlEncode(String src)
+    {
+        if(src==null||src.trim().equals(""))
+        {
+            return src;
+        }
+        StringBuffer result=new StringBuffer();
+        char character;
+        for(int i=0;i<src.length();i++)
+        {
+            character=src.charAt(i);
+            if(character=='<')
+            {
+                result.append("&lt;");
+            }else if(character=='>')
+            {
+                result.append("&gt;");
+            }else if(character=='\"')
+            {
+                result.append("&quot;");
+            }else if(character=='\'')
+            {
+                result.append("&#039;");
+            }else if(character=='\\')
+            {
+                //result.append("&#092;");
+                result.append(character);
+            }else
+            {
+                result.append(character);
+            }
+        }
+        return result.toString();
+    }
+    
     public static String jsParamEncode(String paramvalue)
     {
         if(paramvalue==null||paramvalue.trim().equals("")) return paramvalue;
@@ -581,7 +617,7 @@ public class Tools
         if(str==null||str.trim().equals("")) return str;
         String strOld=str;
         str=replaceCharacterInQuote(str,'(',"WX_QUOTE_LEFT",true);
-        str=replaceCharacterInQuote(str,')',"WX_QUOTE_RIGHT",true);//替换掉引号中的右括号
+        str=replaceCharacterInQuote(str,')',"WX_QUOTE_RIGHT",true);
         boolean flag=false;
         int countleft=0,i=0;
         StringBuffer resultBuf=new StringBuffer();
@@ -775,9 +811,9 @@ public class Tools
         Map<String,String> mAttributes=new HashMap<String,String>();
         RegexTools.parseHtmlTagAttribute(src,mAttributes);
         if(mAttributes.size()==0) return null;
-        mAttributes=Tools.changeMapKeyToLowcase(mAttributes);
+        mAttributes=Tools.changeMapKeyToLowcase(mAttributes);//将键全部转换为小写形式
         if(mAttributes.containsKey(propname)) return mAttributes.get(propname).trim();
-        if(!includeValueInStyle||!mAttributes.containsKey("style")) return null;//如果不从style中取，或者src中没有style=""的属性
+        if(!includeValueInStyle||!mAttributes.containsKey("style")) return null;
         return getPropertyValueFromStyle(propname,mAttributes.get("style"));
     }
 
@@ -869,7 +905,7 @@ public class Tools
                         propValTmp=mergeHtmlTagStyleValue(propValTmp,propVal2Tmp);
                     }else if(lstJsPropertyNames.contains(propNameTmp.toLowerCase())&&!propValTmp.trim().equals("")&&!propVal2Tmp.trim().equals("")
                             &&!propValTmp.endsWith(";"))
-                    {//是js事件属性，且styleproperty1和styleproperty2都有此事件，且styleproperty1没有以;结尾
+                    {
                         propValTmp=propValTmp+";"+propVal2Tmp;
                     }else
                     {
@@ -907,7 +943,7 @@ public class Tools
             propNameTmp=attrEntryTmp.getKey().trim();
             propValTmp=attrEntryTmp.getValue();
             if(mAttributes2.containsKey(propNameTmp))
-            {
+            {//style2中有此属性名和值，则覆盖掉
                 String propVal2Tmp=mAttributes2.get(propNameTmp);
                 propValTmp=propVal2Tmp==null?"":propVal2Tmp.trim();
                 mAttributes2.remove(propNameTmp);
@@ -1009,7 +1045,7 @@ public class Tools
             resultBuf.append(c);
             if(quote!=null)
             {
-                if(quote.equals("\"")&&c=='\"'||quote.equals("'")&&c=='\'') quote=null;//如果是在双引号中且本字符是结束双引号或者是在单引号中且本字符是结束单引号
+                if(quote.equals("\"")&&c=='\"'||quote.equals("'")&&c=='\'') quote=null;
             }else
             {
                 if(c=='\"')
@@ -1044,10 +1080,10 @@ public class Tools
                         resultBuf.append("\"");
                         for(;j<len;j++)
                         {
-                            if(propString.charAt(j)==' ') break;
+                            if(propString.charAt(j)==' ') break;//找到了空格，则说明此属性值结束
                             resultBuf.append(propString.charAt(j));
                         }
-                        resultBuf.append("\" ");//把本属性值后面的空格也补上
+                        resultBuf.append("\" ");
                         i=j;
                     }
                 }
@@ -1235,7 +1271,7 @@ public class Tools
             {
                 time=strTmp;
             }else
-            {//只有日期
+            {
                 date=strTmp;
             }
         }
@@ -1266,7 +1302,7 @@ public class Tools
                 resultBuf.append("yyyy");
                 hasYear=true;
             }else if(str.length()==2||str.length()==1)
-            {
+            {//可能是01或1
                 resultBuf.append("MM");
                 hasMonth=true;
             }else
@@ -1352,7 +1388,7 @@ public class Tools
     }
     
     
-    private static Map<String,String> mEncodedFilePaths=new HashMap<String,String>();//存放注册的路径，以真正路径为key，以注册码为value
+    private static Map<String,String> mEncodedFilePaths=new HashMap<String,String>();
     
     private static Map<String,String> mDecodedFilePaths=new HashMap<String,String>();
     
@@ -1387,5 +1423,68 @@ public class Tools
     {
         if(string==null) return true;
         return ignoreWhiteSpace?string.trim().equals(""):string.equals("");
+    }
+    
+    public static String substring(String str,Integer start,Integer length)
+    {
+        return substring(str,start.intValue(),length.intValue());
+    }
+
+    public static String substring(String str,int start,int length)
+    {
+        if(str!=null)
+        {
+            str=str.trim();
+            if(length>0)
+            {
+                if(str.length()>start+length)
+                {
+                    str=str.substring(start,length);
+                }
+            }else
+            {
+                if(str.length()>start)
+                {
+                    str=str.substring(start);
+                }
+            }
+        }
+        return str;
+    }
+
+    public static String formatDouble(String srcString,String pattern)
+    {
+        try
+        {
+            if(srcString==null||srcString.trim().equals(""))
+            {
+                return "";
+            }
+            DecimalFormat df=new DecimalFormat(pattern);
+            srcString=df.format(Double.parseDouble(srcString));
+            return srcString;
+        }catch(Exception e)
+        {
+            log.error("以"+pattern+"格式格式化"+srcString+"时，发生了异常：",e);
+            return srcString;
+        }
+    }
+
+    public static String formatLong(String srcString,String pattern)
+    {
+        try
+        {
+            if(srcString==null||srcString.trim().equals(""))
+            {
+                return "";
+            }
+            DecimalFormat df=new DecimalFormat(pattern);
+            srcString=df.format(Long.parseLong(srcString));
+            return srcString;
+        }catch(Exception e)
+        {
+            log.error("以"+pattern+"格式格式化"+srcString+"时，发生了异常：",e);
+            return srcString;
+        }
     }
 }

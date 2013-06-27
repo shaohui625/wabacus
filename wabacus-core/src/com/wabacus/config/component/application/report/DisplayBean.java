@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.wabacus.system.ReportRequest;
+import com.wabacus.system.assistant.WabacusAssistant;
+
 public class DisplayBean extends AbsConfigBean
 {
     private Boolean colselect=null;
@@ -33,6 +36,14 @@ public class DisplayBean extends AbsConfigBean
     
     private String dataheader;
 
+    private String labelstyleproperty;//对于列表报表，显示标题行<tr/>的样式字符串，对于块数据自动列表报表，显示每个块的<div/>的样式字符串
+    
+    private List<String> lstDynLabelstylepropertyParts;
+    
+    private String valuestyleproperty;//显示数据行<tr/>的样式字符串
+    
+    private List<String> lstDynValuestylepropertyParts;
+    
     private List<ColBean> lstCols=new ArrayList<ColBean>();
     private Map<String,ColBean> mPropsAndColBeans;
     
@@ -113,6 +124,44 @@ public class DisplayBean extends AbsConfigBean
     public void setLstCols(List<ColBean> lstCols)
     {
         this.lstCols=lstCols;
+    }
+
+    public String getLabelstyleproperty(ReportRequest rrequest,boolean isStaticPart)
+    {
+        if(isStaticPart) return this.labelstyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.labelstyleproperty,this.lstDynLabelstylepropertyParts,"");
+    }
+
+    public void setLabelstyleproperty(String labelstyleproperty,boolean isStaticPart)
+    {
+        if(isStaticPart)
+        {
+            this.labelstyleproperty=labelstyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(labelstyleproperty);
+            this.labelstyleproperty=(String)objArr[0];
+            this.lstDynLabelstylepropertyParts=(List<String>)objArr[1];
+        }
+    }
+
+    public String getValuestyleproperty(ReportRequest rrequest,boolean isStaticPart)
+    {
+        if(isStaticPart) return this.valuestyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.valuestyleproperty,this.lstDynValuestylepropertyParts,"");
+    }
+
+    public void setValuestyleproperty(String valuestyleproperty,boolean isStaticPart)
+    {
+        if(isStaticPart)
+        {
+            this.valuestyleproperty=valuestyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(valuestyleproperty);
+            this.valuestyleproperty=(String)objArr[0];
+            this.lstDynValuestylepropertyParts=(List<String>)objArr[1];
+        }
     }
 
     public ColBean getColBeanByColProperty(String property)

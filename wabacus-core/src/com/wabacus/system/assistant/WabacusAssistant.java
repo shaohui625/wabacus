@@ -39,6 +39,7 @@ import java.util.Map.Entry;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -47,9 +48,9 @@ import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.AbsComponentType;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportParamBean;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.RegexTools;
 import com.wabacus.util.Tools;
@@ -255,7 +256,7 @@ public class WabacusAssistant
                         +displayvalue.substring(endidxTmp);
             }
         }
-        //        lstImgObjs=RegexTools.getMatchObjectArray(displayvalue,"&lt;img[^&gt;]*&gt;",false);
+        
         
         
         
@@ -283,7 +284,7 @@ public class WabacusAssistant
             String tmp;
             char c=imgstr.charAt(0);
             if(c=='\\')
-            {
+            {//=后面是\号，则如果后面跟上'或"，则此\号为转义符，后面也要以\"或\'结尾
                 if(imgstr.length()==1)
                 {
                     return null;
@@ -361,78 +362,142 @@ public class WabacusAssistant
         return cid;
     }
     
-    public String getRequestSessionValue(ReportRequest rrequest,String key,String defaultvalue)
+    public String parseDynPartsInConfigValue(String configvalue,Map<String,String> mDynParts,String[] dynTypenamesArr)
     {
-        if(key==null||key.trim().equals("")) return defaultvalue;
-        if(Tools.isDefineKey("url",key))
+        if(dynTypenamesArr==null||dynTypenamesArr.length==0) return configvalue;
+        String typenameTmp, strStart, strDynValue, strEnd, placeHolderTmp;
+        for(int i=0;i<dynTypenamesArr.length;i++)
         {
-            key=Tools.getRealKeyByDefine("url",key);
-            String value=rrequest.getRequest().getParameter(key);
-            if(value==null||value.trim().equals("")) return defaultvalue;
-            return value.trim();
+            int placeholderIdxTmp=0;
+            typenameTmp=dynTypenamesArr[i];
+            int idx=configvalue.indexOf(typenameTmp+"{");
+            while(idx>=0)
+            {
+                strStart=configvalue.substring(0,idx).trim();
+                strEnd=configvalue.substring(idx);
+                idx=strEnd.indexOf("}");
+                if(idx<0) break;
+                strDynValue=strEnd.substring(0,idx+1);
+                strEnd=strEnd.substring(idx+1).trim();
+                placeHolderTmp="[PLACE_HOLDER_"+typenameTmp+"_"+placeholderIdxTmp+"]";
+                mDynParts.put(placeHolderTmp,strDynValue);
+                configvalue=strStart+placeHolderTmp+strEnd;
+                idx=configvalue.indexOf(typenameTmp+"{");
+                placeholderIdxTmp++;
+            }
         }
-        String realkey=null;
-        boolean isRequest=false;
-        if(Tools.isDefineKey("request",key))
-        {
-            realkey=Tools.getRealKeyByDefine("request",key);
-            isRequest=true;
-        }
-        if(Tools.isDefineKey("session",key))
-        {
-            realkey=Tools.getRealKeyByDefine("session",key);
-        }
-        if(realkey==null) return null;
-        String value=getRequestSessionAttributeValue(rrequest,realkey.trim(),isRequest);
-        if(value==null||value.trim().equals("")) return defaultvalue;
+        return configvalue;
+    }
+    
+    public boolean isGetRequestContextValue(String paramname)
+    {
+        if(paramname==null||paramname.trim().equals("")) return false;
+        if(Tools.isDefineKey("url",paramname)) return true;
+        if(Tools.isDefineKey("request",paramname)) return true;
+        if(Tools.isDefineKey("rrequest",paramname)) return true;
+        if(Tools.isDefineKey("session",paramname)) return true;
+        return false;
+    }
+    
+    public String getRequestContextStringValue(ReportRequest rrequest,String key,String defaultvalue)
+    {
+        Object obj=getRequestContextValue(rrequest,key);
+        if(obj==null||obj.toString().trim().equals("")) return defaultvalue;
+        return obj.toString().trim();
+    }
+    
+    public Object getRequestContextValue(ReportRequest rrequest,String key)
+    {
+        if(key==null||key.trim().equals("")) return null;
+        if(Tools.isDefineKey("url",key)) return getValueFromUrl(rrequest.getRequest(),key);
+        if(Tools.isDefineKey("rrequest",key)) return getValueFromReportRequest(rrequest,key);
+        if(Tools.isDefineKey("request",key)) return getValueFromRequest(rrequest.getRequest(),key);
+        if(Tools.isDefineKey("session",key)) return getValueFromSession(rrequest.getRequest().getSession(),key);
+        return null;
+    }
+    
+    private String getValueFromUrl(HttpServletRequest request,String paramname)
+    {
+        if(request==null) return null;
+        paramname=Tools.getRealKeyByDefine("url",paramname);
+        if(paramname==null||paramname.trim().equals("")) return null;
+        String value=request.getParameter(paramname);
+        if(value==null||value.trim().equals("")) return null;
         return value.trim();
     }
     
-    private String getRequestSessionAttributeValue(ReportRequest rrequest,String key,boolean isRequest)
+    private Object getValueFromReportRequest(ReportRequest rrequest,String key)
     {
-        if(key==null||key.trim().equals("")) return null;
-        int idx=key.lastIndexOf(".");
+        if(rrequest==null) return null;
+        String realkey=Tools.getRealKeyByDefine("rrequest",key);
+        if(realkey==null||realkey.trim().equals("")) return null;
+        int idx=realkey.lastIndexOf(".");
         if(idx>0)
         {
-            String pojokey=key.substring(0,idx).trim();
-            String propname=key.substring(idx+1).trim();
-            if(!pojokey.equals("")&&!propname.equals(""))
-            {//是从request/session中获取pojo某个成员变量数据
-                Object obj=null;
-                if(isRequest)
-                {
-                    obj=rrequest.getRequest().getAttribute(pojokey);
-                }else
-                {
-                    obj=rrequest.getRequest().getSession().getAttribute(pojokey);
-                }
-                if(obj==null) return null;
-                Object value;
-                try
-                {
-                    Method m=obj.getClass().getMethod("get"+propname.substring(0,1).toUpperCase()+propname.substring(1),new Class[] {});
-                    value=m.invoke(obj,new Object[] {});
-                }catch(Exception e)
-                {
-                    String source=null;
-                    if(isRequest)
-                        source="requset";
-                    else
-                        source="session";
-                    throw new WabacusRuntimeException("从"+source+"中取键为"+key+"的值失败",e);
-                }
-                return value==null?null:String.valueOf(value).trim();
-            }
+            String pojokey=realkey.substring(0,idx).trim();
+            String propname=realkey.substring(idx+1).trim();
+            if(pojokey.equals("")||propname.equals("")) return null;
+            return getPojoPropertyValue(rrequest.getAttribute(pojokey),propname);
+        }else
+        {
+            return rrequest.getAttribute(realkey);
         }
-        if(isRequest) return (String)rrequest.getRequest().getAttribute(key);
-        return (String)rrequest.getRequest().getSession().getAttribute(key);
+    }
+
+    public Object getValueFromRequest(HttpServletRequest request,String key)
+    {
+        if(request==null) return null;
+        String realkey=Tools.getRealKeyByDefine("request",key);
+        if(realkey==null||realkey.trim().equals("")) return null;
+        int idx=realkey.lastIndexOf(".");
+        if(idx>0)
+        {
+            String pojokey=realkey.substring(0,idx).trim();
+            String propname=realkey.substring(idx+1).trim();
+            if(pojokey.equals("")||propname.equals("")) return null;
+            return getPojoPropertyValue(request.getAttribute(pojokey),propname);
+        }else
+        {
+            return request.getAttribute(realkey);
+        }
+    }
+    
+    public Object getValueFromSession(HttpSession session,String key)
+    {
+        if(session==null) return null;
+        String realkey=Tools.getRealKeyByDefine("session",key);
+        if(realkey==null||realkey.trim().equals("")) return null;
+        int idx=realkey.lastIndexOf(".");
+        if(idx>0)
+        {
+            String pojokey=realkey.substring(0,idx).trim();
+            String propname=realkey.substring(idx+1).trim();
+            if(pojokey.equals("")||propname.equals("")) return null;
+            return getPojoPropertyValue(session.getAttribute(pojokey),propname);
+        }else
+        {
+            return session.getAttribute(realkey);
+        }
+    }
+    
+    private Object getPojoPropertyValue(Object pojoObj,String propname)
+    {
+        if(pojoObj==null||propname==null||propname.trim().equals("")) return null;
+        try
+        {
+            Method m=pojoObj.getClass().getMethod("get"+propname.substring(0,1).toUpperCase()+propname.substring(1),new Class[] {});
+            return m.invoke(pojoObj,new Object[] {});
+        }catch(Exception e)
+        {
+            throw new WabacusRuntimeException("从"+pojoObj.getClass().getName()+"对象中取成员变量"+propname+"的值失败",e);
+        }
     }
     
     public String encodeAttachFilename(HttpServletRequest request,String title)
     {
         if(title==null) title="";
         title=Tools.replaceAll(title,"&nbsp;","");
-        title=title.replaceAll("<.*?\\>","").trim();//去掉标题中的html元素
+        title=title.replaceAll("<.*?\\>","").trim();
         try
         {
             if(Config.encode.equalsIgnoreCase("utf-8"))
@@ -455,13 +520,16 @@ public class WabacusAssistant
         return title;
     }
     
-    public String parseStringWithDynPart(String value,Map<String,String> mDynParts)
+    public Object[] parseStringWithDynPart(String value)
     {
-        if(value==null||value.trim().equals("")) return value;
+        if(value==null||value.equals("")) return new Object[] { null, null };
+        Map<String,String> mDynParts=new HashMap<String,String>();
         value=parseStringWithCertainDynPart(value,"url",mDynParts);
+        value=parseStringWithCertainDynPart(value,"rrequest",mDynParts);
         value=parseStringWithCertainDynPart(value,"request",mDynParts);
         value=parseStringWithCertainDynPart(value,"session",mDynParts);
-        return value;
+        if(mDynParts.size()==0) mDynParts=null;
+        return new Object[] { value, mDynParts };
     }
     
     private String parseStringWithCertainDynPart(String value,String partname,Map<String,String> mDynParts)
@@ -488,14 +556,52 @@ public class WabacusAssistant
         return value;
     }
     
-    public String getRuntimeStringValueWithDynPart(ReportRequest rrequest,String value,Map<String,String> mDynParts)
+    public String getStringValueWithDynPart(ReportRequest rrequest,String value,Map<String,String> mDynParts,String defaultvalue)
     {
-        if(mDynParts==null||mDynParts.size()==0) return value;
-        for(Entry<String,String> entryTmp:mDynParts.entrySet())
+        if(mDynParts!=null&&mDynParts.size()>0)
         {
-            value=Tools.replaceAll(value,entryTmp.getKey(),getRequestSessionValue(rrequest,entryTmp.getValue(),""));
+            for(Entry<String,String> entryTmp:mDynParts.entrySet())
+            {
+                value=Tools.replaceAll(value,entryTmp.getKey(),rrequest==null?entryTmp.getValue():getRequestContextStringValue(rrequest,entryTmp.getValue(),""));
+            }
         }
+        value=rrequest==null?value:rrequest.getI18NStringValue(value);
+        if(value==null||value.equals("")) value=defaultvalue;
         return value;
+    }
+    
+    public Object[] parseStylepropertyWithDynPart(String styleproperty)
+    {
+        Object[] objArr=parseStringWithDynPart(styleproperty);
+        if(objArr[1]==null||((Map<String,String>)objArr[1]).size()==0) return new Object[] { objArr[0], null };
+        styleproperty=(String)objArr[0];
+        if(styleproperty==null) styleproperty="";
+        List<String> lstDynParts=new ArrayList<String>();
+        for(String keyTmp:((Map<String,String>)objArr[1]).keySet())
+        {
+            styleproperty=Tools.replaceAll(styleproperty,keyTmp," ");
+            lstDynParts.add(((Map<String,String>)objArr[1]).get(keyTmp));
+        }
+        return new Object[] { styleproperty.trim(), lstDynParts };
+    }
+    
+    public String getStylepropertyWithDynPart(ReportRequest rrequest,String styleproperty,List<String> lstDynStylepropertyParts,String defaultvalue)
+    {
+        if(styleproperty==null) styleproperty="";
+        if(lstDynStylepropertyParts!=null&&lstDynStylepropertyParts.size()>0)
+        {
+            for(String dynValTmp:lstDynStylepropertyParts)
+            {
+                if(rrequest==null)
+                {
+                    styleproperty+=" "+dynValTmp;
+                }else
+                {//否则取到真正值
+                    styleproperty=Tools.mergeHtmlTagPropertyString(styleproperty,getRequestContextStringValue(rrequest,dynValTmp,""),1);
+                }
+            }
+        }
+        return styleproperty.trim().equals("")?defaultvalue:styleproperty.trim();
     }
     
     public String getSpacingDisplayString(int spacenum)
@@ -631,7 +737,6 @@ public class WabacusAssistant
         {
             return;
         }
-        rrequest.getRequest().setAttribute("WX_REPORTREQUEST",rrequest);
         rrequest.getRequest().setAttribute("WX_COMPONENT_OBJ",comObj);
         try
         {
@@ -642,22 +747,7 @@ public class WabacusAssistant
             throw new WabacusRuntimeException("通过模板"+dyntplpath+"显示组件"+comObj.getConfigBean().getPath()+"失败",e);
         }
     }
-
-    public void release(IConnection conn){
-
-        try
-        {
-            if(conn!=null)
-            {
-                conn.close();
-            }
-
-        }catch(Exception e)
-        {
-            log.error("关闭数据库连接失败",e);
-        }
-
-    }
+    
     public void release(Connection conn,Statement stmt)
     {
         try

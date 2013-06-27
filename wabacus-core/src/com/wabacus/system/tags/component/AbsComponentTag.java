@@ -148,7 +148,7 @@ public abstract class AbsComponentTag extends BodyTagSupport
             {
                 ReportBean rbDisplay=(ReportBean)this.displayComponentObj.getConfigBean();
                 if(rbDisplay.isSlaveReportDependsonListReport())
-                {//显示的报表是依赖列表报表的从报表
+                {
                     throw new WabacusRuntimeException(rbDisplay.getPath()+"是从报表，不能在id为"+this.ownerComponentObj.getConfigBean().getPath()
                             +"的组件的动态模板中显示它的内容");
                 }

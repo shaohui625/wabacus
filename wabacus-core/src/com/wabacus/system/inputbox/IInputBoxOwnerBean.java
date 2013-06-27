@@ -19,6 +19,7 @@
 package com.wabacus.system.inputbox;
 
 import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.system.ReportRequest;
 
 public interface IInputBoxOwnerBean
 {
@@ -28,5 +29,7 @@ public interface IInputBoxOwnerBean
 
     public AbsInputBox getSiblingInputBoxByOwnerId(String ownerid);
 
-    public String getLabel();
+    public String getLabel(ReportRequest rrequest);
+    
+    public void setServerValidateBean(ServerValidateBean svbean);
 }

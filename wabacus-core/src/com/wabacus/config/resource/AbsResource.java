@@ -34,7 +34,7 @@ public abstract class AbsResource
 
 //     */
 
-//    {
+
 
 
     public abstract Object getValue(Element itemElement);

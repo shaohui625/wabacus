@@ -25,6 +25,8 @@ public class EditableReportSQLButtonDataBean extends EditableReportDeleteDataBea
 {
     private boolean isAutoReportdata;
 
+    private boolean  isHasReportDataParams;
+    
     public boolean isAutoReportdata()
     {
         return isAutoReportdata;
@@ -35,9 +37,18 @@ public class EditableReportSQLButtonDataBean extends EditableReportDeleteDataBea
         this.isAutoReportdata=isAutoReportdata;
     }
 
+    public boolean isHasReportDataParams()
+    {
+        return isHasReportDataParams;
+    }
+
+    public void setHasReportDataParams(boolean isHasReportDataParams)
+    {
+        this.isHasReportDataParams=isHasReportDataParams;
+    }
+
     public EditableReportSQLButtonDataBean(IEditableReportEditGroupOwnerBean owner)
     {
         super(owner);
     }
-
 }

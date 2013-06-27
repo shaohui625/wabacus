@@ -26,6 +26,7 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.system.buttons.EditableReportSQLButtonDataBean;
 import com.wabacus.util.Tools;
 
 public class UpdateSqlActionBean extends AbsEditSqlActionBean
@@ -102,12 +103,13 @@ public class UpdateSqlActionBean extends AbsEditSqlActionBean
         StringBuffer sqlBuffer=new StringBuffer();
         List<EditableReportParamBean> lstParamsBean=new ArrayList<EditableReportParamBean>();
         int idxleft=configUpdateSql.indexOf("(");
-        if(idxleft<0)
+        if(idxleft<0||configUpdateSql.endsWith("()"))
         {//没有指定要更新的字段，则将所有从数据库取数据的<col/>（不包括hidden="1"和="2"的<col/>）全部更新到表中
             if(!this.ownerGroupBean.getOwnerUpdateBean().isAutoReportdata())
             {
                 throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，在autoreportdata属性为false的<button/>中，不能配置update table这种不带参数的SQL语句");
             }
+            if(configUpdateSql.endsWith("()")) configUpdateSql=configUpdateSql.substring(0,configUpdateSql.length()-2);
             sqlBuffer.append(configUpdateSql).append(" set ");
             for(ColBean cbean:rbean.getDbean().getLstCols())
             {
@@ -171,6 +173,7 @@ public class UpdateSqlActionBean extends AbsEditSqlActionBean
                         sqlBuffer.append(cb.getColumn()+"=?,");
                     }else
                     {
+                        ((EditableReportSQLButtonDataBean)this.getOwnerGroupBean().getOwnerUpdateBean()).setHasReportDataParams(true);
                         EditableReportParamBean paramBean=new EditableReportParamBean();
                         paramBean.setParamname(updatecol);
                         lstParamsBean.add(paramBean);
@@ -199,13 +202,35 @@ public class UpdateSqlActionBean extends AbsEditSqlActionBean
         {
             if(updatesql.indexOf(" ")<0&&updatesql.indexOf(",")<0&&updatesql.indexOf("=")<0) return false;
         }else
-        {//idxBracket1>0
+        {
             String tablename=updatesql.substring(0,idxBracket1).trim();
             if(tablename.indexOf(" ")>=0||tablename.indexOf(",")>=0||tablename.indexOf("=")>=0) return true;
             updatesql=updatesql.substring(idxBracket1+1);
-            int idxBracket2=updatesql.indexOf(")");
-            if(idxBracket2<0) return true;
-            updatesql=updatesql.substring(idxBracket2+1).trim();
+            int idxleft=1;
+            int idxRightBacket=-1;
+            for(int i=0;i<updatesql.length();i++)
+            {
+                if(updatesql.charAt(i)=='(')
+                {
+                    idxleft++;
+                }else if(updatesql.charAt(i)==')')
+                {
+                    if(idxleft==1)
+                    {
+                        idxRightBacket=i;
+                        break;
+                    }else if(idxleft<=0)
+                    {//左右括号没成对，多出了)
+                        return true;
+                    }else
+                    {
+                        idxleft--;
+                    }
+                }
+            }
+            if(idxRightBacket==-1) return true;
+            if(idxRightBacket==0&&(updatesql.equals(")")||updatesql.substring(1).trim().startsWith("where "))) return false;
+            updatesql=updatesql.substring(idxRightBacket+1).trim();
             if(updatesql.equals("")||updatesql.startsWith("where ")) return false;
         }
         return true;

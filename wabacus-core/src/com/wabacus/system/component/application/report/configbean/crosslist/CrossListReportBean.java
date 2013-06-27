@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.wabacus.config.component.application.report.AbsConfigBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 
@@ -71,7 +71,7 @@ public class CrossListReportBean extends AbsExtendConfigBean
         if(crossDatasetbean==null&&isCreateNewWhileNull)
         {
             crossDatasetbean=new CrossListReportDynDatasetBean();
-            ReportDataSetBean datasetbean=this.getOwner().getReportBean().getSbean().getDatasetBeanById(crossColGroupBean.getDatasetid());
+            ReportDataSetValueBean datasetbean=this.getOwner().getReportBean().getSbean().getLstDatasetBeans().get(0).getDatasetValueBeanById(crossColGroupBean.getDatasetid());
             if(datasetbean==null)
             {
                 throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()+"失败，根据它的datasetid："

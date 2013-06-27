@@ -42,10 +42,11 @@ import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.buttons.EditableReportSQLButtonDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportExternalValueBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportParamBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
@@ -62,11 +63,11 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class Oracle extends AbstractJdbcDatabaseType
+public class Oracle extends AbsDatabaseType
 {
     private final static Log log=LogFactory.getLog(Oracle.class);
 
-    public String constructSplitPageSql(ReportDataSetBean svbean)
+    public String constructSplitPageSql(ReportDataSetValueBean svbean)
     {
         String sql=svbean.getSqlWithoutOrderby();
         if(sql.indexOf("%orderby%")>0)
@@ -79,7 +80,7 @@ public class Oracle extends AbstractJdbcDatabaseType
         return sqlBuffer.toString();
     }
 
-    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
     {
         dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
         dynorderby=" ORDER BY "+dynorderby;
@@ -124,12 +125,13 @@ public class Oracle extends AbstractJdbcDatabaseType
         Map<String,EditableReportParamBean> mLobParamsBean=new HashMap<String,EditableReportParamBean>();
         String tablename=null;
         int idxleft=configInsertSql.indexOf("(");
-        if(idxleft<0)
+        if(idxleft<0||configInsertSql.endsWith("()"))
         {//没有指定要更新的字段，则将所有符合要求的从数据库取数据的<col/>全部更新到表中
             if(!isAutoReportData)
             {
                 throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，在autoreportdata属性为false的<button/>中，不能配置insert into table这种格式的SQL语句");
             }
+            if(configInsertSql.endsWith("()")) configInsertSql=configInsertSql.substring(0,configInsertSql.length()-2).trim();
             tablename=configInsertSql;
             sqlBuffer.append(tablename).append("(");
             for(ColBean cbean:rbean.getDbean().getLstCols())
@@ -194,6 +196,7 @@ public class Oracle extends AbstractJdbcDatabaseType
                                 reportTypeKey,true,true),cb.getDatatypeObj()));
                     }else
                     {
+                        ((EditableReportSQLButtonDataBean)insertSqlBean.getOwnerGroupBean().getOwnerUpdateBean()).setHasReportDataParams(true);
                         EditableReportParamBean paramBean=new EditableReportParamBean();
                         paramBean.setParamname(configColPropertyTmp);
                         sqlBuffer.append(Tools.getRealKeyByDefine("@",configColPropertyTmp)+",");
@@ -264,12 +267,13 @@ public class Oracle extends AbstractJdbcDatabaseType
         boolean isAutoReportData=updateSqlBean.getOwnerGroupBean().getOwnerUpdateBean().isAutoReportdata();
         int idxleft=configUpdateSql.indexOf("(");
         boolean hasNonLobTypeUpdateParams=false;
-        if(idxleft<0)
+        if(idxleft<0||configUpdateSql.endsWith("()"))
         {//没有指定要更新的字段，则将所有从数据库取数据的<col/>（不包括displaytype为hidden的<col/>）全部更新到表中
             if(!isAutoReportData)
             {
                 throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，在autoreportdata属性为false的<button/>中，不能配置insert into table这种格式的SQL语句");
             }
+            if(configUpdateSql.endsWith("()")) configUpdateSql=configUpdateSql.substring(0,configUpdateSql.length()-2);
             sqlBuffer.append(configUpdateSql).append(" set ");
             for(ColBean cbean:rbean.getDbean().getLstCols())
             {
@@ -361,6 +365,7 @@ public class Oracle extends AbstractJdbcDatabaseType
                         }
                     }else
                     {
+                        ((EditableReportSQLButtonDataBean)updateSqlBean.getOwnerGroupBean().getOwnerUpdateBean()).setHasReportDataParams(true);
                         EditableReportParamBean paramBean=new EditableReportParamBean();
                         paramBean.setParamname(updatecol);
                         sqlBuffer.append(Tools.getRealKeyByDefine("@",updatecol)+"=?,");
@@ -372,7 +377,7 @@ public class Oracle extends AbstractJdbcDatabaseType
         if(sqlBuffer.charAt(sqlBuffer.length()-1)==',') sqlBuffer.deleteCharAt(sqlBuffer.length()-1);
         List<UpdateSqlActionBean> lstUpdateSqls=new ArrayList<UpdateSqlActionBean>();
         if(mLobParamsBean!=null&&mLobParamsBean.size()>0)
-        {//存在大字段需要更新
+        {
             String tablename=configUpdateSql.substring("update".length()+1).trim();
             if(tablename.indexOf("(")>0) tablename=tablename.substring(0,tablename.indexOf("(")).trim();
             List<EditableReportParamBean> lstParamsBean2=new ArrayList<EditableReportParamBean>();
@@ -405,7 +410,7 @@ public class Oracle extends AbstractJdbcDatabaseType
         
         
         if(hasNonLobTypeUpdateParams)
-        {
+        {//有需要更新的普通类型的字段
             lstUpdateSqls.add(new UpdateSqlActionBean(sqlBuffer.toString(),lstParamsBean,updateSqlBean.getOwnerGroupBean(),updateSqlBean
                     .getReturnValueParamname()));
         }

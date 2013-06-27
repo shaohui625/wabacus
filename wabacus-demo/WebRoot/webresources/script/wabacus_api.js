@@ -21,15 +21,7 @@
  
  var WX_SAVETYPE_DELETE='delete';//删除操作
 
-/**
- * 存放同一页面中所有数据自动列表报表/表单中被选中的行对象
- * 此对象为一类似JAVA中的Map<reportGuid,Map<trid,trObj>>对象，其中reportGuid为报表的guid，Map<trid,trObj>为此报表所有被选中的<tr/>对象，以<tr/>的id为键，<tr/>对象为值。
- * 因此要获取某个报表所有被选中的行对象时，只需根据这个报表的<report/>的guid得到被选中行的<tr/>对象集合，循环它就可以得到所有被选中行的对象
- * 如果被选中的行对象是可编辑数据自动列表报表新增的<tr/>，则trObj.getAttribute('EDIT_TYPE')=='add'
- * 一般在行选中回调函数中可能会需要取用这些被选中行对象
- * 下面getAllSelectedTrObjs(pageid,reportid)方法即为获取某个报表/表单所有选中行对象
- */
-var WX_selectedTrObjs;
+
 
 /**
  * 刷新某个组件的显示
@@ -108,38 +100,9 @@ function onInputBoxKeyPress(event)
  * @param reportid 报表id
  * @return 返回本报表被选中行的对象数组，且按行号从小到大排好序
  */
-function getAllSelectedTrObjs(pageid,reportid)
+function getListReportSelectedTrObjs(pageid,reportid,isOnlyCurrentPage,isNeedOrder)
 {
-	if(WX_selectedTrObjs==null) return null; 
-	var reportguid=getComponentGuidById(pageid,reportid);
-	var selectTrObjs=WX_selectedTrObjs[reportguid];
-	if(selectTrObjs==null) return null;
-	var tridPrex=null;
-	var maxRownum=-1;//存放所有选中的行中最大的行号
-	var idxTmp;
-	for(var key in selectTrObjs)
-	{
-		idxTmp=key.lastIndexOf('_tr_');
-		if(idxTmp<0) continue;
-		var myrownum=parseInt(key.substring(idxTmp+'_tr_'.length),10);//取到本tr的行号
-		if(myrownum>maxRownum) maxRownum=myrownum;
-		if(tridPrex==null) tridPrex=key.substring(0,idxTmp+'_tr_'.length);
-	}
-	var resultsArr=new Array();
-	if(maxRownum<0)
-	{//如果没有取到最大行号，可能没有选中行，即selectTrObjs为空，或者<tr/>的id不合法
-		for(var key in selectTrObjs)
-		{
-			resultsArr[resultsArr.length]=selectTrObjs[key];
-		}
-	}else
-	{
-		for(var i=0;i<=maxRownum;i++)
-		{//将选中行根据行号从小到大放入结果集中
-			if(selectTrObjs[tridPrex+i]!=null) resultsArr[resultsArr.length]=selectTrObjs[tridPrex+i];
-		}
-	}
-	return resultsArr;
+	return getListReportSelectedTrObjsImpl(pageid,reportid,isOnlyCurrentPage,isNeedOrder);
 }
 
 /**
@@ -151,10 +114,7 @@ function isSelectedRow(trObj)
 	if(trObj==null||!isListReportDataTrObj(trObj)) return false;
 	var trid=trObj.getAttribute('id');
 	var reportguid=trid.substring(0,trid.lastIndexOf('_tr_'));//报表的guid
-  	if(reportguid=='') return false;
-	var allSelectedTrObjs=WX_selectedTrObjs[reportguid];
-	if(allSelectedTrObjs==null||allSelectedTrObjs[trid]==null) return false;
-	return true;
+	return isSelectedRowImpl(reportguid,trObj);
 }
 
 /**
@@ -170,7 +130,7 @@ function selectReportDataRow(trObj,shouldInvokeOnloadMethod)
   	var reportguid=trid.substring(0,trid.lastIndexOf('_tr_'));//报表的guid
   	if(reportguid=='') return;
   	var rowselecttype=getRowSelectType(reportguid);
-  	if(rowselecttype!='checkbox'&&rowselecttype!='radiobox'&&rowselecttype!='single'&&rowselecttype!='multiply') return;
+  	if(rowselecttype==null||WX_ROWSELECT_TYPE.alltypes[rowselecttype.toLowerCase()]!==true) return;
   	WX_selectedTrObj_temp=trObj;
   	WX_shouldInvokeOnloadMethod_temp=shouldInvokeOnloadMethod;
   	if(isHasIgnoreSlaveReportsSavingData(reportguid))
@@ -193,7 +153,7 @@ function deselectReportDataRow(trObj,shouldInvokeOnloadMethod)
   	var reportguid=trid.substring(0,trid.lastIndexOf('_tr_'));//报表的guid
   	if(reportguid=='') return;
   	var rowselecttype=getRowSelectType(reportguid);
-  	if(rowselecttype!='checkbox'&&rowselecttype!='radiobox'&&rowselecttype!='single'&&rowselecttype!='multiply') return;
+  	if(rowselecttype==null||WX_ROWSELECT_TYPE.alltypes[rowselecttype.toLowerCase()]!==true) return;
   	WX_selectedTrObj_temp=trObj;
   	WX_shouldInvokeOnloadMethod_temp=shouldInvokeOnloadMethod;
   	if(isHasIgnoreSlaveReportsSavingData(reportguid))
@@ -510,12 +470,70 @@ function hideLoadingMessage()
    if(imgobj!=null) imgobj.style.display='none';
 }
 
+/**
+ * 当输入框被编辑后设置的样式
+ */
 function changeEditedInputboxDisplayStyle(editedElementObj)
 {
 	if(editedElementObj==null) return;
 	//editedElementObj.style.backgroundColor='lightblue';
 	editedElementObj.style.background='#ffd700 url(webresources/skin/dirty.gif) no-repeat 0 0';
 }
+
+/**
+ * 因为输入框校验失败改变样式
+ */
+/*function changeInputboxStyleByJsValidateError(elementObj)
+{
+	if(elementObj==null) return;
+	var inputboxObj=null;
+	if(isWXInputBoxNode(elementObj))
+	{//如果本身就是输入框
+		inputboxObj=elementObj;
+	}else
+	{
+		inputboxObj=getWXInputBoxChildNode(elementObj);
+	}
+	if(inputboxObj!=null)
+	{//如果取到输入框对象，则改变输入框样式
+		inputboxObj.focus();
+		inputboxObj.style.background='red';
+	}else
+	{//如果没有取到，则改变父标签样式
+		elementObj.style.background='red';
+	}
+}*/
+
+/**
+ * 在onblur进行客户端校验失败时，提示出错信息
+ * @param parentElementObj 套在输入框外面的<font/>对象或<td/>对象
+ */
+function wx_jsPromptErrorOnblur(metadataObj,parentElementObj,errormess)
+{
+	if(parentElementObj==null) return;
+	var promptEleObj=parentElementObj;
+	if(parentElementObj.tagName=='FONT'||metadataObj.reportfamily==ReportFamily.LISTFORM)
+	{//如果是<font/>，或者是listform表单类型，因为这种输入框不会隐藏，所以可以直接贴在输入框上显示
+		promptEleObj=getWXInputBoxChildNode(parentElementObj);
+		if(promptEleObj==null) promptEleObj=parentElementObj.parentNode;
+	}
+	if(promptEleObj==null) return;
+	if(promptEleObj.errorPromptObj==null)
+	{
+		promptEleObj.errorPromptObj=createJsValidateTipObj(promptEleObj);
+	}
+	promptEleObj.errorPromptObj.show(errormess);
+}
+
+/**
+ * 在onblur进行服务器端校验失败时，提示出错信息
+ * @param parentElementObj 套在输入框外面的<font/>对象或<td/>对象
+ */
+function wx_serverPromptErrorOnblur(metadataObj,parentElementObj,errormess)
+{
+	wx_jsPromptErrorOnblur(metadataObj,parentElementObj,errormess);//与客户端采用同样的提示方式
+}
+
 /**************************************************
  * 信息提示接口方法
  *************************************************/
@@ -623,7 +641,7 @@ function wx_success(message,paramsObj)
 	}else
 	{
 		if(message!=null) paramsObj.content=message;
-		if(paramsObj.lock==null) paramsObj.lock=true;
+		//if(paramsObj.lock==null) paramsObj.lock=true;
 		if(paramsObj.time==null) paramsObj.time=2;
 		if(paramsObj.icon==null) paramsObj.icon='succeed';
 		art.dialog(paramsObj);
@@ -697,6 +715,9 @@ function wx_win(message,paramsObj)
 
 /**
  * 以窗口形式显示新页面
+ * 在弹出页面中如果要引用父页面，则分两种情况：
+ * 	如果是ymPrompt提示组件，则用parent引用到源页面对象
+ *		如果是artDialog提示组件，则用artDialog.open.origin引用到源页面提示组件
  * @param url：要显示的新页面URL
  */
 //function wx_winpage(url,title,width,height,maxbtn,minbtn,handler)

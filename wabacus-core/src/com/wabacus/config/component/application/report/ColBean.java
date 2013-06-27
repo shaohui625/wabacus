@@ -20,11 +20,11 @@ package com.wabacus.config.component.application.report;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
 import com.wabacus.exception.WabacusConfigLoadingException;
-import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.util.Consts;
@@ -39,9 +39,11 @@ public class ColBean extends AbsConfigBean
 
     private String column;
 
-    private String datasetid;
+    private String datasetValueId;
     
-    private String label=null;
+    private String label;
+    
+    private Map<String,String> mDynLableParts;
 
     private String displaytype=Consts.COL_DISPLAYTYPE_INITIAL;
     
@@ -50,12 +52,16 @@ public class ColBean extends AbsConfigBean
     private boolean isI18n;
 
     private IDataType datatypeObj;
-
-    private String labelstyleproperty="";//如果当前label列要以某种样式显示，则在这个属性中配置，生成报表时，会将这里配置的内容原封不动的拼凑到当前label的<td...>里面。
-
-    private String valuestyleproperty="";
  
-    private String labelalign;
+    private String labelstyleproperty;
+    
+    private List<String> lstDynLabelstylepropertyParts;
+    
+    private String valuestyleproperty;
+    
+    private List<String> lstDynValuestylepropertyParts;
+    
+    private String labelalign;//配置的列标题对齐方式，不用配置，而是从labelstyleproperty中解析出来，以便数据导出或打印时使用
     
     private String valuealign;
     
@@ -67,14 +73,20 @@ public class ColBean extends AbsConfigBean
     
     private String printlabelstyleproperty;
     
+    private List<String> lstDynPrintlabelstylepropertyParts;
+    
     private String printvaluestyleproperty;
+    
+    private List<String> lstDynPrintvaluestylepropertyParts;
     
     private Method setMethod=null;
 
     private Method getMethod=null;
 
+    public final static String NON_LABEL="{non-label}";
 
-//
+
+
 
 
 //    private Map<String,String> mFormatParamsColProperties;//存放当前列的所有格式化方法参数中用到的其它<col/>的定义property(即@{}格式)和真正property
@@ -101,14 +113,14 @@ public class ColBean extends AbsConfigBean
         this.colid=colid;
     }
 
-    public String getDatasetid()
+    public String getDatasetValueId()
     {
-        return datasetid;
+        return datasetValueId;
     }
 
-    public void setDatasetid(String datasetid)
+    public void setDatasetValueId(String datasetid)
     {
-        this.datasetid=datasetid;
+        this.datasetValueId=datasetid;
     }
 
     public float getPlainexcelwidth()
@@ -171,24 +183,42 @@ public class ColBean extends AbsConfigBean
         this.printwidth=printwidth;
     }
 
-    public String getPrintlabelstyleproperty()
+    public String getPrintlabelstyleproperty(ReportRequest rrequest,boolean isStaticPart)
     {
-        return printlabelstyleproperty;
+        if(isStaticPart) return this.printlabelstyleproperty==null?"":this.printlabelstyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.printlabelstyleproperty,this.lstDynPrintlabelstylepropertyParts,"");
+    }
+    
+    public void setPrintlabelstyleproperty(String printlabelstyleproperty,boolean isStaticPart)
+    {
+        if(isStaticPart)
+        {
+            this.printlabelstyleproperty=printlabelstyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(printlabelstyleproperty);
+            this.printlabelstyleproperty=(String)objArr[0];
+            this.lstDynPrintlabelstylepropertyParts=(List<String>)objArr[1];
+        }
     }
 
-    public void setPrintlabelstyleproperty(String printlabelstyleproperty)
+    public String getPrintvaluestyleproperty(ReportRequest rrequest,boolean isStaticPart)
     {
-        this.printlabelstyleproperty=printlabelstyleproperty;
+        if(isStaticPart) return this.printvaluestyleproperty==null?"":this.printvaluestyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.printvaluestyleproperty,this.lstDynPrintvaluestylepropertyParts,"");
     }
-
-    public String getPrintvaluestyleproperty()
+    
+    public void setPrintvaluestyleproperty(String printvaluestyleproperty,boolean isStaticPart)
     {
-        return printvaluestyleproperty;
-    }
-
-    public void setPrintvaluestyleproperty(String printvaluestyleproperty)
-    {
-        this.printvaluestyleproperty=printvaluestyleproperty;
+        if(isStaticPart)
+        {
+            this.printvaluestyleproperty=printvaluestyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(printvaluestyleproperty);
+            this.printvaluestyleproperty=(String)objArr[0];
+            this.lstDynValuestylepropertyParts=(List<String>)objArr[1];
+        }
     }
 
     public void setProperty(String property)
@@ -217,7 +247,9 @@ public class ColBean extends AbsConfigBean
 
     public void setLabel(String label)
     {
-        this.label=label;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(label);
+        this.label=(String)objArr[0];
+        this.mDynLableParts=(Map<String,String>)objArr[1];
     }
 
     public String getDisplaytype()
@@ -253,9 +285,9 @@ public class ColBean extends AbsConfigBean
         return this.column;
     }
 
-    public String getLabel()
+    public String getLabel(ReportRequest rrequest)
     {
-        return this.label;
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.label,this.mDynLableParts,"");
     }
 
     public IDataType getDatatypeObj()
@@ -267,60 +299,63 @@ public class ColBean extends AbsConfigBean
     {
         this.datatypeObj=datatypeObj;
     }
-
-    public String getLabelstyleproperty()
-    {
-        return labelstyleproperty;
-    }
-
-    private String dataexportlabelstyleproperty=null;//导出到word/richexcel中的标题列样式
     
-    public String getLabelstyleproperty(ReportRequest rrequest)
+    public String getLabelstyleproperty(ReportRequest rrequest,boolean isStaticPart)
     {
-        if(rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT) return this.printlabelstyleproperty;
-        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&this.getReportBean().isListReportType())
+        if(rrequest!=null&&rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT) return this.getPrintlabelstyleproperty(rrequest,isStaticPart);
+        if(isStaticPart) return this.labelstyleproperty==null?"":this.labelstyleproperty;
+        String reallabelstyleproperty=WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.labelstyleproperty,
+                this.lstDynLabelstylepropertyParts,"");
+        if(rrequest!=null&&rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&this.getReportBean().isListReportType())
         {
-            if(dataexportlabelstyleproperty==null)
+            String stylevalue=Tools.getPropertyValueByName("style",reallabelstyleproperty,false);
+            if(stylevalue==null) stylevalue="";
+            if(!stylevalue.trim().equals("")&&!stylevalue.endsWith(";")) stylevalue=stylevalue+";";
+            if(stylevalue.toLowerCase().indexOf("text-align")<0)
             {
-                dataexportlabelstyleproperty=this.labelstyleproperty==null?"":this.labelstyleproperty.trim();
-                String stylevalue=Tools.getPropertyValueByName("style",dataexportlabelstyleproperty,false);
-                if(stylevalue==null) stylevalue="";
-                if(!stylevalue.trim().equals("")&&!stylevalue.endsWith(";")) stylevalue=stylevalue+";";
-                if(stylevalue.toLowerCase().indexOf("text-align")<0)
-                {
-                    stylevalue=stylevalue+"text-align:center;";
-                }
-                if(stylevalue.toLowerCase().indexOf("vertical-align")<0)
-                {
-                    stylevalue=stylevalue+"vertical-align:middle;";
-                }
-                dataexportlabelstyleproperty=Tools.removePropertyValueByName("style",dataexportlabelstyleproperty);
-                dataexportlabelstyleproperty=dataexportlabelstyleproperty+" style=\""+stylevalue+"\"";
+                stylevalue=stylevalue+"text-align:center;";
             }
-            return dataexportlabelstyleproperty;
+            if(stylevalue.toLowerCase().indexOf("vertical-align")<0)
+            {
+                stylevalue=stylevalue+"vertical-align:middle;";
+            }
+            reallabelstyleproperty=Tools.removePropertyValueByName("style",reallabelstyleproperty);
+            reallabelstyleproperty=reallabelstyleproperty+" style=\""+stylevalue+"\"";
         }
-        return labelstyleproperty;
+        return reallabelstyleproperty;
     }
     
-    public void setLabelstyleproperty(String labelstyleproperty)
+    public void setLabelstyleproperty(String labelstyleproperty,boolean isStaticPart)
     {
-        this.labelstyleproperty=labelstyleproperty;
-    }
-
-    public String getValuestyleproperty()
-    {
-        return valuestyleproperty;
+        if(isStaticPart)
+        {
+            this.labelstyleproperty=labelstyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(labelstyleproperty);
+            this.labelstyleproperty=(String)objArr[0];
+            this.lstDynLabelstylepropertyParts=(List<String>)objArr[1];
+        }
     }
     
-    public String getValuestyleproperty(ReportRequest rrequest)
+    public String getValuestyleproperty(ReportRequest rrequest,boolean isStaticPart)
     {
-        if(rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT) return this.printvaluestyleproperty;
-        return valuestyleproperty;
+        if(rrequest!=null&&rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT) return this.getPrintvaluestyleproperty(rrequest,isStaticPart);
+        if(isStaticPart) return this.valuestyleproperty==null?"":this.valuestyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.valuestyleproperty,this.lstDynValuestylepropertyParts,"");
     }
-
-    public void setValuestyleproperty(String valuestyleproperty)
+    
+    public void setValuestyleproperty(String valuestyleproperty,boolean isStaticPart)
     {
-        this.valuestyleproperty=valuestyleproperty;
+        if(isStaticPart)
+        {
+            this.valuestyleproperty=valuestyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(valuestyleproperty);
+            this.valuestyleproperty=(String)objArr[0];
+            this.lstDynValuestylepropertyParts=(List<String>)objArr[1];
+        }
     }
 
     public String getTagcontent()
@@ -353,11 +388,11 @@ public class ColBean extends AbsConfigBean
         this.valuealign=valuealign;
     }
 
-    public boolean isMatchDataSet(ReportDataSetBean svbean)
+    public boolean isMatchDataSet(ReportDataSetValueBean dsvbean)
     {
         if(this.isControlCol()||this.isSequenceCol()||this.isNonFromDbCol()||this.isNonValueCol()) return false;
-        if((this.datasetid==null||this.datasetid.trim().equals(""))&&svbean.isIndependentDataSet()) return true;
-        return this.datasetid.equals(svbean.getId());
+        if((this.datasetValueId==null||this.datasetValueId.trim().equals(""))&&!dsvbean.getReportBean().getSbean().isMultiDataSetCols()) return true;//没有配置datasetid属性的，且本报表没有提供横向多数据集
+        return dsvbean.getId().equals(this.datasetValueId);
     }
     
     public boolean checkDisplayPermission(ReportRequest rrequest)
@@ -463,7 +498,7 @@ public class ColBean extends AbsConfigBean
     public boolean isControlCol()
     {
         if(isRowSelectCol()||isRoworderCol()||isEditableListEditCol())
-        {//如果是行选中的列，或行排序列
+        {
             return true;
         }
         return false;
@@ -493,67 +528,6 @@ public class ColBean extends AbsConfigBean
            }
         }
         return borderstyle;
-    }
-    
-    public String getDisplayValue(Object dataObj,ReportRequest rrequest)
-    {
-        try
-        {
-            Object objValue=getRealTypeValue(dataObj,rrequest);
-            if(objValue==null) return "";
-
-//            {//没有配置格式化方法
-                return this.datatypeObj.value2label(objValue);
-
-           /* Map mParamValues=new HashMap();
-            if(mFormatParamsColProperties!=null&&mFormatParamsColProperties.size()>0)
-            {
-                Iterator<Entry<String,String>> itColids=this.mFormatParamsColProperties.entrySet()
-                        .iterator();
-                Entry<String,String> entry;
-                while(itColids.hasNext())
-                {
-                    entry=itColids.next();
-                    if(entry==null) continue;
-                    mParamValues.put(entry.getValue(),WabacusUtil.getPropertyValue(dataObj,entry
-                            .getValue()));
-                }
-            }
-            String realvalue=this.formatProperties.get(0).format(objValue,mParamValues,rrequest);
-            for(int i=1;i<this.formatProperties.size();i++)
-            {
-                realvalue=this.formatProperties.get(i).format(realvalue,mParamValues,rrequest);
-            }
-            return realvalue;*/
-        }catch(Exception e)
-        {
-            throw new WabacusRuntimeException("格式化报表"+this.getReportBean().getPath()+"的字段"
-                    +this.column+"时失败",e);
-        }
-    }
-
-    public Object getRealTypeValue(Object dataObj,ReportRequest rrequest)
-    {
-        if(this.property==null||this.property.trim().equals("")) return null;
-        if(this.isNonValueCol()||this.isSequenceCol()||this.isControlCol()) return null;
-        if(dataObj==null) return null;
-        Object objValue=null;
-        if(!"[DYN_COL_DATA]".equals(this.getProperty()))
-        {
-            if(this.getMethod==null) return null;
-            try
-            {
-                objValue=this.getMethod.invoke(dataObj,new Object[] {});
-            }catch(Exception e)
-            {
-                throw new WabacusRuntimeException("获取报表"+this.getReportBean().getPath()+"的字段"
-                        +this.column+"时失败",e);
-            }
-        }else
-        {
-            objValue=ReportAssistant.getInstance().getCrossDynamicColDataFromPOJO(this.getReportBean(),dataObj,this.column);
-        }
-        return objValue;
     }
     
     public ColBean getUpdateColBeanDest(boolean isMust)
@@ -625,11 +599,14 @@ public class ColBean extends AbsConfigBean
             }
             if(mFormatParamsColProperties.size()==0) mFormatParamsColProperties=null;
         }*/
-        EditableReportColBean ecolbean=(EditableReportColBean)this.getExtendConfigDataForReportType(EditableReportColBean.class);
-        if(ecolbean!=null&&ecolbean.getInputbox()!=null)
+        if(this.isControlCol()||this.isSequenceCol()||this.isNonValueCol()) return;
+        if(!this.isNonFromDbCol()&&this.getReportBean().getSbean().isMultiDataSetCols()&&(this.datasetValueId==null||this.datasetValueId.trim().equals("")))
         {
-            ecolbean.getInputbox().doPostLoad(ecolbean);
+            throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"上的列"+this.column
+                    +"失败，此报表配置了多个横向数据集查询各列数据，因此必须在column中指定数据集ID");
         }
+        EditableReportColBean ecolbean=(EditableReportColBean)this.getExtendConfigDataForReportType(EditableReportColBean.class);
+        if(ecolbean!=null) ecolbean.doPostLoad();
     }
     
     public int hashCode()

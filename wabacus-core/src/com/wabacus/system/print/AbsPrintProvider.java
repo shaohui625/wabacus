@@ -72,7 +72,7 @@ public abstract class AbsPrintProvider
         int totalpagecnt=0;
         for(PrintSubPageBean pspagebeanTmp:this.ppcbean.getLstPrintPageBeans())
         {
-            int maxpagecnt=0;//存放当前子页的实际页数
+            int maxpagecnt=0;
             if(pspagebeanTmp.isSplitPrintPage())
             {
                 int recordcntTmp, pagecntTmp;
@@ -90,7 +90,7 @@ public abstract class AbsPrintProvider
                     if(pagecntTmp>maxpagecnt) maxpagecnt=pagecntTmp;
                 }
                 if(maxpagecnt<pspagebeanTmp.getMinpagecount()) maxpagecnt=pspagebeanTmp.getMinpagecount();
-                if(pspagebeanTmp.getMaxpagecount()>0&&maxpagecnt>pspagebeanTmp.getMaxpagecount()) maxpagecnt=pspagebeanTmp.getMaxpagecount();
+                if(pspagebeanTmp.getMaxpagecount()>0&&maxpagecnt>pspagebeanTmp.getMaxpagecount()) maxpagecnt=pspagebeanTmp.getMaxpagecount();//大于本页面配置的最大页数
                 if(maxpagecnt==0) continue;
                 if(pspagebeanTmp.isMergeUp()&&totalpagecnt>0)
                 {
@@ -115,7 +115,7 @@ public abstract class AbsPrintProvider
         {
             setSubPagePageno(pspagebeanTmp,i);
             for(Entry<String,PrintTemplateElementBean> entryTmp:pspagebeanTmp.getMPrintElements().entrySet())
-            {//依次打印每一页中各动态元素的内容
+            {
                 printElement(entryTmp.getKey(),entryTmp.getValue());
             }
         }
@@ -252,8 +252,8 @@ public abstract class AbsPrintProvider
                         {
                             this.wresponse.print(((AbsDetailReportType)reportTypeObj).showColData(cbean,false,true,null));
                         }else
-                        {//list
-                            this.wresponse.print(rrequest.getI18NStringValue(cbean.getLabel()));
+                        {
+                            this.wresponse.print(cbean.getLabel(rrequest));
                         }
                     }else
                     {

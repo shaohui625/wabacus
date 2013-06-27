@@ -23,7 +23,7 @@ package com.wabacus.config.database.type;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.ReportAssistant;
@@ -42,11 +42,11 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class Postgresql extends AbstractJdbcDatabaseType
+public class Postgresql extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(Postgresql.class);
 
-    public String constructSplitPageSql(ReportDataSetBean svbean)
+    public String constructSplitPageSql(ReportDataSetValueBean svbean)
     {
 
         String sql=svbean.getSqlWithoutOrderby();
@@ -58,7 +58,7 @@ public class Postgresql extends AbstractJdbcDatabaseType
         return sql;
     }
 
-    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
     {
         dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
         dynorderby=" order by "+dynorderby;
@@ -76,7 +76,7 @@ public class Postgresql extends AbstractJdbcDatabaseType
 
     public String getSequenceValueByName(String sequencename)
     {
-        log.warn("Postgresql数据库不支持序列的配置");
+        log.warn("Postgresql数据库不支持序列（sequence）的配置，只有支持sequence的数据库才支持从序列中取值，比如Oracle、DB2等");
         return "";
     }
     

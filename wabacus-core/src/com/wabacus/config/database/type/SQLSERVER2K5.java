@@ -21,7 +21,7 @@ package com.wabacus.config.database.type;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.ReportAssistant;
@@ -42,11 +42,11 @@ import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
-public class SQLSERVER2K5 extends AbstractJdbcDatabaseType
+public class SQLSERVER2K5 extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(SQLSERVER2K5.class);
 
-    public String constructSplitPageSql(ReportDataSetBean svbean)
+    public String constructSplitPageSql(ReportDataSetValueBean svbean)
     {
         String sql=svbean.getSqlWithoutOrderby();
         String orderby=svbean.getOrderby();
@@ -70,7 +70,7 @@ public class SQLSERVER2K5 extends AbstractJdbcDatabaseType
         return sql;
     }
 
-    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
     {
         dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
         String sql=svbean.getSqlWithoutOrderby();
@@ -92,24 +92,24 @@ public class SQLSERVER2K5 extends AbstractJdbcDatabaseType
 
     private String removeOuterWrap(String sql)
     {
-        int idxprex=sql.indexOf(ReportDataSetBean.sqlprex);
-        int idxpostsuffix=sql.indexOf(ReportDataSetBean.sqlsuffix);
+        int idxprex=sql.indexOf(ReportDataSetValueBean.sqlprex);
+        int idxpostsuffix=sql.indexOf(ReportDataSetValueBean.sqlsuffix);
         if(idxprex==0&&idxpostsuffix>0)
         {
-            sql=sql.substring(ReportDataSetBean.sqlprex.length(),idxpostsuffix);
+            sql=sql.substring(ReportDataSetValueBean.sqlprex.length(),idxpostsuffix);
         }
         return sql;
     }
 
     public String getSequenceValueByName(String sequencename)
     {
-        log.warn("SqlServer数据库不支持序列的配置");
+        log.warn("SqlServer数据库不支持序列（sequence）的配置，只有支持sequence的数据库才支持从序列中取值，比如Oracle、DB2等");
         return "";
     }
     
     public String getSequenceValueSql(String sequencename)
     {
-       throw new WabacusRuntimeException("SqlServer数据库不支持序列的配置");
+       throw new WabacusRuntimeException("SqlServer数据库不支持序列（sequence）的配置，配置为从sequence取数据的报表将无法正常保存");
     }
     
     public IDataType getWabacusDataTypeByColumnType(String columntype)

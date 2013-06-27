@@ -18,12 +18,17 @@
  */
 package com.wabacusdemo;
 
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.format.IFormat;
 
-public class Resultsetpage2_Report2_POJO implements IFormat
+public class Resultsetpage2_Report2_POJO extends AbsReportDataPojo
 {
+    public Resultsetpage2_Report2_POJO(ReportRequest rrequest,ReportBean rbean)
+    {
+        super(rrequest,rbean);
+    }
+
     private String no;
 
     private String name;
@@ -96,7 +101,7 @@ public class Resultsetpage2_Report2_POJO implements IFormat
         this.deptname=deptname;
     }
 
-    public void format(ReportRequest rrequest,ReportBean rbean)
+    public void format()
     {
         sex=sex==null?"1":sex.trim();
         if(sex.equals("0")) sex="女";

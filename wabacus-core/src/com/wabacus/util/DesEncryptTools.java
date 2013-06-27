@@ -109,7 +109,7 @@ public class DesEncryptTools
         
         
         
-        //            return null;
+        
         
     }
 
@@ -128,12 +128,12 @@ public class DesEncryptTools
         
         
         
+        //        {
         
         
         
         
         
-        //        }
     }
 
     public static void initEncryptKey() throws IOException

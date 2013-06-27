@@ -40,7 +40,6 @@ import com.wabacus.config.component.other.ButtonsBean;
 import com.wabacus.config.dataexport.DataExportsConfigBean;
 import com.wabacus.config.dataexport.PDFExportBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
-import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.config.template.TemplateBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
@@ -50,11 +49,11 @@ import com.wabacus.system.assistant.ComponentAssistant;
 import com.wabacus.system.assistant.JavaScriptAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
-import com.wabacus.system.buttons.DataImportButton;
 import com.wabacus.system.buttons.SearchButton;
 import com.wabacus.system.commoninterface.IReportPersonalizePersistence;
 import com.wabacus.system.component.AbsComponentType;
 import com.wabacus.system.component.IComponentType;
+import com.wabacus.system.component.application.report.abstractreport.AbsChartReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsDetailReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
@@ -63,7 +62,9 @@ import com.wabacus.system.component.container.AbsContainerType;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.system.inputbox.AbsSelectBox;
 import com.wabacus.system.inputbox.FileBox;
+import com.wabacus.system.inputbox.JavascriptValidateBean;
 import com.wabacus.system.inputbox.PopUpBox;
+import com.wabacus.system.inputbox.ServerValidateBean;
 import com.wabacus.system.inputbox.TextBox;
 import com.wabacus.system.intercept.IInterceptor;
 import com.wabacus.util.Consts;
@@ -95,6 +96,10 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private String valign="top";
 
+    private String datastyleproperty;
+    
+    private List<String> lstDynDatastylepropertyParts;
+    
     private String title;
 
     private String titlealign="left";
@@ -107,7 +112,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private String parenttitle;
 
-    private Map<String,String> mDynParenttitleParts;//副标题parenttitle中的动态部分，形式与mDynTitleParts一致
+    private Map<String,String> mDynParenttitleParts;
     
     protected String parentSubtitle;
     
@@ -115,13 +120,11 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private String navigate_reportid;//用哪个报表的翻页导航栏，默认是本报表有一个独立的翻页导航栏，此时此值为<report/>的id值，也可以配置成其它报表的<report/>的id，则与别的报表共用一个翻页导航栏。
     
-    private Set<String> sRelateConditionReportids;
+    private Set<String> sRelateConditionReportids;//与此报表存在查询条件相关的报表ID，以便在此报表点击搜索或过滤按钮时，能将那些报表也重新计算翻页信息
 
     private XmlElementBean eleReportBean;
 
     private String bordercolor;
-
-    private String strclass;
 
     private boolean showContextMenu=true;
     
@@ -129,14 +132,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private SqlBean sbean;
 
-    private List<AbsDataImportConfigBean> lstDataImportItems;//本报表配置的所有数据导入项
-
-    private List<String> lstDataImportFileNames;
-
-    private String dataimportpopupparams;
-
-    private String dataimportinitsize;//上传数据文件窗口的初始大小，可配置值包括min/max/normal，分别表示最大化、最小化、正常窗口大小（即上面pagewidth/pageheight配置的大小）
-    
     private String scrollheight;
 
     private String scrollwidth;
@@ -153,12 +148,14 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private String type;
 
-    private String classcache="";//是否将动态生成的POJO字节码缓存在内存中。只有采用自动生成pojo方式，即class属性设置成commondatabean时，这个配置才生效
+//    private boolean isIgnoreFetchDataError;//是否忽略掉从数据库取字段数据时判断是否有这个字段，如果忽略，则从表中没有取到这个字段时也不抛出异常，而是将此列值置空
+    
+    private String pojo;
+    
+    private Class pojoClassObj;
 
-    private boolean blClasscache=false;
-
-    private Class pojoclass;
-
+    private boolean isPojoClassCache=false;//综合在wabacus.cfg.xml的全局配置及在这里对它的单独配置，决定是将生成的字节码写缓存还是写local disk
+    
     private ButtonsBean buttonsBean=null;
 
     private IInterceptor interceptor=null;
@@ -166,8 +163,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     private int cellresize=0;
 
     private int celldrag=0;
-
-    private int jsvalidatetype;
 
     private TemplateBean headerTplBean;//<header/>配置的静态模板对象
     
@@ -181,7 +176,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private List<Class> lstFormatClasses;//本报表所需用到的校验类。里面定义的校验方法可以在每个<col/>的format属性中使用。配置方式与系统配置文件的全局配置项format-class一样，也可以配置多个。
 
-    private List<TextBox> lstTextBoxesWithTypePrompt;//加载时暂时存放当前报表所有配置有输入提示功能的文本框，加载完后将全部转移到下面的mTextBoxesWithTypePrompt变量中
+    private List<TextBox> lstTextBoxesWithTypePrompt;
 
     private Map<String,TextBox> mTextBoxesWithTypePrompt;
 
@@ -197,20 +192,16 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private Map<String,PopUpBox> mPopUpBoxes;
 
-    private List<AbsInputBox> lstInputboxesWithAutoComplete;
+    private List<AbsInputBox> lstInputboxesWithAutoComplete;//配置的失去焦点后自动填充其它输入框数据的输入框对象集合
     
     private Map<String,AbsInputBox> mInputboxesWithAutoComplete;
     
-    private String dependParentId;//依赖的主报表ID
+    private String dependParentId;
 
 //    private ReportBean rootReportBean;//如果当前报表是从报表，这里存放其顶层主报表（这里考虑到多级主从关系的情况），此变量是在运行时判断并赋值的
     
     private String dependparams;
 
-    private String[] refreshParentOnSave;
-    
-//    private String[] refreshParentOnDelete;//如果当前报表是可编辑从报表，则删除数据时需要刷新它的哪个主报表（因为可能有多层主报表），以及刷新方式。第一个元素为要刷新的主报表ID，第二个元素为刷新方式，true表示重新计算主报表页码，false为不重新计算主报表页码，默认为false。
-    
     private boolean displayOnParentNoData=true;//当<report/>的dependstype配置为display时，此值为true，表示当父报表没有数据时，此从报表也显示出来；当配置为hidden时，此值为false，表示当父报表没有数据时，此从报表隐藏起来
     
     private Map<String,Map<String,String>> mDependChilds;
@@ -223,15 +214,17 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private AbsContainerConfigBean parentContainer;
 
-    private String validateSearchMethod;
-    
-    private List<SubmitFunctionParamBean> lstSearchFunctionDynParams;
-    
     private List<Integer> lstPagesize;
     
     private Object navigateObj;
     
     private IReportPersonalizePersistence personalizeObj;
+    
+    private Map<String,JavascriptValidateBean> mInputboxJsValidateBeans;
+    
+    private List<Class> lstServerValidateClasses;
+    
+    private Map<String,ServerValidateBean> mServerValidateBeansOnBlur;
     
     public ReportBean(AbsConfigBean parent)
     {
@@ -375,16 +368,26 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     public boolean shouldDisplaySlaveReportDependsonDetailReport(ReportRequest rrequest)
     {
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return true;
-        if(!this.isSlaveReportDependsonDetailReport()) return true;//没有依赖细览报表
+        if(!this.isSlaveReportDependsonDetailReport()) return true;
         AbsReportType reportTypeObj=(AbsReportType)rrequest.getComponentTypeObj(this.dependParentId,null,false);
         if(reportTypeObj==null||reportTypeObj.getParentContainerType()==null) return true;
         boolean shouldShowParent=reportTypeObj.getReportBean().shouldDisplaySlaveReportDependsonDetailReport(rrequest);
-        if(!shouldShowParent) return false;
+        if(!shouldShowParent) return false;//如果父报表也是依赖细览报表的子报表，且不需显示，则本子报表无条件不显示
         if(rrequest.getStringAttribute(this.id+"_PARENTREPORT_NODATA","").toLowerCase().equals("true")&&!this.isDisplayOnParentNoData())
             return false;
         return true;
     }
     
+    public List<Class> getLstServerValidateClasses()
+    {
+        return lstServerValidateClasses;
+    }
+
+    public void setLstServerValidateClasses(List<Class> lstServerValidateClasses)
+    {
+        this.lstServerValidateClasses=lstServerValidateClasses;
+    }
+
     public boolean isMasterReportOfMe(ReportBean rbeanMaster,boolean inherit)
     {
         if(!this.isSlaveReport()) return false;
@@ -399,7 +402,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
 //        {//还没初始化此从报表的此变量
 //            ReportBean masterReport=this.getPageBean().getReportChild(this.dependParentId,true);//得到当前从报表的主报表对象
-//            if(masterReport.isSlaveReport())
+
 //            {//主报表又是一个从报表
 
 
@@ -408,7 +411,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
 
 
-
+//    }
     
     public String getDependparams()
     {
@@ -418,16 +421,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     public void setDependparams(String dependparams)
     {
         this.dependparams=dependparams;
-    }
-
-    public String[] getRefreshParentOnSave()
-    {
-        return refreshParentOnSave;
-    }
-
-    public void setRefreshParentOnSave(String[] refreshParentOnSave)
-    {
-        this.refreshParentOnSave=refreshParentOnSave;
     }
 
     public boolean isDisplayOnParentNoData()
@@ -526,42 +519,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         this.sRelateConditionReportids.add(reportid);
     }
 
-    public List<String> getLstDataImportFileNames()
-    {
-        return lstDataImportFileNames;
-    }
-
-    public void setLstDataImportFileNames(List<String> lstDataImportFileNames)
-    {
-        this.lstDataImportFileNames=lstDataImportFileNames;
-    }
-    
-    public List<AbsDataImportConfigBean> getLstDataImportItems()
-    {
-        return lstDataImportItems;
-    }
-
-    public void setLstDataImportItems(List<AbsDataImportConfigBean> lstDataImportItems)
-    {
-        lstDataImportFileNames=new ArrayList<String>();
-        if(lstDataImportItems!=null&&lstDataImportItems.size()>0)
-        {
-            String fileuploadpath=null;
-            for(AbsDataImportConfigBean dataImportTmp:lstDataImportItems)
-            {
-                if(!lstDataImportFileNames.contains(dataImportTmp.getFilename())) lstDataImportFileNames.add(dataImportTmp.getFilename());
-                if(fileuploadpath==null)
-                {
-                    fileuploadpath=dataImportTmp.getFilepath();
-                }else if(!fileuploadpath.equals(dataImportTmp.getFilepath()))
-                {
-                    throw new WabacusConfigLoadingException("加载报表"+this.getPath()+"失败，被同一个报表引用的所有数据导入项"+dataImportTmp.getReskey()+"的导入路径必须一致");
-                }
-            }
-        }
-        this.lstDataImportItems=lstDataImportItems;
-    }
-
     public String getBorder()
     {
         return border;
@@ -624,7 +581,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     public String getRefreshGuid()
     {
         if(this.refreshGuid==null)
-        {//还没有根据refreshid生成，则生成
+        {
             this.refreshGuid=ComponentConfigLoadAssistant.getInstance().createComponentRefreshGuidByRefreshId(this.getPageBean(),this.id,this.refreshid);
         }
         return refreshGuid;
@@ -637,82 +594,50 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     public String getTitle(ReportRequest rrequest)
     {
-        String realtitle=null;
-        if(this.mDynTitleParts==null||this.mDynTitleParts.size()==0)
-        {
-            realtitle=this.title;
-        }else
-        {
-            realtitle=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.title,this.mDynTitleParts);
-        }
-        return realtitle==null?"":rrequest.getI18NStringValue(realtitle.trim());
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.title,this.mDynTitleParts,"");
     }
 
     public void setTitle(String title)
     {
-        this.mDynTitleParts=new HashMap<String,String>();
-        this.title=WabacusAssistant.getInstance().parseStringWithDynPart(title,this.mDynTitleParts);
-        if(this.mDynTitleParts.size()==0) this.mDynTitleParts=null;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(title);
+        this.title=(String)objArr[0];
+        this.mDynTitleParts=(Map<String,String>)objArr[1];
     }
 
     public String getSubtitle(ReportRequest rrequest)
     {
-        String realsubtitle=null;
-        if(this.mDynSubtitleParts==null||this.mDynSubtitleParts.size()==0)
-        {
-            realsubtitle=this.subtitle;
-        }else
-        {
-            realsubtitle=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.subtitle,this.mDynSubtitleParts);
-        }
-        return realsubtitle==null?"":rrequest.getI18NStringValue(realsubtitle.trim());
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.subtitle,this.mDynSubtitleParts,"");
     }
 
     public void setSubtitle(String subtitle)
     {
-        this.mDynSubtitleParts=new HashMap<String,String>();
-        this.subtitle=WabacusAssistant.getInstance().parseStringWithDynPart(subtitle,this.mDynSubtitleParts);
-        if(this.mDynSubtitleParts.size()==0) this.mDynSubtitleParts=null;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(subtitle);
+        this.subtitle=(String)objArr[0];
+        this.mDynSubtitleParts=(Map<String,String>)objArr[1];
     }
-
+    
     public String getParenttitle(ReportRequest rrequest)
     {
-        String realparenttitle=null;
-        if(this.mDynParenttitleParts==null||this.mDynParenttitleParts.size()==0)
-        {
-            realparenttitle=this.parenttitle;
-        }else
-        {
-            realparenttitle=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.parenttitle,this.mDynParenttitleParts);
-        }
-        return realparenttitle==null?"":rrequest.getI18NStringValue(realparenttitle.trim());
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.parenttitle,this.mDynParenttitleParts,"");
     }
 
     public void setParenttitle(String parenttitle)
     {
-        this.mDynParenttitleParts=new HashMap<String,String>();
-        this.parenttitle=WabacusAssistant.getInstance().parseStringWithDynPart(parenttitle,this.mDynParenttitleParts);
-        if(this.mDynParenttitleParts.size()==0) this.mDynParenttitleParts=null;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(parenttitle);
+        this.parenttitle=(String)objArr[0];
+        this.mDynParenttitleParts=(Map<String,String>)objArr[1];
     }
     
     public String getParentSubtitle(ReportRequest rrequest)
     {
-        String realparentSubtitle=null;
-        if(this.mDynParentSubtitleParts==null||this.mDynParentSubtitleParts.size()==0)
-        {
-            realparentSubtitle=this.parentSubtitle;
-        }else
-        {
-            realparentSubtitle=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.parentSubtitle,this.mDynParentSubtitleParts);
-        }
-        return realparentSubtitle==null?"":rrequest.getI18NStringValue(realparentSubtitle.trim());
+       return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.parentSubtitle,this.mDynParentSubtitleParts,"");
     }
 
     public void setParentSubtitle(String parentSubtitle)
     {
-        this.mDynParentSubtitleParts=new HashMap<String,String>();
-        this.parentSubtitle=WabacusAssistant.getInstance().parseStringWithDynPart(parentSubtitle,this.mDynParentSubtitleParts);
-        if(this.mDynParentSubtitleParts.size()==0) this.mDynParentSubtitleParts=null;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(parentSubtitle);
+        this.parentSubtitle=(String)objArr[0];
+        this.mDynParentSubtitleParts=(Map<String,String>)objArr[1];
     }
     
     public void setMDynTitleParts(Map<String,String> dynTitleParts)
@@ -735,16 +660,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         this.mDynParentSubtitleParts=dynParentSubtitleParts;
     }
 
-    public boolean isClasscache()
-    {
-        return blClasscache;
-    }
-
-    public void setBlClasscache(boolean blClasscache)
-    {
-        this.blClasscache=blClasscache;
-    }
-
     public String getTitlealign()
     {
         return titlealign;
@@ -760,29 +675,57 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         this.titlealign=titlealign;
     }
 
-    public String getClasscache()
+    public void addInputboxJsValidateBean(String inputboxId,JavascriptValidateBean validatebean)
     {
-        return classcache;
+        if(this.mInputboxJsValidateBeans==null) this.mInputboxJsValidateBeans=new HashMap<String, JavascriptValidateBean>();
+        this.mInputboxJsValidateBeans.put(inputboxId,validatebean);
+    }
+    
+    public Map<String,JavascriptValidateBean> getMInputboxJsValidateBeans()
+    {
+        return mInputboxJsValidateBeans;
     }
 
-    public void setClasscache(String classcache)
+    public void addServerValidateBeanOnBlur(String inputboxId,ServerValidateBean validatebean)
     {
-        this.classcache=classcache;
+        if(this.mServerValidateBeansOnBlur==null) this.mServerValidateBeansOnBlur=new HashMap<String,ServerValidateBean>();
+        this.mServerValidateBeansOnBlur.put(inputboxId,validatebean);
+    }
+    
+    public ServerValidateBean getServerValidateBean(String inputboxid)
+    {
+        if(this.mServerValidateBeansOnBlur==null) return null;
+        return this.mServerValidateBeansOnBlur.get(inputboxid);
+    }
+    
+    public String getPojo()
+    {
+        return pojo;
     }
 
-    public void setStrclass(String strclass)
+    public void setPojo(String pojo)
     {
-        this.strclass=strclass;
+        this.pojo=pojo;
     }
 
-    public Class getPojoclass()
+    public Class getPojoClassObj()
     {
-        return pojoclass;
+        return pojoClassObj;
     }
 
-    public void setPojoclass(Class pojoclass)
+    public void setPojoClassObj(Class pojoClassObj)
     {
-        this.pojoclass=pojoclass;
+        this.pojoClassObj=pojoClassObj;
+    }
+
+    public boolean isPojoClassCache()
+    {
+        return isPojoClassCache;
+    }
+
+    public void setPojoClassCache(boolean isPojoClassCache)
+    {
+        this.isPojoClassCache=isPojoClassCache;
     }
 
     public TemplateBean getHeaderTplBean()
@@ -820,31 +763,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     public String getId()
     {
         return this.id;
-    }
-
-    public String getDataimportpopupparams()
-    {
-        return dataimportpopupparams;
-    }
-
-    public void setDataimportpopupparams(String dataimportpopupparams)
-    {
-        this.dataimportpopupparams=dataimportpopupparams;
-    }
-
-    public String getDataimportinitsize()
-    {
-        return dataimportinitsize;
-    }
-
-    public void setDataimportinitsize(String dataimportinitsize)
-    {
-        this.dataimportinitsize=dataimportinitsize;
-    }
-
-    public String getStrclass()
-    {
-        return this.strclass;
     }
 
     public boolean shouldShowContextMenu()
@@ -971,20 +889,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         this.cellresize=cellresize;
     }
 
-    public int getJsvalidatetype()
-    {
-        return jsvalidatetype;
-    }
-
-    public void setJsvalidatetype(int jsvalidatetype)
-    {
-        if(jsvalidatetype!=0&&jsvalidatetype!=1)
-        {
-            jsvalidatetype=1;
-        }
-        this.jsvalidatetype=jsvalidatetype;
-    }
-
     public String getRefreshSlaveReportsCallBackMethodName()
     {
         if(this.mDependChilds!=null&&this.mDependChilds.size()>0)
@@ -1026,26 +930,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     {
         if(lstOnloadMethods==null||lstOnloadMethods.size()==0) return "''";
         return this.getGuid()+"_onload";
-    }
-
-    public String getValidateSearchMethod()
-    {
-        return validateSearchMethod;
-    }
-
-    public void setValidateSearchMethod(String validateSearchMethod)
-    {
-        this.validateSearchMethod=validateSearchMethod;
-    }
-
-    public List<SubmitFunctionParamBean> getLstSearchFunctionDynParams()
-    {
-        return lstSearchFunctionDynParams;
-    }
-
-    public void setLstSearchFunctionDynParams(List<SubmitFunctionParamBean> lstSearchFunctionDynParams)
-    {
-        this.lstSearchFunctionDynParams=lstSearchFunctionDynParams;
     }
 
     public FormatBean getFbean()
@@ -1253,6 +1137,25 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         return this.printBean;
     }
 
+    public String getDatastyleproperty(ReportRequest rrequest,boolean isStaticPart)
+    {
+        if(isStaticPart) return this.datastyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.datastyleproperty,this.lstDynDatastylepropertyParts,"");
+    }
+
+    public void setDatastyleproperty(String datastyleproperty,boolean isStaticPart)
+    {
+        if(isStaticPart)
+        {
+            this.datastyleproperty=datastyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(datastyleproperty);
+            this.datastyleproperty=(String)objArr[0];
+            this.lstDynDatastylepropertyParts=(List<String>)objArr[1];
+        }
+    }
+    
     public boolean isPageSplitReport()
     {
         if(this.lstPagesize.size()>1||this.lstPagesize.get(0)>0) return true;
@@ -1269,6 +1172,11 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     public boolean isDetailReportType()
     {
         return Config.getInstance().getReportType(this.getType()) instanceof AbsDetailReportType;
+    }
+    
+    public boolean isChartReportType()
+    {
+        return Config.getInstance().getReportType(this.getType()) instanceof AbsChartReportType;
     }
     
     public IComponentType createComponentTypeObj(ReportRequest rrequest,AbsContainerType parentContainer)
@@ -1360,23 +1268,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         }
         this.lstPopUpBoxes=null;
         checkAndAddButtons();
-        Class pojoclass=null;
-        if(this.strclass==null||this.strclass.trim().equals(""))
-        {//开发人员没有自己开发存放数据的POJO，则自动生成一个
-            ReportAssistant.getInstance().buildReportPOJOClass(this,true );
-            pojoclass=this.pojoclass;
-        }else
-        {
-            pojoclass=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclass);
-
-
-
-
-
-
-
-        }
-        ReportAssistant.getInstance().setMethodInfoToColBean(dbean,pojoclass);//设置每列colbean对应的POJO类的get/set方法
+        loadPojoClass();
         IReportType reportObj=Config.getInstance().getReportType(this.getType());
         if(reportObj instanceof IAfterConfigLoadForReportType)
         {
@@ -1409,13 +1301,12 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
             this.lstInputboxesWithAutoComplete=null;
         }
         if(this.buttonsBean!=null) this.buttonsBean.sortButtons();
-        ComponentConfigLoadAssistant.getInstance().validateApplicationRefreshid(this);//校验refreshid配置的合法性
+        ComponentConfigLoadAssistant.getInstance().validateApplicationRefreshid(this);
         if(this.refreshid==null||this.refreshid.trim().equals("")) this.refreshid=this.id;
         
         JavaScriptAssistant.getInstance().createComponentOnloadScript(this);
-        JavaScriptAssistant.getInstance().createSearchValidateEvent(this);
         this.fbean=null;
-        if(this.buttonsBean!=null) this.buttonsBean.doPostLoad();
+        if(this.buttonsBean!=null) this.buttonsBean.doPostLoad();//按钮的doPostLoad()放在最后，因为这个时候能确定本组件要显示的所有按钮
     }
     
     private void processNavigateReportid()
@@ -1449,14 +1340,34 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private void checkAndAddButtons()
     {
-        if(lstDataImportItems!=null&&lstDataImportItems.size()>0)
-        {
-            ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(this,DataImportButton.class,Consts.DATAIMPORT_BUTTON_DEFAULT);
-        }
         if(sbean.isExistConditionWithInputbox(null))
         {
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(this,SearchButton.class,Consts.SEARCH_BUTTON_DEFAULT);
         }
+    }
+    
+    private void loadPojoClass()
+    {
+        if(this.pojo==null||this.pojo.trim().equals(""))
+        {
+            this.pojoClassObj=ReportAssistant.getInstance().buildReportPOJOClass(this);
+        }else
+        {
+            this.pojoClassObj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(this.pojo);
+            Object obj=null;
+            try
+            {
+                obj=this.pojoClassObj.getConstructor(new Class[] { ReportRequest.class, ReportBean.class }).newInstance(new Object[] { null, null });
+            }catch(Exception e)
+            {
+                throw new WabacusConfigLoadingException("报表"+this.getPath()+"指定的pojo类："+this.pojo+"无法实例化",e);
+            }
+            if(!(obj instanceof AbsReportDataPojo))
+            {
+                throw new WabacusConfigLoadingException("报表"+this.getPath()+"指定的pojo类："+this.pojo+"没有继承框架类"+AbsReportDataPojo.class.getName());
+            }
+        }
+        ReportAssistant.getInstance().setMethodInfoToColBean(this);//设置每列colbean对应的POJO类的get/set方法
     }
     
     public void doPostLoadFinally()
@@ -1511,21 +1422,13 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         {
             rbNew.setMDynParentSubtitleParts((Map<String,String>)((HashMap<String,String>)this.mDynParentSubtitleParts).clone());
         }
-        if(lstDataImportItems!=null)
-        {
-            rbNew.setLstDataImportItems((List<AbsDataImportConfigBean>)((ArrayList<AbsDataImportConfigBean>)lstDataImportItems).clone());
-        }
-        if(lstDataImportFileNames!=null)
-        {
-            rbNew.setLstDataImportFileNames((List<String>)((ArrayList<String>)lstDataImportFileNames).clone());
-        }
         if(mTextBoxesWithTypePrompt!=null)
         {
             rbNew.setMTextBoxesWithTypePrompt(new HashMap<String,TextBox>());
         }
         if(lstTextBoxesWithTypePrompt!=null&&lstTextBoxesWithTypePrompt.size()>0)
         {
-            rbNew.setLstTextBoxesWithTypePrompt(new ArrayList<TextBox>());//清空，以便带有TypePrompt功能的输入框在clone时存放
+            rbNew.setLstTextBoxesWithTypePrompt(new ArrayList<TextBox>());
         }
         if(this.mSelectBoxesInColWithRelate!=null) rbNew.setMSelectBoxesInColWithRelate(new HashMap<String,AbsSelectBox>());
         if(this.mSelectBoxesInConditionWithRelate!=null) rbNew.setMSelectBoxesInConditionWithRelate(new HashMap<String,AbsSelectBox>());
@@ -1582,15 +1485,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         {
             rbNew.setMDependsDetailReportParams(null);
         }
-        if(this.refreshParentOnSave!=null)
-        {
-            rbNew.setRefreshParentOnSave(null);
-        }
-
-
-
-
-        
         rbNew.setRefreshid(null);
         cloneExtendConfig(rbNew);
         rbNew.setParentContainer(parentContainer);

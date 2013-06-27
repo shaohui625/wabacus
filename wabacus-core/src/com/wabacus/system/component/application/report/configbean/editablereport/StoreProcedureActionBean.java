@@ -135,7 +135,7 @@ public class StoreProcedureActionBean extends AbsEditSqlActionBean
             }
             int outputindex=-1;
             if(this.returnValueParamname!=null&&!this.returnValueParamname.trim().equals(""))
-            {//有返回值
+            {
                 outputindex=this.lstParams==null?1:this.lstParams.size()+1;
                 cstmt.registerOutParameter(outputindex,java.sql.Types.VARCHAR);
             }
@@ -151,7 +151,7 @@ public class StoreProcedureActionBean extends AbsEditSqlActionBean
         }
     }
 
-    public void setRealParamnamesInDoPostLoadFinally()
+    public void doPostLoadFinally()
     {
         if(this.lstParams==null||this.lstParams.size()==0) return;
         for(Object paramObjTmp:this.lstParams)
@@ -161,6 +161,5 @@ public class StoreProcedureActionBean extends AbsEditSqlActionBean
                 this.ownerGroupBean.getOwnerUpdateBean().setRealParamnameInDoPostLoadFinally((EditableReportParamBean)paramObjTmp);
             }
         }
-    }
-    
+    }    
 }

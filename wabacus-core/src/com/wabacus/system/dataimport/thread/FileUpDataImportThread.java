@@ -62,65 +62,67 @@ public class FileUpDataImportThread extends AbsDataImportThread
                 List<Map<List<DataImportItem>,Map<File,FileItem>>> lstUploadFiles=UploadFilesQueue
                         .getInstance().getLstAllUploadFiles();
                 log.debug("上传文件线程启动，正在进行文件上传.........................");
-                String lockfile;
                 for(Map<List<DataImportItem>,Map<File,FileItem>> mUploadFilesTmp:lstUploadFiles)
                 {
                     if(mUploadFilesTmp.size()==0) continue;
-                    Entry<List<DataImportItem>,Map<File,FileItem>> entry=mUploadFilesTmp.entrySet()
-                            .iterator().next();
-                    List<DataImportItem> lstDiitems=entry.getKey();
-                    lockfile=Tools.standardFilePath(lstDiitems.get(0).getConfigBean().getFilepath()
-                            +"\\"+Consts_Private.DATAIMPORT_LOCKFILENAME);
-                    Map<File,FileItem> mFiles=entry.getValue();
-                    if(mFiles==null||mFiles.size()==0) continue;
-                    Object lockresource=FileLockTools.lock(lockfile,10,100);
-                    if(lockresource==null)
-                    {
-                        log.error("获取文件锁"+lockfile+"失败，无法进行数据导入");
-                        break;
-                    }
-                    try
-                    {
-                        for(Entry<File,FileItem> fileTmpEntry:mFiles.entrySet())
-                        {
-                            if(fileTmpEntry==null) continue;
-                            File f=fileTmpEntry.getKey();
-                            FileItem fitem=fileTmpEntry.getValue();
-                            try
-                            {
-                                fitem.write(f);
-                            }catch(Exception e)
-                            {
-                                log.error("上传数据文件"+f.getAbsolutePath()+"失败",e);
-                                continue;
-                            }
-                        }
-                        for(DataImportItem diitemTmp:lstDiitems)
-                        {
-                            diitemTmp.doImportData();
-                        }
-                    }catch(Exception e)
-                    {
-                        log.error("导入数据失败",e);
-                    }finally
-                    {
-                        try
-                        {
-                            for(DataImportItem diitemTmp:lstDiitems)
-                            {
-                                diitemTmp.backupOrDeleteDataFile();
-                            }
-                        }catch(Exception e)
-                        {
-                            log.error("备份或删除数据文件失败",e);
-                        }
-                        FileLockTools.unlock(lockfile,lockresource);
-                    }
+                    Entry<List<DataImportItem>,Map<File,FileItem>> entry=mUploadFilesTmp.entrySet().iterator().next();
+                    doDataImport(entry.getKey(),entry.getValue());
                 }
             }catch(Exception e)
             {
                 log.error("数据导入线程运行失败",e);
             }
         }
+    }
+    
+    public String doDataImport(List<DataImportItem> lstDataItems,Map<File,FileItem> mUploadFiles)
+    {
+        if(lstDataItems==null||lstDataItems.size()==0||mUploadFiles==null||mUploadFiles.size()==0) return "";
+        String lockfile=Tools.standardFilePath(lstDataItems.get(0).getConfigBean().getFilepath()+"\\"+Consts_Private.DATAIMPORT_LOCKFILENAME);
+        Object lockresource=FileLockTools.lock(lockfile,5,10);
+        if(lockresource==null)
+        {
+            log.error("获取文件锁"+lockfile+"失败，无法进行数据导入");
+            return "获取文件锁"+lockfile+"失败，无法进行数据导入";
+        }
+        try
+        {
+            for(Entry<File,FileItem> fileTmpEntry:mUploadFiles.entrySet())
+            {
+                if(fileTmpEntry==null) continue;
+                File f=fileTmpEntry.getKey();
+                FileItem fitem=fileTmpEntry.getValue();
+                try
+                {
+                    fitem.write(f);
+                }catch(Exception e)
+                {
+                    log.error("上传数据文件"+f.getAbsolutePath()+"失败",e);
+                    return "上传数据文件"+f.getAbsolutePath()+"失败";
+                }
+            }
+            for(DataImportItem diitemTmp:lstDataItems)
+            {
+                diitemTmp.doImportData();
+            }
+        }catch(Exception e)
+        {
+            log.error("导入数据失败",e);
+            return "导入数据失败";
+        }finally
+        {
+            try
+            {
+                for(DataImportItem diitemTmp:lstDataItems)
+                {
+                    diitemTmp.backupOrDeleteDataFile();
+                }
+            }catch(Exception e)
+            {
+                log.error("备份或删除数据文件失败",e);
+            }
+            FileLockTools.unlock(lockfile,lockresource);
+        }
+        return null;
     }
 }

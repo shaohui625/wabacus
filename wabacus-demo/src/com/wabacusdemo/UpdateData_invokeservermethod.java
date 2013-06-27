@@ -58,7 +58,7 @@ public class UpdateData_invokeservermethod extends AbsJavaEditActionBean
         pstmt.close();
         try
         {
-            sql="insert tbl_log(uuid,createdate,content,updatetype) values(?,?,?,?)";
+            sql="insert into tbl_log(uuid,createdate,content,updatetype) values(?,?,?,?)";
             pstmt=conn.prepareStatement(sql);
             pstmt.setString(1,mParamValues.get("uuid"));//uuid是定义在<params/>中，所以根据<param/>的name从mParamValues中获取变量值
             pstmt.setTimestamp(2,new java.sql.Timestamp((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(mParamValues.get("now"))).getTime()));//now是定义在<params/>中，所以根据<param/>的name从mParamValues中获取变量值

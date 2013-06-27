@@ -28,8 +28,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
 import com.wabacus.exception.WabacusConfigLoadingException;
@@ -99,7 +97,7 @@ public class FileTagUpload extends AbsFileUpload
         }
     }
 
-    public String doFileUpload(List lstFieldItems,Map<String,String> mFormFieldValues,PrintWriter out)
+    public String doFileUpload(List lstFieldItems,PrintWriter out)
     {
         String savepath=mFormFieldValues.get("SAVEPATH");
         
@@ -122,12 +120,9 @@ public class FileTagUpload extends AbsFileUpload
             throw new WabacusConfigLoadingException("显示文件上传标签失败，必须将上传文件的保存路径配置为absolute{}或relative{}格式");
         }
         savepath=WabacusAssistant.getInstance().parseConfigPathToRealPath(savepath,Config.webroot_abspath);
-        request.setAttribute("WX_FILE_UPLOAD_FIELDVALUES",mFormFieldValues);
-        AbsFileUploadInterceptor interceptorObj=null;
         if(interceptor!=null&&!interceptor.trim().equals(""))
         {
             interceptorObj=AbsFileUploadInterceptor.createInterceptorObj(interceptor.trim());
-            request.setAttribute("WX_FILE_UPLOAD_INTERCEPTOR",interceptorObj);
         }
         List<String> lstConfigAllowTypes=getFileSuffixList(configAllowTypes);
         FileItem item;
@@ -181,5 +176,18 @@ public class FileTagUpload extends AbsFileUpload
             out.print("</table>");
         }
         return null;
-    }    
+    }
+
+    public void promptSuccess(PrintWriter out,boolean isArtDialog)
+    {
+        if(isArtDialog)
+        {
+            out.println("artDialog.open.origin.wx_success('上传文件成功');");
+            out.println("art.dialog.close();");
+        }else
+        {
+            out.println("parent.wx_success('上传文件成功');");
+            out.println("parent.closePopupWin();");
+        }
+    }
 }

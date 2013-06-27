@@ -21,6 +21,7 @@ package com.wabacus.system.component.application.report.abstractreport;
 import java.sql.SQLException;
 import java.util.List;
 
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.system.buttons.AbsButtonType;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
@@ -41,7 +42,7 @@ public interface IEditableReportType
 
     public String getRealAccessMode();
     
-    public String getColOriginalValue(Object object,ColBean cbean);
+    public String getColOriginalValue(AbsReportDataPojo object,ColBean cbean);
 
     public int[] doSaveAction() throws SQLException;
     

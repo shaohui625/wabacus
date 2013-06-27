@@ -138,7 +138,7 @@ public class DefaultPrintProviderConfigBean extends AbsPrintProviderConfigBean
         }else
         {
             if(widthInStyle!=null&&!widthInStyle.trim().equals(""))
-            {//在paperstyleproperty中配置了宽度
+            {
                 this.paperwidth=widthInStyle;
             }else
             {
@@ -159,7 +159,7 @@ public class DefaultPrintProviderConfigBean extends AbsPrintProviderConfigBean
             if(styleproperty==null) styleproperty="";
             if(!styleproperty.equals("")&&!styleproperty.endsWith(";")) styleproperty=styleproperty+";";
             if(pagewidth!=null&&!pagewidth.trim().equals(""))
-            {
+            {//需要加默认宽度
                 styleproperty=styleproperty+"width:"+pagewidth+";";
             }
             if(defaultborder!=null&&!defaultborder.trim().equals(""))

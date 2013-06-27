@@ -32,16 +32,15 @@ import org.apache.commons.logging.LogFactory;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.SqlBean;
-import com.wabacus.config.component.application.report.SubmitFunctionParamBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
-import com.wabacus.system.assistant.JavaScriptAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.buttons.AbsButtonType;
@@ -54,6 +53,7 @@ import com.wabacus.system.buttons.UpdateButton;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.IEditableReportType;
 import com.wabacus.system.component.application.report.abstractreport.SaveInfoDataBean;
+import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
@@ -62,8 +62,6 @@ import com.wabacus.system.component.application.report.configbean.editablereport
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportSqlBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportUpdateDataBean;
 import com.wabacus.system.component.container.AbsContainerType;
-import com.wabacus.system.format.IFormat;
-import com.wabacus.system.intercept.ColDataByInterceptor;
 import com.wabacus.system.intercept.IInterceptor;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
@@ -120,7 +118,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         
         
         
-        //        }
+        
         if(!accessmode.equals(""))
         {
             rrequest.addParamToUrl(applicationConfigBean.getId()+"_ACCESSMODE",accessmode,true);
@@ -145,7 +143,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             String edittype=rrequest.getStringAttribute("WX_EDITTYPE","");
             if(edittype.equals(Consts.UPDATE_MODE))
             {
-                rrequest.authorize(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts_Private.ADD_BUTTON+"}",Consts.PERMISSION_TYPE_DISPLAY,"false");
+                rrequest.authorize(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts_Private.ADD_BUTTON+"}",Consts.PERMISSION_TYPE_DISPLAY,"false");//添加按钮将不显示出来
                 rrequest.authorize(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts_Private.DELETE_BUTTON+"}",Consts.PERMISSION_TYPE_DISPLAY,"false");
             }
         }
@@ -168,7 +166,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         if(accessmode==null)
         {
             accessmode=rrequest.getStringAttribute(rbean.getId()+"_ACCESSMODE",getDefaultAccessMode()).toLowerCase();
-            if(!getLstAllAccessModes().contains(accessmode)) accessmode=getDefaultAccessMode();//如果传入的状态不是此报表类型能接受的，则采用默认状态访问报表
+            if(!getLstAllAccessModes().contains(accessmode)) accessmode=getDefaultAccessMode();
         }
         setNewAccessMode(accessmode);
     }
@@ -222,10 +220,10 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         if(editbean==null) return rtnVal;
         if(rbean.getInterceptor()!=null)
         {
-            rtnVal=rbean.getInterceptor().doSave(rrequest,rbean,editbean);
+            rtnVal=rbean.getInterceptor().doSave(this.rrequest,this.rbean,editbean);
         }else
         {
-            rtnVal=EditableReportAssistant.getInstance().doSaveReport(rbean,rrequest,editbean);
+            rtnVal=EditableReportAssistant.getInstance().doSaveReport(this.rrequest,this.rbean,editbean);
         }
         if(rtnVal==IInterceptor.WX_RETURNVAL_TERMINATE||rtnVal==IInterceptor.WX_RETURNVAL_SKIP) return rtnVal;
         String referedReportIdByEditablelist=rrequest.getStringAttribute("WX_REFEREDREPORTID","");
@@ -264,9 +262,9 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
                 }else if(Tools.isDefineKey("#",paramvalue)&&mParamValues!=null)
                 {//从<params/>中取值
                     paramvalue=mParamValues.get(Tools.getRealKeyByDefine("#",paramvalue));
-                }else if(Tools.isDefineKey("url",paramvalue)||Tools.isDefineKey("request",paramvalue)||Tools.isDefineKey("session",paramvalue))
+                }else if(WabacusAssistant.getInstance().isGetRequestContextValue(paramvalue))
                 {
-                    paramvalue=WabacusAssistant.getInstance().getRequestSessionValue(rrequest,paramvalue,"");
+                    paramvalue=WabacusAssistant.getInstance().getRequestContextStringValue(rrequest,paramvalue,"");
                 }
                 if(paramvalue==null) paramvalue="";
                 rrequest.setAttribute(entry.getKey(),paramvalue);
@@ -325,7 +323,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         return this.hasLoadedData;
     }
     
-    protected void setHasLoadedDataFlag(boolean hasLoadedDataFlag)
+    public void setHasLoadedDataFlag(boolean hasLoadedDataFlag)
     {
         super.setHasLoadedDataFlag(hasLoadedDataFlag);
         this.hasLoadedData=hasLoadedDataFlag;
@@ -336,7 +334,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         super.initLoadReportData();
         if(this.rbean.isSlaveReportDependsonDetailReport()&&rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
         {
-            AbsReportType parentReportTypeObj=(AbsReportType)rrequest.getComponentTypeObj(this.rbean.getDependParentId(),null,false);//不能用getDisplayReportTypeObj()，因为当没取到主报表时，这个方法会抛出异常
+            AbsReportType parentReportTypeObj=(AbsReportType)rrequest.getComponentTypeObj(this.rbean.getDependParentId(),null,false);
             if(parentReportTypeObj!=null&&parentReportTypeObj instanceof EditableDetailReportType &&parentReportTypeObj.getParentContainerType()!=null)
             {
                 String parentRealAccessMode=((EditableDetailReportType)parentReportTypeObj).getRealAccessMode();
@@ -358,7 +356,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         initLoadReportData();
         SqlBean sqlbean=rbean.getSbean();
         if(sqlbean.getLstDatasetBeans()!=null&&sqlbean.getLstDatasetBeans().size()>0
-                &&!rrequest.getStringAttribute(rbean.getId(),"CURRENT_ACCESSMODE",getDefaultAccessMode()).equals(Consts.ADD_MODE))
+                &&!rrequest.getStringAttribute(rbean.getId(),"CURRENT_ACCESSMODE",getDefaultAccessMode()).equals(Consts.ADD_MODE))//本次访问不是添加模式
         {
             super.loadReportData(false);
         }
@@ -369,16 +367,13 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
                 if(ersqlbean!=null&&ersqlbean.getInsertbean()!=null)
                 {
                     setNewAccessMode(Consts.ADD_MODE);
-                    Object dataObj=ReportAssistant.getInstance().getReportDataPojoInstance(rbean);
+                    AbsReportDataPojo dataObj=ReportAssistant.getInstance().getPojoClassInstance(rrequest,rbean,rbean.getPojoClassObj());
+                    dataObj.format();
                     this.lstReportData=new ArrayList();
                     this.lstReportData.add(dataObj);
-                    if(dataObj instanceof IFormat)
-                    {
-                        ((IFormat)dataObj).format(rrequest,rbean);
-                    }
                 }else
                 {
-                    //setNewAccessMode(Consts.READONLY_MODE);
+                    
                 }
             }
             if(shouldInvokePostaction) doLoadReportDataPostAction();
@@ -401,6 +396,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
                     throw new WabacusRuntimeException("报表"+rbean.getPath()+"没有配置<insert/>，不能进行添加操作");
                 }
                 realAccessMode=Consts.ADD_MODE;
+                rrequest.getWResponse().addOnloadMethod("addEditableDetailReportFoSaving","{reportguid:\""+this.rbean.getGuid()+"\"}",true);
             }else if(accessmode.equals(Consts.UPDATE_MODE))
             {
                 if(ersqlbean.getUpdatebean()==null)
@@ -422,13 +418,6 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append(super.showMetaDataDisplayStringStart());
         resultBuf.append(EditableReportAssistant.getInstance().getEditableMetaData(this));
-        if(realAccessMode.equals(Consts.UPDATE_MODE))
-        {
-            resultBuf.append(ersqlbean.getValidateSaveMethodAndParams(rrequest,false));
-        }else if(realAccessMode.equals(Consts.ADD_MODE))
-        {
-            resultBuf.append(ersqlbean.getValidateSaveMethodAndParams(rrequest,true));
-        }
         return resultBuf.toString();
     }
 
@@ -437,8 +426,9 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         return "cls-data-td-editdetail";
     }
     
-    protected Object initDisplayCol(ColBean cbean,Object dataObj)
+    protected Object initDisplayCol(ColBean cbean,AbsReportDataPojo dataObj)
     {
+        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return super.initDisplayCol(cbean,dataObj);
         if(cbean.isNonValueCol()) return null;
 
 
@@ -446,10 +436,10 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
 
 
 
-//            if(ercolbean==null||ercolbean.getUpdateCbean()==null)
 
 
 
+//            }else
 //            {//取到通过updatecol引用的隐藏列数据
 
 
@@ -492,8 +482,9 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         return resultBuf.toString();
     }
     
-    protected String getColValueTdPropertiesAndContent(ColBean cbean,Object dataObj,Object colDataObj,StringBuffer tdPropsBuf)
+    protected String getColValueTdPropertiesAndContent(ColBean cbean,AbsReportDataPojo dataObj,Object colDataObj,StringBuffer tdPropsBuf)
     {
+        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return super.getColValueTdPropertiesAndContent(cbean,dataObj,colDataObj,tdPropsBuf);
         EditableReportColBean ercbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
         if(ercbeanTmp==null) return super.getColValueTdPropertiesAndContent(cbean,dataObj,colDataObj,tdPropsBuf);
         if(!(colDataObj instanceof EditableReportColDataBean))
@@ -503,27 +494,25 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         EditableReportColDataBean ercdatabean=(EditableReportColDataBean)colDataObj;
         StringBuffer resultBuf=new StringBuffer();
         if(mColPositions.get(cbean.getColid()).getDisplaymode()<=0)
-        {//当前列不参与本次显示
+        {
             tdPropsBuf.append(" style=\"display:none;\" ");
             resultBuf.append(showTempHiddenCol(cbean,ercdatabean,true));
         }else
         {
             String col_displayvalue=getColDisplayValue(cbean,ercbeanTmp,dataObj,ercdatabean,null);
-            ColDataByInterceptor coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,0,col_displayvalue);
-            if(coldataByInterceptor!=null)
+            ColDisplayData colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,dataObj,0,dataObj.getColValuestyleproperty(cbean
+                    .getProperty()),col_displayvalue);
+            if(colDisplayData.getColdataByInterceptor()!=null&&colDisplayData.getColdataByInterceptor().isReadonly())
             {
-                if(coldataByInterceptor.isReadonly())
-                {
-                    col_displayvalue=cbean.getDisplayValue(dataObj,rrequest);
-                }else if(coldataByInterceptor.getDynvalue()!=null)
-                {
-                    col_displayvalue=coldataByInterceptor.getDynvalue();
-                }
+                col_displayvalue=dataObj.getColStringValue(cbean);
+            }else
+            {
+                col_displayvalue=colDisplayData.getValue();
             }
             if(col_displayvalue==null||col_displayvalue.trim().equals("")) col_displayvalue="&nbsp;";
             resultBuf.append(getDisplayedColFontValue(cbean,ercbeanTmp,ercdatabean,true));
             resultBuf.append(col_displayvalue);
-            tdPropsBuf.append(getDetailTdValuestyleproperty(cbean,coldataByInterceptor));
+            tdPropsBuf.append(this.getDetailTdValuestyleproperty(cbean,colDisplayData.getStyleproperty()));
         }
         resultBuf.append("</font>");
         return resultBuf.toString();
@@ -535,7 +524,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) return "";
         
         if(cbean.isNonValueCol()) return "";
-        Object dataObj=null;
+        AbsReportDataPojo dataObj=null;
         if(this.lstReportData!=null&&this.lstReportData.size()>0)
         {
             dataObj=this.lstReportData.get(0);
@@ -569,11 +558,9 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         {
             String col_displayvalue=getColDisplayValue(cbean,ercbean,dataObj,ercdatabean,dynstyleproperty);
             if(col_displayvalue==null) col_displayvalue="";
-            ColDataByInterceptor coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,0,col_displayvalue);
-            if(coldataByInterceptor!=null&&coldataByInterceptor.getDynvalue()!=null)
-            {
-                col_displayvalue=coldataByInterceptor.getDynvalue();
-            }
+            ColDisplayData colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,dataObj,0,dataObj==null?cbean.getValuestyleproperty(
+                    rrequest,false):dataObj.getColValuestyleproperty(cbean.getProperty()),col_displayvalue);
+            col_displayvalue=colDisplayData.getValue();
             if(col_displayvalue==null||col_displayvalue.trim().equals("")) col_displayvalue="&nbsp;";
             resultBuf.append(col_displayvalue).append("</font>");
         }
@@ -658,10 +645,10 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         return resultBuf.toString();
     }
     
-    private String getColDisplayValue(ColBean cbean,EditableReportColBean ercbean,Object dataObj,EditableReportColDataBean ercdatabean,String dynstyleproperty)
+    private String getColDisplayValue(ColBean cbean,EditableReportColBean ercbean,AbsReportDataPojo dataObj,EditableReportColDataBean ercdatabean,String dynstyleproperty)
     {
         String col_displayvalue=null;
-        if(ercbean==null) return cbean.getDisplayValue(dataObj,rrequest);
+        if(ercbean==null) return dataObj.getColStringValue(cbean);
         if((this.realAccessMode.equals(Consts.ADD_MODE)&&ercbean.isEditableForInsert())
                 ||(this.realAccessMode.equals(Consts.UPDATE_MODE)&&ercbean.isEditableForUpdate()))
         {
@@ -669,15 +656,15 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
                     cbean.checkReadonlyPermission(rrequest));
         }else
         {
-            col_displayvalue=cbean.getDisplayValue(dataObj,rrequest);
+            col_displayvalue=dataObj.getColStringValue(cbean);
         }
         return col_displayvalue;
     }
     
-    public String getColOriginalValue(Object dataObj,ColBean cbean)
+    public String getColOriginalValue(AbsReportDataPojo dataObj,ColBean cbean)
     {
         if(cbean==null||dataObj==null) return "";
-        return cbean.getDisplayValue(dataObj,rrequest);
+        return dataObj.getColStringValue(cbean);
     }
 
     public boolean isReadonlyCol(ColBean cbean)
@@ -694,7 +681,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         {
            return !ercbeanTmp.isEditableForInsert();
         }else
-        {//updatemode
+        {
             return !ercbeanTmp.isEditableForUpdate();
         }
     }
@@ -806,6 +793,13 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         return 1;
     }
 
+    public int afterReportLoading(ReportBean reportbean,List<XmlElementBean> lstEleReportBeans)
+    {
+        super.afterReportLoading(reportbean,lstEleReportBeans);
+        ComponentConfigLoadManager.loadEditableReportConfig(reportbean,lstEleReportBeans,KEY);
+        return 1;
+    }
+    
     public int doPostLoad(ReportBean reportbean)
     {
         super.doPostLoad(reportbean);
@@ -822,38 +816,6 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
                     reportbean.addParamNameFromURL(Tools.getRealKeyByDefine("url",entryTmp.getValue()));
                 }
             }
-        }
-        EditableReportColBean ercolbeanTmp=null;
-        List<SubmitFunctionParamBean> lstUpdateParams=new ArrayList<SubmitFunctionParamBean>();
-        StringBuffer updateScriptBuffer=new StringBuffer();
-        List<SubmitFunctionParamBean> lstInsertParams=new ArrayList<SubmitFunctionParamBean>();
-        StringBuffer insertScriptBuffer=new StringBuffer();
-        List<ColBean> lstColBeans=reportbean.getDbean().getLstCols();
-        for(ColBean cbean:lstColBeans)
-        {
-            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) continue;
-            ercolbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
-            if(ercolbeanTmp==null||ercolbeanTmp.getInputbox()==null) continue;
-            if(ercolbeanTmp.isEditableForUpdate())
-            {
-                JavaScriptAssistant.getInstance().writeEditableReportColValidateJs(ercolbeanTmp,updateScriptBuffer,lstUpdateParams);
-            }
-            if(ercolbeanTmp.isEditableForInsert())
-            {
-                JavaScriptAssistant.getInstance().writeEditableReportColValidateJs(ercolbeanTmp,insertScriptBuffer,lstInsertParams);
-            }
-        }
-        if(updateScriptBuffer.length()>0)
-        {
-            writeEditValidateJsToFiles(updateScriptBuffer.toString(),reportbean.getGuid()+"_validateSaveUpdate",reportbean);
-            ersqlbean.setValidateSaveUpdateMethod(reportbean.getGuid()+"_validateSaveUpdate");
-            ersqlbean.setLstValidateSavingUpdateDynParams(lstUpdateParams);
-        }
-        if(insertScriptBuffer.length()>0)
-        {
-            writeEditValidateJsToFiles(insertScriptBuffer.toString(),reportbean.getGuid()+"_validateSaveInsert",reportbean);
-            ersqlbean.setValidateSaveAddingMethod(reportbean.getGuid()+"_validateSaveInsert");
-            ersqlbean.setLstValidateSavingAddDynParams(lstInsertParams);
         }
         return 1;
     }
@@ -883,7 +845,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             reportbean.getButtonsBean().removeAllCertainTypeButtons(DeleteButton.class);
         }
         if(ersqlbean.getInsertbean()!=null||ersqlbean.getUpdatebean()!=null)
-        {
+        {//如果有添加修改功能
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(reportbean,SaveButton.class,Consts.SAVE_BUTTON_DEFAULT);
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(reportbean,CancelButton.class,Consts.CANCEL_BUTTON_DEFAULT);
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(reportbean,ResetButton.class,Consts.RESET_BUTTON_DEFAULT);
@@ -893,30 +855,6 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             reportbean.getButtonsBean().removeAllCertainTypeButtons(CancelButton.class);
             reportbean.getButtonsBean().removeAllCertainTypeButtons(ResetButton.class);
         }
-    }
-
-    private void writeEditValidateJsToFiles(String script,String validateMethodName,ReportBean reportbean)
-    {
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append("function "+validateMethodName+"(metadataObj){");
-        resultBuf.append("  if(WX_UPDATE_ALLDATA==null){ return true;}");
-        resultBuf.append(   "var updatedataForSaving=WX_UPDATE_ALLDATA['"+reportbean.getGuid()+"'];");
-        resultBuf.append("  if(updatedataForSaving==null){return true}");//没有此报表的保存数据
-        resultBuf.append("  var paramsObj=getObjectByJsonString(metadataObj.metaDataSpanObj.getAttribute('validateSaveMethodDynParams'));");
-        resultBuf.append("  var fontChilds=document.getElementsByName('font_"+reportbean.getGuid()+"');");
-        resultBuf.append("  if(fontChilds==null||fontChilds.length==0) return true;");
-        resultBuf.append("  var boxObj;var boxValue;var value_name;");
-        resultBuf.append("  for(var i=0;i<fontChilds.length;i=i+1){");
-        resultBuf.append("      if(fontChilds[i]==null) continue;");
-        resultBuf.append("      boxObj=fontChilds[i];");//在这种报表类型中，传入客户端校验函数的输入框对象不是真正的输入框对象，而是其所在的<font/>对象
-        resultBuf.append("      value_name=boxObj.getAttribute('value_name');if(value_name==null||value_name=='') continue;");
-        resultBuf.append("      var updateDestFontObj=getUpdateColDestObj(boxObj,metadataObj.reportguid,'"+this.getReportFamily()+"',boxObj);");
-        resultBuf.append("      boxValue=getColConditionValueByParentElementObj(updateDestFontObj);");//从<font/>中获取到此输入框的值
-        resultBuf.append("      if(boxValue==null) boxValue='';");
-        resultBuf.append(script);
-        resultBuf.append("  }");
-        resultBuf.append("return true;}");
-        JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(reportbean.getPageBean(),resultBuf.toString());
     }
     
     public int doPostLoadFinally(ReportBean reportbean)

@@ -18,60 +18,31 @@
  */
 package com.wabacusdemo;
 
-import java.util.List;
-
+import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.ReportAssistant;
-import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
-import com.wabacus.system.intercept.RowDataByInterceptor;
+import com.wabacus.system.intercept.RowDataBean;
 
 public class Interceptor_commonrowbgcolorpage1Report2 extends AbsInterceptorDefaultAdapter
 {
 
-    public RowDataByInterceptor beforeDisplayReportDataPerRow(AbsReportType reportTypeObj,ReportRequest rrequest,int rowindex,int colspans,
-            List lstColBeans)
+    public void beforeDisplayReportDataPerRow(ReportRequest rrequest,ReportBean rbean,RowDataBean rowDataBean)
     {
-        if(rowindex<0)
+        if(rowDataBean.getRowindex()<0)
         {//当前是在显示标题行
-            return null;
+            return;
         }
-        RowDataByInterceptor rdata=new RowDataByInterceptor();
-        if(reportTypeObj.getLstReportData()!=null&&rowindex<reportTypeObj.getLstReportData().size())
+        AbsReportType reportTypeObj=rrequest.getDisplayReportTypeObj(rbean.getId());
+        if(reportTypeObj.getLstReportData()!=null&&rowDataBean.getRowindex()<reportTypeObj.getLstReportData().size())
         {
-            Object dataObj=reportTypeObj.getLstReportData().get(rowindex);//取出存放当前行数据的POJO对象
-            String sex=String.valueOf(ReportAssistant.getInstance().getPropertyValue(dataObj,"sex"));//从中取出sex列的数据
-            if(sex.equals("女"))
+            if("女".equals(rowDataBean.getColData("sex")))
             {
-                rdata.setDynTrStyleproperty("bgcolor='#CCCAFF'");
-            }else
-            {//男
-                rdata.setDynTrStyleproperty("bgcolor='#FFFFFF'");
+                String styleproperty=rowDataBean.getRowstyleproperty();
+                if(styleproperty==null) styleproperty="";
+                styleproperty+=" style='background:#CCCAFF'";
+                rowDataBean.setRowstyleproperty(styleproperty);
             }
         }
-        return rdata;
     }
-
-    public String beforeDisplayReportDataPerRow(AbsListReportType reportTypeObj,ReportRequest rrequest,int rowindex)
-    {
-        if(rowindex<0)
-        {//当前是在显示标题行
-            return null;
-        }
-        if(reportTypeObj.getLstReportData()!=null&&rowindex<reportTypeObj.getLstReportData().size())
-        {
-            Object dataObj=reportTypeObj.getLstReportData().get(rowindex);//取出存放当前行数据的POJO对象
-            String sex=String.valueOf(ReportAssistant.getInstance().getPropertyValue(dataObj,"sex"));//从中取出sex列的数据
-            if(sex.equals("女"))
-            {
-                return "bgcolor='#CCCAFF'";
-            }else
-            {//男
-                return "bgcolor='#FFFFFF'";
-            }
-        }
-        return null;
-    }
-
 }

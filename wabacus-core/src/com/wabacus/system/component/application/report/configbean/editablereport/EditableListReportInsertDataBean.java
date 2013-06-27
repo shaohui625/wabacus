@@ -21,6 +21,7 @@ package com.wabacus.system.component.application.report.configbean.editablerepor
 import java.util.List;
 import java.util.Map;
 
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
@@ -48,6 +49,21 @@ public class EditableListReportInsertDataBean extends EditableReportInsertDataBe
 
     public int parseActionscripts(String reportTypeKey)
     {
+        return 1;
+    }
+
+    public String parseUpdateWhereClause(ReportBean rbean,String reportKey,List<EditableReportParamBean> lstDynParams,String whereclause)
+    {
+        return "";
+    }
+
+    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
+    {
+        return this.realInsertBean.assembleAccessPageUrl(rrequest,reportTypeObj,dataObj);
+    }
+
+    public void doPostLoadFinally()
+    {
         if(this.realInsertBean.getLstUrlParams()!=null)
         {
             String paramValueTmp;
@@ -67,24 +83,9 @@ public class EditableListReportInsertDataBean extends EditableReportInsertDataBe
                 }
             }
         }
-        return 1;
+        this.realInsertBean.doPostLoadFinally();
     }
-
-    public String parseUpdateWhereClause(ReportBean rbean,String reportKey,List<EditableReportParamBean> lstDynParams,String whereclause)
-    {
-        return "";
-    }
-
-    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,Object dataObj)
-    {
-        return this.realInsertBean.assembleAccessPageUrl(rrequest,reportTypeObj,dataObj);
-    }
-
-    public void doPostLoad()
-    {
-        this.realInsertBean.doPostLoad();
-    }
-
+    
     public Object clone(IEditableReportEditGroupOwnerBean newowner)
     {
         EditableListReportInsertDataBean newbean=(EditableListReportInsertDataBean)super.clone(newowner);

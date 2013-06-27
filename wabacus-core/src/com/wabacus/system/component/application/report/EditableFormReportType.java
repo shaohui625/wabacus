@@ -83,6 +83,7 @@ public class EditableFormReportType extends EditableDetailReportType
                     throw new WabacusRuntimeException("报表"+rbean.getPath()+"没有配置<insert/>，不能进行添加操作");
                 }
                 realAccessMode=Consts.ADD_MODE;
+                rrequest.getWResponse().addOnloadMethod("addEditableDetailReportFoSaving","{reportguid:\""+this.rbean.getGuid()+"\"}",true);
             }else if(accessmode.equals(Consts.READ_MODE)||ersqlbean.getUpdatebean()==null)
             {
                 realAccessMode=Consts.READ_MODE;

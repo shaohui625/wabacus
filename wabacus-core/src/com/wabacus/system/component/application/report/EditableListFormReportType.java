@@ -21,8 +21,8 @@ package com.wabacus.system.component.application.report;
 import java.util.List;
 
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
-import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColDataBean;
@@ -46,7 +46,7 @@ public class EditableListFormReportType extends EditableListReportType2
      ********************************************************************/
     
     
-    protected String showInputBoxForCol(StringBuffer tdPropBuf,EditableReportColBean ercbean,int rowindex,Object object,ColBean cbean,
+    protected String showInputBoxForCol(StringBuffer tdPropBuf,EditableReportColBean ercbean,int rowindex,AbsReportDataPojo object,ColBean cbean,
             EditableReportColDataBean ercdatabean)
     {
         boolean isReadonlyPermission=cbean.checkReadonlyPermission(rrequest);
@@ -73,7 +73,7 @@ public class EditableListFormReportType extends EditableListReportType2
         String strvalue=ercbean.getInputbox().getDisplayStringValue(
                 rrequest,ercdatabean.getValue(),
                 " onblur=\"try{fillInputBoxValueToParentTd(this,'"+ercbean.getInputbox().getTypename()+"','"+rbean.getGuid()+"','"
-                        +this.getReportFamily()+"',1);}catch(e){logErrorsAsJsFileLoad(e);}\"",isReadonlyPermission);
+                        +this.getReportFamily()+"',1,'"+ercbean.getInputBoxId()+"__"+rowindex+"');}catch(e){logErrorsAsJsFileLoad(e);}\"",isReadonlyPermission);
         rrequest.getAttributes().remove("DYN_INPUTBOX_ID");
         return strvalue;
     }
@@ -92,12 +92,11 @@ public class EditableListFormReportType extends EditableListReportType2
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
         if(ersqlbean.getInsertbean()==null) return "";
         List<ColBean> lstColBeans=this.getLstDisplayColBeans();
-        CacheDataBean cdb=rrequest.getCdb(rbean.getId());
         StringBuffer resultBuf=new StringBuffer();
         EditableReportColBean ercbeanTmp;
         for(ColBean cbean:lstColBeans)
         {
-            if(cdb.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
+            if(this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
             if(cbean.isSequenceCol()||cbean.isControlCol()) continue;
             ercbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(EditableListReportType2.KEY);
             if(ercbeanTmp!=null&&ercbeanTmp.isEditableForInsert())
@@ -108,10 +107,10 @@ public class EditableListFormReportType extends EditableListReportType2
         return resultBuf.toString();
     }
 
-    public String getColOriginalValue(Object object,ColBean cbean)
+    public String getColOriginalValue(AbsReportDataPojo object,ColBean cbean)
     {
         if(cbean==null||object==null) return "";
-        return cbean.getDisplayValue(object,rrequest);
+        return object.getColStringValue(cbean);
     }
 
     protected boolean getDefaultShowContextMenu()

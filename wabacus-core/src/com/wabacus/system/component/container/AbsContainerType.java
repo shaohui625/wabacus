@@ -131,7 +131,7 @@ public abstract class AbsContainerType extends AbsComponentType
         }
         if(this.containerConfigBean.getLstOnloadMethods()!=null&&this.containerConfigBean.getLstOnloadMethods().size()>0)
         {
-            rrequest.getWResponse().addOnloadMethod(this.containerConfigBean.getOnloadMethodName(),null,false);
+            rrequest.getWResponse().addOnloadMethod(this.containerConfigBean.getOnloadMethodName(),"",false);
         }
         if(rrequest.getServerActionBean()!=null) rrequest.getServerActionBean().executeServerAction(this.comCfgBean);
         return lstReportbeans;
@@ -144,7 +144,7 @@ public abstract class AbsContainerType extends AbsComponentType
             return false;
         if(rrequest.getRefreshComponentBean()==this.containerConfigBean) return true;
         if(((AbsContainerConfigBean)rrequest.getRefreshComponentBean()).isExistChildId(this.containerConfigBean.getId(),true,true))
-        {//当前容器属于本次要刷新的容器的一部分
+        {
             return true;
         }
         return false;
@@ -204,13 +204,13 @@ public abstract class AbsContainerType extends AbsComponentType
             if(containerConfigBean.getTop()!=null&&!containerConfigBean.getTop().trim().equals(""))
             {
                 resultBuf.append("<table  cellspacing='0' cellpadding='0' width=\""+containerwidth+"\" style=\"MARGIN:0;\">");
-                resultBuf.append("<tr><td height=\""+containerConfigBean.getTop()+"\">&nbsp;</td></tr></table>");
+                resultBuf.append("<tr><td height=\""+containerConfigBean.getTop()+"\"></td></tr></table>");
             }
             resultBuf.append("<table  cellspacing='0' cellpadding='0' width=\""+containerwidth+"\" id=\""+containerConfigBean.getGuid()+"\"><tr><td>");
         }
         if(!(containerConfigBean instanceof PageBean))
         {//<page/>的<span/>在PageType类中生成
-            resultBuf.append("<span id=\"WX_CONTENT_"+containerConfigBean.getGuid()+"\">");
+            resultBuf.append("<span id=\"WX_CONTENT_"+containerConfigBean.getGuid()+"\">");//后面的操作需要刷新当前容器时，从这里开始刷新，这样不需用到父容器来获取它的宽度
         }
         resultBuf.append(this.showHeader());
         resultBuf.append("<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"margin:0;\">");
@@ -219,7 +219,7 @@ public abstract class AbsContainerType extends AbsComponentType
             String leftrighttitle=showLeftRightTitlePart();
             resultBuf.append(showTopBottomButtonsWhenTitleInLeftRight(leftrighttitle,true));
             resultBuf.append("<tr>");
-            if(containerConfigBean.isTitleInLeft()) resultBuf.append(leftrighttitle);//显示左侧标题
+            if(containerConfigBean.isTitleInLeft()) resultBuf.append(leftrighttitle);
         }else
         {
             resultBuf.append(showTopBottomTitlePart(true));
@@ -249,12 +249,12 @@ public abstract class AbsContainerType extends AbsComponentType
         if(containerConfigBean.getMargin_top()!=null&&!containerConfigBean.getMargin_top().trim().equals(""))
         {
             resultBuf.append("<tr><td colspan=\""+containerConfigBean.getColspan_total()+"\" height=\"").append(containerConfigBean.getMargin_top())
-                    .append("\">&nbsp;</td></tr>");
+                    .append("\"></td></tr>");
         }
         resultBuf.append("<tr>");
         if(containerConfigBean.getMargin_left()!=null&&!containerConfigBean.getMargin_left().trim().equals(""))
         {
-            resultBuf.append("<td width=\"").append(containerConfigBean.getMargin_left()).append("\">&nbsp;</td>");
+            resultBuf.append("<td width=\"").append(containerConfigBean.getMargin_left()).append("\"><span style=\"margin-left:"+containerConfigBean.getMargin_left()+"\"></span></td>");
         }
         resultBuf.append("<td>");
         return resultBuf.toString();
@@ -264,8 +264,8 @@ public abstract class AbsContainerType extends AbsComponentType
     {
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("<table cellspacing='0' cellpadding='0' width=\"100%\"");
-        if(containerConfigBean.getHeight()!=null&&!containerConfigBean.getHeight().trim().equals(""))
-        {//容器的高度配置必须放在最里层的<table/>中，否则没办法通过它的<td/>的valign控制子组件的垂直对齐方式
+        if(!this.containerConfigBean.isScrollY()&&containerConfigBean.getHeight()!=null&&!containerConfigBean.getHeight().trim().equals(""))
+        {//容器的高度配置必须放在最里层的<table/>中，否则没办法通过它的<td/>的valign控制子组件的垂直对齐方式（如果有垂直滚动条，则不在这里指定高度）
             resultBuf.append(" height=\""+containerConfigBean.getHeight()+"\"");
         }
         resultBuf.append(">");
@@ -325,7 +325,7 @@ public abstract class AbsContainerType extends AbsComponentType
 
 //            {//标题显示在右边
 
-//            }else
+
 
 
 
@@ -341,7 +341,7 @@ public abstract class AbsContainerType extends AbsComponentType
         if((isDisplayTopTitleBar&&this.containerConfigBean.isTitleInTop())||(!isDisplayTopTitleBar&&this.containerConfigBean.isTitleInBottom()))
         {
             if(rrequest.checkPermission(containerConfigBean.getId(),Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY))
-            {
+            {//授权为显示标题栏（则要显示标题和副标题）
                 realtitle=this.getDisplayRealTitleAndSubTitle();
             }
         }
@@ -385,7 +385,7 @@ public abstract class AbsContainerType extends AbsComponentType
     protected String showContainerScrollEndTag()
     {
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
-        if((!this.containerConfigBean.isScrollX())&&!this.containerConfigBean.isScrollY()) return "";//不需显示滚动条
+        if((!this.containerConfigBean.isScrollX())&&!this.containerConfigBean.isScrollY()) return "";
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("</table>");
         resultBuf.append(ComponentAssistant.getInstance().showComponentScrollEndPart(this.containerConfigBean.isScrollX(),
@@ -423,7 +423,7 @@ public abstract class AbsContainerType extends AbsComponentType
             wresponse.println("<table cellspacing='0' cellpadding='0' width=\"100%\" border=\"0\" style=\"MARGIN:0;\"><tr>");
             if(childConfigBean.getLeft()!=null&&!childConfigBean.getLeft().trim().equals(""))
             {
-                wresponse.println("<td width=\""+childConfigBean.getLeft()+"\">&nbsp;</td>");
+                wresponse.println("<td width=\""+childConfigBean.getLeft()+"\"></td>");
             }
             tempBuf=new StringBuffer();
             tempBuf.append("<td");
@@ -440,7 +440,7 @@ public abstract class AbsContainerType extends AbsComponentType
         childObj.displayOnPage(null);
         if(childConfigBean.getRight()!=null&&!childConfigBean.getRight().trim().equals(""))
         {
-            wresponse.println("<td width=\""+childConfigBean.getRight()+"\">&nbsp;</td>");
+            wresponse.println("<td width=\""+childConfigBean.getRight()+"\"><span style=\"margin-left:"+childConfigBean.getRight()+"\"></span></td>");
         }
         if(hasLeftRight)
         {
@@ -455,13 +455,13 @@ public abstract class AbsContainerType extends AbsComponentType
         resultBuf.append("</td>");
         if(containerConfigBean.getMargin_right()!=null&&!containerConfigBean.getMargin_right().trim().equals(""))
         {
-            resultBuf.append("<td width=\"").append(containerConfigBean.getMargin_right()).append("\">&nbsp;</td>");
+            resultBuf.append("<td width=\"").append(containerConfigBean.getMargin_right()).append("\"><span style=\"margin-left:"+containerConfigBean.getMargin_right()+"\"></span></td>");
         }
         resultBuf.append("</tr>");
         if(containerConfigBean.getMargin_bottom()!=null&&!containerConfigBean.getMargin_bottom().trim().equals(""))
         {
             resultBuf.append("<tr><td colspan=\""+containerConfigBean.getColspan_total()+"\" height=\"").append(
-                    containerConfigBean.getMargin_bottom()).append("\">&nbsp;</td></tr>");
+                    containerConfigBean.getMargin_bottom()).append("\"></td></tr>");
         }
         resultBuf.append(showContainerScrollEndTag());
         resultBuf.append("</table>");
@@ -501,7 +501,7 @@ public abstract class AbsContainerType extends AbsComponentType
                     containerwidth="100%";
                 }
                 resultBuf.append("<table  cellspacing=\"0\" cellpadding=\"0\" width=\""+containerwidth+"\" style=\"MARGIN:0;\">");
-                resultBuf.append("<tr><td height=\""+containerConfigBean.getBottom()+"\">&nbsp;</td></tr></table>");
+                resultBuf.append("<tr><td height=\""+containerConfigBean.getBottom()+"\"></td></tr></table>");
             }
         }
         return resultBuf.toString();
@@ -554,7 +554,7 @@ public abstract class AbsContainerType extends AbsComponentType
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL
                 &&(rrequest.checkPermission(comCfgBean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_RICHEXCEL+"}",Consts.PERMISSION_TYPE_DISABLED)||!rrequest
                         .checkPermission(comCfgBean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_RICHEXCEL+"}",Consts.PERMISSION_TYPE_DISPLAY)))
-        {//如果当前是导出richexcel，但没有这个权限，则返回空
+        {
             return;
         }
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
@@ -576,7 +576,7 @@ public abstract class AbsContainerType extends AbsComponentType
             WordRichExcelExportBean debeanTmp;
             for(String appidTmp:lstApplicationids)
             {
-                if(!rrequest.getLstApplicationIds().contains(appidTmp)) continue;
+                if(!rrequest.getLstApplicationIds().contains(appidTmp)) continue;//没有在URL中指定要导出此应用
                 appTypeObjTmp=(AbsApplicationType)rrequest.getComponentTypeObj(appidTmp,null,true);
                 Object tplObjTmp=null;
                 if(appTypeObjTmp.getConfigBean().getDataExportsBean()!=null)

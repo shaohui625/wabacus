@@ -167,7 +167,7 @@ public class UpdateComponentDataServerActionBean
         serverActionBean.setCallbackMethod(rrequest.getStringAttribute("WX_SERVERACTION_CALLBACKMETHOD",""));
         serverActionBean.setShouldRefreshPage(rrequest.getStringAttribute("WX_SERVERACTION_SHOULDREFRESH","true").equalsIgnoreCase("true"));
         if(Tools.isDefineKey("button",serverClassName))
-        {//如果是配置的ServerSQLActionButton按钮
+        {
             serverActionBean.setServerActionObj(getSqlActionButtonObj(ccbean,serverClassName));
         }else
         {
@@ -209,7 +209,7 @@ public class UpdateComponentDataServerActionBean
                 {
                     paramnameTmp=paramnameTmp.substring(Consts_Private.COL_NONDISPLAY_PERMISSION_PREX.length());
                 }
-                
+                //System.out.println("||"+paramnameTmp+"="+paramvalueTmp);
                 mParamsNew.put(paramnameTmp,paramvalueTmp);
             }
             lstResult.add(mParamsNew);

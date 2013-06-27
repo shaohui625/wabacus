@@ -19,7 +19,10 @@
 package com.wabacus.exception;
 
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 import com.wabacus.system.WabacusResponse;
 import com.wabacus.util.Consts;
@@ -39,6 +42,12 @@ public class MessageCollector
     private List<String> lstJsSuccessMessages;
     
     private List<String> lstJsErrorMessages;
+    
+    private String confirmmessage;
+    
+    private String confirmkey;
+    
+    private String confirmurl;
     
     public MessageCollector(WabacusResponse wresponse)
     {
@@ -143,6 +152,32 @@ public class MessageCollector
         if(isTerminate) throw new WabacusRuntimeWarningException();
     }
     
+    public void confirm(String key,String message)
+    {
+        String confirmvalue=this.wresponse.getRRequest().getStringAttribute(key,"");
+        HttpServletRequest request=this.wresponse.getRRequest().getRequest();
+        if(request==null||message==null||message.trim().equals("")||key==null||key.trim().equals("")) return;
+        String url=request.getRequestURI();
+        String sign="?";
+        Enumeration enumer=request.getParameterNames();
+        while(enumer.hasMoreElements())
+        {
+            String name=(String)enumer.nextElement();
+            if(name==null||name.trim().equals("")) continue;
+            String[] values=request.getParameterValues(name);
+            if(values==null) continue;
+            for(int i=0;i<values.length;i++)
+            {
+                url+=sign+name+"="+values[i];
+                sign="&";
+            }
+        }
+        this.confirmmessage=message;
+        this.confirmkey=key;
+        this.confirmurl=url;
+        throw new WabacusRuntimeWarningException();
+    }
+    
     public boolean hasErrors()
     {
         if(lstJsErrorMessages!=null&&lstJsErrorMessages.size()>0) return true;
@@ -231,5 +266,20 @@ public class MessageCollector
             sbuffer.append(alertInfoTmp).append(seperator);
         }
         return sbuffer.toString();
+    }
+
+    public String getConfirmmessage()
+    {
+        return confirmmessage;
+    }
+
+    public String getConfirmkey()
+    {
+        return confirmkey;
+    }
+
+    public String getConfirmurl()
+    {
+        return confirmurl;
     }
 }

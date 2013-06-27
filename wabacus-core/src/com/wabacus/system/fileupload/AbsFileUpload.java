@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -37,6 +38,7 @@ import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean
 import com.wabacus.system.assistant.DataImportAssistant;
 import com.wabacus.system.dataimport.DataImportItem;
 import com.wabacus.system.dataimport.queue.UploadFilesQueue;
+import com.wabacus.system.dataimport.thread.FileUpDataImportThread;
 import com.wabacus.system.intercept.AbsFileUploadInterceptor;
 import com.wabacus.util.Tools;
 
@@ -47,11 +49,30 @@ public abstract class AbsFileUpload
     protected HttpServletRequest request;
 
     protected String contentType;
+    
+    protected Map<String,String> mFormFieldValues;
+    
+    protected AbsFileUploadInterceptor interceptorObj;
 
     public AbsFileUpload(HttpServletRequest request)
     {
         this.request=request;
         this.contentType=request.getHeader("Content-type");
+    }
+
+    public Map<String,String> getMFormFieldValues()
+    {
+        return mFormFieldValues;
+    }
+
+    public void setMFormFieldValues(Map<String,String> formFieldValues)
+    {
+        mFormFieldValues=formFieldValues;
+    }
+
+    public AbsFileUploadInterceptor getInterceptorObj()
+    {
+        return interceptorObj;
     }
 
     protected String getRequestString(String paramname,String defaultvalue)
@@ -118,7 +139,7 @@ public abstract class AbsFileUpload
         return resultBuf.toString();
     }
 
-    protected String uploadDataImportFiles(List lstFieldItems,List<AbsDataImportConfigBean> lstDiBeans)
+    protected String uploadDataImportFiles(List lstFieldItems,List<AbsDataImportConfigBean> lstDiBeans,boolean isAsyn,PrintWriter out)
     {
         if(lstDiBeans==null||lstDiBeans.size()==0)
         {
@@ -152,47 +173,39 @@ public abstract class AbsFileUpload
                 return "文件"+filename+"不能重复上传";
             }
             lstFileNams.add(filename);
-            mUploadFiles.put(filename,itemTmp);
+            boolean shouldUpload=true;
+            if(interceptorObj!=null)
+            {
+                shouldUpload=interceptorObj.beforeFileUpload(request,itemTmp,mFormFieldValues,out);
+            }
+            if(shouldUpload)
+            {
+                mUploadFiles.put(filename,itemTmp);
+            }
         }
         if(mUploadFiles.size()==0)
         {
-            return "上传失败，没有取到要上传的文件";
+            return "没有取到要导入的数据文件";
         }
         Map<List<DataImportItem>,Map<File,FileItem>> uploadFiles=new HashMap<List<DataImportItem>,Map<File,FileItem>>();
         String errorinfo=generateUploadFilesAndImportItems(lstDiBeans,mUploadFiles,uploadFiles,filepath);
         if(errorinfo!=null&&!errorinfo.trim().equals("")) return errorinfo;
-        UploadFilesQueue.getInstance().addUploadFile(uploadFiles);//加入文件上传队列进行上传
-        return null;
+        if(isAsyn)
+        {
+            UploadFilesQueue.getInstance().addUploadFile(uploadFiles);
+            return null;
+        }else
+        {
+            Entry<List<DataImportItem>,Map<File,FileItem>> entry=uploadFiles.entrySet().iterator().next();
+            return FileUpDataImportThread.getInstance().doDataImport(entry.getKey(),entry.getValue());
+        }
     }
 
-    
-    
-    
-    
-    
-    
-    
-    //        {//将每个上传的数据文件写入相应目录中
-    
-    
-    //            {
-    
-    
-    
-    
-    //                    if(lstTmp.contains(filepath)) continue;//已经处理了此文件及路径
-    
-    
-    
-    
-    
-    //        return mUploadFileItems;
-    
     private String generateUploadFilesAndImportItems(List<AbsDataImportConfigBean> lstDiBeans,Map<String,FileItem> mUploadFiles,
             Map<List<DataImportItem>,Map<File,FileItem>> mResults,String filepath)
     {
         List<DataImportItem> lstDataImportItems=new ArrayList<DataImportItem>();
-        Map<File,FileItem> mUploadFileItems=new HashMap<File,FileItem>();
+        Map<File,FileItem> mUploadFileItems=new HashMap<File,FileItem>();//为了数据文件上传
         mResults.put(lstDataImportItems,mUploadFileItems);
         List<String> lstTmpFile=new ArrayList<String>();
         File fTmp;
@@ -215,6 +228,8 @@ public abstract class AbsFileUpload
                         mUploadFileItems.put(fTmp,mUploadFiles.get(filenameTmp));
                     }
                     DataImportItem diitem=new DataImportItem(dibeanTmp,fTmp);
+                    diitem.setRequest(request);
+                    diitem.setSession(request.getSession());
                     diitem.setDynimportype(strArrTmp[1]);
                     lstDataImportItems.add(diitem);
                     lstTmpFile.add(filenameTmp);
@@ -326,7 +341,7 @@ public abstract class AbsFileUpload
         {
             List<String> lstAllowTypesTmp=null;
             if(allowTypesTmp.equalsIgnoreCase(configAllowTypes))
-            {//没有在拦截器中修改限制的文件上传类型
+            {
                 lstAllowTypesTmp=lstConfigAllowTypes;
             }else
             {
@@ -366,5 +381,7 @@ public abstract class AbsFileUpload
     
     public abstract void showUploadForm(PrintWriter out);
 
-    public abstract String doFileUpload(List lstFieldItems,Map<String,String> mFormFieldValues,PrintWriter out);
+    public abstract String doFileUpload(List lstFieldItems,PrintWriter out);
+    
+    public abstract void promptSuccess(PrintWriter out,boolean isArtDialog);
 }

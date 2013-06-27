@@ -123,7 +123,7 @@ public class ButtonTag extends AbsComponentTag
         attributes.put("pageurl",pageurl);
         attributes.put("beforecallback",beforecallback);
         if(Consts.lstDataExportTypes.contains(type))
-        {//如果是导出数据的按钮，则不用初始化displayReportObj，因为reportid可以传入多个报表的id，即使某个报表当前没显示，也可以提供导出它数据的链接，所以跟displayReportObj无关
+        {
             TagAssistant.getInstance().printlnTag(out,rrequest,TagAssistant.getInstance().getButtonDisplayValue(this.ownerComponentObj,attributes));
         }else
         {

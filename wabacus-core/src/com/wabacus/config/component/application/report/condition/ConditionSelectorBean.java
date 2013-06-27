@@ -207,7 +207,7 @@ public class ConditionSelectorBean implements Cloneable
             if(this.labelstyleproperty!=null) resultBuf.append(this.labelstyleproperty);
             resultBuf.append(">"+reallabel+"</span>&nbsp;");
         }
-        String inputboxid=this.getSelectedInputboxId(iteratorindex);//输入框id
+        String inputboxid=this.getSelectedInputboxId(iteratorindex);
         String selectedvalue=rrequest.getStringAttribute(inputboxid,this.lstSelectItemBeans.get(0).getId());
         if(inputbox==null||!inputbox.equals("radiobox"))
         {
@@ -274,7 +274,7 @@ public class ConditionSelectorBean implements Cloneable
         }
         if(inputbox!=null) this.setInputbox(inputbox.trim());
         
-        List<XmlElementBean> lstEleSelectorItemElements=eleConditionSelectorBean.getLstChildElementsByName(selectItemTagname);
+        List<XmlElementBean> lstEleSelectorItemElements=eleConditionSelectorBean.getLstChildElementsByName(selectItemTagname);//获取所有选择器选项的配置信息
         if(lstEleSelectorItemElements==null||lstEleSelectorItemElements.size()==0) return;
         List<ConditionSelectItemBean> lstSelectItemBeans=new ArrayList<ConditionSelectItemBean>();
         List<String> lstSelectItemIds=new ArrayList<String>();

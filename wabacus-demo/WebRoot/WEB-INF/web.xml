@@ -4,6 +4,13 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
 	http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+	<context-param>
+		<param-name>configpath</param-name>
+		<param-value>classpath{/reportconfig}</param-value>
+		<!--param-value>
+			D:\Program Files\MyEclipse 6.5\workspace\WabacusDemo\src\reportconfig
+		</param-value-->
+	</context-param>
 	<filter>
 		<filter-name>Encoding</filter-name>
 		<filter-class>
@@ -24,14 +31,11 @@
 	<servlet>
 		<servlet-name>reportservlet</servlet-name>
 		<servlet-class>com.wabacus.WabacusServlet</servlet-class>
-		<init-param>
+		<!--init-param>
 			<param-name>configpath</param-name>
 			<param-value>classpath{/reportconfig}</param-value>
-			<!--param-value>
-				D:\Program Files\MyEclipse 6.5\workspace\WabacusDemo\src\reportconfig
-			</param-value-->
 		</init-param>
-		<load-on-startup>20</load-on-startup>
+		<load-on-startup>20</load-on-startup-->
 	</servlet>
 
 	<servlet-mapping>

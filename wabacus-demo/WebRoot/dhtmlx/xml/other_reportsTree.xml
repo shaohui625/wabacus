@@ -254,9 +254,9 @@
 		</item>
 	</item>
 	
-	<item id="dataimport" text="数据导入" im0="dhtmlxtree_icon.gif"
+	<item id="dataimport" text="数据导入&lt;font color='red'&gt;New&lt;/font&gt;" im0="dhtmlxtree_icon.gif"
 		im1="dhtmlxtree_icon.gif" im2="dhtmlxtree_icon.gif">
-		<item text="导入Excel" id="excelimport">
+		<item text="导入Excel&lt;font color='red'&gt;New&lt;/font&gt;" id="excelimport">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -270,7 +270,7 @@
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 				对于配置的同一个数据导入项，可以同时使用这两种方式导入数据。
 			</userdata>
-			<item text="通过导入标签实现导入功能" id="excelimport1">
+			<item text="通过导入标签实现导入功能&lt;font color='red'&gt;New&lt;/font&gt;" id="excelimport1">
 				<userdata name="pageid">/WabacusDemo/wabacusdemo/jsp/tagpages/dataimportpage.jsp</userdata>
 				<userdata name="configfilename">
 					report_usualfunc4.xml
@@ -286,10 +286,10 @@
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					数据导入标签＜wx:dataimport/＞不依赖于框架的其它标签，可以单独放在任意JSP页面中提供数据导入功能。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					数据导入功能有很多配置项，这里只演示了其中主要部分，关于更多的介绍，请参看《非正式文档》中“数据导入导出”一节。
+					数据导入功能有很多配置项，这里只演示了其中主要部分，关于更多的介绍，请参看《开发指南》中“数据导入导出”一节。
 				</userdata>
 			</item>
-			<item text="为报表配置导入功能" id="excelimport2">
+			<item text="为组件配置导入功能&lt;font color='red'&gt;New&lt;/font&gt;" id="excelimport2">
 				<userdata name="pageid">excelimport1page1</userdata>
 				<userdata name="configfilename">
 					report_usualfunc4.xml
@@ -299,13 +299,13 @@
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=excelimport1page1&lt;br&gt;
 					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					为报表配置数据导入功能类似于上面的通过数据导入标签配置数据导入功能，只不过这里显示位置与报表紧密联系在一起，做为报表的一个功能按钮，类似于数据导出按钮。&lt;br&gt;
+					为报表配置数据导入功能类似于上面的通过数据导入标签配置数据导入功能，只不过这里显示位置与框架配置的组件紧密联系在一起，做为组件的一个功能按钮，类似于数据导出按钮。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					所有在上面介绍数据导入标签中配置的数据导入功能，在这里都能配置。为了不重复演示，这里只演示了为一个报表配置同时导入两个数据文件到两个表的数据导入功能。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在＜report/＞中配置数据导入功能的方法与数据导入标签差不多。具体请参看《非正式文档》的“数据导入/导出”一节。&lt;br&gt;
+					在＜report/＞中配置了三个数据导入功能，分别是“同步导入”、“异步导入”、“自定义导入按钮”的导入，关于它们的意义，请参看《开发指南》的“数据导入/导出”一节。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					注意：在＜report/＞中配置dataimport时，资源项的key必须用${}括住，而不能将数据导入标签一样直接key。
+					另外，还为＜page/＞容器配置了一个导入按钮，配置方法与＜report/＞中配置完全一样，只是功能按钮显示位置不同。
 				</userdata>
 			</item>
 			<item text="自动导入数据" id="excelimport3">
@@ -324,7 +324,7 @@
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					为了实现数据自动导入功能，wabacus框架在服务启动时会在后台启动一个定时线程，定时线程的支持间隔可以在wabacus.cfg.xml中进行指定，默认为60秒。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					关于数据导入的更多介绍，请参看《非正式文档》的“数据导入/导出”一节。
+					关于数据导入的更多介绍，请参看《开发指南》的“数据导入/导出”一节。
 				</userdata>
 			</item>
 		</item>

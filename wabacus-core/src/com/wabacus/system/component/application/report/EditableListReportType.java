@@ -28,6 +28,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
@@ -133,10 +134,10 @@ public class EditableListReportType extends UltraListReportType implements IEdit
         if(shouldDoSave.length!=4) return result;
         if(rbean.getInterceptor()!=null)
         {
-            result[0]=rbean.getInterceptor().doSave(rrequest,rbean,ersqlbean.getDeletebean());
+            result[0]=rbean.getInterceptor().doSave(this.rrequest,this.rbean,ersqlbean.getDeletebean());
         }else
         {
-            result[0]=EditableReportAssistant.getInstance().doSaveReport(rbean,rrequest,ersqlbean.getDeletebean());
+            result[0]=EditableReportAssistant.getInstance().doSaveReport(this.rrequest,this.rbean,ersqlbean.getDeletebean());
         }
         if(result[0]==IInterceptor.WX_RETURNVAL_TERMINATE||result[0]==IInterceptor.WX_RETURNVAL_SKIP) return result;
         result[1]=IEditableReportType.IS_DELETE_DATA;
@@ -176,7 +177,7 @@ public class EditableListReportType extends UltraListReportType implements IEdit
         return resultBuf.toString();
     }
 
-    public String getColOriginalValue(Object object,ColBean cbean)
+    public String getColOriginalValue(AbsReportDataPojo object,ColBean cbean)
     {
         String oldvalue=ReportAssistant.getInstance().getPropertyValueAsString(object,cbean.getProperty()+"_old",cbean.getDatatypeObj());
         if(oldvalue==null||oldvalue.equals("null"))
@@ -186,12 +187,12 @@ public class EditableListReportType extends UltraListReportType implements IEdit
         return oldvalue;
     }
     
-    protected Object initDisplayCol(ColBean cbean,Object rowDataObjTmp,int startNum)
+    protected Object initDisplayCol(ColBean cbean,AbsReportDataPojo rowDataObjTmp)
     {
-        if(cbean.isSequenceCol()||cbean.isControlCol()) return super.initDisplayCol(cbean,rowDataObjTmp,startNum);
-        if(cbean.getProperty()==null||cbean.getProperty().trim().equals("")) return super.initDisplayCol(cbean,rowDataObjTmp,startNum);
+        if(cbean.isSequenceCol()||cbean.isControlCol()) return super.initDisplayCol(cbean,rowDataObjTmp);
+        if(cbean.getProperty()==null||cbean.getProperty().trim().equals("")) return super.initDisplayCol(cbean,rowDataObjTmp);
         AbsListReportColBean alrcbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
-        if(alrcbean==null) return super.initDisplayCol(cbean,rowDataObjTmp,startNum);
+        if(alrcbean==null) return super.initDisplayCol(cbean,rowDataObjTmp);
         String col_editvalue=getColOriginalValue(rowDataObjTmp,cbean);
         return EditableReportColDataBean.createInstance(rrequest,this.cacheDataBean,null,cbean,col_editvalue,this.currentSecretColValuesBean);
     }
@@ -199,10 +200,10 @@ public class EditableListReportType extends UltraListReportType implements IEdit
     protected String getTdPropertiesForCol(ColBean cbean,Object colDataObj,int rowidx,boolean isCommonRowGroupCol)
     {
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
-        if(!(colDataObj instanceof EditableReportColDataBean)) return super.getTdPropertiesForCol(this.cacheDataBean,cbean,colDataObj,rowidx,isCommonRowGroupCol);
+        if(!(colDataObj instanceof EditableReportColDataBean)) return super.getTdPropertiesForCol(cbean,colDataObj,rowidx,isCommonRowGroupCol);
         EditableReportColDataBean ercdatabean=(EditableReportColDataBean)colDataObj;
         StringBuffer resultBuf=new StringBuffer();
-        String tdSuperProperties=super.getTdPropertiesForCol(this.cacheDataBean,cbean,ercdatabean.getEditvalue(),rowidx,isCommonRowGroupCol);
+        String tdSuperProperties=super.getTdPropertiesForCol(cbean,ercdatabean.getEditvalue(),rowidx,isCommonRowGroupCol);
         resultBuf.append(tdSuperProperties);
         resultBuf.append(" oldvalue=\""+Tools.htmlEncode(ercdatabean.getOldvalue())+"\" ");
         resultBuf.append(" oldvalue_name=\""+ercdatabean.getValuename()+"\"");
@@ -213,7 +214,7 @@ public class EditableListReportType extends UltraListReportType implements IEdit
         return resultBuf.toString();
     }
     
-    protected String getColDisplayValue(ColBean cbean,Object dataObj,StringBuffer tdPropBuf,Object colDataObj,int startNum,int rowidx,boolean isReadonly)
+    protected String getColDisplayValue(ColBean cbean,AbsReportDataPojo dataObj,StringBuffer tdPropBuf,Object colDataObj,int rowidx,boolean isReadonly)
     {
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&cbean.isEditableListEditCol())
         {
@@ -236,7 +237,7 @@ public class EditableListReportType extends UltraListReportType implements IEdit
             return col_displayvalue;
         }
         return super.getColDisplayValue(cbean,dataObj,tdPropBuf,
-                colDataObj instanceof EditableReportColDataBean?((EditableReportColDataBean)colDataObj).getEditvalue():colDataObj,startNum,rowidx,isReadonly);
+                colDataObj instanceof EditableReportColDataBean?((EditableReportColDataBean)colDataObj).getEditvalue():colDataObj,rowidx,isReadonly);
     }
     
     public String getAddEvent()
@@ -250,7 +251,7 @@ public class EditableListReportType extends UltraListReportType implements IEdit
 
     public boolean needCertainTypeButton(AbsButtonType buttonType)
     {
-        if(this.realAccessMode.equals(Consts.READONLY_MODE)) return false;//当前是以只读模式访问
+        if(this.realAccessMode.equals(Consts.READONLY_MODE)) return false;
         if(buttonType instanceof AddButton)
         {
             if(ersqlbean.getInsertbean()==null) return false;
@@ -266,6 +267,7 @@ public class EditableListReportType extends UltraListReportType implements IEdit
     public int afterSqlLoading(SqlBean sqlbean,List<XmlElementBean> lstEleSqlBeans)
     {
         super.afterSqlLoading(sqlbean,lstEleSqlBeans);
+        ComponentConfigLoadManager.loadEditableSqlConfig(sqlbean,lstEleSqlBeans,KEY);
         EditableReportSqlBean ersqlbean=(EditableReportSqlBean)sqlbean.getExtendConfigDataForReportType(KEY);
         if(ersqlbean==null)
         {
@@ -288,8 +290,6 @@ public class EditableListReportType extends UltraListReportType implements IEdit
             loadInsertUpdateConfig(sqlbean,eleUpdateBean,updateBean.getRealUpdateBean());
             ersqlbean.setUpdatebean(updateBean);
         }
-        ersqlbean.setDeletebean((EditableReportDeleteDataBean)ComponentConfigLoadManager.loadEditConfig(ersqlbean,
-                new EditableReportDeleteDataBean(ersqlbean),ComponentConfigLoadManager.getEleSqlUpdateBean(lstEleSqlBeans,"delete")));
         return 1;
     }
 
@@ -371,8 +371,8 @@ public class EditableListReportType extends UltraListReportType implements IEdit
                 reportbean.setExtendConfigDataForReportType(AbsListReportType.KEY,alrbean);
             }
             if(alrbean.getRowSelectType()==null||alrbean.getRowSelectType().trim().equals(Consts.ROWSELECT_NONE))
-            {
-                alrbean.setRowSelectType(Consts.ROWSELECT_MULTIPLY);
+            {//默认为multiply
+                alrbean.setRowSelectType(Consts.ROWSELECT_MULTIPLE);
             }
         }
         return 1;
@@ -432,12 +432,12 @@ public class EditableListReportType extends UltraListReportType implements IEdit
                 ColBean cbNewRowEditCol=new ColBean(disbean);
                 cbNewRowEditCol.setColumn(Consts_Private.COL_EDITABLELIST_EDIT);
                 cbNewRowEditCol.setProperty(Consts_Private.COL_EDITABLELIST_EDIT);
-                AbsListReportColBean alrcbean=new AbsListReportColBean(cbNewRowEditCol);//为这个新增的colbean生成一个alrcbean对象
+                AbsListReportColBean alrcbean=new AbsListReportColBean(cbNewRowEditCol);
                 cbNewRowEditCol.setExtendConfigDataForReportType(AbsListReportType.KEY,alrcbean);
                 cbNewRowEditCol.setLabel(Config.getInstance().getResourceString(null,disbean.getPageBean(),"${editablelist.editcol.label}",false));
                 cbNewRowEditCol.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
-                cbNewRowEditCol.setLabelstyleproperty("style=\"text-align:center;vertical-align:middle;\"");
-                cbNewRowEditCol.setValuestyleproperty("style=\"text-align:center;vertical-align:middle;\"");
+                cbNewRowEditCol.setLabelstyleproperty("style=\"text-align:center;vertical-align:middle;\"",true);
+                cbNewRowEditCol.setValuestyleproperty("style=\"text-align:center;vertical-align:middle;\"",true);
                 lstCols.add(cbNewRowEditCol);
                 if(ulrdbean!=null&&ulrdbean.getLstChildren()!=null)
                 {

@@ -29,6 +29,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.system.intercept.AbsFileUploadInterceptor;
 import com.wabacus.util.Tools;
 
 public class DataImportTagUpload extends AbsFileUpload
@@ -42,12 +43,15 @@ public class DataImportTagUpload extends AbsFileUpload
     public void showUploadForm(PrintWriter out)
     {
         String ref=getRequestString("DATAIMPORT_REF","");
+        String interceptor=getRequestString("INTERCEPTOR","");
+        String asyn=getRequestString("ASYN","");
         if(ref==null||ref.trim().equals(""))
         {
             throw new WabacusRuntimeException("显示数据导入标签<wx:dataimport/>的文件上传页面时，没有取到DATAIMPORT_REF参数值");
         }
         List<String> lstDataImportFileNames=new ArrayList<String>();
-        List<String> lst=Tools.parseStringToList(ref,"|");
+        List<AbsDataImportConfigBean> lstRefDataImportBeans=new ArrayList<AbsDataImportConfigBean>();
+        List<String> lst=Tools.parseStringToList(ref,";");
         String fileuploadpath=null;
         for(String strTmp:lst)
         {
@@ -69,24 +73,44 @@ public class DataImportTagUpload extends AbsFileUpload
             {
                 throw new WabacusConfigLoadingException("显示<wx:dataimport/>失败，被它引用的所有数据导入项的filepath必须相同");
             }
+            lstRefDataImportBeans.add((AbsDataImportConfigBean)obj);
         }
         if(lstDataImportFileNames.size()==0)
         {
             throw new WabacusRuntimeException("显示数据导入标签<wx:dataimport/>的文件上传页面时，没有取到要导入的filename");
         }
         out.print("<input type='hidden' name='DATAIMPORT_REF' value='"+ref+"'/>");
-        out.print(showDataImportFileUpload(lstDataImportFileNames));
+        out.print("<input type='hidden' name='INTERCEPTOR' value='"+interceptor+"'/>");
+        out.print("<input type='hidden' name='ASYN' value='"+asyn+"'/>");
+        boolean flag=true;
+        if(interceptor!=null&&!interceptor.trim().equals(""))
+        {
+            AbsFileUploadInterceptor interceptorObj=AbsFileUploadInterceptor.createInterceptorObj(interceptor.trim());
+            Map<String,String> mFormFieldValues=(Map<String,String>)request.getAttribute("WX_FILE_UPLOAD_FIELDVALUES");
+            request.setAttribute("LST_DATAIMPORT_CONFIGBEANS",lstRefDataImportBeans);
+            flag=interceptorObj.beforeDisplayFileUploadInterface(request,mFormFieldValues,out);
+        }
+        if(flag)
+        {
+            out.print(showDataImportFileUpload(lstDataImportFileNames));
+        }
     }
 
-    public String doFileUpload(List lstFieldItems,Map<String,String> mFormFieldValues,PrintWriter out)
+    public String doFileUpload(List lstFieldItems,PrintWriter out)
     {
         String ref=mFormFieldValues.get("DATAIMPORT_REF");
         if(ref==null||ref.trim().equals(""))
         {
             throw new WabacusRuntimeException("显示数据导入标签<wx:dataimport/>的文件上传页面时，没有取到DATAIMPORT_REF参数值");
         }
+        String interceptor=mFormFieldValues.get("INTERCEPTOR");
+        String asyn=mFormFieldValues.get("ASYN");
+        if(interceptor!=null&&!interceptor.trim().equals(""))
+        {
+            interceptorObj=AbsFileUploadInterceptor.createInterceptorObj(interceptor.trim());
+        }
         List<AbsDataImportConfigBean> lstDataImports=new ArrayList<AbsDataImportConfigBean>();
-        List<String> lst=Tools.parseStringToList(ref,"|");
+        List<String> lst=Tools.parseStringToList(ref,";");
         for(String strTmp:lst)
         {
             if(strTmp.equals("")) continue;
@@ -97,6 +121,28 @@ public class DataImportTagUpload extends AbsFileUpload
             }
             lstDataImports.add((AbsDataImportConfigBean)obj);
         }
-        return uploadDataImportFiles(lstFieldItems,lstDataImports);
+        return uploadDataImportFiles(lstFieldItems,lstDataImports,"true".equalsIgnoreCase(asyn),out);
+    }
+    
+    public void promptSuccess(PrintWriter out,boolean isArtDialog)
+    {
+        String asyn=mFormFieldValues.get("ASYN");
+        String message="";
+        if("true".equals(asyn))
+        {
+            message="数据文件上传成功";
+        }else
+        {
+            message="数据文件导入成功!";
+        }
+        if(isArtDialog)
+        {
+            out.println("artDialog.open.origin.wx_success('"+message+"');");
+            out.println("art.dialog.close();");
+        }else
+        {
+            out.println("parent.wx_success('"+message+"');");
+            out.println("parent.closePopupWin();");
+        }
     }
 }

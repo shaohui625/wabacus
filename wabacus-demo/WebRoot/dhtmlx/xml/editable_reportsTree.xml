@@ -3,7 +3,7 @@
 	<!--==============================================================================-->
 	<!--=================================报表类型配置===================================-->
 	<!--==============================================================================-->
-	<item id="editablereporttypes" text="可编辑报表类型" im0="dhtmlxtree_icon.gif"
+	<item id="editablereporttypes" text="可编辑报表类型&lt;font color='red'&gt;New&lt;/font&gt;" im0="dhtmlxtree_icon.gif"
 		im1="dhtmlxtree_icon.gif" im2="dhtmlxtree_icon.gif">
 		<userdata name="groupnode">true</userdata>
 		<userdata name="desc">
@@ -13,7 +13,7 @@
 					演示Wabacus框架内置的各种可编辑数据自动列表报表类型的显示、操作效果及配置方法。这里重点演示报表的编辑，不演示报表的复杂展示效果。
 					所有在“数据展示篇”演示的展示方式在这里都适用，关于如何配置出复杂的展示效果，请参看“数据展示篇”。
 		</userdata>
-		<item text="可编辑数据自动列表报表" id="editablelistreport">
+		<item text="可编辑数据自动列表报表&lt;font color='red'&gt;New&lt;/font&gt;" id="editablelistreport">
 			<userdata name="pageid">editablelistreportpage1</userdata>
 			<userdata name="configfilename">report_reportypes.xml</userdata>
 			<userdata name="desc">
@@ -195,7 +195,7 @@
 	<!--==============================================================================-->
 	<!--=================================常用功能配置===================================-->
 	<!--==============================================================================-->
-	<item id="editableusualfunctions" text="常用功能配置&lt;font color='red'&gt;New&lt;font/&gt;" im0="dhtmlxtree_icon.gif"
+	<item id="editableusualfunctions" text="常用功能配置&lt;font color='red'&gt;New&lt;/font&gt;" im0="dhtmlxtree_icon.gif"
 		im1="dhtmlxtree_icon.gif" im2="dhtmlxtree_icon.gif">
 		<userdata name="groupnode">true</userdata>
 		<userdata name="desc">
@@ -225,7 +225,19 @@
 				则只要不出现在＜insert/＞配置的插入数据的SQL语句中即可。
 			</userdata>
 		</item>
-		<item text="更新数据脚本类型&lt;font color='red'&gt;New&lt;font/&gt;" id="storeprocedure">
+		<item text="同时编辑/删除多页数据&lt;font color='red'&gt;New&lt;/font&gt;" id="editmultiplepagesdata">
+			<userdata name="pageid">editmultiplepagesdatapage1</userdata>
+			<userdata name="configfilename">report_editablefunc1.xml</userdata>
+			<userdata name="desc">
+				&lt;br&gt;
+				&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=editmultiplepagesdatapage1&lt;br&gt;
+				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				这里演示了同时编辑列表报表多页的记录和同时删除多页记录的配置方法和效果
+			</userdata>
+		</item>
+		<item text="更新数据脚本类型" id="storeprocedure">
 			<userdata name="pageid">sppage1</userdata>
 			<userdata name="configfilename">report_editablefunc5.xml</userdata>
 			<userdata name="desc">
@@ -241,7 +253,7 @@
 				更多介绍请参看《开发指南》文档。
 			</userdata>
 		</item>
-		<item text="更新多个数据源上的数据&lt;font color='red'&gt;New&lt;font/&gt;" id="multidatasource">
+		<item text="更新多个数据源上的数据" id="multidatasource">
 			<userdata name="pageid">multidatasourcepage1</userdata>
 			<userdata name="configfilename">report_editablefunc4.xml</userdata>
 			<userdata name="desc">
@@ -256,7 +268,7 @@
 				这里为了演示，没有真正将不同＜value/＞标签上的datasource属性指向不同的数据源。
 			</userdata>
 		</item>
-		<item text="动态设置某行或单元格只读&lt;font color='red'&gt;New&lt;font/&gt;" id="editablereportpermission13">
+		<item text="动态设置某行或单元格只读" id="editablereportpermission13">
 			<userdata name="pageid">editablereportpermissionpage13</userdata>
 			<userdata name="configfilename">report_permissions.xml</userdata>
 			<userdata name="desc">
@@ -301,7 +313,22 @@
 			</userdata>
 		</item>
 		
-		<item text="自动填充报表数据&lt;font color='red'&gt;New&lt;font/&gt;" id="autocompletedata">
+		<item text="editablelist2/detail2列模板&lt;font color='red'&gt;New&lt;/font&gt;" id="editable2format">
+			<userdata name="pageid">editable2formatpage1</userdata>
+			<userdata name="configfilename">report_editablefunc3.xml</userdata>
+			<userdata name="desc">
+				&lt;br&gt;
+				&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=editable2formatpage1&lt;br&gt;
+				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				对于editablelist2/editabledetail2报表类型，它们开始显示普通字符串，点击后再显示输入框，如果要对某列进行格式化显示，且在编辑后仍然保持格式化效果，则通过＜format/＞不能达到这个效果。&lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				必须通过这里演示的通过＜col/＞的formatemplate属性指定格式化模板实现，在这里指定的列模板内容中，以#data#或[#data#]作为动态数据的占位符，关于这部分的详细介绍，请参看《开发指南一》文档的“可编辑报表/表单”---“其它说明”---“editablelist2/editabledetail2列模板”一节的介绍。
+			</userdata>
+		</item>
+		
+		<item text="自动填充报表数据" id="autocompletedata">
 			<userdata name="pageid">autocompletedatapage1</userdata>
 			<userdata name="configfilename">report_editablefunc5.xml</userdata>
 			<userdata name="desc">
@@ -333,7 +360,18 @@
 				可以在确认提示信息中引用任意多个列的动态数据。
 			</userdata>
 		</item>
-		
+		<item text="服务器端提示确认操作&lt;font color='red'&gt;New&lt;/font&gt;" id="confirmprompt">
+			<userdata name="pageid">confirmpromptpage1</userdata>
+			<userdata name="configfilename">report_editablefunc3.xml</userdata>
+			<userdata name="desc">
+				&lt;br&gt;
+				&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=confirmpromptpage1&lt;br&gt;
+				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				这里演示了在服务器端用JAVA代码向客户端弹出是否完成操作的确认提示，如果点“是”，则继续完成操作，否则放弃操作。
+			</userdata>
+		</item>
 		<item text="同时保存多个报表" id="savemultireports">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
@@ -451,7 +489,7 @@
 			</item>
 		</item>
 		
-		<item text="客户端/服务器端校验" id="editablevalidate">
+		<item text="客户端/服务器端校验&lt;font color='red'&gt;New&lt;/font&gt;" id="editablevalidate">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 			&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -460,42 +498,34 @@
 			&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 			同样，客户端校验也分两种，一种是普通的，一种是增强型的，即失去焦点时会先进行一次校验，保存时再进行一次校验。后面都会演示到
 			</userdata>
-			<item text="客户端/服务器端校验" id="editablevalidate1">
-				<userdata name="pageid">editablevalidatepage1</userdata>
+			<item text="客户端校验" id="editablevalidateclient">
+				<userdata name="pageid">editablevalidateclientpage1</userdata>
 				<userdata name="configfilename">report_editablefunc1.xml</userdata>
 				<userdata name="desc">
 					&lt;br&gt;
 					&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=editablevalidatepage1&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=editablevalidateclientpage1&lt;br&gt;
 					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在此页面中演示了为报表编辑输入框配置服务器端校验和普通的客户端校验功能，分别通过＜inputbox/＞输入框的jsvalidate和servervalidate两个属性进行配置，
-					配置方式与“数据展示篇”介绍的为查询条件输入框配置客户端/服务器端校验方式完全一样。&lt;br&gt;
+					此页面演示了客户端校验的几种配置方法，包括提交时校验、失去焦点时校验和两种情况均进行校验的配置。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					在这个演示报表中：&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					为工号、年龄、出生日期、工资几列配置了客户端校验，且年龄和出生日期两列分别配置了两个客户端校验方法。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					为工号、年龄、所属部门、省、市、县几列配置了服务器端校验，且年龄列配置了两个服务器端校验方法。&lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					另外，这里没有演示数据细览报表的两个编辑方式下如何配置客户端/服务器端校验，配置方式与此完全相同。
+					关于客户端校验的配置的更多介绍，请参看《开发指南二》文档“客户端服务器端校验”的介绍。
 				</userdata>
 			</item>
-			<item text="增强型客户端校验" id="editablevalidate2">
-				<userdata name="pageid">editablevalidatepage2</userdata>
+			<item text="服务器端校验" id="editablevalidateserver">
+				<userdata name="pageid">editablevalidateserverpage1</userdata>
 				<userdata name="configfilename">report_editablefunc1.xml</userdata>
 				<userdata name="desc">
 					&lt;br&gt;
 					&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=editablevalidatepage2&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=editablevalidateserverpage1&lt;br&gt;
 					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					此页面的客户端/服务器端校验列与校验逻辑与上一页面完全一样，只是将客户端校验改为增强型的校验，即输入框在失去焦点时即会进行
-					一次客户端校验。&lt;br&gt;
+					此页面演示了服务器端校验的配置以及校验类的实现方法，服务器端校验也支持提交时校验、失去焦点时校验和两种情况均进行校验的配置，开发人员可以配置校验出错信息，也可以在校验方法中自己提供校验出错提示信息。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					要进行增强型客户端校验，只需将＜report/＞的jsvalidatetype配置为1即可，也可以在wabacus.cfg.xml中进行全局默认配置。&lt;br&gt;
+					另外，开发人员还可以提供服务器端校验客户端回调函数，在这里开发人员可以自己提示校验出错信息，而不采用框架默认的提示方式。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					另外，这里没有演示数据细览报表的两个编辑方式下如何配置客户端/服务器端校验，配置方式与此完全相同。
+					关于服务器端校验的配置的更多介绍，请参看《开发指南二》文档“客户端服务器端校验”的介绍。
 				</userdata>
 			</item>
 		</item>
@@ -572,7 +602,7 @@
 			</item>
 		</item>
 		
-		<item text="保存拦截动作&lt;font color='red'&gt;New&lt;font/&gt;" id="saveinterceptor">
+		<item text="保存拦截动作" id="saveinterceptor">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 			&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -738,7 +768,7 @@
 				</item>
 			</item>
 		</item>
-		<item text="常见输入框&lt;font color='red'&gt;New&lt;font/&gt;" id="inputbox">
+		<item text="常见输入框" id="inputbox">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -774,7 +804,7 @@
 					即最少加密成5位或以上。
 				</userdata>
 			</item>
-			<item text="单选框/下拉框/复选框&lt;font color='red'&gt;New&lt;font/&gt;" id="selectoptions">
+			<item text="单选框/下拉框/复选框" id="selectoptions">
 				<userdata name="pageid">selectoptionspage1</userdata>
 				<userdata name="configfilename">report_editablefunc2.xml</userdata>
 				<userdata name="desc">
@@ -930,7 +960,7 @@
 				</userdata>
 			</item>
 		</item>
-		<item text="编辑特殊字段类型" id="columntype">
+		<item text="编辑特殊字段类型&lt;font color='red'&gt;New&lt;/font&gt;" id="columntype">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 			&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -984,131 +1014,63 @@
 					这里演示了数据表中有自动增长列时的编辑方法。此报表的ID列对应的id字段类型为数据自动增长列类型，在编辑这种类型的报表数据时，
 					有如下要求：&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					1、因为此字段在添加时不用指定添加值，因此不能出现在＜insert/＞配置的添加字段列表中；&lt;br&gt;
+					1、因为此字段在添加时不用指定添加值，因此不能出现在insert语句的添加字段列表中；&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					2、因为此字段在修改时不允许修改，因此不能出现在＜update/＞配置的修改字段列表中，但可以做为条件出现在修改SQL语句的where子句中；&lt;br&gt;
+					2、对于不支持自动增长列的数据库，比如Oracle，不能采用自动增长列的字段，因此这里演示的报表不能在Oracle数据库中进行添加操作。&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					3、出现在修改和删除SQL语句中时，配置方式与其它列无异。&lt;br&gt;
+					3、目前暂不支持这种字段类型做为一个表的主键的同时，又做为另一个表的外键，这种情况添加操作不能成功。如果两个表有主外键关系，可以采用其它字段或uuid或sequence字段做为键，不能采用自动增长字段。
+				</userdata>
+			</item>
+			<item text="Increment字段&lt;font color='red'&gt;New&lt;/font&gt;" id="incrementid">
+				<userdata name="pageid">incrementidpage1</userdata>
+				<userdata name="configfilename">report_editablefunc3.xml</userdata>
+				<userdata name="desc">
+					&lt;br&gt;
+					&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=incrementidpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					这种字段是由框架在应用层为用户指定的某个表某个数字型字段生成自动增长值进行保存，因此适用于所有数据库类型。这里演示了两种保存方式：&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					4、对于不支持自动增长列的数据库，比如Oracle，不能采用自动增长列的字段，因此这里演示的报表不能在Oracle数据库中进行添加操作。&lt;br&gt;
+					只做主键时，因为只有一个表使用，因此可以直接在更新SQL语句中配置“字段名=increment{表名.字段名}”&lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					5、目前暂不支持这种字段类型做为一个表的主键的同时，又做为另一个表的外键，这种情况添加操作不能成功。如果两个表有主外键关系，可以采用其它字段或uuid或sequence字段做为键，不能采用自动增长字段。
+					同时做主键和外键时因为一个uuid值要被多个表使用，因此需要在＜params/＞标签定义一个变量，分配一个变量名，赋一increment{表名.字段名}值，后面要用此自动增长值的字段都通过
+					此变量名进行赋值，这样它们的自动增长值就完全一致了。
 				</userdata>
 			</item>
 			<item text="UUID字段" id="uuid">
-				<userdata name="groupnode">true</userdata>
+				<userdata name="pageid">uuidpage1</userdata>
+				<userdata name="configfilename">report_editablefunc3.xml</userdata>
 				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
+					&lt;br&gt;
+					&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=uuidpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					这里演示使用uuid字段做为主键和同时做为外键的保存配置
+					这种字段是由框架在应用层为用户生成一个全球唯一的32位字符串类型的值进行保存，这里演示了两种保存方式&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					只做主键时，因为只有一个表使用，因此可以直接在更新SQL语句中配置“字段名=uuid{}”&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					同时做主键和外键时因为一个uuid值要被多个表使用，因此需要在＜params/＞标签定义一个变量，分配一个变量名，赋一uuid的值，后面要用此uuid值的字段都通过
+					此变量名进行赋值，这样它们的UUID值就完全一致了。
 				</userdata>
-				<item text="只做主键" id="uuid1">
-					<userdata name="pageid">uuidpage1</userdata>
-					<userdata name="configfilename">report_editablefunc3.xml</userdata>
-					<userdata name="desc">
-						&lt;br&gt;
-						&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=uuidpage1&lt;br&gt;
-						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						这里演示以UUID字段做为主键时进行增、删、改数据的配置，有如下几点需要说明：&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						1、uuid类型的字段因为是在插入记录时由系统自动生成，不能修改，因此不能出现在＜update/＞配置的更新字段列表中。
-						但可以出现在＜update/＞和＜delete/＞条件子句即where子句中，在where子句中的配置方式与普通字段无异。&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						2、在添加操作时，因为是由系统自动生成，因此配置方法为：“uuid字段名=uuid{}”。比如这里的配置如下所示：&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						＜insert＞
-		  		 			insert into tbl_department(&lt;b&gt;guid=uuid{}&lt;/b&gt;,@{deptno},@{deptname},@{manager},@{builtdate},@{description});
-			  			＜/insert＞
-					</userdata>
-				</item>
-				<item text="同时做主键和外键" id="uuid2">
-					<userdata name="pageid">uuidpage2</userdata>
-					<userdata name="configfilename">report_editablefunc3.xml</userdata>
-					<userdata name="desc">
-						&lt;br&gt;
-						&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=uuidpage2&lt;br&gt;
-						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						这里演示一个UUID类型的字段即是一个表的主键，又是另一个表的外键的编辑配置。&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						如果一个UUID字段即是一个表的主键，又是另一个表的外键，则在插入此字段时，不能两边都直接在插入数据的SQL语句中用uuid{}进行
-						赋值，否则系统会为它们各生成一个新的UUID值，这样主键和外键的值就不一致了。&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						正确的做法是利用框架提供的＜params/＞标签定义一个变量，分配一个变量名，赋一uuid的值，后面要用此uuid值的字段都通过
-						此变量名进行赋值，这样它们的UUID值就完全一致了。&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						比如此处演示的报表中，guid字段即是tbl_department表的主键，又是tbl_dept_pingjia表的外键，因此在配置时＜insert/＞中定义
-						了一个＜value name="myguid" value="uuid{}"/＞变量，后面配置的插入两个表的数据中都使用了此变量名为各自的guid字段赋值，配置如下：&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-		  		 		insert into tbl_department(&lt;b&gt;guid=#{myguid}&lt;/b&gt;,@{deptno},@{deptname},@{manager},@{builtdate},@{description});&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-		  		 		insert into tbl_dept_pingjia(&lt;b&gt;guid=#{myguid}&lt;/b&gt;,@{pingjia});&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-		  		 		注意：对于修改和删除操作，这种字段类型只能出现在where子句中做为条件，使用方法与普通字段无异。
-					</userdata>
-				</item>
 			</item>
 			<item text="sequence字段" id="sequencecol">
-				<userdata name="groupnode">true</userdata>
+				<userdata name="pageid">sequencecolpage1</userdata>
+				<userdata name="configfilename">report_editablefunc3.xml</userdata>
 				<userdata name="desc">
-					&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
+					&lt;br&gt;
+					&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=sequencecolpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					这里演示使用sequence字段做为主键和同时做为外键的保存配置，注意：只有支持序列的数据库类型才能配置sequence字段。
+					1、只有支持sequence的数据库，比如oracle、DB2等才能配置这种方式的ID；&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					2、只做主键时，因为只有一个表使用，因此可以直接在更新SQL语句中配置“字段名=sequence{seqname}”&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					3、同时做主键和外键时因为一个sequence值要被多个表使用，因此需要在＜params/＞标签定义一个变量，分配一个变量名，赋一sequence的值，后面要用此sequence值的字段都通过
+				此变量名进行赋值，这样它们的sequence值就完全一致了。
 				</userdata>
-				<item text="只做主键" id="sequencecol1">
-					<userdata name="pageid">sequencecolpage1</userdata>
-					<userdata name="configfilename">report_editablefunc3.xml</userdata>
-					<userdata name="desc">
-						&lt;br&gt;
-						&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=sequencecolpage1&lt;br&gt;
-						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						这里演示以sequence字段做为主键时进行增、删、改数据的配置，有如下几点需要说明：&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						1、只有支持sequence的数据库，比如oracle才能配置这种方式的ID；&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						2、sequence类型的字段因为是在插入记录时由数据库利用某个序列自动生成，不能修改，因此不能出现在＜update/＞配置的更新字段列表中。
-						但可以出现在＜update/＞和＜delete/＞条件子句即where子句中，在where子句中的配置方式与普通字段无异。&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						2、在添加操作时，因为是由系统自动生成，因此配置方法为：“sequence字段名=sequence{序列名}”。比如这里的配置如下所示：&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						＜insert＞
-		  		 			insert into tbl_zhaoping(&lt;b&gt;id=sequence{seq_zhaoping}&lt;/b&gt;,@{zhiwei},@{salary},@{count},@{xueli});
-			  			＜/insert＞
-					</userdata>
-				</item>
-				<item text="同时做主键和外键" id="sequencecol2">
-					<userdata name="pageid">sequencecolpage2</userdata>
-					<userdata name="configfilename">report_editablefunc3.xml</userdata>
-					<userdata name="desc">
-						&lt;br&gt;
-						&lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=sequencecolpage2&lt;br&gt;
-						&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						这里演示一个sequence类型的字段即是一个表的主键，又是另一个表的外键的编辑配置。&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						如果一个sequence字段即是一个表的主键，又是另一个表的外键，则在插入此字段时，不能两边都直接在插入数据的SQL语句中用sequence{序列名}进行
-						赋值，否则系统会为它们各生成一个新的sequence值，这样主键和外键的值就不一致了。&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						正确的做法是利用框架提供的＜params/＞标签定义一个变量，分配一个变量名，赋一sequence的值，后面要用此sequence值的字段都通过
-						此变量名进行赋值，这样它们的sequence值就完全一致了。&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-						比如此处演示的报表中，id字段即是tbl_zhaoping表的主键，又是tbl_zhaopingdesc表的外键，因此在配置时＜insert/＞中定义
-						了一个＜params＞＜value name="id" value="sequence{seq_zhaoping}"/＞＜/params＞变量，
-						后面配置的插入两个表的数据中都使用了此变量名为各自的id字段赋值，配置如下：&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-		  		 		insert into tbl_zhaoping(&lt;b&gt;id=#{id}&lt;/b&gt;,@{zhiwei},@{salary},@{count},@{xueli});&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-		  		 		insert into tbl_zhaopingdesc(&lt;b&gt;id=#{id}&lt;/b&gt;,@{yaoqiu},@{description});&lt;br&gt;
-						&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-		  		 		注意：对于修改和删除操作，这种字段类型只能出现在where子句中做为条件，使用方法与普通字段无异。
-					</userdata>
-				</item>
 			</item>
 		</item>
 		
@@ -1440,7 +1402,7 @@
 					关于客户端调用服务器端方法的更多介绍，请参看《Wabacus框架开发指南》文档
 				</userdata>
 			</item>
-			<item text="直接配置脚本更新自动传入报表数据" id="editableInvokeServerAction_autodb">
+			<item text="直接配置执行脚本" id="editableInvokeServerAction_autodb">
 				<userdata name="pageid">editableInvokeServerAction_autodbpage1</userdata>
 				<userdata name="configfilename">report_editablefunc3.xml</userdata>
 				<userdata name="desc">

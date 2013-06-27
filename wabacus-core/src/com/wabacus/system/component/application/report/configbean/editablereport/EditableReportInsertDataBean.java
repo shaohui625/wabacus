@@ -29,6 +29,12 @@ public class EditableReportInsertDataBean extends AbsEditableReportEditDataBean
 
     private Map<String,String> mUpdateConditions;
 
+    private String insertstyle;
+    
+    private String addposition;//对于editablelist2/listform报表类型，指定添加记录的位置，可配置值为top和bottom，默认是bottom
+    
+    private String callbackmethod;//对于editablelist2/listform报表类型，指定添加记录时的回调函数
+    
     public EditableReportInsertDataBean(IEditableReportEditGroupOwnerBean owner)
     {
         super(owner);
@@ -44,6 +50,36 @@ public class EditableReportInsertDataBean extends AbsEditableReportEditDataBean
         mUpdateConditions=updateConditions;
     }
 
+    public String getInsertstyle()
+    {
+        return insertstyle;
+    }
+
+    public void setInsertstyle(String insertstyle)
+    {
+        this.insertstyle=insertstyle;
+    }
+
+    public String getAddposition()
+    {
+        return addposition;
+    }
+
+    public void setAddposition(String addposition)
+    {
+        this.addposition=addposition;
+    }
+
+    public String getCallbackmethod()
+    {
+        return callbackmethod;
+    }
+
+    public void setCallbackmethod(String callbackmethod)
+    {
+        this.callbackmethod=callbackmethod;
+    }
+
     protected void setParamBeanInfoOfColBean(ColBean cbUpdateSrc,EditableReportParamBean paramBean,String configColProperty,String reportTypeKey)
     {
         if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbUpdateSrc.getDisplaytype()))
@@ -55,7 +91,8 @@ public class EditableReportInsertDataBean extends AbsEditableReportEditDataBean
         paramBean.setParamname(configColProperty);
     }
 
-    public void setRealParamnamesInDoPostLoadFinally()
+    
+    protected void setRealParamnameInDoPostLoadFinally(EditableReportParamBean paramBean)
     {
         //提供空实现，因为<insert/>中字段名不可能实现__old结尾，在setParamBeanInfoOfColBean()方法中已经统一去掉了
     }

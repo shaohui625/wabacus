@@ -60,7 +60,7 @@ public class ComponentPermissionBean extends AbsPermissionBean
             String myPermissionvalue=this.getPermission(permissiontype);
             if(myPermissionvalue==null||myPermissionvalue.trim().equals("")) return Consts.CHKPERMISSION_EMPTY;
             if(myPermissionvalue.toLowerCase().trim().equals(permissionvalue))
-            {//显式授的权限值即为要判断的permissionvalue
+            {
                 return Consts.CHKPERMISSION_YES;
             }else
             {

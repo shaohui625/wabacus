@@ -26,16 +26,18 @@ import java.util.Map;
 
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
 
 public class Interceptor_freeformpage1Report1 extends AbsInterceptorDefaultAdapter
 {
 
-    public void afterSave(ReportRequest rrequest,ReportBean rbean)
+    public int doSave(ReportRequest rrequest,ReportBean rbean,AbsEditableReportEditDataBean editbean)
     {
         List<Map<String,String>> lstInsertData=rrequest.getLstInsertedData(rbean);//添加的记录集合
         List<Map<String,String>> lstUpdateData=rrequest.getLstUpdatedData(rbean);//修改的记录集合
         Map<String,String> mCustomizedData=rrequest.getMCustomizeEditData(rbean);//取到用户通过setCustomizeParamValue()方法设置进来的参数
+        int flag=super.doSave(rrequest,rbean,editbean);
         String no="";
         if(lstInsertData!=null&&lstInsertData.size()>0)
         {//当前在做添加数据的保存操作，对于细览报表，一次只会添加一条记录，因此里面只有一个元素
@@ -46,7 +48,7 @@ public class Interceptor_freeformpage1Report1 extends AbsInterceptorDefaultAdapt
             Map<String,String> mDataTmp=lstUpdateData.get(0);
             no=mDataTmp.get("no");//取到工号
         }
-        if("".equals(no)) return;//本次没有增、改数据
+        if("".equals(no)) return flag;//本次没有增、改数据
         Connection conn=rrequest.getConnection(rbean.getSbean().getDatasource());
         PreparedStatement pstmt=null;
         try
@@ -82,6 +84,7 @@ public class Interceptor_freeformpage1Report1 extends AbsInterceptorDefaultAdapt
                 e.printStackTrace();
             }
         }
+        return flag;
     }
 
 }

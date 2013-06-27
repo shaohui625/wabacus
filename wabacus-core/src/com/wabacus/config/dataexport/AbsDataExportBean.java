@@ -100,15 +100,7 @@ public abstract class AbsDataExportBean implements Cloneable
     
     public String getFilename(ReportRequest rrequest)
     {
-        String realfilename=null;
-        if(this.mDynFilename==null||this.mDynFilename.size()==0)
-        {
-            realfilename=this.filename;
-        }else
-        {
-            realfilename=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.filename,this.mDynFilename);
-        }
-        return realfilename==null?"":rrequest.getI18NStringValue(realfilename.trim());
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.filename,this.mDynFilename,"");
     }
 
     public int getDataExportRecordcount(String reportid)
@@ -122,9 +114,9 @@ public abstract class AbsDataExportBean implements Cloneable
         String filename=eleDataExport.attributeValue("filename");
         if(filename!=null)
         {
-            this.mDynFilename=new HashMap<String,String>();
-            this.filename=WabacusAssistant.getInstance().parseStringWithDynPart(filename,this.mDynFilename);
-            if(this.mDynFilename.size()==0) this.mDynFilename=null;
+            Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(filename);
+            this.filename=(String)objArr[0];
+            this.mDynFilename=(Map<String,String>)objArr[1];
         }
         String dataexportinclude=eleDataExport.attributeValue("include");
         if(dataexportinclude!=null&&!dataexportinclude.trim().equals(""))

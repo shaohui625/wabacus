@@ -107,15 +107,17 @@ public abstract class AbsComponentType implements IComponentType
         resultBuf.append("<tr class='cls-title-tr'>");
         if(titlealign==null||buttonalign==null||titlealign.equals(buttonalign))
         {
-            resultBuf.append("<td align='"+titlealign+"'>");
             if(buttonalign==null)
             {
+                resultBuf.append("<td align='"+titlealign+"'>");
                 resultBuf.append(realtitle);
             }else if(titlealign==null)
             {
+                resultBuf.append("<td align='"+buttonalign+"'>");
                 resultBuf.append(buttonsOnTitle);
             }else
-            {//本次同时显示两者，但对齐方式一致
+            {
+                resultBuf.append("<td align='"+titlealign+"'>");
                 if("left".equals(this.comCfgBean.getButtonsBean().getTitleposition()))
                 {
                     resultBuf.append(buttonsOnTitle);
@@ -157,7 +159,7 @@ public abstract class AbsComponentType implements IComponentType
         {
             String title=comCfgBean.getTitle(rrequest);
             if(title!=null&&!title.trim().equals(""))
-            {
+            {//需要显示title
                 //resultBuf.append("<span class=\"cls-title\">").append(Tools.htmlEncode(title.trim())).append("</span>");
                 resultBuf.append("<span class=\"cls-title\">").append(title.trim()).append("</span>");
             }
@@ -221,7 +223,7 @@ public abstract class AbsComponentType implements IComponentType
             if(obj==null) return "";
             if(!(obj instanceof TemplateBean)) return obj.toString();
             if("footer".equals(type))
-            {//当前是在显示footer
+            {
                 ComponentAssistant.getInstance().validComponentFooterTpl(this.comCfgBean,(TemplateBean)obj);
             }else
             {

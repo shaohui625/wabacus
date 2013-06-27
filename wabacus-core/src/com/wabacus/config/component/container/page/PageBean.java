@@ -73,7 +73,7 @@ public class PageBean extends AbsContainerConfigBean
     
     private List<AbsPageInterceptor> lstInterceptors;
 
-    private boolean shouldProvideEncodePageUrl;//在运行时决定本页面是否需要提供编码后的URL，目前只有当本页面通过rrequest.forwardPageWithBack()方法跳转到其它页面后需要返回时，才需要编码本页面的URL，以便返回
+    private boolean shouldProvideEncodePageUrl;
     
     private boolean shouldIncludeAutoCreatedJs;
     
@@ -93,18 +93,12 @@ public class PageBean extends AbsContainerConfigBean
 
     public List<String> getUlstSystemCss()
     {
-        List<String> lstTemp=new UniqueArrayList<String>();
+        List<String> lstResults=new UniqueArrayList<String>();
         List<String> lstCss=Config.getInstance().getUlstGlobalCss();
-        if(lstCss!=null)
-        {
-            lstTemp.addAll(lstCss);
-        }
+        if(lstCss!=null) lstResults.addAll(lstCss);
         lstCss=Config.getInstance().getUlstLocalCss(this);
-        if(lstCss!=null)
-        {
-            lstTemp.addAll(lstCss);
-        }
-        return lstTemp;
+        if(lstCss!=null) lstResults.addAll(lstCss);
+        return lstResults;
     }
 
     public List<JavascriptFileBean> getLstMyJavascriptFiles()
@@ -118,6 +112,8 @@ public class PageBean extends AbsContainerConfigBean
         List<JavascriptFileBean> lstJsTmp=Config.getInstance().getLstDefaultGlobalJavascriptFiles();
         if(lstJsTmp!=null) lstResult.addAll(lstJsTmp);
         lstJsTmp=Config.getInstance().getLstGlobalJavascriptFiles();
+        if(lstJsTmp!=null) lstResult.addAll(lstJsTmp);
+        lstJsTmp=Config.getInstance().getLstLocalJavascript(this);
         if(lstJsTmp!=null) lstResult.addAll(lstJsTmp);
         if(shouldIncludeAutoCreatedJs&&this.jsFileForConfigFile!=null) lstResult.add(this.jsFileForConfigFile);
         return lstResult;
@@ -312,7 +308,7 @@ public class PageBean extends AbsContainerConfigBean
                         +rbeanSlave.getId()+"依赖的报表"+rbeanSlave.getDependParentId()+"不存在");
             }
             if(rbeanMaster.isListReportType())
-            {
+            {//如果主报表是列表报表，则子报表不能配置refreshid为其它容器，因为它们是在客户端单独加载的，不能和其它报表绑定加载
                 if(rbeanSlave.getRefreshid()!=null&&!rbeanSlave.getRefreshid().trim().equals("")
                         &&!rbeanSlave.getRefreshid().trim().equals(rbeanSlave.getId()))
                 {
@@ -340,7 +336,7 @@ public class PageBean extends AbsContainerConfigBean
             rbeanTempMaster=rbeanEntries.getValue();
             if(rbeanTempMaster.isListReportType())
             {
-                if(lstCreatedListReportBeans.contains(rbeanTempMaster)) continue;//已经为此报表生成过js
+                if(lstCreatedListReportBeans.contains(rbeanTempMaster)) continue;
                 lstCreatedListReportBeans.add(rbeanTempMaster);
                 alrbean=(AbsListReportBean)rbeanTempMaster.getExtendConfigDataForReportType(AbsListReportType.KEY);
                 if(alrbean==null)
@@ -490,7 +486,7 @@ public class PageBean extends AbsContainerConfigBean
             while(rbeanMaster!=null)
             {
                 if(rbeanMaster.getId().equals(rbeanSlave.getId()))
-                {//存在循环依赖
+                {
                     throw new WabacusConfigLoadingException("加载页面"+this.getPath()+"失败，其下报表存在循环依赖");
                 }
                 rbeanMaster=this.mRelateReports.get(rbeanMaster);
@@ -516,7 +512,7 @@ public class PageBean extends AbsContainerConfigBean
         Map<String,List<ReportBean>> mRelateConReportBeans=new HashMap<String,List<ReportBean>>();
         getAllRelateConditionReportBeans(this,sRelateConditionNames,mRelateConReportBeans);
         for(Entry<String,List<ReportBean>> entryTmp:mRelateConReportBeans.entrySet())
-        {
+        {//处理每个关联查询条件对应的报表
             updateRefreshContaineridForReportBeans(entryTmp.getValue());
             updateRelateReportidsForReportBeans(entryTmp.getValue());
         }
@@ -574,7 +570,7 @@ public class PageBean extends AbsContainerConfigBean
                 {
                     ReportBean rbeanTmp=(ReportBean)entryTmp.getValue();
                     if(rbeanTmp.getSbean()==null||rbeanTmp.getSbean().getLstConditions()==null) continue;
-                    if(rbeanTmp.isSlaveReportDependsonListReport()) continue;//从报表不存在查询条件关联的情况
+                    if(rbeanTmp.isSlaveReportDependsonListReport()) continue;
                     List<ConditionBean> lstConditions=rbeanTmp.getSbean().getLstConditions();
                     for(ConditionBean cbean:lstConditions)
                     {

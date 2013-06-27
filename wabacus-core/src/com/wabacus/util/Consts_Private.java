@@ -51,7 +51,7 @@ public class Consts_Private
     
     public final static String COL_ROWORDER_TOP="{roworder-top}";
     
-    public final static String COL_EDITABLELIST_EDIT="{editablelist-edit}";//对于editablelist报表类型，用于显示编辑的列
+    public final static String COL_EDITABLELIST_EDIT="{editablelist-edit}";
     
     public final static String LANGUAGE_ZH="zh";
 
@@ -61,7 +61,7 @@ public class Consts_Private
 
     public final static String SEARCH_BUTTON="search";
 
-    public final static String ADD_BUTTON="add";
+    public final static String ADD_BUTTON="add";//添加按钮
 
     public final static String MODIFY_BUTTON="modify";
 
@@ -71,7 +71,7 @@ public class Consts_Private
 
     public final static String RESET_BUTTON="reset";
 
-    public final static String BACK_BUTTON="back";//返回按钮
+    public final static String BACK_BUTTON="back";
     
     public final static String FORWARDWITHBACK_BUTTON="forwardwithback";
 
@@ -131,7 +131,7 @@ public class Consts_Private
     
     public static final String DATAIMPORT_MATCHMODE_INITIAL="initial";
     
-    public static final String DATAIMPORT_MATCHMODE_LAZY="lazy";//在第一次进行数据导入时建立
+    public static final String DATAIMPORT_MATCHMODE_LAZY="lazy";
     
     public static final String DATAIMPORT_MATCHMODE_EVERYTIME="everytime";
     
@@ -147,7 +147,7 @@ public class Consts_Private
 
     public final static String FILEUPLOADTYPE_FILETAG="filetag";
 
-    public final static String FILEUPLOADTYPE_DATAIMPORTREPORT="dataimportreport";
+    public final static String FILEUPLOADTYPE_DATAIMPORTREPORT="dataimportreport";//为某个报表配置的数据导入功能的数据文件上传
 
     public final static String FILEUPLOADTYPE_DATAIMPORTTAG="dataimporttag";
     
@@ -164,7 +164,7 @@ public class Consts_Private
     
     public final static String ONlOAD_IMGSCROLL="imagescroll_onloadmethods";
     
-    public final static String ONlOAD_CURVETITLE="curvetitle_onloadmethods";//为显示折线数据表头而自动生成的onload函数类型
+    public final static String ONlOAD_CURVETITLE="curvetitle_onloadmethods";
     
     public final static String PLACEHOLDER_LISTREPORT_SQLKERNEL="%listreport_sql_kernel%";
     
@@ -207,6 +207,8 @@ public class Consts_Private
     public final static String REPORT_FAMILY_EDITABLEDETAIL="editabledetail";
 
     public final static String REPORT_FAMILY_FORM="form";
+    
+    public final static String REPORT_FAMILY_FUSIONCHARTS="fusioncharts";
     
     public final static String REPORT_BORDER_NONE0="none0";
 
@@ -251,5 +253,5 @@ public class Consts_Private
     
     public final static String ROWGROUP_COLTREE="coltreerowgroup";
     
-    public final static String ROWGROUP_DATATREE="datatreerowgroup";//根据数据确定的树形分组
+    public final static String ROWGROUP_DATATREE="datatreerowgroup";
 }

@@ -26,9 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.ReportDataAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
 
@@ -38,16 +38,16 @@ public class Interceptor_resultsetpage4report1 extends AbsInterceptorDefaultAdap
     public Object afterLoadData(ReportRequest rrequest,ReportBean rbean,Object typeObj,Object dataObj)
     {
         if(!(typeObj instanceof AbsReportType)) return super.afterLoadData(rrequest,rbean,typeObj,dataObj);//如果当前不是查询报表数据，则不做处理
-        List lstData=(List)dataObj;//此时dataObj参数存放的就是当前报表加载出的数据列表
+        List<AbsReportDataPojo> lstData=(List<AbsReportDataPojo>)dataObj;//此时dataObj参数存放的就是当前报表加载出的数据列表
         if(lstData==null||lstData.size()==0) return dataObj;
-        List<String> lstNos=ReportDataAssistant.getInstance().getLstColValues(rrequest,rbean.getId(),"no");//取到本报表中所有记录的no列的值
-        if(lstNos==null||lstNos.size()==0) return dataObj;
         /**
          * 下面将取到的所有no列的值拼凑成no1,no2,...格式，以便稍后用它们做为条件从另一个表（甚至其它库中的表）取到省、市、县
          */
         StringBuffer noBuf=new StringBuffer();
-        for(String noTmp:lstNos)
+        String noTmp;
+        for(AbsReportDataPojo pojoTmp:lstData)
         {
+            noTmp=pojoTmp.getColStringValue("no");
             if(noTmp==null||noTmp.trim().equals("")) continue;
             noBuf.append("'").append(noTmp).append("',");
         }
@@ -62,7 +62,6 @@ public class Interceptor_resultsetpage4report1 extends AbsInterceptorDefaultAdap
         {
             stmt=conn.createStatement();
             ResultSet rs=stmt.executeQuery("select no,province,city,county from tbl_detailinfo where no in("+strnos+")");
-            String noTmp;
             while(rs.next())
             {
                 noTmp=rs.getString("no");
@@ -86,13 +85,12 @@ public class Interceptor_resultsetpage4report1 extends AbsInterceptorDefaultAdap
             //这里不用关闭conn，框架会统一关闭
         }
         /*将每个工号对应的省市县设置到相应记录的POJO对象中*/
-        String noTmp;
-        for(Object dataObjTmp:lstData)
+        for(AbsReportDataPojo dataObjTmp:lstData)
         {
-            noTmp=(String)ReportDataAssistant.getInstance().getColValue(rrequest,rbean.getId(),"no",dataObjTmp);//从当前记录的POJO对象中取到工号列的值
-            ReportDataAssistant.getInstance().setColValue(rrequest,rbean.getId(),"province",dataObjTmp,mDataTmp.get(noTmp+"_province"));//将此工号对应的省设置到此记录pojo对象的province列中
-            ReportDataAssistant.getInstance().setColValue(rrequest,rbean.getId(),"city",dataObjTmp,mDataTmp.get(noTmp+"_city"));//将此工号对应的省设置到此记录pojo对象的city列中
-            ReportDataAssistant.getInstance().setColValue(rrequest,rbean.getId(),"county",dataObjTmp,mDataTmp.get(noTmp+"_county"));//将此工号对应的省设置到此记录pojo对象的county列中
+            noTmp=dataObjTmp.getColStringValue("no");//从当前记录的POJO对象中取到工号列的值
+            dataObjTmp.setColValue("province",mDataTmp.get(noTmp+"_province"));//将此工号对应的省设置到此记录pojo对象的province列中
+            dataObjTmp.setColValue("city",mDataTmp.get(noTmp+"_city"));//将此工号对应的省设置到此记录pojo对象的city列中
+            dataObjTmp.setColValue("county",mDataTmp.get(noTmp+"_county"));//将此工号对应的省设置到此记录pojo对象的county列中
         }
         return lstData;//返回设置完所有记录的省市县三列值的对象集合，这样显示时就能将它们显示出来
     }

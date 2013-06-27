@@ -30,6 +30,7 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.UltraListReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportBean;
@@ -48,8 +49,12 @@ public class UltraListReportGroupBean extends AbsConfigBean
     private String childids;
 
     private String label;
+    
+    private Map<String,String> mDynLableParts;//显示<group/>对应<td/>的样式字符串
 
     private String labelstyleproperty;
+    
+    private List<String> lstDynLabelstylepropertyParts;
 
     private int rowspan=1;
 
@@ -87,24 +92,35 @@ public class UltraListReportGroupBean extends AbsConfigBean
         this.parentGroupid=parentGroupid;
     }
 
-    public String getLabel()
+    public String getLabel(ReportRequest rrequest)
     {
-        return label;
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.label,this.mDynLableParts,"");
     }
 
     public void setLabel(String label)
     {
-        this.label=label;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(label);
+        this.label=(String)objArr[0];
+        this.mDynLableParts=(Map<String,String>)objArr[1];
     }
 
-    public String getLabelstyleproperty()
+    public String getLabelstyleproperty(ReportRequest rrequest,boolean isStaticPart)
     {
-        return labelstyleproperty;
+        if(isStaticPart) return this.labelstyleproperty==null?"":this.labelstyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.labelstyleproperty,this.lstDynLabelstylepropertyParts,"");
     }
 
-    public void setLabelstyleproperty(String labelstyleproperty)
+    public void setLabelstyleproperty(String labelstyleproperty,boolean isStaticPart)
     {
-        this.labelstyleproperty=labelstyleproperty;
+        if(isStaticPart)
+        {
+            this.labelstyleproperty=labelstyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(labelstyleproperty);
+            this.labelstyleproperty=(String)objArr[0];
+            this.lstDynLabelstylepropertyParts=(List<String>)objArr[1];
+        }
     }
 
     public int getRowspan()
@@ -167,11 +183,11 @@ public class UltraListReportGroupBean extends AbsConfigBean
                 cgDisplayBeanTmp.setParentGroupId(ulcbTmp.getParentGroupid());
                 cgDisplayBeanTmp.setLayer(positionBeanTmp.getLayer());
                 if(cgDisplayBeanTmp.isChecked())
-                {//如果当前列参与本次显示，则从mDisplayRealColAndGroupLabels中取label，因为包含了用户在拦截器中可能的修改
+                {
                     cgDisplayBeanTmp.setTitle(mDisplayRealColAndGroupLabels.get(cbTmp.getColid()));
                 }else
                 {
-                    cgDisplayBeanTmp.setTitle(rrequest.getI18NStringValue(cbTmp.getLabel()));
+                    cgDisplayBeanTmp.setTitle(cbTmp.getLabel(rrequest));
                 }
                 lstColAndGroupDisplayBeans.add(cgDisplayBeanTmp);
             }else if(objTmp instanceof UltraListReportGroupBean)
@@ -191,7 +207,7 @@ public class UltraListReportGroupBean extends AbsConfigBean
                     cgDisplayBeanTmp.setTitle(mDisplayRealColAndGroupLabels.get(ulgroupbeanTmp.getGroupid()));
                 }else
                 {
-                    cgDisplayBeanTmp.setTitle(rrequest.getI18NStringValue(ulgroupbeanTmp.getLabel()));
+                    cgDisplayBeanTmp.setTitle(ulgroupbeanTmp.getLabel(reportTypeObj.getReportRequest()));
                 }
                 lstColAndGroupDisplayBeans.add(cgDisplayBeanTmp);
                 ulgroupbeanTmp.createColAndGroupDisplayBeans(reportTypeObj,mDisplayRealColAndGroupLabels,rrequest,lstDynColids,
@@ -234,7 +250,7 @@ public class UltraListReportGroupBean extends AbsConfigBean
 
     public boolean isDragable(AbsListReportDisplayBean alrdbean)
     {
-        if(this.hasFixedChildCol(null)) return false;
+        if(this.hasFixedChildCol(null)) return false;//如果有冻结子列，则不允许被拖动
         if(alrdbean==null||alrdbean.getRowgrouptype()<=0||alrdbean.getRowGroupColsNum()<=0) return true;
         if(this.hasRowgroupChildCol()) return false;
         return true;
@@ -463,7 +479,7 @@ public class UltraListReportGroupBean extends AbsConfigBean
         UltraListReportGroupBean groupBeanTmp;
         boolean hasGroupChild=false;
         boolean isAllChildNonDisplayPermission=true;
-        boolean containsAlwaysCol=false;//当前分组是否包含参与本次显示的displaytype为always的列
+        boolean containsAlwaysCol=false;
         int maxrowspan=0;
         int colspan=0;
         for(Object objTmp:lstChildren)
@@ -512,7 +528,7 @@ public class UltraListReportGroupBean extends AbsConfigBean
         {
             positionBean.setDisplaymode(0);
         }else if(colspan>0)
-        {
+        {//当前分组列有要显示的子列，则此分组列也一定参与显示
             if(containsAlwaysCol)
             {
                 positionBean.setDisplaymode(2);
@@ -542,7 +558,7 @@ public class UltraListReportGroupBean extends AbsConfigBean
         int totalrowspan=position[0];
         int layer=position[1];
         ColAndGroupTitlePositionBean positionBean=mColAndGroupTitlePostions.get(this.groupid);
-        if(positionBean.getDisplaymode()<0) return;//如果没有显示权限，则不会在前台提供列选择选项，因此直接返回
+        if(positionBean.getDisplaymode()<0) return;
         positionBean.setLayer(layer);
         if(positionBean.getDisplaymode()>0)
         {
@@ -650,8 +666,8 @@ public class UltraListReportGroupBean extends AbsConfigBean
                     cbeanTmp=((ColBean)childObj);
                     if(alrbean.getScrollType()==AbsListReportBean.SCROLLTYPE_VERTICAL)
                     {//报表配置了纵向滚动条,则不能在<group/>中的列配置width。
-                        if(Tools.getPropertyValueByName("width",cbeanTmp.getValuestyleproperty(),true)!=null
-                                ||Tools.getPropertyValueByName("width",cbeanTmp.getLabelstyleproperty(),true)!=null)
+                        if(Tools.getPropertyValueByName("width",cbeanTmp.getValuestyleproperty(null,true),true)!=null
+                                ||Tools.getPropertyValueByName("width",cbeanTmp.getLabelstyleproperty(null,true),true)!=null)
                         {
                             throw new WabacusConfigLoadingException("加载报表"+cbeanTmp.getReportBean().getPath()
                                     +"失败，此报表配置了scrollheight，因此不能在<group/>中的<col/>配置width属性");

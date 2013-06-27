@@ -134,7 +134,7 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
                 {
                     mParentValues.put(parentidTmp,"[%ALL%]");
                 }
-                lstOptionsResult=getOptionsList(rrequest,mParentValues);//取当前子选择框所有下拉选项数据
+                lstOptionsResult=getOptionsList(rrequest,mParentValues);
                 if(lstOptionsResult!=null)
                 {
                     rrequest.setAttribute("LISTOPTIONS_"+rbean.getId()+owner.getInputBoxId()+"_[ALL]",lstOptionsResult);
@@ -168,7 +168,7 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
             lstOptionsResult=(List<Map<String,String>>)rrequest.getAttribute("LISTOPTIONS_"+rbean.getId()+realinputboxid);
         }
         if(lstOptionsResult==null)
-        {
+        {//缓存中没有取到
             if(!this.isDependsOtherInputbox())
             {
                 lstOptionsResult=getOptionsList(rrequest,null);
@@ -201,7 +201,7 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
             {
                 if(obean.getOptionDatasourceObj()!=null||obean.getType()==null) continue;
                 if(obean.getType().length==1&&obean.getType()[0].equals("%false-false%"))
-                {//当前下拉选项是在选择框没有选项数据时才显示出来
+                {
                     mOptionTmp=new HashMap<String,String>();
                     mOptionTmp.put("label",rrequest.getI18NStringValue(obean.getLabel()));
                     mOptionTmp.put("value",obean.getValue());
@@ -275,7 +275,7 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
                         parentValue=((IEditableReportType)reportTypeObj).getColOriginalValue(reportTypeObj.getLstReportData().get(rowidx),colbeanTmp);
                     }else
                     {
-                        parentValue=colbeanTmp.getDisplayValue(reportTypeObj.getLstReportData().get(rowidx),rrequest);
+                        parentValue=reportTypeObj.getLstReportData().get(rowidx).getColStringValue(colbeanTmp);
                     }
                     
                 }
@@ -499,7 +499,7 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
                             +parentidTmp+"对应的父输入框不存在");
                 }
                 if(cbTmp.isHidden()||cbTmp.isConstant()||cbTmp.getInputbox()==null)
-                {//当前查询条件不需要显示输入框，即是个隐藏条件
+                {
                     this.mParentIds.put(parentidTmp,Boolean.FALSE);
                 }else
                 {

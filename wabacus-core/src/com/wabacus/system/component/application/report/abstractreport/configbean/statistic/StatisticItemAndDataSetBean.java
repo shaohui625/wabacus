@@ -25,8 +25,9 @@ import java.util.List;
 
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
+import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
@@ -40,7 +41,7 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
 {
     public final static String STATISQL_PLACEHOLDER="%STATISTIC_SQL%";
     
-    private ReportDataSetBean datasetbean;
+    private ReportDataSetValueBean datasetbean;
 
     private String statiReportSqlWithoutCondition;
 
@@ -73,7 +74,7 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
                 this.lstPageStatitemBeansWithoutCondition.add(staticitembean);
             }
         }else
-        {//此统计项有动态条件
+        {
             if(staticitembean.getStatiscope()==StatisticItemBean.STATSTIC_SCOPE_ALL
                     ||staticitembean.getStatiscope()==StatisticItemBean.STATSTIC_SCOPE_REPORT)
             {
@@ -90,12 +91,12 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
         }
     }
 
-    public ReportDataSetBean getDatasetbean()
+    public ReportDataSetValueBean getDatasetbean()
     {
         return datasetbean;
     }
 
-    public void setDatasetbean(ReportDataSetBean datasetbean)
+    public void setDatasetbean(ReportDataSetValueBean datasetbean)
     {
         this.datasetbean=datasetbean;
     }
@@ -111,7 +112,7 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
 //            //            sql=this.datasetbean.getSqlWithoutOrderby();
 //            //            sql=Tools.replaceAll(sql,"%orderby%","");
 //            //            sql=Tools.replaceAll(sql,Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,this.datasetbean.getSql_kernel());
-
+//        }
         this.statiReportSqlWithoutCondition=parseStatiSqlWithoutCondition(this.lstReportStatitemBeansWithoutCondition,STATISQL_PLACEHOLDER);
         this.statiPageSqlWithoutCondition=parseStatiSqlWithoutCondition(this.lstPageStatitemBeansWithoutCondition,STATISQL_PLACEHOLDER);
         if((this.lstReportStatitemBeansWithCondition!=null&&this.lstReportStatitemBeansWithCondition.size()>0)
@@ -149,7 +150,7 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
         hasStatisticData|=doLoadStatisticData(listReportTypeObj,statiDataObj,groupbyClause,datasetObj,this.statiReportSqlWithoutCondition,
                 this.lstReportStatitemBeansWithoutCondition,this.statiSqlWithCondition,this.lstReportStatitemBeansWithCondition,false);
         if(groupbyClause==null||groupbyClause.trim().equals(""))
-        {//加载分组列上的数据时，不会加载统计分页数据的统计项，所以这里判断到当前不是在加载分组列上的数据才统计针对分页报表每页数据的统计
+        {
             datasetObj=this.datasetbean.createDataSetObj(rrequest,listReportTypeObj);
             hasStatisticData|=doLoadStatisticData(listReportTypeObj,statiDataObj,null,datasetObj,this.statiPageSqlWithoutCondition,
                     this.lstPageStatitemBeansWithoutCondition,this.statiSqlWithCondition,this.lstPageStatitemBeansWithCondition,true);
@@ -288,17 +289,36 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
     public int compareTo(StatisticItemAndDataSetBean otherBean)
     {
         SqlBean sbean=datasetbean.getReportBean().getSbean();
+        ReportDataSetBean dsbeanOther=(ReportDataSetBean)otherBean.getDatasetbean().getParent();
+        ReportDataSetBean dsbeanMe=(ReportDataSetBean)this.datasetbean.getParent();
         int myIdx=0, otherIdx=0;
-        ReportDataSetBean svbTmp;
-        for(int i=0;i<sbean.getLstDatasetBeans().size();i++)
-        {
-            svbTmp=sbean.getLstDatasetBeans().get(i);
-            if(datasetbean.getId().equals(svbTmp.getId()))
+        if(dsbeanMe.getId().equals(dsbeanOther.getId()))
+        {//是在同一个<dataset/>下面，则比较它们在本数据集中lstValueBeans中出现的顺序
+            ReportDataSetValueBean dsvbeanTmp;
+            for(int i=0;i<dsbeanMe.getLstValueBeans().size();i++)
             {
-                myIdx=i;
-            }else if(otherBean.getDatasetbean().getId().equals(svbTmp.getId()))
+                dsvbeanTmp=dsbeanMe.getLstValueBeans().get(i);
+                if(this.datasetbean.getId().equals(dsvbeanTmp.getId()))
+                {
+                    myIdx=i;
+                }else if(otherBean.getDatasetbean().getId().equals(dsvbeanTmp.getId()))
+                {
+                    otherIdx=i;
+                }
+            }
+        }else
+        {//在不同的<dataset/>下面，则比较它们所在<dataset/>的配置顺序
+            ReportDataSetBean dsbTmp;
+            for(int i=0;i<sbean.getLstDatasetBeans().size();i++)
             {
-                otherIdx=i;
+                dsbTmp=sbean.getLstDatasetBeans().get(i);
+                if(dsbeanMe.getId().equals(dsbTmp.getId()))
+                {
+                    myIdx=i;
+                }else if(dsbeanOther.getId().equals(dsbTmp.getId()))
+                {
+                    otherIdx=i;
+                }
             }
         }
         return myIdx>otherIdx?1:-1;

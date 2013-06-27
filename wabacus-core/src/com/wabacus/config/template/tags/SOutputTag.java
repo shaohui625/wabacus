@@ -36,7 +36,7 @@ public class SOutputTag extends AbsTagInTemplate
     {
         String value=this.mTagAttributes.get("value");
         if(value==null) return "";
-        if(Tools.isDefineKey("request",value)||Tools.isDefineKey("session",value)||Tools.isDefineKey("url",value))
+        if(WabacusAssistant.getInstance().isGetRequestContextValue(value))
         {//如果是定义从request/session中取动态值显示
             if(Tools.isDefineKey("url",value))
             {
@@ -47,7 +47,7 @@ public class SOutputTag extends AbsTagInTemplate
                 }
                 rrequest.addParamToUrl(urlname,rrequest.getStringAttribute(urlname,""),false);
             }
-            return WabacusAssistant.getInstance().getRequestSessionValue(rrequest,value,"");
+            return WabacusAssistant.getInstance().getRequestContextStringValue(rrequest,value,"");
         }
         return value;
     }

@@ -21,6 +21,6 @@ package com.wabacus.system.buttons;
 import com.wabacus.system.ReportRequest;
 public interface IButtonClickeventGenerate
 {
-    public String generateClickEvent(ReportRequest rrequest);
+    public String generateClickEvent(ReportRequest rrequest,AbsButtonType buttonObj);
 }
 

@@ -18,9 +18,12 @@
  */
 package com.wabacus.system.assistant;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -146,7 +149,7 @@ public class FilePathAssistant
                 urlTmp=(URL)rootUrls.nextElement();
                 protocolTmp=urlTmp.getProtocol();
                 if("vfs".equals(protocolTmp))
-                {//jboss的目录
+                {
                     String filePath=URLDecoder.decode(urlTmp.getFile(),"UTF-8");
                     int indexOf=filePath.indexOf("/WEB-INF");
                     if(indexOf>0&&!new File(filePath).exists())
@@ -157,7 +160,7 @@ public class FilePathAssistant
                 }else if("file".equals(protocolTmp))
                 {
                     String filePath=URLDecoder.decode(urlTmp.getFile(),"UTF-8");
-                    getFileFromClasspathDir(rootpath,filePath,regex,isRecursive,lstResults);
+                    getFileFromClasspathDir(rootpath,filePath,regex,isRecursive,lstResults);// 以文件的方式扫描整个包下的文件 并添加到集合中
                 }else if("jar".equals(protocolTmp))
                 {
                     JarFile jar=((JarURLConnection)urlTmp.openConnection()).getJarFile();
@@ -171,7 +174,7 @@ public class FilePathAssistant
                         if(name.charAt(0)=='/') name=name.substring(1);// 如果是以/开头的
                         
                         if(isValidFileInJar(rootpath,name,isRecursive))
-                        {//如果是根目录，或者不是根目录，且当前包在此目录中
+                        {
                             String filenameTmp=name;
                             int idx=name.lastIndexOf('/');
                             if(idx>0) filenameTmp=filenameTmp.substring(idx+1).trim();
@@ -238,6 +241,35 @@ public class FilePathAssistant
             {
                 filePathTmp=rootpackage+fileTmp.getName();
                 if(!lstResults.contains(filePathTmp)) lstResults.add(filePathTmp);
+            }
+        }
+    }
+    
+    public void writeFileContentToDisk(String filepath,String filecontent,boolean isAppend)
+    {
+        OutputStreamWriter fileWriter=null;
+        try
+        {
+            if(filecontent==null) filecontent="";
+            File f=new File(filepath);
+            if(!f.exists()) f.createNewFile();
+            fileWriter=new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(f,isAppend)),Config.encode);
+            fileWriter.write(filecontent);
+        }catch(IOException ioe)
+        {
+            filecontent=filecontent.trim();
+            if(filecontent.length()>100) filecontent=filecontent.substring(0,100)+"...";
+            throw new WabacusConfigLoadingException("将文件内容"+filecontent+"写入文件"+filepath+"失败",ioe);
+        }finally
+        {
+            try
+            {
+                if(fileWriter!=null) fileWriter.close();
+            }catch(IOException e)
+            {
+                filecontent=filecontent.trim();
+                if(filecontent.length()>100) filecontent=filecontent.substring(0,100)+"...";
+                throw new WabacusConfigLoadingException("将文件内容"+filecontent+"写入文件"+filepath+"失败",e);
             }
         }
     }

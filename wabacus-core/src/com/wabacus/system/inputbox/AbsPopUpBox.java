@@ -236,7 +236,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
         this.styleproperty2=Tools.removePropertyValueByName("onclick",this.styleproperty2);
     }
     
-    public String createSelectOkFunction(String realinputboxid)
+    public String createSelectOkFunction(String realinputboxid,boolean isAutoincludejs)
     {
         boolean isConditionBox=false;
         String fillmode="";
@@ -252,16 +252,33 @@ public abstract class AbsPopUpBox extends AbsInputBox
             paramname=EditableReportAssistant.getInstance().getColParamName((ColBean)((EditableReportColBean)this.getOwner()).getOwner());
         }
         StringBuffer resultBuf=new StringBuffer();
+        String parentWindowName,closeMeCodeString;
+        if(Config.getInstance().getSystemConfigValue("prompt-dialog-type","artdialog").equals("artdialog"))
+        {
+            if(isAutoincludejs)
+            {
+                resultBuf.append("<script type=\"text/javascript\"  src=\""+Config.webroot
+                        +"webresources/component/artDialog/artDialog.js\"></script>");
+                resultBuf.append("<script type=\"text/javascript\"  src=\""+Config.webroot
+                        +"webresources/component/artDialog/plugins/iframeTools.js\"></script>");
+            }
+            parentWindowName="artDialog.open.origin";
+            closeMeCodeString="art.dialog.close();";
+        }else
+        {
+            parentWindowName="parent";
+            closeMeCodeString="parent.closePopupWin();";
+        }
         resultBuf.append("<script language=\"javascript\">");
         resultBuf.append("function selectOK(value,name,label,closeme){");
         resultBuf.append("if(name==null||name==''||name=='"+paramname+"'){");
-        resultBuf.append("parent.setPopUpBoxValueToParent(value,'").append(realinputboxid).append("','").append(fillmode);
+        resultBuf.append(parentWindowName+".setPopUpBoxValueToParent(value,'").append(realinputboxid).append("','").append(fillmode);
         resultBuf.append("','").append(this.owner.getReportBean().getGuid()).append("','").append(this.getTypename()).append("');");
         resultBuf.append("}else{");
         if(isConditionBox)
         {
-            resultBuf.append("parent.setReportInputBoxValue(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
-                    +this.owner.getReportBean().getId()+"\",true,parent.getObjectByJsonString(\"{\"+name+\":\\\"\"+value+\"\\\"}\"));");
+            resultBuf.append(parentWindowName+".setReportInputBoxValue(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
+                    +this.owner.getReportBean().getId()+"\",true,"+parentWindowName+".getObjectByJsonString(\"{\"+name+\":\\\"\"+value+\"\\\"}\"));");
         }else
         {
             resultBuf.append("var newvalues=\"{\"+name+\":\\\"\"+value+\"\\\"\";");
@@ -269,22 +286,22 @@ public abstract class AbsPopUpBox extends AbsInputBox
             resultBuf.append("newvalues=newvalues+\"}\";");
             AbsReportType reportTypeObj=Config.getInstance().getReportType(this.owner.getReportBean().getType());
             if(reportTypeObj instanceof EditableListReportType2)
-            {//如果是editablelist2或listform
-                resultBuf.append("var srcboxObj=parent.document.getElementById('"+realinputboxid+"');");//取到弹出窗口对应的源输入框对象，以便下面设置其它列的值时，可以取到其<tr/>对象
+            {
+                resultBuf.append("var srcboxObj="+parentWindowName+".document.getElementById('"+realinputboxid+"');");//取到弹出窗口对应的源输入框对象，以便下面设置其它列的值时，可以取到其<tr/>对象
                 resultBuf
-                        .append("parent.setEditableListReportColValueInRow(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
+                        .append(parentWindowName+".setEditableListReportColValueInRow(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
                                 +this.owner.getReportBean().getId()
-                                +"\",parent.getParentElementObj(srcboxObj,'TR'),parent.getObjectByJsonString(newvalues));");
+                                +"\","+parentWindowName+".getParentElementObj(srcboxObj,'TR'),"+parentWindowName+".getObjectByJsonString(newvalues));");
             }else
             {
-                resultBuf.append("parent.setEditableReportColValue(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
-                        +this.owner.getReportBean().getId()+"\",parent.getObjectByJsonString(newvalues),null);");
+                resultBuf.append(parentWindowName+".setEditableReportColValue(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
+                        +this.owner.getReportBean().getId()+"\","+parentWindowName+".getObjectByJsonString(newvalues),null);");
             }
         }
         resultBuf.append("}");
-        resultBuf.append("if(closeme!==false) parent.closePopupWin();}");
+        resultBuf.append("if(closeme!==false) "+closeMeCodeString+"}");
         resultBuf.append("</script>");
         return resultBuf.toString();
-    }
+    }    
 }
 

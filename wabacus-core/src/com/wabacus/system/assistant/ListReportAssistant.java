@@ -37,7 +37,7 @@ import org.apache.commons.logging.LogFactory;
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.commoninterface.IListReportRoworderPersistence;
@@ -183,7 +183,7 @@ public class ListReportAssistant
         paramsBuf.append(",filtermaxheight:").append(filterbean.getFiltermaxheight());
         paramsBuf.append("}");
         resultBuf.append("<SPAN class=\"filter_span\"><input type=\"button\" id=\"").append(rbean.getGuid()+alrcbean.hashCode()).append("\"");
-        resultBuf.append(" onmouseout=\"try{drag_enabled=true;}catch(e){}\" onmouseover=\"try{drag_enabled=false;this.style.cursor='pointer';}catch(e){}\"");//当点击列过滤图标时，不允许进行列拖动操作
+        resultBuf.append(" onmouseout=\"try{drag_enabled=true;}catch(e){}\" onmouseover=\"try{drag_enabled=false;this.style.cursor='pointer';}catch(e){}\"");
         resultBuf.append(" style=\"width:16px;height:17px;background-color:transparent;border:0; background-image: url(").append(imgurl+");\"");
         resultBuf.append(" onclick=\"try{getFilterDataList(this,'").append(Tools.jsParamEncode(paramsBuf.toString())).append("');return false;}catch(e){logErrorsAsJsFileLoad(e);}\"");
         resultBuf.append("/></SPAN>");
@@ -197,7 +197,7 @@ public class ListReportAssistant
                 +");}catch(e){logErrorsAsJsFileLoad(e);}\" onmouseout=\"try{drag_enabled=true;}catch(e){}\"><font width=\"3\">&nbsp;</font></span>";
     }
     
-    public String addColFilterConditionToSql(ReportRequest rrequest,ReportBean rbean,ReportDataSetBean datasetbean,String sql)
+    public String addColFilterConditionToSql(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean datasetbean,String sql)
     {
         String where=getFilterConditionExpression(rrequest,rbean,datasetbean);
         if(where==null) where="";
@@ -205,7 +205,7 @@ public class ListReportAssistant
         return sql;
     }
 
-    public String getFilterConditionExpression(ReportRequest rrequest,ReportBean rbean,ReportDataSetBean datasetbean)
+    public String getFilterConditionExpression(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean datasetbean)
     {
         AbsListReportFilterBean filterBean=rrequest.getCdb(rbean.getId()).getFilteredBean();
         if(filterBean==null) return null;
@@ -241,19 +241,6 @@ public class ListReportAssistant
         return where;
     }
     
-    public Map<String,List<String>> getMFilterColAndFilterValues(ReportRequest rrequest,ReportBean rbean,ReportDataSetBean datasetbean)
-    {
-        AbsListReportFilterBean filterBean=rrequest.getCdb(rbean.getId()).getFilteredBean();
-        if(filterBean==null) return null;
-        ColBean cbTmp=(ColBean)filterBean.getOwner();
-        if(!cbTmp.isMatchDataSet(datasetbean)) return null;
-        String filterval=rrequest.getStringAttribute(filterBean.getId(),"");
-        if(filterval.equals("")) return null;
-        Map<String,List<String>> mResults=new HashMap<String,List<String>>();
-        mResults.put(cbTmp.getColumn(),Tools.parseStringToList(filterval,";;",false));
-        return mResults;
-    }
-    
     public void storeRoworder(ReportRequest rrequest,ReportBean rbean)
     {
         String rowordertype=rrequest.getStringAttribute(rbean.getId()+"_ROWORDERTYPE","");
@@ -262,7 +249,7 @@ public class ListReportAssistant
         String roworderparams=rrequest.getStringAttribute(rbean.getId()+"_ROWORDERPARAMS","");
         if(roworderparams.equals("")) return;
         AbsListReportBean alrbean=(AbsListReportBean)rbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
-        IListReportRoworderPersistence lsObj=alrbean.getLoadStoreRoworderObject();
+        IListReportRoworderPersistence lsObj=alrbean.getLoadStoreRoworderObject();//获取到读写行排序顺序值的类对象
         if(lsObj==null) lsObj=Config.default_roworder_object;
         List<Map<String,String>> lstColValusInAllRows=EditableReportAssistant.getInstance().parseSaveDataStringToList(roworderparams);
         if(lstColValusInAllRows.size()==0) return;
@@ -276,7 +263,7 @@ public class ListReportAssistant
         {
             lsObj.storeRoworderByTop(rrequest,rbean,mColValuesInRow);
         }else
-        {//Consts.ROWORDER_DRAG或Consts.ROWORDER_ARROW
+        {
             String direct=rrequest.getStringAttribute(rbean.getId()+"_ROWORDERDIRECT","");
             String destrowParams=rrequest.getStringAttribute(rbean.getId()+"_DESTROWPARAMS","");
             Map<String,String> mColValuesInDestRow=null;

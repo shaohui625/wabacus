@@ -56,20 +56,22 @@ public class InterceptorRes extends AbsResource
         Element eleBeforeLoadData=eleInterceptor.element("beforeloaddata");
         String beforeloaddata=eleBeforeLoadData==null?null:eleBeforeLoadData.getText();
         Element eleAfterLoadData=eleInterceptor.element("afterloaddata");
+        Element eleBeforeDisplay=eleInterceptor.element("beforedisplay");
+        String beforedisplay=eleBeforeDisplay==null?null:eleBeforeDisplay.getText();
         String afterloaddata=eleAfterLoadData==null?null:eleAfterLoadData.getText();
         Element eleDisplayPerRow=eleInterceptor.element("beforedisplay-perrow");
         String displayperrow=eleDisplayPerRow==null?null:eleDisplayPerRow.getText();
         Element eleDisplayPerCol=eleInterceptor.element("beforedisplay-percol");
         String displaypercol=eleDisplayPerCol==null?null:eleDisplayPerCol.getText();
 
-        if(Tools.isEmpty(preaction,true)&&Tools.isEmpty(postaction,true)&&Tools.isEmpty(saveaction,true)
-                &&Tools.isEmpty(saverowaction,true)&&Tools.isEmpty(savesqlaction,true)&&Tools.isEmpty(beforeloaddata,true)
-                &&Tools.isEmpty(afterloaddata,true)&&Tools.isEmpty(displayperrow,true)&&Tools.isEmpty(displaypercol,true))
+        if(Tools.isEmpty(preaction,true)&&Tools.isEmpty(postaction,true)&&Tools.isEmpty(saveaction,true)&&Tools.isEmpty(saverowaction,true)
+                &&Tools.isEmpty(savesqlaction,true)&&Tools.isEmpty(beforeloaddata,true)&&Tools.isEmpty(afterloaddata,true)
+                &&Tools.isEmpty(beforedisplay,true)&&Tools.isEmpty(displayperrow,true)&&Tools.isEmpty(displaypercol,true))
         {
             return null;
         }
-        Class c=ReportAssistant.getInstance().buildInterceptorClass("resource_"+name,lstImportPackages,preaction,postaction,saveaction,
-                saverowaction,savesqlaction,beforeloaddata,afterloaddata,displayperrow,displaypercol);
+        Class c=ReportAssistant.getInstance().buildInterceptorClass("resource_"+name,lstImportPackages,preaction,postaction,saveaction,saverowaction,
+                savesqlaction,beforeloaddata,afterloaddata,beforedisplay,displayperrow,displaypercol);
         if(c!=null)
         {
             try

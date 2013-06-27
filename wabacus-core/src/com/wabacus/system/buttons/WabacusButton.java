@@ -89,7 +89,7 @@ public class WabacusButton extends AbsButtonType
             {
                 labeltemp=Tools.getRealKeyByDefine("image",labeltemp);
                 if(!labeltemp.startsWith(Config.webroot)&&!labeltemp.toLowerCase().startsWith("http://"))
-                {//如果配置的是相对路径
+                {
                     labeltemp=Config.webroot+"/"+labeltemp;
                     labeltemp=Tools.replaceAll(labeltemp,"//","/");
                 }
@@ -121,7 +121,7 @@ public class WabacusButton extends AbsButtonType
         StringBuffer resultBuf=new StringBuffer();
         boolean isDisabled=checkDisabledPermission(rrequest);
         if(!isDisabled)
-        {
+        {//如果不是禁用，则有点击权限
             String clickevent=null;
             if(dynclickevent!=null&&!dynclickevent.trim().equals(""))
             {
@@ -194,7 +194,7 @@ public class WabacusButton extends AbsButtonType
         return "try{"+clickevent+"}catch(e){logErrorsAsJsFileLoad(e);}";
     }
     
-//    private boolean shouldStopDisplayAsRefered(ReportRequest rrequest)
+
 
 
 //        {//当前按钮被容器引用显示，且不在原位置显示

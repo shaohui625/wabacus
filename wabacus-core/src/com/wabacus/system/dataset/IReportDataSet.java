@@ -22,19 +22,19 @@ import java.util.List;
 import java.util.Map;
 
 import com.wabacus.config.component.application.report.ColBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 
 public interface IReportDataSet
 {
-    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean datasetbean);
+    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean datasetbean);
 
-    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean datasetbean,List lstReportData);
+    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean datasetbean,List lstReportData);
 
-    public Object getColFilterDataSet(ReportRequest rrequest,ColBean filterColBean,ReportDataSetBean datasetbean,
+    public Object getColFilterDataSet(ReportRequest rrequest,ColBean filterColBean,ReportDataSetValueBean datasetbean,
             Map<String,List<String>> mSelectedFilterValues);
 
-    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetBean datasetbean,Object typeObj,String sql,
+    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetValueBean datasetbean,Object typeObj,String sql,
             boolean isStatisticForOnePage);
 }

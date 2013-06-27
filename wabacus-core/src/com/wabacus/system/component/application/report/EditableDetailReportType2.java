@@ -19,34 +19,32 @@
 package com.wabacus.system.component.application.report;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.SqlBean;
-import com.wabacus.config.component.application.report.SubmitFunctionParamBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
-import com.wabacus.system.assistant.JavaScriptAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.buttons.AbsButtonType;
 import com.wabacus.system.buttons.DeleteButton;
 import com.wabacus.system.buttons.SaveButton;
 import com.wabacus.system.component.application.report.abstractreport.IEditableReportType;
 import com.wabacus.system.component.application.report.abstractreport.SaveInfoDataBean;
+import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportSqlBean;
 import com.wabacus.system.component.container.AbsContainerType;
-import com.wabacus.system.intercept.ColDataByInterceptor;
 import com.wabacus.system.intercept.IInterceptor;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
@@ -135,10 +133,10 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         }
         if(rbean.getInterceptor()!=null)
         {
-            result[0]=rbean.getInterceptor().doSave(rrequest,rbean,editbean);
+            result[0]=rbean.getInterceptor().doSave(this.rrequest,this.rbean,editbean);
         }else
         {
-            result[0]=EditableReportAssistant.getInstance().doSaveReport(rbean,rrequest,editbean);
+            result[0]=EditableReportAssistant.getInstance().doSaveReport(this.rrequest,this.rbean,editbean);
         }
         if(result[0]==IInterceptor.WX_RETURNVAL_TERMINATE||result[0]==IInterceptor.WX_RETURNVAL_SKIP) return result;
         if(sidbean.hasSavingData())
@@ -181,10 +179,6 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append(super.showMetaDataDisplayStringStart());
         resultBuf.append(EditableReportAssistant.getInstance().getEditableMetaData(this));
-        if(!Consts.READONLY_MODE.equals(this.realAccessMode))
-        {
-            resultBuf.append(ersqlbean.getValidateSaveMethodAndParams(rrequest,false));
-        }
         return resultBuf.toString();
     }
 
@@ -220,22 +214,23 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         return "cls-data-td-editdetail";
     }
     
-    protected Object initDisplayCol(ColBean cbean,Object dataObj)
+    protected Object initDisplayCol(ColBean cbean,AbsReportDataPojo dataObj)
     {
+        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return super.initDisplayCol(cbean,dataObj);
         if(cbean.isNonValueCol()) return null;
 
-//        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype()))
 
 
 
 
 
+//            EditableReportColBean ercbean=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
 
 //            {//没有通过updatecol属性引用别的列进行更新
 
 
 
-//                col_editvalue=getColOriginalValue(dataObj,ercbean.getUpdateCbean());
+
 
 
         String col_editvalue=getColOriginalValue(dataObj,cbean);
@@ -248,8 +243,9 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         return "<td style=\"display:none\" "+getTdPropsForColNameAndValue(cbean,(EditableReportColDataBean)colDataObj)+"></td>";//不能用<td/>，而必须是<td></td>格式，否则在IE上取子节点会有问题
     }
     
-    protected String getColValueTdPropertiesAndContent(ColBean cbean,Object dataObj,Object colDataObj,StringBuffer tdPropsBuf)
+    protected String getColValueTdPropertiesAndContent(ColBean cbean,AbsReportDataPojo dataObj,Object colDataObj,StringBuffer tdPropsBuf)
     {
+        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return super.getColValueTdPropertiesAndContent(cbean,dataObj,colDataObj,tdPropsBuf);
         if(!(colDataObj instanceof EditableReportColDataBean)) return super.getColValueTdPropertiesAndContent(cbean,dataObj,colDataObj,tdPropsBuf);
         EditableReportColDataBean ercdatabean=(EditableReportColDataBean)colDataObj;
         tdPropsBuf.append(" ").append(getTdPropsForColNameAndValue(cbean,ercdatabean));
@@ -259,20 +255,18 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
             return "";
         }
         String col_displayvalue=getColDisplayValue(ercdatabean,cbean,tdPropsBuf,dataObj);
-        ColDataByInterceptor coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,0,col_displayvalue);
-        if(coldataByInterceptor!=null)
+        ColDisplayData colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,dataObj,0,dataObj.getColValuestyleproperty(cbean.getProperty()),
+                col_displayvalue);
+        if(colDisplayData.getColdataByInterceptor()!=null&&colDisplayData.getColdataByInterceptor().isReadonly())
         {
-            if(coldataByInterceptor.isReadonly())
-            {
-                tdPropsBuf.delete(0,tdPropsBuf.length());
-                col_displayvalue=cbean.getDisplayValue(dataObj,rrequest);
-            }else if(coldataByInterceptor.getDynvalue()!=null)
-            {
-                col_displayvalue=coldataByInterceptor.getDynvalue();
-            }
+            tdPropsBuf.delete(0,tdPropsBuf.length());
+            col_displayvalue=dataObj.getColStringValue(cbean);
+        }else
+        {
+            col_displayvalue=colDisplayData.getValue();
         }
         if(col_displayvalue==null||col_displayvalue.trim().equals("null")||col_displayvalue.trim().equals("")) col_displayvalue="&nbsp;";
-        tdPropsBuf.append(getDetailTdValuestyleproperty(cbean,coldataByInterceptor));
+        tdPropsBuf.append(getDetailTdValuestyleproperty(cbean,colDisplayData.getStyleproperty()));
         return col_displayvalue;
     }
     
@@ -301,7 +295,7 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         return resultBuf.toString();
     }
 
-    public String getColOriginalValue(Object object,ColBean cbean)
+    public String getColOriginalValue(AbsReportDataPojo object,ColBean cbean)
     {
         String colproperty=cbean.getProperty();
         if(!cbean.isNonFromDbCol()) colproperty=colproperty+"_old";
@@ -313,24 +307,27 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         return oldvalue;
     }
 
-    private String getColDisplayValue(EditableReportColDataBean ercdatabean,ColBean cbean,StringBuffer tdPropsBuf,Object object)
+    private String getColDisplayValue(EditableReportColDataBean ercdatabean,ColBean cbean,StringBuffer tdPropsBuf,AbsReportDataPojo dataObj)
     {
         EditableReportColBean ercbean=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
         String col_displayvalue;
-        if(!ercdatabean.isEditable()||this.realAccessMode.equals(Consts.READONLY_MODE)) return cbean.getDisplayValue(object,rrequest);
-        boolean isReadonlyPermission=cbean.checkReadonlyPermission(rrequest);
-        if(ercbean.getInputbox().getFillmode()==2)
+        if(ercbean==null||!ercdatabean.isEditable()||this.realAccessMode.equals(Consts.READONLY_MODE))
         {
-            //这种显示方式不考虑前台编码显示的情况（目前主要是密码框会在前台编码显示，而它是显示时就直接填充的输入框）
+            col_displayvalue=dataObj.getColStringValue(cbean);
+            if(ercbean!=null) col_displayvalue=ercbean.getRealColDisplayValue(rrequest,dataObj,col_displayvalue);
+        }else if(ercbean.getInputbox().getFillmode()==2)
+        {
+            
             if(ercdatabean.isNeedDefaultValue())
-            {
+            {//如果当前是显示输入框的默认值
                 col_displayvalue=ercdatabean.getDefaultvalue();
             }else
             {
-                col_displayvalue=cbean.getDisplayValue(object,rrequest);
+                col_displayvalue=dataObj.getColStringValue(cbean);
                 if(col_displayvalue==null||col_displayvalue.equals("null")) col_displayvalue="";
             }
-            if(!isReadonlyPermission)
+            col_displayvalue=ercbean.getRealColDisplayValue(rrequest,dataObj,col_displayvalue);
+            if(!cbean.checkReadonlyPermission(rrequest))
             {
                 String beforedesc=ercbean.getInputbox().getBeforedescription(rrequest);
                 String afterdesc=ercbean.getInputbox().getAfterdescription(rrequest);
@@ -351,10 +348,11 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         }else
         {
             col_displayvalue=ercbean.getInputbox().getDisplayStringValue(
-                    rrequest,ercdatabean.getValue(),
+                    rrequest,
+                    ercdatabean.getValue(),
                     "style=\"text-align:"+ercbean.getTextalign()+";\" onblur=\"try{fillInputBoxValueToParentTd(this,'"
-                            +ercbean.getInputbox().getTypename()+"','"+rbean.getGuid()+"','"+this.getReportFamily()
-                            +"',1);}catch(e){logErrorsAsJsFileLoad(e);}\"",isReadonlyPermission);
+                            +ercbean.getInputbox().getTypename()+"','"+rbean.getGuid()+"','"+this.getReportFamily()+"',1,'"+ercbean.getInputBoxId()
+                            +"');}catch(e){logErrorsAsJsFileLoad(e);}\"",cbean.checkReadonlyPermission(rrequest));
         }
         return col_displayvalue;
     }
@@ -392,6 +390,13 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         return 1;
     }
 
+    public int afterReportLoading(ReportBean reportbean,List<XmlElementBean> lstEleReportBeans)
+    {
+        super.afterReportLoading(reportbean,lstEleReportBeans);
+        ComponentConfigLoadManager.loadEditableReportConfig(reportbean,lstEleReportBeans,KEY);
+        return 1;
+    }
+    
     public int doPostLoad(ReportBean reportbean)
     {
         super.doPostLoad(reportbean);
@@ -403,26 +408,13 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         processEditableButtons(reportbean,ersqlbean);
 
         EditableReportColBean ercolbeanTmp;
-        StringBuffer validateScriptBuffer=new StringBuffer();
-        List<SubmitFunctionParamBean> lstValidateParams=new ArrayList<SubmitFunctionParamBean>();
         for(ColBean cbean:reportbean.getDbean().getLstCols())
         {
             if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) continue;
             ercolbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
-            String align=Tools.getPropertyValueByName("align",cbean.getValuestyleproperty(),true);
+            String align=Tools.getPropertyValueByName("align",cbean.getValuestyleproperty(null,true),true);
             if(align==null||align.trim().equals("")) align="left";
             ercolbeanTmp.setTextalign(align);
-            if(ercolbeanTmp.isEditableForUpdate())
-            {
-                JavaScriptAssistant.getInstance().writeEditableReportColValidateJs(ercolbeanTmp,validateScriptBuffer,lstValidateParams);
-            }
-        }
-
-        if(validateScriptBuffer.length()>0)
-        {
-            writeValidateJsToFile(reportbean,validateScriptBuffer.toString());
-            ersqlbean.setValidateSaveUpdateMethod(reportbean.getGuid()+"_validateSave");
-            ersqlbean.setLstValidateSavingUpdateDynParams(lstValidateParams);
         }
         return 1;
     }
@@ -445,29 +437,6 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         }
     }
 
-    private void writeValidateJsToFile(ReportBean reportbean,String script)
-    {
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append("function "+reportbean.getGuid()+"_validateSave(metadataObj){");
-        resultBuf.append("  if(WX_UPDATE_ALLDATA==null){ return true;}");
-        resultBuf.append(   "var updatedataForSaving=WX_UPDATE_ALLDATA['"+reportbean.getGuid()+"'];");
-        resultBuf.append("  if(updatedataForSaving==null){return true}");
-        resultBuf.append("  var tableObj=document.getElementById('"+reportbean.getGuid()+"_data');if(tableObj==null){return true;}");
-        resultBuf.append("  var tdChilds=tableObj.getElementsByTagName('TD');if(tdChilds==null||tdChilds.length==0){return true;}");
-        resultBuf.append("  var paramsObj=getObjectByJsonString(metadataObj.metaDataSpanObj.getAttribute('validateSaveMethodDynParams'));");
-        resultBuf.append("  var value_name;var boxValue;var boxObj;");
-        resultBuf.append("  for(var j=0;j<tdChilds.length;j=j+1){");
-        resultBuf.append("      if(tdChilds[j]==null) continue;");
-        resultBuf.append("      boxObj=tdChilds[j];");//在这种报表类型中，传入客户端校验函数的输入框对象不是真正的输入框对象，而是其所在的<td/>对象
-        resultBuf.append("      value_name=boxObj.getAttribute('value_name');if(value_name==null||value_name=='') continue;");
-        resultBuf.append("      var updateDestTdObj=getUpdateColDestObj(boxObj,metadataObj.reportguid,'"+this.getReportFamily()+"',boxObj);");
-        resultBuf.append("      boxValue=getColConditionValueByParentElementObj(updateDestTdObj);if(boxValue==null) boxValue='';");
-        //        resultBuf.append("var idxTemp=id.lastIndexOf('__td');if(idxTemp>0) id=id.substring(0,idxTemp);");
-        resultBuf.append(script);
-        resultBuf.append(" }  return true;} ");
-        JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(reportbean.getPageBean(),resultBuf.toString());
-    }
-    
     public int doPostLoadFinally(ReportBean reportbean)
     {
         ComponentConfigLoadManager.doEditableReportTypePostLoadFinally(reportbean,KEY);

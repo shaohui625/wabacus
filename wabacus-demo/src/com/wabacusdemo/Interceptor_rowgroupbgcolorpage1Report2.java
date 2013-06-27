@@ -19,42 +19,41 @@
 package com.wabacusdemo;
 
 import com.wabacus.config.component.application.report.ColBean;
+import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
-import com.wabacus.system.intercept.ColDataByInterceptor;
+import com.wabacus.system.intercept.ColDataBean;
 
 public class Interceptor_rowgroupbgcolorpage1Report2 extends AbsInterceptorDefaultAdapter
 {
-    public ColDataByInterceptor beforeDisplayReportDataPerCol(AbsReportType reportTypeObj,
-            ReportRequest rrequest,Object displayColBean,int rowindex,String value)
+    public void beforeDisplayReportDataPerCol(ReportRequest rrequest,ReportBean rbean,ColDataBean colDataBean)
     {
-        if(rowindex<0)
+        if(colDataBean.getRowindex()<0)
         {//当前是在显示标题行
-            return null;
+            return;
         }
-        if(!(displayColBean instanceof ColBean))
+        if(!(colDataBean.getDisplayColBean() instanceof ColBean))
         {//不是显示列的数据
-            return null;
+            return;
         }
-        ColBean cb=(ColBean)displayColBean;
+        ColBean cb=(ColBean)colDataBean.getDisplayColBean();
         if("province".equals(cb.getColumn())||"city".equals(cb.getColumn())
                 ||"county".equals(cb.getColumn()))
         {//如果是分组列，则不改变它的背景色
-            return null;
+            return;
         }
-
-        Object dataObj=reportTypeObj.getLstReportData().get(rowindex);//取出存放当前行数据的POJO对象
+        AbsReportType reportTypeObj=rrequest.getDisplayReportTypeObj(rbean.getId());
+        if(reportTypeObj==null||reportTypeObj.getLstReportData()==null||reportTypeObj.getLstReportData().size()<=colDataBean.getRowindex()) return;
+        Object dataObj=reportTypeObj.getLstReportData().get(colDataBean.getRowindex());//取出存放当前行数据的POJO对象
         String sex=String.valueOf(ReportAssistant.getInstance().getPropertyValue(dataObj,"sex"));//从中取出sex列的数据
         if(sex.equals("女"))
         {
-            ColDataByInterceptor cbi=new ColDataByInterceptor();
-            cbi.setDynstyleproperty("bgcolor='#CFDFF8'");
-            return cbi;
-        }else
-        {//男
-            return null;
+            String styleproperty=colDataBean.getStyleproperty();
+            if(styleproperty==null) styleproperty="";
+            styleproperty+=" bgcolor='#CFDFF8'";
+            colDataBean.setStyleproperty(styleproperty);
         }
     }
 

@@ -22,11 +22,9 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringBufferInputStream;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,7 +32,7 @@ import org.apache.commons.logging.LogFactory;
 import COM.ibm.db2.app.Blob;
 import COM.ibm.db2.app.Clob;
 
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
@@ -51,11 +49,11 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class DB2 extends AbstractJdbcDatabaseType
+public class DB2 extends AbsDatabaseType
 {
     private static Log log=LogFactory.getLog(DB2.class);
 
-    public String constructSplitPageSql(ReportDataSetBean svbean)
+    public String constructSplitPageSql(ReportDataSetValueBean svbean)
     {
         String sql=svbean.getSqlWithoutOrderby();
         String orderby="";
@@ -69,7 +67,7 @@ public class DB2 extends AbstractJdbcDatabaseType
         return sql;
     }
 
-    public String constructSplitPageSql(ReportDataSetBean svbean,String dynorderby)
+    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
     {
         String sql=svbean.getSqlWithoutOrderby();
         dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
@@ -270,20 +268,4 @@ public class DB2 extends AbstractJdbcDatabaseType
         }
         return dataTypeObj;
     }
-    
-    
-    
-    public String getSequnceValue(Connection conn,String seqname) throws SQLException
-    {
-        //不同数据库获取sequence方式是不同的,此处应用改为AbsDatabaseType中获取
-        String sql="select nextval for  "+Tools.getRealKeyByDefine("sequence",seqname)+" from SYSIBM.SYSDUMMY1";
-        Statement stmt=conn.createStatement();
-        ResultSet rs=stmt.executeQuery(sql);
-        rs.next();
-        final String seqVal=String.valueOf(rs.getInt(1));
-        rs.close();
-        stmt.close();
-        return seqVal;
-    }
-
 }

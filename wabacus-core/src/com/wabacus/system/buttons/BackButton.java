@@ -88,7 +88,7 @@ public class BackButton extends WabacusButton
                 }
                 parenturl=Tools.replaceUrlParamValue(parenturl,"refreshComponentGuid","[OUTERPAGE]"+rrequest.getPagebean().getId());
                 parenturl=Tools.replaceUrlParamValue(parenturl,"SLAVE_REPORTID",null);
-                clickevent="refreshComponent('"+Tools.jsParamEncode(parenturl)+"')";
+                clickevent="refreshComponent('"+Tools.jsParamEncode(parenturl)+"',null,{keepSelectedRowsAction:true,keepSavingRowsAction:true})";
                 rrequest.setAttribute("BACK_ACTION_EVENT",clickevent);
             }
         }

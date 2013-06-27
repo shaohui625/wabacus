@@ -19,41 +19,37 @@
 package com.wabacusdemo;
 
 import com.wabacus.config.component.application.report.ColBean;
+import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.configbean.UltraListReportGroupBean;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
-import com.wabacus.system.intercept.ColDataByInterceptor;
+import com.wabacus.system.intercept.ColDataBean;
 
 public class Interceptor_dyncoltitlepage1Report2 extends AbsInterceptorDefaultAdapter
 {
-    public ColDataByInterceptor beforeDisplayReportDataPerCol(AbsReportType reportTypeObj,
-            ReportRequest rrequest,Object displayColBean,int rowindex,String value)
+    public void beforeDisplayReportDataPerCol(ReportRequest rrequest,ReportBean rbean,ColDataBean colDataBean)
     {
-        if(rowindex>=0) return null;//不是显示标题行的列
-        ColDataByInterceptor cbi=new ColDataByInterceptor();
-        if(displayColBean instanceof UltraListReportGroupBean)
+        if(colDataBean.getRowindex()>=0) return ;//不是显示标题行的列
+        if(colDataBean.getDisplayColBean() instanceof UltraListReportGroupBean)
         {//是显示<group/>的label
-            UltraListReportGroupBean groupbean=(UltraListReportGroupBean)displayColBean;
-            if("姓名".equals(groupbean.getLabel()))
+            //UltraListReportGroupBean groupbean=(UltraListReportGroupBean)colDataObj.getDisplayColBean();
+            if("姓名".equals(colDataBean.getValue()))
             {
-                cbi.setDynvalue("<font color='red'>动态</font>姓名");
+                colDataBean.setValue("<font color='red'>动态</font>姓名");
             }
-        }else if(displayColBean instanceof ColBean)
+        }else if(colDataBean.getDisplayColBean() instanceof ColBean)
         {
-            ColBean cb=(ColBean)displayColBean;
-            if("省份".equals(cb.getLabel()))
+            if("省份".equals(colDataBean.getValue()))
             {
-                cbi.setDynvalue("<font color='red'>动态</font>省份");
-            }else if("城市".equals(cb.getLabel()))
+                colDataBean.setValue("<font color='red'>动态</font>省份");
+            }else if("城市".equals(colDataBean.getValue()))
             {
-                cbi.setDynvalue("<font color='red'>动态</font>城市");
-            }else if("县城".equals(cb.getLabel()))
+                colDataBean.setValue("<font color='red'>动态</font>城市");
+            }else if("县城".equals(colDataBean.getValue()))
             {
-                cbi.setDynvalue("<font color='red'>动态</font>县城");
+                colDataBean.setValue("<font color='red'>动态</font>县城");
             }
         }
-        return cbi;
     }
 }
 

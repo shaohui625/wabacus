@@ -156,7 +156,7 @@
     		<xs:attributeGroup ref="wxs:componentCommonAttributes"/>
     		<xs:attribute name="extends" type="xs:string"/>
     		<xs:attribute name="type" type="xs:string"/>
-    		<xs:attribute name="class" type="xs:string"/>
+    		<xs:attribute name="pojoclass" type="xs:string"/>
     		<xs:attribute name="formatclass" type="xs:string"/>
     		<xs:attribute name="pagesize" type="xs:string"/>
     		<xs:attribute name="navigate_reportid" type="xs:string"/>
@@ -172,7 +172,6 @@
     				</xs:restriction>
     			</xs:simpleType>
     		</xs:attribute>
-    		<xs:attribute name="refreshparentonsave" type="xs:string"/>
     		<xs:attribute name="dependsparams" type="xs:string"/>
     		<xs:attribute name="cellresize">
     			<xs:simpleType>
@@ -191,18 +190,7 @@
   					</xs:restriction>
     			</xs:simpleType>
     		</xs:attribute>
-    		<xs:attribute name="dataimport" type="xs:string"/>
-    		<xs:attribute name="dataimportpopupparams" type="xs:string"/>
-    		<xs:attribute name="dataimportinitsize">
-    			<xs:simpleType>
-    				<xs:restriction base="xs:string">
-    					<xs:enumeration value="max"/>
-    					<xs:enumeration value="min"/>
-    					<xs:enumeration value="normal"/>
-  					</xs:restriction>
-    			</xs:simpleType>
-    		</xs:attribute>
-    		<xs:attribute name="jsvalidatetype" type="xs:string"/>
+    		<xs:attribute name="servervalidateclass" type="xs:string"/>
     		<xs:attribute name="onload" type="xs:string"/>
     		<xs:attribute name="border">
     			<xs:simpleType>
@@ -226,9 +214,25 @@
     				<xs:restriction base="xs:string">
     					<xs:enumeration value="none"/>
     					<xs:enumeration value="single"/>
-    					<xs:enumeration value="multiply"/>
+    					<xs:enumeration value="multiple"/>
     					<xs:enumeration value="checkbox"/>
     					<xs:enumeration value="radiobox"/>
+    					<xs:enumeration value="single-radiobox"/>
+    					<xs:enumeration value="multiple-checkbox"/>
+    					
+    					<xs:enumeration value="single|true"/>
+    					<xs:enumeration value="multiple|true"/>
+    					<xs:enumeration value="checkbox|true"/>
+    					<xs:enumeration value="radiobox|true"/>
+    					<xs:enumeration value="single-radiobox|true"/>
+    					<xs:enumeration value="multiple-checkbox|true"/>
+    					
+    					<xs:enumeration value="single|false"/>
+    					<xs:enumeration value="multiple|false"/>
+    					<xs:enumeration value="checkbox|false"/>
+    					<xs:enumeration value="radiobox|false"/>
+    					<xs:enumeration value="single-radiobox|false"/>
+    					<xs:enumeration value="multiple-checkbox|false"/>
   					</xs:restriction>
     			</xs:simpleType>
     		</xs:attribute>
@@ -237,6 +241,23 @@
     		<xs:attribute name="roworderclass" type="xs:string"/>
     		<xs:attribute name="personalizeclass" type="xs:string"/>
     		<xs:attribute name="refreshid" type="xs:string"/>
+    		<xs:attribute name="checkdirtydata" type="wxs:booleanType"/>
+    		<xs:attribute name="datatype">
+    			<xs:simpleType>
+    				<xs:restriction base="xs:string">
+    					<xs:enumeration value="xml"/>
+    					<xs:enumeration value="xmlurl"/>
+    					<xs:enumeration value="xmlurl-servlet"/>
+  					</xs:restriction>
+    			</xs:simpleType>
+    		</xs:attribute>
+    		<xs:attribute name="chartype" type="xs:string"/>
+    		<xs:attribute name="linkchart" type="wxs:booleanType"/>
+    		<xs:attribute name="chartstyleproperty" type="xs:string"/>
+    		<xs:attribute name="chartwidth" type="xs:string"/>
+    		<xs:attribute name="chartheight" type="xs:string"/>
+    		<xs:attribute name="debugmode" type="xs:string"/>
+    		<xs:attribute name="registerwithjs" type="xs:string"/>
    	</xs:complexType>
    </xs:element>
    

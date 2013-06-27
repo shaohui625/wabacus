@@ -24,8 +24,10 @@ import javassist.CannotCompileException;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtConstructor;
 import javassist.CtField;
 import javassist.CtMethod;
+import javassist.CtNewConstructor;
 import javassist.CtNewMethod;
 import javassist.Modifier;
 
@@ -115,6 +117,19 @@ public class ClassPoolAssistant
         }catch(CannotCompileException e)
         {
             throw new WabacusConfigLoadingException("向类"+ownerclass.getName()+"中添加成员变量"+property+"的get方法时失败",e);
+        }
+    }
+    
+    public CtConstructor addConstructor(CtClass ownerclass,String methodstr)
+    {
+        try
+        {
+            CtConstructor constructor=CtNewConstructor.make(methodstr,ownerclass);
+            ownerclass.addConstructor(constructor);
+            return constructor;
+        }catch(CannotCompileException e)
+        {
+            throw new WabacusConfigLoadingException("向类"+ownerclass.getName()+"中添加方法"+methodstr+"失败",e);
         }
     }
     

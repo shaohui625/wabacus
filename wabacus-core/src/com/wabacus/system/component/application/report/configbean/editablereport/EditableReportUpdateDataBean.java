@@ -23,10 +23,21 @@ import com.wabacus.util.Consts;
 
 public class EditableReportUpdateDataBean extends AbsEditableReportEditDataBean
 {
+    private boolean isEnableCrossPageEdit;//是否允许跨页编辑数据，只对editablelist2/listform报表类型有效
 
     public EditableReportUpdateDataBean(IEditableReportEditGroupOwnerBean owner)
     {
         super(owner);
+    }
+
+    public boolean isEnableCrossPageEdit()
+    {
+        return isEnableCrossPageEdit;
+    }
+
+    public void setEnableCrossPageEdit(boolean isEnableCrossPageEdit)
+    {
+        this.isEnableCrossPageEdit=isEnableCrossPageEdit;
     }
 
     protected void setParamBeanInfoOfColBean(ColBean cbUpdateSrc,EditableReportParamBean paramBean,String configColProperty,String reportTypeKey)

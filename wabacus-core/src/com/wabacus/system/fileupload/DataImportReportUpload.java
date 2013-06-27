@@ -25,12 +25,15 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import com.wabacus.config.Config;
-import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
 import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.system.buttons.DataImportButton;
 
 public class DataImportReportUpload extends AbsFileUpload
 {
+    private DataImportButton dataImportButtonObj;
+    
     public DataImportReportUpload(HttpServletRequest request)
     {
         super(request);
@@ -39,39 +42,88 @@ public class DataImportReportUpload extends AbsFileUpload
     public void showUploadForm(PrintWriter out)
     {
         String pageid=getRequestString("PAGEID","");
-        String reportid=getRequestString("REPORTID","");
-        PageBean pbean=Config.getInstance().getPageBean(pageid);
-        if(pbean==null)
-        {
-            throw new WabacusRuntimeException("页面ID："+pageid+"不存在");
-        }
-        ReportBean rbean=pbean.getReportChild(reportid,true);
-        if(rbean==null)
-        {
-            throw new WabacusRuntimeException("ID为"+pageid+"的页面下不存在ID为"+rbean.getId()+"的报表");
-        }
+        String comid=getRequestString("COMPONENTID","");
+        String buttonname=getRequestString("DATAIMPORT_BUTTONNAME","");
+        DataImportButton buttonObj=getDataImportButtonObj(pageid,comid,buttonname);
         out.print("<input type='hidden' name='PAGEID' value='"+pageid+"'/>");
-        out.print("<input type='hidden' name='REPORTID' value='"+reportid+"'/>");
-        out.print(showDataImportFileUpload(rbean.getLstDataImportFileNames()));
+        out.print("<input type='hidden' name='COMPONENTID' value='"+comid+"'/>");
+        out.print("<input type='hidden' name='DATAIMPORT_BUTTONNAME' value='"+buttonname+"'/>");
+        boolean flag=true;
+        if(buttonObj.getDataimportInterceptorObj()!=null)
+        {
+            Map<String,String> mFormFieldValues=(Map<String,String>)request.getAttribute("WX_FILE_UPLOAD_FIELDVALUES");
+            request.setAttribute("LST_DATAIMPORT_CONFIGBEANS",buttonObj.getLstDataImportItems());
+            flag=interceptorObj.beforeDisplayFileUploadInterface(request,mFormFieldValues,out);
+        }
+        if(flag)
+        {
+            out.print(showDataImportFileUpload(buttonObj.getLstDataImportFileNames()));
+        }
     }
 
-    public String doFileUpload(List lstFieldItems,Map<String,String> mFormFieldValues,PrintWriter out)
+    public String doFileUpload(List lstFieldItems,PrintWriter out)
     {
         String pageid=mFormFieldValues.get("PAGEID");
-        String reportid=mFormFieldValues.get("REPORTID");
-        pageid=pageid==null?"":pageid.trim();
-        reportid=reportid==null?"":reportid.trim();
-
+        String comid=mFormFieldValues.get("COMPONENTID");
+        String buttonname=mFormFieldValues.get("DATAIMPORT_BUTTONNAME");
+        this.dataImportButtonObj=getDataImportButtonObj(pageid,comid,buttonname);
+        this.interceptorObj=this.dataImportButtonObj.getDataimportInterceptorObj();
+        return uploadDataImportFiles(lstFieldItems,this.dataImportButtonObj.getLstDataImportItems(),this.dataImportButtonObj.isDataImportAsyn(),out);
+    }
+    
+    private DataImportButton getDataImportButtonObj(String pageid,String comid,String buttonname)
+    {
         PageBean pbean=Config.getInstance().getPageBean(pageid);
         if(pbean==null)
         {
             throw new WabacusRuntimeException("页面ID："+pageid+"不存在");
         }
-        ReportBean rbean=pbean.getReportChild(reportid,true);
-        if(rbean==null)
+        IComponentConfigBean ccbeanTmp=null;
+        if(comid.equals(pageid))
         {
-            throw new WabacusRuntimeException("ID为"+pageid+"的页面下不存在ID为"+rbean.getId()+"的报表");
+            ccbeanTmp=pbean;
+        }else
+        {
+            ccbeanTmp=pbean.getChildComponentBean(comid,true);
+            if(ccbeanTmp==null)
+            {
+                throw new WabacusRuntimeException("ID为"+pageid+"的页面下不存在ID为"+comid+"的子组件");
+            }
         }
-        return uploadDataImportFiles(lstFieldItems,rbean.getLstDataImportItems());
+        DataImportButton buttonObj=(DataImportButton)ccbeanTmp.getButtonsBean().getButtonByName(buttonname);
+        if(buttonObj==null)
+        {
+            throw new WabacusRuntimeException("组件"+ccbeanTmp.getPath()+"下不存在name为"+buttonname+"的数据导入按钮");
+        }
+        return buttonObj;
+    }
+    
+    public void promptSuccess(PrintWriter out,boolean isArtDialog)
+    {
+        String message="";
+        if(this.dataImportButtonObj.isDataImportAsyn())
+        {
+            message="数据文件上传成功";
+        }else
+        {
+            message="数据文件导入成功!";
+        }
+        String parentRef=null;
+        if(isArtDialog)
+        {
+            out.println("artDialog.open.origin.wx_success('"+message+"');");
+            out.println("art.dialog.close();");
+            parentRef="artDialog.open.origin";
+        }else
+        {
+            out.println("parent.wx_success('"+message+"');");
+            out.println("parent.closePopupWin();");
+            parentRef="parent";
+        }
+        IComponentConfigBean ccbean=this.dataImportButtonObj.getCcbean();
+        if(!this.dataImportButtonObj.isDataImportAsyn())
+        {
+            out.println(parentRef+".refreshComponentDisplay('"+ccbean.getPageBean().getId()+"','"+ccbean.getId()+"',true);");
+        }
     }
 }

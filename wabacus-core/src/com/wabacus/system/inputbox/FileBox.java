@@ -108,7 +108,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
             if(value==null||value.trim().equals("")) imgurl=Config.webroot+"webresources/skin/nopicture.gif";
             resultBuf.append("<img  src=\"").append(imgurl).append("\" srcpath=\"").append(value).append("\"");
         }else
-        {//以文本框显示文件地址
+        {
             resultBuf.append("<input  type='text'  value=\""+value+"\"");
         }
         resultBuf.append(" typename='"+typename+"' name='"+realinputboxid+"' id='"+realinputboxid+"'");
@@ -143,7 +143,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         resultBuf.append("if(displaytype=='image'){");//以<img/>显示上传的图片形式
         resultBuf.append(" var imgurl=boxValue;if(imgurl==null||imgurl=='') imgurl=WXConfig.webroot+'webresources/skin/nopicture.gif';");
         resultBuf.append("  boxstr=\"<img  src=\\\"\"+imgurl+\"\\\" srcpath=\\\"\"+boxValue+\"\\\"\";");
-        resultBuf.append("}else{");
+        resultBuf.append("}else{");//以文本框形式显示文件路径
         resultBuf.append("  boxstr=\"<input type='text' value=\\\"\"+boxValue+\"\\\"\";");
         resultBuf.append("}");
         resultBuf.append(getInputBoxCommonFilledProperties());
@@ -164,15 +164,6 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         resultBuf.append(super.getInputBoxCommonFilledProperties());
         resultBuf.append("}");
         return resultBuf.toString();
-    }
-    
-    protected boolean isJsValidateOnBlur()
-    {
-        if(displaytype.equals("image"))
-        {//如果当前是以<img/>形式显示上传的图片文件，则不提供失去焦点时的校验功能
-            return false;
-        }
-        return super.isJsValidateOnBlur();
     }
 
     public String createGetValueByIdJs()
@@ -269,11 +260,14 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         if(rooturl!=null&&!rooturl.trim().equals(""))
         {
             rooturl=rooturl.trim();
+            rooturl=Config.getInstance().getResourceString(null,ownerbean.getReportBean().getPageBean(),rooturl,true);
             if(!rooturl.startsWith(Config.webroot)&&!rooturl.toLowerCase().startsWith("http://"))
             {
                 rooturl=Config.webroot+"/"+rooturl;
             }
+            rooturl=Tools.replaceAll(rooturl,"http://","HTTP:||");
             rooturl=Tools.replaceAll(rooturl,"//","/");
+            rooturl=Tools.replaceAll(rooturl,"HTTP:||","http://");
             if(!rooturl.endsWith("/")) rooturl=rooturl+"/";
             this.rooturl=rooturl.trim();
         }
@@ -303,7 +297,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
                 }
             }
         }
-        this.poppageurl=eleInputboxBean.attributeValue("inputboxparams");//对于文件上传，在poppageurl中存放的是inputboxparams属性配置值，即弹出文件上传的URL中传入的动态参数
+        this.poppageurl=eleInputboxBean.attributeValue("inputboxparams");
         String interceptor=eleInputboxBean.attributeValue("interceptor");
         if(interceptor!=null)
         {
@@ -371,12 +365,14 @@ public class FileBox extends AbsPopUpBox implements Cloneable
 
     public String getFilePathOrUrl(String name)
     {
+        if(name==null) return "";
         if(this.rooturl==null||this.rooturl.trim().equals(""))
         {
             return this.savePath+name;
         }else
         {
-            return Tools.replaceAll(this.rooturl+name,"//","/");
+            while(name.startsWith("/")) name=name.substring(1);
+            return this.rooturl+name;
         }
     }
 }

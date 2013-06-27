@@ -110,7 +110,7 @@ public class ButtonsBean implements Cloneable
 
 
 
-//
+
 
 
 
@@ -324,7 +324,7 @@ public class ButtonsBean implements Cloneable
 
     public List<AbsButtonType> getLstDataExportTypeButtons(String exporttype)
     {
-        List<AbsButtonType> lstDataExportButtons=getAllCertainTypeButtonsList(DataExportButton.class);
+        List<AbsButtonType> lstDataExportButtons=getAllCertainTypeButtonsList(DataExportButton.class);//取到配置的所有数据导出按钮
         if(lstDataExportButtons==null||lstDataExportButtons.size()==0) return null;
         exporttype=exporttype==null?"":exporttype.trim();
         List<AbsButtonType> lstResults=new ArrayList<AbsButtonType>();
@@ -459,7 +459,7 @@ public class ButtonsBean implements Cloneable
                     if(menugroupTmp==null||menugroupTmp.trim().equals("")) menugroupTmp="0";
                     lstButtonsTmp=mButtonsTmp.get(menugroupTmp);
                     if(lstButtonsTmp==null) 
-                    {//此menugroup下面还没有按钮
+                    {
                         lstButtonsTmp=new ArrayList<AbsButtonType>();
                         mButtonsTmp.put(menugroupTmp,lstButtonsTmp);
                     }

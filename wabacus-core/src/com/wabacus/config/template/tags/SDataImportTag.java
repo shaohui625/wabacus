@@ -41,12 +41,16 @@ public class SDataImportTag extends AbsTagInTemplate
         String ref=null;
         String popupparams=null;
         String dataimportinitsize=null;
+        String asyn=null;
+        String interceptor=null;
         if(this.mTagAttributes!=null)
         {
             ref=this.mTagAttributes.get("ref");
             popupparams=this.mTagAttributes.get("popupparams");
             dataimportinitsize=this.mTagAttributes.get("dataimportinitsize");
+            asyn=this.mTagAttributes.get("asyn");
+            interceptor=this.mTagAttributes.get("interceptor");
         }
-        return TagAssistant.getInstance().getDataImportDisplayValue(ref,popupparams,dataimportinitsize,this.tagContent,rrequest.getRequest());
+        return TagAssistant.getInstance().getDataImportDisplayValue(ref,asyn,popupparams,dataimportinitsize,this.tagContent,interceptor,rrequest.getRequest());
     }
 }

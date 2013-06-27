@@ -3,6 +3,7 @@
 <%@ taglib uri="wabacus" prefix="wx"%>
 <html>
 	<head>
+		<LINK rel="stylesheet" type="text/css" href="/WabacusDemo/webresources/skin/qq/ymPrompt.css"/>
 	  <STYLE type=text/css>
 		<!--
 			.cls_td1
@@ -11,6 +12,7 @@
 			}
 		-->
 		</STYLE>
+		<script language="javascript"  src="/WabacusDemo/webresources/component/ymPrompt/ymPrompt.js"></script>
 	</head>
 	<body>
 		<table border="0" cellspacing="1px" width="100%" style="border:1px solid #5F9EA0;BORDER-COLLAPSE:collapse;" align="left">
@@ -19,7 +21,7 @@
 			</tr>
 			<tr>
 				<td colspan="2" class="cls_td1">
-					<wx:dataimport ref="resetdata1|resetdata2"><input type="button" class="cls-button2" value="还原数据"></wx:dataimport>&nbsp;&nbsp;
+					<wx:dataimport ref="resetdata1;resetdata2"><input type="button" class="cls-button2" value="还原数据"></wx:dataimport>&nbsp;&nbsp;
 					<input type="button" class="cls-button2" value="查看报表" 
 					onclick="ymPrompt.win('/WabacusDemo/ShowReport.wx?PAGEID=viewtblimport1page1',800,600,'查看报表数据',null,null,null,true);"/>
 				</td>
@@ -107,6 +109,14 @@
 				</td>
 			</tr>
 			<tr>
+				<td class="cls_td1" width="20%">导入数据来自request/session&nbsp;&nbsp;<font color='red'>New</font></td>
+				<td  class="cls_td1" width="10%"><wx:dataimport ref="dataimport.request.session"/></td>
+				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
+					如果显式指定要导哪些字段，则可以指定“字段名/字段下标=requet/session{key/key.property}”，即指定数据表中某个下标的字段或某个字段名的字段的数据来自于request或session某个属性值或某个对象的成员变量值
+					这里导入的“姓名”和“年龄”字段的数据分别来自于request和session，它们的值是在拉截器导入每条记录前置动作中赋值进去的。
+				</td>
+			</tr>
+			<tr>
 				<th class="cls_td1" colspan="3" style="background-color:#F0F8FF;text-align:left;"><b>数据标题行类型</b></th>
 			</tr>
 			<tr>
@@ -135,16 +145,23 @@
 				<th class="cls_td1" colspan="3" style="background-color:#F0F8FF;text-align:left;"><b>其它</b></th>
 			</tr>
 			<tr>
+				<td class="cls_td1" width="20%">异步导入<font color='red'>New</font></td>
+				<td  class="cls_td1" width="10%"><wx:dataimport ref="dataimport.interceptor" asyn="true"/></td>
+				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
+					通过&lt;dataimport/&gt;的asyn属性可以指定本数据导入为异步导入，异步导入是指数据文件上传完后立即返回，并通知另一个独立线程完成数据导入，这样用户可以立即得到响应，适用于大数据量的导入，不需用户等待。
+				</td>
+			</tr>
+			<tr>
 				<td class="cls_td1" width="20%">配置拦截器</td>
 				<td  class="cls_td1" width="10%"><wx:dataimport ref="dataimport.interceptor"/></td>
 				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
 					通过&lt;dataimport/&gt;的interceptor属性可以配置拦截器，拦截器接口有四个方法，会在四个时机进行调用，这里会在四个方法中分别打印一些信息。<br/>
-					关于四个拦截方法的介绍，请参看《非正式文档》中的介绍。
+					关于四个拦截方法的介绍，请参看《开发指南二》中的介绍。
 				</td>
 			</tr>
 			<tr>
 				<td class="cls_td1" width="20%">同时导入多个表和文件</td>
-				<td  class="cls_td1" width="10%"><wx:dataimport ref="dataimport.multifiles|dataimport.multifiles2" popupparams="{width:300,height:200}"/></td>
+				<td  class="cls_td1" width="10%"><wx:dataimport ref="dataimport.multifiles;dataimport.multifiles2" popupparams="{width:300,height:200}"/></td>
 				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
 					可以给数据导入的自定义标签的ref属性指定多个数据导入项，如果多个数据导入项配置的filename属性不同，则会为每一类filename属性生成一个文件上传输入框。<br/>
 					注意：<br/>

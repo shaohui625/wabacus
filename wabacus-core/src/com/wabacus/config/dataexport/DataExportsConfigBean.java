@@ -71,14 +71,7 @@ public class DataExportsConfigBean implements Cloneable
             realfilename=this.mDataExportBeans.get(dataexporttype).getFilename(rrequest);
         }
         if(realfilename!=null&&!realfilename.trim().equals("")) return realfilename;//在<dataexport/>中配置了自己的filename
-        if(this.mDynFilename==null||this.mDynFilename.size()==0)
-        {
-            realfilename=this.filename;
-        }else
-        {
-            realfilename=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.filename,this.mDynFilename);
-        }
-        return realfilename==null?"":rrequest.getI18NStringValue(realfilename.trim());
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.filename,this.mDynFilename,"");
     }
     
     public Map<String,AbsDataExportBean> getMDataExportBeans()
@@ -190,9 +183,9 @@ public class DataExportsConfigBean implements Cloneable
         String filename=eleDataExports.attributeValue("filename");
         if(filename!=null)
         {
-            this.mDynFilename=new HashMap<String,String>();
-            this.filename=WabacusAssistant.getInstance().parseStringWithDynPart(filename,this.mDynFilename);
-            if(this.mDynFilename.size()==0) this.mDynFilename=null;
+            Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(filename);
+            this.filename=(String)objArr[0];
+            this.mDynFilename=(Map<String,String>)objArr[1];
         }
         List<XmlElementBean> lstEleChildren=eleDataExports.getLstChildElements();
         if(lstEleChildren==null||lstEleChildren.size()==0) return;
@@ -247,7 +240,7 @@ public class DataExportsConfigBean implements Cloneable
         for(String dataexportTypeTmp:lstAutoDataExportTypes)
         {
             lstDataExportButtons=null;
-            if(this.owner.getButtonsBean()!=null) lstDataExportButtons=this.owner.getButtonsBean().getLstDataExportTypeButtons(dataexportTypeTmp);//取到已经配置的所有这种类型的导出按钮
+            if(this.owner.getButtonsBean()!=null) lstDataExportButtons=this.owner.getButtonsBean().getLstDataExportTypeButtons(dataexportTypeTmp);
             if(!isHasCertainTypeDataExportButton(lstDataExportButtons))
             {//此报表没有配置这种类型的数据导出按钮（注意这里不包括那些在<button/>标签内容中指定了自己导出应用ID的按钮）
                 AbsButtonType buttonObj=Config.getInstance().getResourceButton(null,this.getOwner(),

@@ -77,7 +77,7 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
     
     protected String parenttitle;
     
-    protected Map<String,String> mDynParenttitleParts;//副标题parenttitle中的动态部分，形式与mDynTitleParts一致
+    protected Map<String,String> mDynParenttitleParts;
     
     protected String parentSubtitle;
     
@@ -95,7 +95,7 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
     
     protected AbsPrintProviderConfigBean printBean;
     
-    private PDFExportBean pdfPrintBean;
+    private PDFExportBean pdfPrintBean;//PDF打印配置，与pdf导出配置完全一样，但与其它打印方式不同，所以单独做为一个成员变量存放
     
     protected List<OnloadMethodBean> lstOnloadMethods;
     
@@ -244,82 +244,50 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
 
     public String getTitle(ReportRequest rrequest)
     {
-        String realtitle=null;
-        if(this.mDynTitleParts==null||this.mDynTitleParts.size()==0)
-        {
-            realtitle=this.title;
-        }else
-        {
-            realtitle=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.title,this.mDynTitleParts);
-        }
-        return realtitle==null?"":rrequest.getI18NStringValue(realtitle.trim());
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.title,this.mDynTitleParts,"");
     }
 
     public void setTitle(String title)
     {
-        this.mDynTitleParts=new HashMap<String,String>();
-        this.title=WabacusAssistant.getInstance().parseStringWithDynPart(title,this.mDynTitleParts);
-        if(this.mDynTitleParts.size()==0) this.mDynTitleParts=null;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(title);
+        this.title=(String)objArr[0];
+        this.mDynTitleParts=(Map<String,String>)objArr[1];
     }
 
     public String getSubtitle(ReportRequest rrequest)
     {
-        String realsubtitle=null;
-        if(this.mDynSubtitleParts==null||this.mDynSubtitleParts.size()==0)
-        {
-            realsubtitle=this.subtitle;
-        }else
-        {
-            realsubtitle=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.subtitle,this.mDynSubtitleParts);
-        }
-        return realsubtitle==null?"":rrequest.getI18NStringValue(realsubtitle.trim());
+       return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.subtitle,this.mDynSubtitleParts,"");
     }
 
     public void setSubtitle(String subtitle)
     {
-        this.mDynSubtitleParts=new HashMap<String,String>();
-        this.subtitle=WabacusAssistant.getInstance().parseStringWithDynPart(subtitle,this.mDynSubtitleParts);
-        if(this.mDynSubtitleParts.size()==0) this.mDynSubtitleParts=null;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(subtitle);
+        this.subtitle=(String)objArr[0];
+        this.mDynSubtitleParts=(Map<String,String>)objArr[1];
     }
 
     public String getParenttitle(ReportRequest rrequest)
     {
-        String realparenttitle=null;
-        if(this.mDynParenttitleParts==null||this.mDynParenttitleParts.size()==0)
-        {
-            realparenttitle=this.parenttitle;
-        }else
-        {
-            realparenttitle=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.parenttitle,this.mDynParenttitleParts);
-        }
-        return realparenttitle==null?"":rrequest.getI18NStringValue(realparenttitle.trim());
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.parenttitle,this.mDynParenttitleParts,"");
     }
 
     public void setParenttitle(String parenttitle)
     {
-        this.mDynParenttitleParts=new HashMap<String,String>();
-        this.parenttitle=WabacusAssistant.getInstance().parseStringWithDynPart(parenttitle,this.mDynParenttitleParts);
-        if(this.mDynParenttitleParts.size()==0) this.mDynParenttitleParts=null;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(parenttitle);
+        this.parenttitle=(String)objArr[0];
+        this.mDynParenttitleParts=(Map<String,String>)objArr[1];
     }
 
     public String getParentSubtitle(ReportRequest rrequest)
     {
-        String realparentSubtitle=null;
-        if(this.mDynParentSubtitleParts==null||this.mDynParentSubtitleParts.size()==0)
-        {
-            realparentSubtitle=this.parentSubtitle;
-        }else
-        {
-            realparentSubtitle=WabacusAssistant.getInstance().getRuntimeStringValueWithDynPart(rrequest,this.parentSubtitle,this.mDynParentSubtitleParts);
-        }
-        return realparentSubtitle==null?"":rrequest.getI18NStringValue(realparentSubtitle.trim());
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.parentSubtitle,this.mDynParentSubtitleParts,"");
     }
 
     public void setParentSubtitle(String parentSubtitle)
     {
-        this.mDynParentSubtitleParts=new HashMap<String,String>();
-        this.parentSubtitle=WabacusAssistant.getInstance().parseStringWithDynPart(parentSubtitle,this.mDynParentSubtitleParts);
-        if(this.mDynParentSubtitleParts.size()==0) this.mDynParentSubtitleParts=null;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(parentSubtitle);
+        this.parentSubtitle=(String)objArr[0];
+        this.mDynParentSubtitleParts=(Map<String,String>)objArr[1];
     }
 
     public void setMDynTitleParts(Map<String,String> dynTitleParts)

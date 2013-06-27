@@ -2,7 +2,7 @@
 /**
  * 验证是否是合法的年龄
  */
-function isValidAge(strAge, boxObj) {
+function isValidAge(strAge, boxObj,paramsObj) {
 	var age = null;
 	try {
 		age = parseInt(strAge);

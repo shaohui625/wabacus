@@ -29,7 +29,6 @@ import java.util.Map.Entry;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.typeprompt.TypePromptBean;
 import com.wabacus.config.typeprompt.TypePromptColBean;
@@ -123,24 +122,15 @@ public class SQLOptionDatasource extends AbsOptionDatasource
         try
         {
             ReportBean rbean=this.ownerOptionBean.getOwnerInputboxObj().getOwner().getReportBean();
-            
-              
-            ISqlDataSet sqlDataSet=null;
-            
-            List<ReportDataSetBean> lstDatasetBeans=rbean.getSbean().getLstDatasetBeans();
-            if(lstDatasetBeans != null && lstDatasetBeans.size()==1 ){
-                sqlDataSet = lstDatasetBeans.get(0).getISQLTypeBuilder().createAllResultSetISQLType();
+            ISqlDataSet ImpISQLType=null;
+            if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
+            {
+                ImpISQLType=new GetAllDataSetByPreparedSQL();
+            }else
+            {
+                ImpISQLType=new GetAllDataSetBySQL();
             }
-             if(sqlDataSet == null){
-                if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-                {
-                    sqlDataSet=new GetAllDataSetByPreparedSQL();
-                }else
-                {
-                    sqlDataSet=new GetAllDataSetBySQL();
-                }
-             }
-            Object objTmp=sqlDataSet.getDataSet(rrequest,rbean,this.ownerOptionBean,sql,this.lstConditions,this.getDatasource());
+            Object objTmp=ImpISQLType.getDataSet(rrequest,rbean,this.ownerOptionBean,sql,this.lstConditions,this.getDatasource());
             if(objTmp instanceof List)
             {
                 for(Object itemTmp:(List)objTmp)
@@ -194,7 +184,7 @@ public class SQLOptionDatasource extends AbsOptionDatasource
             {
                 sqlDataSet=new GetAllDataSetByPreparedSQL();
             }else
-            {//普通sql语句
+            {
                 sqlDataSet=new GetAllDataSetBySQL();
                 txtValue=Tools.removeSQLKeyword(txtValue);
             }

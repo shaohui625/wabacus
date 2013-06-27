@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
@@ -39,7 +39,7 @@ public class Interceptor_resultsetpage2Report2 extends AbsInterceptorDefaultAdap
      */
     public Object beforeLoadData(ReportRequest rrequest,ReportBean rbean,Object typeObj,String sql)
     {
-        if(typeObj instanceof ReportDataSetBean)
+        if(typeObj instanceof ReportDataSetValueBean)
         {//如果当前是在查询报表数据
             sql=sql.replaceAll("%mycondition%","age>35");//只显示年龄大于35岁的员工
             PreparedStatement pstmt=null;
@@ -57,14 +57,14 @@ public class Interceptor_resultsetpage2Report2 extends AbsInterceptorDefaultAdap
                 {//当前是在查报表数据
                     while(rs.next())
                     {//将所有报表数据取出放入List中，每条记录存放在一个POJO对象。
-                        Resultsetpage2_Report2_POJO pojo=new Resultsetpage2_Report2_POJO();
+                        Resultsetpage2_Report2_POJO pojo=new Resultsetpage2_Report2_POJO(rrequest,rbean);
                         pojo.setAge(rs.getString("age"));
                         pojo.setBirthday(rs.getString("birthday"));
                         pojo.setDeptname(rs.getString("deptname"));
                         pojo.setName(rs.getString("name"));
                         pojo.setNo(rs.getString("no"));
                         pojo.setSex(rs.getString("sex"));
-                        pojo.format(rrequest,rbean);
+                        pojo.format();
                         lstResults.add(pojo);
                     }
                 }

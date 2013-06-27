@@ -32,7 +32,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.CacheDataBean;
@@ -55,12 +55,12 @@ public abstract class AbsGetAllDataSetBySQL implements ISqlDataSet
 
     protected List<IDataType> lstConditionsTypes;
 
-    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean svbean)
+    public int getRecordcount(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean svbean)
     {
         return 0;
     }
 
-    public Object getColFilterDataSet(ReportRequest rrequest,ColBean filterColBean,ReportDataSetBean datasetbean,
+    public Object getColFilterDataSet(ReportRequest rrequest,ColBean filterColBean,ReportDataSetValueBean datasetbean,
             Map<String,List<String>> mSelectedFilterValues)
     {
         String sql=datasetbean.getFilterdata_sql();
@@ -81,7 +81,7 @@ public abstract class AbsGetAllDataSetBySQL implements ISqlDataSet
         return getDataSet(rrequest,rbean,datasetbean,rrequest.getAttribute(rbean.getId()+"_WABACUS_FILTERBEAN"),sql);
     }
     
-    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetBean datasetbean,List lstReportData)
+    public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean datasetbean,List lstReportData)
     {
         ReportBean rbean=reportTypeObj.getReportBean();
         String sql=datasetbean.getValue();
@@ -119,23 +119,23 @@ public abstract class AbsGetAllDataSetBySQL implements ISqlDataSet
         {
             String sqlTmp=rrequest.getStringAttribute(rbean.getId(),datasetid+"_DYN_SQL","");
             if("[NONE]".equals(sql)) return null;
-            if(!sqlTmp.equals("")) sql=sqlTmp;//如果有动态构造的SQL语句，则用动态的
+            if(!sqlTmp.equals("")) sql=sqlTmp;
         }
-        if(!datasetbean.isIndependentDataSet())
+        if(datasetbean.isDependentDataSet())
         {
             String realConExpress=datasetbean.getRealDependsConditionExpression(lstReportData);
             if(realConExpress==null||realConExpress.trim().equals(""))
             {
-                sql=ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(rbean,sql,ReportDataSetBean.dependsConditionPlaceHolder);
+                sql=ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(rbean,sql,ReportDataSetValueBean.dependsConditionPlaceHolder);
             }else
             {
-                sql=Tools.replaceAll(sql,ReportDataSetBean.dependsConditionPlaceHolder,realConExpress);
+                sql=Tools.replaceAll(sql,ReportDataSetValueBean.dependsConditionPlaceHolder,realConExpress);
             }
         }
         return getDataSet(rrequest,rbean,datasetbean,datasetbean,sql);
     }
 
-    public Object getDataSet(ReportRequest rrequest,ReportBean rbean,ReportDataSetBean datasetbean,Object typeObj,String sql)
+    public Object getDataSet(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean datasetbean,Object typeObj,String sql)
     {
         try
         {
@@ -178,7 +178,7 @@ public abstract class AbsGetAllDataSetBySQL implements ISqlDataSet
         }
     }
     
-    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetBean svbean,Object typeObj,String sql,boolean isStatisticForOnePage)
+    public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetValueBean svbean,Object typeObj,String sql,boolean isStatisticForOnePage)
     {
         try
         {
@@ -191,7 +191,7 @@ public abstract class AbsGetAllDataSetBySQL implements ISqlDataSet
             sqlTmp=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sqlTmp,lstConditions,lstConditionsTypes);
             sqlTmp=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,svbean,sqlTmp);
             CacheDataBean cdb=rrequest.getCdb(rbean.getId());
-            if(!svbean.isIndependentDataSet())
+            if(svbean.isDependentDataSet())
             {
                 List lstReportData=null;
                 if(!cdb.isLoadAllReportData()&&!isStatisticForOnePage)
@@ -209,10 +209,10 @@ public abstract class AbsGetAllDataSetBySQL implements ISqlDataSet
                 String realConExpress=svbean.getRealDependsConditionExpression(lstReportData);
                 if(realConExpress==null||realConExpress.trim().equals(""))
                 {
-                    sqlTmp=ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(rbean,sqlTmp,ReportDataSetBean.dependsConditionPlaceHolder);
+                    sqlTmp=ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(rbean,sqlTmp,ReportDataSetValueBean.dependsConditionPlaceHolder);
                 }else
                 {
-                    sqlTmp=Tools.replaceAll(sqlTmp,ReportDataSetBean.dependsConditionPlaceHolder,realConExpress);
+                    sqlTmp=Tools.replaceAll(sqlTmp,ReportDataSetValueBean.dependsConditionPlaceHolder,realConExpress);
                 }
             }
             sql=Tools.replaceAll(sql,StatisticItemAndDataSetBean.STATISQL_PLACEHOLDER,sqlTmp);

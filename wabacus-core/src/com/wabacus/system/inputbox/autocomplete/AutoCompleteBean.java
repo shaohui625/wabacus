@@ -236,7 +236,7 @@ public class AutoCompleteBean implements Cloneable
         ColBean cbTmp, cbUpdatecolDest, cbUpdatecolSrc;
         List<String> lstRealAutoCompleteColumns=new ArrayList<String>();
         for(String columnTmp:this.lstAutoCompleteColumns)
-        {//根据column取到相应的ColBean对象
+        {
             if(lstRealAutoCompleteColumns.contains(columnTmp)) continue;
             lstRealAutoCompleteColumns.add(columnTmp);
             cbTmp=dbean.getColBeanByColColumn(columnTmp);
@@ -383,7 +383,7 @@ public class AutoCompleteBean implements Cloneable
             {
                 return null;
             }
-            if(objTmp instanceof Map) return (Map<String,String>)objTmp;
+            if(objTmp instanceof Map) return (Map<String,String>)objTmp;//用户直接在拦截器加载数据前置动作中返回了自己构造的填充列的值
             return getMColDataValuesByResultSet((ResultSet)objTmp);
         }
     }
@@ -449,7 +449,7 @@ public class AutoCompleteBean implements Cloneable
             while(rs.next())
             {
                 if(mResults.size()>0)
-                {//已经加载了一条记录
+                {
                     if(MULTIPLE_FIRST.equals(this.multiple)) return mResults;
                     if(MULTIPLE_NONE.equals(this.multiple)) return null;
                 }

@@ -18,13 +18,11 @@
  */
 package com.wabacus.system.intercept;
 
-import java.util.List;
 import java.util.Map;
 
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
-import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 
@@ -35,7 +33,7 @@ public abstract class AbsInterceptorDefaultAdapter implements IInterceptor
 
     public int doSave(ReportRequest rrequest,ReportBean rbean,AbsEditableReportEditDataBean editbean)
     {
-        return EditableReportAssistant.getInstance().doSaveReport(rbean,rrequest,editbean);
+        return EditableReportAssistant.getInstance().doSaveReport(rrequest,rbean,editbean);
     }
 
     public int doSavePerRow(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues,
@@ -49,9 +47,6 @@ public abstract class AbsInterceptorDefaultAdapter implements IInterceptor
     {
         return EditableReportAssistant.getInstance().doSavePerAction(rrequest,rbean,mRowData,mParamValues,actionbean,editbean);
     }
-    
-    public void doEnd(ReportRequest rrequest,ReportBean rbean)
-    {}
 
     public Object beforeLoadData(ReportRequest rrequest,ReportBean rbean,Object typeObj,String sql)
     {
@@ -63,15 +58,15 @@ public abstract class AbsInterceptorDefaultAdapter implements IInterceptor
         return dataObj;
     }
 
-    public RowDataByInterceptor beforeDisplayReportDataPerRow(AbsReportType reportTypeObj,ReportRequest rrequest,int rowindex,int colspans,
-            List lstColBeans)
-    {
-        return null;
-    }
+    public void beforeDisplayReportData(ReportRequest rrequest,ReportBean rbean,ReportDataBean reportDataBean)
+    {}
 
-    public ColDataByInterceptor beforeDisplayReportDataPerCol(AbsReportType reportTypeObj,ReportRequest rrequest,Object displayColBean,int rowindex,
-            String value)
-    {
-        return null;
-    }
+    public void beforeDisplayReportDataPerRow(ReportRequest rrequest,ReportBean rbean,RowDataBean rowDataBean)
+    {}
+
+    public void beforeDisplayReportDataPerCol(ReportRequest rrequest,ReportBean rbean,ColDataBean colDataBean)
+    {}
+
+    public void doEnd(ReportRequest rrequest,ReportBean rbean)
+    {}
 }

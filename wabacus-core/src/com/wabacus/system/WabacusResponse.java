@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspWriter;
@@ -36,6 +37,7 @@ import com.wabacus.exception.MessageCollector;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.exception.WabacusRuntimeWarningException;
 import com.wabacus.system.assistant.WabacusAssistant;
+import com.wabacus.system.component.application.report.chart.FusionChartsReportType;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
@@ -54,8 +56,12 @@ public class WabacusResponse
     private MessageCollector messageCollector;
 
     private int statecode=Consts.STATECODE_SUCCESS;
-    
-    private List<Map<String,String>> lstOnloadMethods;
+
+    private List<String[]> lstSuccessOnloadMethods;
+
+    private List<String[]> lstFailedOnloadMethods;
+
+    private Map<String,List<String[]>> mChartOnloadMethods;
     
     private List<String> lstUpdateReportGuids;
     
@@ -78,30 +84,120 @@ public class WabacusResponse
         return messageCollector;
     }
 
+    public void clearOnloadMethod()
+    {
+        this.lstSuccessOnloadMethods=null;
+        this.lstFailedOnloadMethods=null;
+    }
+
+    public void addOnloadMethod(String methodname,Map<String,String> mParams,boolean isInsertFirst)
+    {
+        addOnloadMethod(methodname,mParams,isInsertFirst,Consts.STATECODE_SUCCESS);
+    }
+    
     public void addOnloadMethod(String methodname,String methodparams,boolean isInsertFirst)
     {
+        addOnloadMethod(methodname,methodparams,isInsertFirst,Consts.STATECODE_SUCCESS);
+    }
+
+    public void addOnloadMethod(String methodname,Map<String,String> mParams,boolean isInsertFirst,int statecode)
+    {
+        StringBuffer paramsBuf=new StringBuffer();
+        if(mParams!=null)
+        {
+            for(Entry<String,String> entryTmp:mParams.entrySet())
+            {
+                paramsBuf.append(entryTmp.getKey()).append(":\"").append(entryTmp.getValue()).append("\",");
+            }
+        }
+        String params=paramsBuf.toString();
+        if(!params.trim().equals("")) params="{"+params+"}";
+        addOnloadMethod(methodname,params,isInsertFirst,statecode);
+    }
+    
+    public void addOnloadMethod(String methodname,String methodparams,boolean isInsertFirst,int statecode)
+    {
         if(methodname==null||methodname.trim().equals("")) return;
-        if(lstOnloadMethods==null) lstOnloadMethods=new ArrayList<Map<String,String>>();
-        Map<String,String> mMethod=new HashMap<String,String>();
         if(methodparams!=null&&!methodparams.trim().equals(""))
         {
-            
             methodparams=methodparams.trim();
             if(!methodparams.startsWith("{")||!methodparams.endsWith("}"))
             {
                 methodparams="{"+methodparams+"}";
             }
         }
-        mMethod.put(methodname,methodparams);
-        if(isInsertFirst)
+        String[] methodArr=new String[]{methodname,methodparams};
+        if(this.lstFailedOnloadMethods==null) this.lstFailedOnloadMethods=new ArrayList<String[]>();
+        if(this.lstSuccessOnloadMethods==null) this.lstSuccessOnloadMethods=new ArrayList<String[]>();
+        if(statecode==Consts.STATECODE_FAILED)
         {
-            lstOnloadMethods.add(0,mMethod);
+            if(isInsertFirst)
+            {
+                lstFailedOnloadMethods.add(0,methodArr);
+            }else
+            {
+                lstFailedOnloadMethods.add(methodArr);
+            }
+        }else if(statecode==Consts.STATECODE_SUCCESS)
+        {
+            if(isInsertFirst)
+            {
+                lstSuccessOnloadMethods.add(0,methodArr);
+            }else
+            {//加在后面调用
+                lstSuccessOnloadMethods.add(methodArr);
+            }
         }else
-        {//加在后面调用
-            lstOnloadMethods.add(mMethod);
+        {
+            if(isInsertFirst)
+            {
+                lstSuccessOnloadMethods.add(0,methodArr);
+                lstFailedOnloadMethods.add(0,methodArr);
+            }else
+            {
+                lstSuccessOnloadMethods.add(methodArr);
+                lstFailedOnloadMethods.add(methodArr);
+            }
         }
     }
-
+    
+    public void addChartOnloadMethod(String reportid,String methodname,String methodparams,boolean isInsertFirst)
+    {
+        FusionChartsReportType fcreportTypeObj=(FusionChartsReportType)rrequest.getDisplayReportTypeObj(reportid);
+        if(fcreportTypeObj.getFcrbean().isLinkChart())
+        {
+            throw new WabacusRuntimeException("报表"+fcreportTypeObj.getReportBean().getPath()+"是linkchart，不能添加chartonload函数");
+        }
+        if(this.mChartOnloadMethods==null) this.mChartOnloadMethods=new HashMap<String,List<String[]>>();
+        if(methodparams!=null&&!methodparams.trim().equals(""))
+        {
+            methodparams=methodparams.trim();
+            if(!methodparams.startsWith("{")||!methodparams.endsWith("}"))
+            {
+                methodparams="{"+methodparams+"}";
+            }
+        }
+        List<String[]> lstMethods=this.mChartOnloadMethods.get(reportid);
+        if(lstMethods==null)
+        {
+            lstMethods=new ArrayList<String[]>();
+            this.mChartOnloadMethods.put(reportid,lstMethods);
+        }
+        if(isInsertFirst)
+        {
+            lstMethods.add(0,new String[]{methodname,methodparams});
+        }else
+        {
+            lstMethods.add(new String[]{methodname,methodparams});
+        }
+    }
+    
+    public List<String[]> getLstChartOnloadMethods(String reportid)
+    {
+        if(this.mChartOnloadMethods==null) return null;
+        return this.mChartOnloadMethods.get(reportid);
+    }
+    
     public HttpServletResponse getResponse()
     {
         return response;
@@ -168,18 +264,16 @@ public class WabacusResponse
 
     public String invokeOnloadMethodsFirstTime()
     {
-        if(this.lstOnloadMethods==null||this.lstOnloadMethods.size()==0) return "";
+        List<String[]> lstOnloadMethods=getLstRealOnloadMethods();
+        if(lstOnloadMethods==null||lstOnloadMethods.size()==0) return "";
         StringBuffer resultBuf=new StringBuffer();
-        String methodName;
-        String methodParams;
-        for(Map<String,String> mMethodTmp:this.lstOnloadMethods)
+        for(String[] methodTmp:lstOnloadMethods)
         {
-            methodName=mMethodTmp.keySet().iterator().next();
-            methodParams=mMethodTmp.get(methodName);
-            resultBuf.append(methodName).append("(");
-            if(methodParams!=null&&!methodParams.trim().equals(""))
+            if(methodTmp==null||methodTmp.length!=2) continue;
+            resultBuf.append(methodTmp[0]).append("(");
+            if(methodTmp[1]!=null&&!methodTmp[1].trim().equals(""))
             {
-               resultBuf.append(methodParams);
+                resultBuf.append(methodTmp[1]);
             }
             resultBuf.append(");");
         }
@@ -205,118 +299,115 @@ public class WabacusResponse
         StringBuffer resultBuf=new StringBuffer();
         if(!rrequest.isLoadedByAjax()||(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&rrequest.getShowtype()!=Consts.DISPLAY_ON_PRINT))
         {
-            if(t!=null)
+            resultBuf.append(addAlertMessage(false,"<br>"));
+            resultBuf.append(addSuccessMessage(false,"<br>"));
+            resultBuf.append(addWarnMessage(false,"<br>"));
+            if(t==null||t instanceof WabacusRuntimeWarningException)
             {
-                if(t instanceof WabacusRuntimeWarningException)
-                {
-                   resultBuf.append(addWarnMessage(false,"<br>"));
-                   resultBuf.append(addSuccessMessage(false,"<br>"));
-                   resultBuf.append(addAlertMessage(false,null));
-                }else
-                {
-                    resultBuf.append(addErrorMessage(load_error_mess,false,null));
-                }
+                resultBuf.append(addErrorMessage(null,false,null));
             }else
             {
-                resultBuf.append(addWarnMessage(false,"<br>"));
-                resultBuf.append(addAlertMessage(false,"<br>"));
-                resultBuf.append(addSuccessMessage(false,"<br>"));
-                resultBuf.append(addErrorMessage(null,false,null));
-            }
-            if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
-            {
-                String pageurlspan="<span id=\""+rrequest.getPagebean().getId()+"_url_id\" style=\"display:none;\" value=\""
-                        +Tools.htmlEncode(Tools.jsParamEncode(rrequest.getUrl()))+"\"";
-                if(rrequest.getPagebean().isShouldProvideEncodePageUrl())
-                {
-                    pageurlspan=pageurlspan+" encodevalue=\""+Tools.convertBetweenStringAndAscii(rrequest.getUrl(),true)+"\"";
-                }
-                String ancestorUrls=rrequest.getStringAttribute("ancestorPageUrls","");
-                if(!ancestorUrls.equals(""))
-                {
-                    pageurlspan=pageurlspan+" ancestorPageUrls=\""+ancestorUrls+"\"";
-                }
-                resultBuf.append(pageurlspan+"></span>");
+                resultBuf.append(addErrorMessage(load_error_mess,false,null));
             }
         }else
         {
             String pageid=rrequest.getPagebean().getId();
             resultBuf.append("<RESULTS_INFO-").append(pageid).append(">").append("{");
-            resultBuf.append("pageurl:\"").append(rrequest.getUrl()).append("\",");
-            //if(isForwardAction) resultBuf.append("isForwardAction:\"").append(isForwardAction).append("\",");
-            if(rrequest.getPagebean().isShouldProvideEncodePageUrl())
+            String confirmessage=this.messageCollector.getConfirmmessage();
+            if(confirmessage!=null&&!confirmessage.trim().equals(""))
             {
-                resultBuf.append("pageEncodeUrl:\"").append(Tools.convertBetweenStringAndAscii(rrequest.getUrl(),true)).append("\",");
-            }
-            if(dynamicRefreshComponentGuid!=null&&!dynamicRefreshComponentGuid.trim().equals(""))
+                resultBuf.append("confirmessage:\"").append(confirmessage).append("\"");
+                resultBuf.append(",confirmkey:\"").append(this.messageCollector.getConfirmkey()).append("\"");
+                resultBuf.append(",confirmurl:\"").append(this.messageCollector.getConfirmurl()).append("\"");
+            }else
             {
-                resultBuf.append("dynamicRefreshComponentGuid:\"").append(dynamicRefreshComponentGuid).append("\",");
-                if(dynamicSlaveReportId!=null&&!dynamicSlaveReportId.trim().equals(""))
+                resultBuf.append("pageurl:\"").append(rrequest.getUrl()).append("\",");
+                
+                if(rrequest.getPagebean().isShouldProvideEncodePageUrl())
                 {
-                    resultBuf.append("dynamicSlaveReportId:\"").append(dynamicSlaveReportId).append("\",");
+                    resultBuf.append("pageEncodeUrl:\"").append(Tools.convertBetweenStringAndAscii(rrequest.getUrl(),true)).append("\",");
                 }
-            }
-            resultBuf.append("statecode:").append(this.statecode).append(",");
-            if(t!=null)
-            {
-                if(t instanceof WabacusRuntimeWarningException)
+                if(dynamicRefreshComponentGuid!=null&&!dynamicRefreshComponentGuid.trim().equals(""))
                 {
-                    resultBuf.append(addWarnMessage(true,","));
-                    resultBuf.append(addSuccessMessage(true,","));
-                    resultBuf.append(addAlertMessage(true,","));
+                    resultBuf.append("dynamicRefreshComponentGuid:\"").append(dynamicRefreshComponentGuid).append("\",");
+                    if(dynamicSlaveReportId!=null&&!dynamicSlaveReportId.trim().equals(""))
+                    {
+                        resultBuf.append("dynamicSlaveReportId:\"").append(dynamicSlaveReportId).append("\",");
+                    }
+                }
+                resultBuf.append("statecode:").append(this.statecode).append(",");
+                resultBuf.append(addAlertMessage(true,","));
+                resultBuf.append(addSuccessMessage(true,","));
+                resultBuf.append(addWarnMessage(true,","));
+                if(t==null||t instanceof WabacusRuntimeWarningException)
+                {
+                    resultBuf.append(addErrorMessage(null,true,","));
                 }else
                 {
                     resultBuf.append(addErrorMessage(load_error_mess,true,","));
                 }
-            }else
-            {
-                resultBuf.append(addWarnMessage(true,","));
-                resultBuf.append(addAlertMessage(true,","));
-                resultBuf.append(addSuccessMessage(true,","));
-                resultBuf.append(addErrorMessage(null,true,","));
-            }
-            if(this.lstOnloadMethods!=null&&this.lstOnloadMethods.size()>0)
-            {
-                resultBuf.append("onloadMethods:[");
-                String methodNameTmp;
-                String methodParamsTmp;
-                for(Map<String,String> mMethodsTmp:this.lstOnloadMethods)
+                List<String[]> lstOnloadMethods=getLstRealOnloadMethods();
+                if(lstOnloadMethods!=null&&lstOnloadMethods.size()>0)
                 {
-                    methodNameTmp=mMethodsTmp.keySet().iterator().next();
-                    methodParamsTmp=mMethodsTmp.get(methodNameTmp);
-                    resultBuf.append("{methodname:").append(methodNameTmp);
-                    if(methodParamsTmp!=null&&!methodParamsTmp.trim().equals(""))
-                    {//如果此方法有参数，参数的格式必须为：param1:"value1",param2:"value2"
-                        resultBuf.append(",methodparams:").append(methodParamsTmp);
+                    resultBuf.append("onloadMethods:[");
+                    for(String[] methodTmp:lstOnloadMethods)
+                    {
+                        if(methodTmp==null||methodTmp.length!=2) continue;
+                        resultBuf.append("{methodname:").append(methodTmp[0]);//方法名
+                        if(methodTmp[1]!=null&&!methodTmp[1].trim().equals(""))
+                        {
+                            resultBuf.append(",methodparams:").append(methodTmp[1]);
+                        }
+                        resultBuf.append("},");
                     }
-                    resultBuf.append("},");
+                    if(resultBuf.charAt(resultBuf.length()-1)==',')
+                    {
+                        resultBuf.deleteCharAt(resultBuf.length()-1);
+                    }
+                    resultBuf.append("],");
+                }
+                if(lstUpdateReportGuids!=null&&lstUpdateReportGuids.size()>0)
+                {
+                    resultBuf.append("updateReportGuids:[");
+                    for(String rguidTmp:lstUpdateReportGuids)
+                    {
+                        resultBuf.append("{value:\"").append(rguidTmp).append("\"},");
+                    }
+                    if(resultBuf.charAt(resultBuf.length()-1)==',')
+                    {
+                        resultBuf.deleteCharAt(resultBuf.length()-1);
+                    }
+                    resultBuf.append("],");
                 }
                 if(resultBuf.charAt(resultBuf.length()-1)==',')
                 {
                     resultBuf.deleteCharAt(resultBuf.length()-1);
                 }
-                resultBuf.append("],");
-            }
-            if(lstUpdateReportGuids!=null&&lstUpdateReportGuids.size()>0)
-            {
-                resultBuf.append("updateReportGuids:[");
-                for(String rguidTmp:lstUpdateReportGuids)
-                {
-                    resultBuf.append("{value:\"").append(rguidTmp).append("\"},");
-                }
-                if(resultBuf.charAt(resultBuf.length()-1)==',')
-                {
-                    resultBuf.deleteCharAt(resultBuf.length()-1);
-                }
-                resultBuf.append("],");
-            }
-            if(resultBuf.charAt(resultBuf.length()-1)==',')
-            {
-                resultBuf.deleteCharAt(resultBuf.length()-1);
             }
             resultBuf.append("}").append("</RESULTS_INFO-").append(pageid).append(">");
         }
+        if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE
+                &&(!rrequest.isLoadedByAjax()||rrequest.getStringAttribute("WX_ISOUTERPAGE","").equals("true")))
+        {//输出当前页面的URL（不是通过refreshComponent()方法请求的页面，或者是其它页面通过refreshComponent()进行带“返回”功能跳转到此页面，都要输出存放URL的<span/>和所有父URL）
+            String pageurlspan="<span id=\""+rrequest.getPagebean().getId()+"_url_id\" style=\"display:none;\" value=\""
+                    +Tools.htmlEncode(Tools.jsParamEncode(rrequest.getUrl()))+"\"";
+            if(rrequest.getPagebean().isShouldProvideEncodePageUrl())
+            {
+                pageurlspan=pageurlspan+" encodevalue=\""+Tools.convertBetweenStringAndAscii(rrequest.getUrl(),true)+"\"";
+            }
+            String ancestorUrls=rrequest.getStringAttribute("ancestorPageUrls","");
+            if(!ancestorUrls.equals(""))
+            {
+                pageurlspan=pageurlspan+" ancestorPageUrls=\""+ancestorUrls+"\"";
+            }
+            resultBuf.append(pageurlspan+"></span>");
+        }
         return resultBuf.toString();
+    }
+    
+    private List<String[]> getLstRealOnloadMethods()
+    {
+        return this.statecode==Consts.STATECODE_FAILED?this.lstFailedOnloadMethods:this.lstSuccessOnloadMethods;
     }
     
     private String addAlertMessage(boolean jsPrompt,String suffixIfExist)
@@ -412,7 +503,7 @@ public class WabacusResponse
     {
         hasInitOutput=true;
         if(response!=null&&rrequest.getRequest()!=null)
-        {//本次是直接输出到页面
+        {
             rrequest.getRequest().getSession();
             if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL)
             {
@@ -438,7 +529,7 @@ public class WabacusResponse
                 out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset="+Config.encode+"\">");
             }
         }else
-        {
+        {//本次是返回显示字符串
             this.outBuf=new StringBuffer();
             outBuf.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
             outBuf.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset="+Config.encode+"\">");
@@ -479,7 +570,6 @@ public class WabacusResponse
         }
         /*if(mReportsWithIncludePage!=null&&mReportsWithIncludePage.size()>0)
         {
-            rrequest.getRequest().setAttribute("WX_REPORTREQUEST",rrequest);
             String starttagTmp=ReportAssistant.getInstance().getStartTagOfIncludeFilePlaceholder(rrequest.getPagebean());
             String endtagTmp=ReportAssistant.getInstance().getEndTagOfIncludeFilePlaceholder(rrequest.getPagebean());
             int idx=content.indexOf(starttagTmp);
@@ -487,7 +577,7 @@ public class WabacusResponse
             AbsReportType reportTypeObjTmp;
             *
              * 每个包含外部页面的格式为<tag>reportid</tag>，其中<tag>和</tag>分别是starttagTmp和endtagTmp
-             *//*
+             *
             String dynTplPathTmp=null;
             while(true)
             {
@@ -570,6 +660,6 @@ public class WabacusResponse
         {
             this.addOnloadMethod("wx_sendRedirect","{url:\""+url+"\"}",false);
         }
-        throw new WabacusRuntimeWarningException();
+        throw new WabacusRuntimeWarningException();//中断报表的后续处理
     }
 }

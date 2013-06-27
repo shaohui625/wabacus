@@ -58,7 +58,7 @@ public abstract class AbsDataImportConfigBean
 
     private String datasource;
 
-    private Map<String,List<DataImportSqlBean>> mImportSqlObjs;//存放每条要执行的sql以及相应的参数类型，加载时根据用户配置生成，key为导入类型，这里主要是考虑动态导入指定导入类型的情况，这样每次动态指定导入类型时，就不用每次去构造导入SQL语句
+    private Map<String,List<DataImportSqlBean>> mImportSqlObjs;
 
     public String getReskey()
     {
@@ -168,7 +168,7 @@ public abstract class AbsDataImportConfigBean
                 }
                 return lstDataImportDataSqls;
             }else if(colMapBean.getMatchmode().equals(Consts_Private.DATAIMPORT_MATCHMODE_EVERYTIME))
-            {
+            {//每次导数据时建立SQL语句
                 log.debug("正在为数据导入资源项"+this.getReskey()+"建立数据文件和数据表映射...");
                 return colMapBean.createImportDataSqls(null);
             }else
@@ -228,8 +228,7 @@ public abstract class AbsDataImportConfigBean
         }
         if(Tools.isDefineKey("pattern",filename))
         {
-            String tmp=Tools.getRealKeyByDefine("pattern",filename);
-            if(tmp.trim().equals(""))
+            if(Tools.getRealKeyByDefine("pattern",filename).trim().equals(""))
             {
                 throw new WabacusConfigLoadingException("数据导入项"+reskey+"没有配置filename属性");
             }

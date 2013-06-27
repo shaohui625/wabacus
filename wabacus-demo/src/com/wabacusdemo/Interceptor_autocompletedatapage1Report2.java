@@ -22,9 +22,9 @@ import java.util.Map;
 
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.format.FormatTools;
 import com.wabacus.system.inputbox.autocomplete.AutoCompleteBean;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
+import com.wabacus.util.Tools;
 
 public class Interceptor_autocompletedatapage1Report2 extends AbsInterceptorDefaultAdapter
 {
@@ -47,7 +47,7 @@ public class Interceptor_autocompletedatapage1Report2 extends AbsInterceptorDefa
        String salary=mColValues.get("salary");
        if(salary!=null&&!salary.trim().equals(""))
        {
-           salary=FormatTools.formatDouble(salary,"#######.00");//保留小数点两位
+           salary=Tools.formatDouble(salary,"#######.00");//保留小数点两位
            mColValues.put("salary",salary);
        }
        //因为这是editablelist2报表类型，“性别”列在显示时显示“男”、“女”，而实际值为“1”、“0”，因此从数据库取出的是0和1，而显示的是“男”和“女”

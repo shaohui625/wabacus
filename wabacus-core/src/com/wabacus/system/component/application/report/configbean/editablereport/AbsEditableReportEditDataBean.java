@@ -24,11 +24,16 @@ import java.util.List;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.assistant.EditableReportAssistant;
+import com.wabacus.system.buttons.EditableReportSQLButtonDataBean;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
 public abstract class AbsEditableReportEditDataBean implements Cloneable
 {
+    private String refreshParentidOnSave;////如果当前报表是可编辑从报表，则保存数据时需要刷新它的哪个主报表（因为可能有多层主报表）
+    
+    private boolean resetNavigateInfoOnRefreshParent;
+    
     private List<EditActionGroupBean> lstEditActionGroupBeans;//配置的所有<value/>更新脚本
 
     protected List<EditableReportExternalValueBean> lstExternalValues;//通过<params/>配置的外部值
@@ -39,6 +44,26 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
     {
         this.owner=owner;
         lstEditActionGroupBeans=new ArrayList<EditActionGroupBean>();
+    }
+
+    public String getRefreshParentidOnSave()
+    {
+        return refreshParentidOnSave;
+    }
+
+    public void setRefreshParentidOnSave(String refreshParentidOnSave)
+    {
+        this.refreshParentidOnSave=refreshParentidOnSave;
+    }
+
+    public boolean isResetNavigateInfoOnRefreshParent()
+    {
+        return resetNavigateInfoOnRefreshParent;
+    }
+
+    public void setResetNavigateInfoOnRefreshParent(boolean resetNavigateInfoOnRefreshParent)
+    {
+        this.resetNavigateInfoOnRefreshParent=resetNavigateInfoOnRefreshParent;
     }
 
     public List<EditActionGroupBean> getLstEditActionGroupBeans()
@@ -126,11 +151,11 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 
 
 
-//        whereclause=whereclause.trim();
 
 
 
 
+//        }
 
 
 //        /**
@@ -138,7 +163,7 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 //         */
 
 
-//        
+
 
 //        /**
 
@@ -151,9 +176,9 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 
 
 
-
+//            if(isParam)
 //            {//说明当前是在"@{"内，后面的字符串都是动态参数对应的<col/>的property，直到"}"为止。
-//                if(whereclause.charAt(i)=='}')
+
 //                {//遇到}，说明动态参数对应的property结束。
 
 
@@ -164,20 +189,20 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 
 
 
-//                    {
+
 
 //                        i++;//跳过右边的%号
 
 
 //                    {//@{
-
+//                        String realproperty=property;
 
 
 
 
 //                            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的要更新字段"+property+"不合法，没有取到其值对应的<col/>");
 
-//                        EditableReportParamBean paramBeanTmp=createParamBeanByColbean(cb,reportKey,true,true,property);
+
 
 
 
@@ -188,31 +213,13 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 
 //                    {//!{
 
-
-//                    lstDynParams.add(paramBean);
-
+//                    }
 
 
 
 
 
 
-
-
-//                if(whereclause.charAt(i)=='@')
-
-
-
-//                    {//是有效的动态查询条件
-
-
-
-
-
-
-//                    int k=parseDynParamsInUpdateClause(whereclause,i,propBuffer,whereBuffer);
-
-//                    {//是有效的动态查询条件
 
 
 
@@ -230,13 +237,31 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 
 
 
-
-
-//        if(!propBuffer.toString().equals(""))
-
+//                    {//是有效的动态查询条件
 
 
 
+
+
+
+
+//                    if(k>i)
+//                    {//是有效的动态查询条件
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//        whereclause=whereBuffer.toString();
 //      //将它们替换回来
 
 
@@ -244,7 +269,7 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 
 
 //    /**
-//     * 分析where条件子句中的动态参数起始部分
+
 
 
 
@@ -254,8 +279,8 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 
 
 
+//        for(;k<whereclause.length();k++)
 
-//        {
 //            if(whereclause.charAt(k)==' ') continue;//@、#、! 与 {中间有空格，则跳过
 
 //            {//在@、#、! 之后碰到{，则说明是真正的动态参数
@@ -270,12 +295,12 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
 //            {//在@之后碰到的是其它字符，则不是参数，此时的@、#、! 就是一个普通字符。
 
 
-//            break;
+
 
 
 //        {//是以@字符结尾，则此@字符就是一个普通的字符。
 
-
+//        }
 
 
 
@@ -294,38 +319,44 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
     
     private void parseStandardSqlParamBean(EditableReportParamBean paramBean,String reportTypeKey)
     {
-        if(Tools.isDefineKey("@",paramBean.getParamname())&&this.isAutoReportdata())
+        if(Tools.isDefineKey("@",paramBean.getParamname()))
         {
-            String configproperty=Tools.getRealKeyByDefine("@",paramBean.getParamname());
-            String realproperty=configproperty;
-            if(realproperty.endsWith("__old")) realproperty=realproperty.substring(0,realproperty.length()-"__old".length());
-            ColBean cbeanUpdateDest=this.owner.getReportBean().getDbean().getColBeanByColProperty(realproperty);
-            if(cbeanUpdateDest==null)
-            {
-                throw new WabacusConfigLoadingException("解析报表的更新语句失败，没有找到column/property属性为"+realproperty+"的列");
-            }
-            if(cbeanUpdateDest.isNonValueCol()||cbeanUpdateDest.isSequenceCol()||cbeanUpdateDest.isControlCol())
-            {
-                throw new WabacusConfigLoadingException("加载报表"+this.owner.getReportBean().getPath()+"失败，列"+cbeanUpdateDest.getColumn()
-                        +"不是从数据库获取数据的列，不能取其数据");
-            }
-            EditableReportColBean ercbeanDest=(EditableReportColBean)cbeanUpdateDest.getExtendConfigDataForReportType(reportTypeKey);
-            if(ercbeanDest==null)
-            {
-                ercbeanDest=new EditableReportColBean(cbeanUpdateDest);
-                cbeanUpdateDest.setExtendConfigDataForReportType(reportTypeKey,ercbeanDest);
+            if(this.isAutoReportdata())
+            {//自动获取某列的数据进行保存操作（这个判断主要是针对配置更新脚本的<button/>，因为它的@{param}数据有可能是客户端传的，而不是从报表中获取的）
+                String configproperty=Tools.getRealKeyByDefine("@",paramBean.getParamname());
+                String realproperty=configproperty;
+                if(realproperty.endsWith("__old")) realproperty=realproperty.substring(0,realproperty.length()-"__old".length());
+                ColBean cbeanUpdateDest=this.owner.getReportBean().getDbean().getColBeanByColProperty(realproperty);
+                if(cbeanUpdateDest==null)
+                {
+                    throw new WabacusConfigLoadingException("解析报表的更新语句失败，没有找到column/property属性为"+realproperty+"的列");
+                }
+                if(cbeanUpdateDest.isNonValueCol()||cbeanUpdateDest.isSequenceCol()||cbeanUpdateDest.isControlCol())
+                {
+                    throw new WabacusConfigLoadingException("加载报表"+this.owner.getReportBean().getPath()+"失败，列"+cbeanUpdateDest.getColumn()
+                            +"不是从数据库获取数据的列，不能取其数据");
+                }
+                EditableReportColBean ercbeanDest=(EditableReportColBean)cbeanUpdateDest.getExtendConfigDataForReportType(reportTypeKey);
+                if(ercbeanDest==null)
+                {
+                    ercbeanDest=new EditableReportColBean(cbeanUpdateDest);
+                    cbeanUpdateDest.setExtendConfigDataForReportType(reportTypeKey,ercbeanDest);
+                }else
+                {
+                    paramBean.setDefaultvalue(ercbeanDest.getDefaultvalue());
+                }
+                paramBean.setOwner(cbeanUpdateDest);
+                ColBean cbeanUpdateSrc=cbeanUpdateDest;
+                if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbeanUpdateDest.getDisplaytype()))
+                {
+                    ColBean cbSrcTmp=cbeanUpdateDest.getUpdateColBeanSrc(false);
+                    if(cbSrcTmp!=null) cbeanUpdateSrc=cbSrcTmp;
+                }
+                setParamBeanInfoOfColBean(cbeanUpdateSrc,paramBean,configproperty,reportTypeKey);
             }else
             {
-                paramBean.setDefaultvalue(ercbeanDest.getDefaultvalue());
+                ((EditableReportSQLButtonDataBean)this).setHasReportDataParams(true);
             }
-            paramBean.setOwner(cbeanUpdateDest);
-            ColBean cbeanUpdateSrc=cbeanUpdateDest;
-            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbeanUpdateDest.getDisplaytype()))
-            {
-                ColBean cbSrcTmp=cbeanUpdateDest.getUpdateColBeanSrc(false);
-                if(cbSrcTmp!=null) cbeanUpdateSrc=cbSrcTmp;
-            }
-            setParamBeanInfoOfColBean(cbeanUpdateSrc,paramBean,configproperty,reportTypeKey);
         }else if(Tools.isDefineKey("#",paramBean.getParamname()))
         {
             String paramname=Tools.getRealKeyByDefine("#",paramBean.getParamname());
@@ -337,9 +368,9 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
     protected abstract void setParamBeanInfoOfColBean(ColBean cbUpdateSrc,EditableReportParamBean paramBean,String configColProperty,
             String reportTypeKey);
 
-    public void setRealParamnamesInDoPostLoadFinally()
+    public void doPostLoadFinally()
     {
-        if(!this.isAutoReportdata()) return;//不是从报表列中取数据的<button/>不需要调整参数名，因为这里只是根据报表的最终可编辑性调整有效的参数名，把该去掉的__old去掉
+        if(!this.isAutoReportdata()) return;
         if(lstEditActionGroupBeans!=null)
         {
             List<AbsEditActionBean> lstActionBeanTmp;
@@ -349,7 +380,7 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
                 if(lstActionBeanTmp==null||lstActionBeanTmp.size()==0) continue;
                 for(AbsEditActionBean actionBeanTmp:lstActionBeanTmp)
                 {
-                    actionBeanTmp.setRealParamnamesInDoPostLoadFinally();
+                    actionBeanTmp.doPostLoadFinally();
                 }
             }
         }
@@ -357,16 +388,12 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
         {
             for(EditableReportExternalValueBean valueBeanTmp:this.lstExternalValues)
             {
-                if(valueBeanTmp.getLstParamsBean()==null) continue;
-                for(EditableReportParamBean paramBeanTmp:valueBeanTmp.getLstParamsBean())
-                {
-                    setRealParamnameInDoPostLoadFinally(paramBeanTmp);
-                }
+                valueBeanTmp.doPostLoadFinally();
             }
         }
     }
     
-    public void setRealParamnameInDoPostLoadFinally(EditableReportParamBean paramBean)
+    protected void setRealParamnameInDoPostLoadFinally(EditableReportParamBean paramBean)
     {
         if(paramBean.getParamname()==null||!paramBean.getParamname().endsWith("__old")) return;
         if(paramBean.getOwner() instanceof ColBean)

@@ -28,7 +28,6 @@ import java.util.Map;
 
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.ReportDataAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
 

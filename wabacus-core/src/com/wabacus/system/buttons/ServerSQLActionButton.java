@@ -45,6 +45,7 @@ import com.wabacus.system.component.application.report.configbean.editablereport
 import com.wabacus.system.component.application.report.configbean.editablereport.IEditableReportEditGroupOwnerBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.transaction.DefaultTransactionType;
 import com.wabacus.system.intercept.AbsPageInterceptor;
+import com.wabacus.system.intercept.IInterceptor;
 import com.wabacus.system.serveraction.IServerAction;
 import com.wabacus.util.Consts;
 
@@ -53,19 +54,19 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
     private boolean shouldRefreshPage;
 
     private String beforeCallbackMethod;
-    
+
     private String afterCallbackMethod;
-    
+
     private String conditions;
-    
+
     private String successprompt;
-    
+
     private String failedprompt;
-    
+
     private boolean isAutoReportdata=true;
-    
+
     private EditableReportSQLButtonDataBean editDataBean;//<button/>效果与<delete/>类似，都不会影响到列的可编辑性
-    
+
     public ServerSQLActionButton(IComponentConfigBean ccbean)
     {
         super(ccbean);
@@ -76,7 +77,7 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
         if(editDataBean==null||editDataBean.getLstEditActionGroupBeans()==null||editDataBean.getLstEditActionGroupBeans().size()==0) return "";
         return super.showButton(rrequest,getMyClickEvent(rrequest));
     }
-    
+
     public String showButton(ReportRequest rrequest,String dynclickevent,String button)
     {
         if(editDataBean==null||editDataBean.getLstEditActionGroupBeans()==null||editDataBean.getLstEditActionGroupBeans().size()==0) return "";
@@ -99,16 +100,17 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
         resultBuf.append(",null,"+this.shouldRefreshPage+","+this.beforeCallbackMethod+","+this.afterCallbackMethod+")");
         return resultBuf.toString();
     }
-    
-    public String executeSeverAction(ReportRequest rrequest,IComponentConfigBean ccbean,List<Map<String,String>> lstData,Map<String,String> mCustomizedData)
+
+    public String executeSeverAction(ReportRequest rrequest,IComponentConfigBean ccbean,List<Map<String,String>> lstData,
+            Map<String,String> mCustomizedData)
     {
         if(editDataBean==null) return "0";
         ReportBean rbean=(ReportBean)this.ccbean;
         CacheDataBean cdb=rrequest.getCdb(this.ccbean.getId());
         cdb.setLstEditedData(this.editDataBean,lstData);
-        cdb.getAttributes().put("WX_UPDATE_CUSTOMIZEDATAS",mCustomizedData);//对于用户自定义的数据，都会存放在一个Map中，键为参数名；值为参数值
-        cdb.setLstEditedParamValues(this.editDataBean,EditableReportAssistant.getInstance().getExternalValues(this.editDataBean,lstData,
-                rbean,rrequest));
+        cdb.getAttributes().put("WX_UPDATE_CUSTOMIZEDATAS",mCustomizedData);
+        cdb.setLstEditedParamValues(this.editDataBean,EditableReportAssistant.getInstance().getExternalValues(this.editDataBean,lstData,rbean,
+                rrequest));
         rrequest.setTransactionObj(new DefaultTransactionType());
         List<ReportBean> lstSaveReportBeans=new ArrayList<ReportBean>();
         lstSaveReportBeans.add(rbean);
@@ -126,26 +128,33 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
         Exception exception=null;
         try
         {
+            int rtnVal;
             if(rbean.getInterceptor()!=null)
             {
-                rbean.getInterceptor().doSave(rrequest,rbean,this.editDataBean);
+                rtnVal=rbean.getInterceptor().doSave(rrequest,rbean,this.editDataBean);
             }else
             {
-                EditableReportAssistant.getInstance().doSaveReport(rbean,rrequest,this.editDataBean);
-            }            
-            if(lstPageInterceptors!=null&&lstPageInterceptors.size()>0)
-            {
-                AbsPageInterceptor pageInterceptorObjTmp;
-                for(int i=lstPageInterceptors.size()-1;i>=0;i--)
-                {
-                    pageInterceptorObjTmp=lstPageInterceptors.get(i);
-                    pageInterceptorObjTmp.doEndSave(rrequest,lstSaveReportBeans);
-                }
+                rtnVal=EditableReportAssistant.getInstance().doSaveReport(rrequest,rbean,this.editDataBean);
             }
-            if(rrequest.getTransactionWrapper()!=null) rrequest.getTransactionWrapper().commitTransaction(rrequest,lstAllEditActionGroupBeans);
-            if(this.successprompt!=null&&!this.successprompt.trim().equals(""))
+            if(rtnVal==IInterceptor.WX_RETURNVAL_TERMINATE||rtnVal==IInterceptor.WX_RETURNVAL_SKIP)
             {
-                rrequest.getWResponse().getMessageCollector().success(rrequest.getI18NStringValue(this.successprompt),false);
+                if(rrequest.getTransactionWrapper()!=null) rrequest.getTransactionWrapper().rollbackTransaction(rrequest,lstAllEditActionGroupBeans);
+            }else
+            {
+                if(lstPageInterceptors!=null&&lstPageInterceptors.size()>0)
+                {
+                    AbsPageInterceptor pageInterceptorObjTmp;
+                    for(int i=lstPageInterceptors.size()-1;i>=0;i--)
+                    {//这个调用顺序与调用doStartSave()方法相反
+                        pageInterceptorObjTmp=lstPageInterceptors.get(i);
+                        pageInterceptorObjTmp.doEndSave(rrequest,lstSaveReportBeans);
+                    }
+                }
+                if(rrequest.getTransactionWrapper()!=null) rrequest.getTransactionWrapper().commitTransaction(rrequest,lstAllEditActionGroupBeans);
+                if(this.successprompt!=null&&!this.successprompt.trim().equals(""))
+                {
+                    rrequest.getWResponse().getMessageCollector().success(rrequest.getI18NStringValue(this.successprompt),false);
+                }
             }
         }catch(WabacusRuntimeWarningException wrwe)
         {
@@ -167,7 +176,7 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
             if(rrequest.getTransactionWrapper()!=null) rrequest.getTransactionWrapper().rollbackTransaction(rrequest,lstAllEditActionGroupBeans);
         }finally
         {
-            rrequest.setTransactionObj(null);            
+            rrequest.setTransactionObj(null);
         }
         if(exception!=null)
         {
@@ -179,12 +188,12 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
             return "1";
         }
     }
-    
+
     public String executeServerAction(HttpServletRequest request,HttpServletResponse response,List<Map<String,String>> lstData)
     {
         return "";
     }
-    
+
     public void loadExtendConfig(XmlElementBean eleButtonBean)
     {
         super.loadExtendConfig(eleButtonBean);
@@ -213,7 +222,7 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
             {
                 if((!this.conditions.startsWith("{")||!this.conditions.endsWith("}"))
                         &&(!this.conditions.startsWith("[")||!this.conditions.endsWith("]")))
-                {//不是{...}或[...]格式，则给它加上{}括住，构造正确的json字符串
+                {
                     this.conditions="{"+this.conditions+"}";
                 }
             }
@@ -238,14 +247,14 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
         sqlButtonDataBean.setAutoReportdata(isAutoReportdata);
         this.editDataBean=(EditableReportSQLButtonDataBean)ComponentConfigLoadManager.loadEditConfig(this,sqlButtonDataBean,eleButtonBean);
     }
-    
+
     public ReportBean getReportBean()
     {
         return (ReportBean)this.ccbean;
     }
-    
+
     private boolean hasDoPostLoad;
-    
+
     public void doPostLoad()
     {
         if(hasDoPostLoad) return;
@@ -255,7 +264,8 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
         {
             if(!(Config.getInstance().getReportType(((ReportBean)this.ccbean).getType()) instanceof IEditableReportType))
             {
-                throw new WabacusConfigLoadingException("组件"+this.ccbean.getPath()+"不是可编辑报表类型，在用<button/>直接配置更新脚本时不能采用自动获取报表数据传到后台的方式，需要将<button/>的autoreportdata配置为false");
+                throw new WabacusConfigLoadingException("组件"+this.ccbean.getPath()
+                        +"不是可编辑报表类型，在用<button/>直接配置更新脚本时不能采用自动获取报表数据传到后台的方式，需要将<button/>的autoreportdata配置为false");
             }
             IEditableReportType reportTypeObj=(IEditableReportType)Config.getInstance().getReportType(((ReportBean)this.ccbean).getType());
             if(reportTypeObj instanceof EditableDetailReportType)
@@ -277,16 +287,16 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
         }
         if(this.editDataBean.parseActionscripts(reportTypeKey)<=0) this.editDataBean=null;
     }
-    
+
     private boolean hasDoPostLoadFinally;
-    
+
     public void doPostLoadFinally()
     {
         if(hasDoPostLoadFinally) return;
         hasDoPostLoadFinally=true;
-        if(this.editDataBean!=null) this.editDataBean.setRealParamnamesInDoPostLoadFinally();
+        if(this.editDataBean!=null) this.editDataBean.doPostLoadFinally();
     }
-    
+
     public AbsButtonType clone(IComponentConfigBean ccbean)
     {
         ServerSQLActionButton buttonNew=(ServerSQLActionButton)super.clone(ccbean);

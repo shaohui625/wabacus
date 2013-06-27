@@ -18,11 +18,9 @@
  */
 package com.wabacus.system.dataimport.interceptor;
 
-import java.io.File;
 import java.sql.Connection;
 import java.util.List;
 
-import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.system.dataimport.DataImportItem;
 
 public interface IDataImportInterceptor

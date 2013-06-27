@@ -123,6 +123,7 @@ public class ConfigLoadAssistant
             if(strclassTmp==null||strclassTmp.trim().equals("")) continue;
             lstClasses.add(ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclassTmp.trim()));
         }
+        if(lstClasses.size()==0) lstClasses=null;
         return lstClasses;
     }
     
@@ -186,11 +187,19 @@ public class ConfigLoadAssistant
         for(XmlElementBean eleImportBeanTmp:lstImportBeans)
         {
             importTmp=eleImportBeanTmp.getContent();
-            if(importTmp==null) continue;
+            if(importTmp==null||importTmp.trim().equals("")) continue;
             importTmp=importTmp.trim();
-            if(importTmp.lastIndexOf(".*")==importTmp.length()-2)
+            if(importTmp.endsWith(".*"))
             {
                 importTmp=importTmp.substring(0,importTmp.length()-2).trim();
+            }else
+            {
+                int idx=importTmp.lastIndexOf(".");
+                if(idx<=0)
+                {
+                    throw new WabacusConfigLoadingException("<import>"+importTmp+"</import>配置的导入外部包或JAVA类无效，不能导入");
+                }
+                importTmp=importTmp.substring(0,idx).trim();
             }
             if(importTmp.equals("")||lstImports.contains(importTmp)) continue;
             lstImports.add(importTmp);
@@ -239,7 +248,7 @@ public class ConfigLoadAssistant
             jsTmp=Tools.replaceAll(jsTmp,"//","/");
             lstResults.add(new JavascriptFileBean(jsTmp.trim(),0));
         }else
-        {//artDialog提示组件
+        {
             String jsTmp=Config.webroot+"/webresources/component/artDialog/artDialog.js";
             jsTmp=Tools.replaceAll(jsTmp,"\\","/");
             jsTmp=Tools.replaceAll(jsTmp,"//","/");

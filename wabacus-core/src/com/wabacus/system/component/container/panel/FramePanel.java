@@ -54,7 +54,7 @@ public class FramePanel extends AbsPanelType
             if(containerConfigBean.getTop()!=null&&!containerConfigBean.getTop().trim().equals(""))
             {
                 wresponse.println("<table  cellspacing=\"0\" cellpadding=\"0\" width=\""+containerwidth+"\" style=\"MARGIN:0;\">");
-                wresponse.println("<tr><td height=\""+containerConfigBean.getTop()+"\">&nbsp;</td></tr></table>");
+                wresponse.println("<tr><td height=\""+containerConfigBean.getTop()+"\"></td></tr></table>");
             }
             wresponse.println("<table  cellspacing=\"0\" cellpadding=\"0\" width=\""+containerwidth+"\" id=\""+containerConfigBean.getGuid()+"\"><tr><td>");
         }
@@ -92,17 +92,17 @@ public class FramePanel extends AbsPanelType
             if(containerConfigBean.getMargin_top()!=null&&!containerConfigBean.getMargin_top().trim().equals(""))
             {
                 wresponse.println("<tr><td colspan=\""+containerConfigBean.getColspan_total()+"\" height=\""+
-                        containerConfigBean.getMargin_top()+"\">&nbsp;</td></tr>");
+                        containerConfigBean.getMargin_top()+"\"></td></tr>");
             }
             wresponse.println("<tr>");
             if(containerConfigBean.getMargin_left()!=null&&!containerConfigBean.getMargin_left().trim().equals(""))
-            {//如果有左边间隔
-                wresponse.println("<td width=\""+containerConfigBean.getMargin_left()+"\">&nbsp;</td>");
+            {
+                wresponse.println("<td width=\""+containerConfigBean.getMargin_left()+"\"><span style=\"margin-left:"+containerConfigBean.getMargin_left()+"\"></span></td>");
             }
             wresponse.println("<td>");
             tempBuf=new StringBuffer();
             tempBuf.append("<table cellspacing='0' cellpadding='0' width=\"100%\"");
-            if(containerConfigBean.getHeight()!=null&&!containerConfigBean.getHeight().trim().equals(""))
+            if(!this.containerConfigBean.isScrollY()&&containerConfigBean.getHeight()!=null&&!containerConfigBean.getHeight().trim().equals(""))
             {//容器的高度配置必须放在最里层的<table/>中，否则没办法通过它的<td/>的valign控制子组件的垂直对齐方式
                 tempBuf.append(" height=\""+containerConfigBean.getHeight()+"\" ");
             }
@@ -115,13 +115,13 @@ public class FramePanel extends AbsPanelType
             wresponse.println("</table></td>");
             if(containerConfigBean.getMargin_right()!=null&&!containerConfigBean.getMargin_right().trim().equals(""))
             {
-                wresponse.println("<td width=\""+containerConfigBean.getMargin_right()+"\">&nbsp;</td>");
+                wresponse.println("<td width=\""+containerConfigBean.getMargin_right()+"\"><span style=\"margin-left:"+containerConfigBean.getMargin_right()+"\"></span></td>");
             }
             wresponse.println("</tr>");
             if(containerConfigBean.getMargin_bottom()!=null&&!containerConfigBean.getMargin_bottom().trim().equals(""))
             {
                 wresponse.println("<tr><td colspan=\""+containerConfigBean.getColspan_total()+"\" height=\""+
-                        containerConfigBean.getMargin_bottom()+"\">&nbsp;</td></tr>");
+                        containerConfigBean.getMargin_bottom()+"\"></td></tr>");
             }
             wresponse.println(showContainerScrollEndTag());
             wresponse.println("</table>");
@@ -129,7 +129,7 @@ public class FramePanel extends AbsPanelType
         wresponse.println("</FIELDSET>");
         showButtonsOnTopBottomTitle(false);
         wresponse.println(this.showFooter());
-
+//        wresponse.println(this.showContextMenu());
         wresponse.println(this.showMetaData());
         wresponse.println("</span>");
         if(this.getParentContainerType()!=null)
@@ -138,7 +138,7 @@ public class FramePanel extends AbsPanelType
             if(containerConfigBean.getBottom()!=null&&!containerConfigBean.getBottom().trim().equals(""))
             {
                 wresponse.println("<table  cellspacing=\"0\" cellpadding=\"0\" width=\""+containerwidth+"\" style=\"MARGIN:0;\">");
-                wresponse.println("<tr><td height=\""+containerConfigBean.getBottom()+"\">&nbsp;</td></tr></table>");
+                wresponse.println("<tr><td height=\""+containerConfigBean.getBottom()+"\"></td></tr></table>");
             }
         }
     }
@@ -163,7 +163,7 @@ public class FramePanel extends AbsPanelType
         if(fpanelbean.getLstChildrenIDs().size()>1)
         {
             List<String> lstChildrenIds=new ArrayList<String>();
-            lstChildrenIds.add(fpanelbean.getLstChildrenIDs().get(0));//只保留配置的第一个子元素
+            lstChildrenIds.add(fpanelbean.getLstChildrenIDs().get(0));
             for(int i=1;i<fpanelbean.getLstChildrenIDs().size();i++)
             {
                 fpanelbean.getMChildren().remove(fpanelbean.getLstChildrenIDs().get(i));

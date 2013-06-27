@@ -18,6 +18,10 @@
  */
 package com.wabacus.system.component.application.report.configbean.crosslist;
 
+import java.util.Map;
+
+import com.wabacus.system.ReportRequest;
+import com.wabacus.system.assistant.WabacusAssistant;
 
 public class CrossListReportStatiDisplayBean
 {
@@ -25,7 +29,11 @@ public class CrossListReportStatiDisplayBean
 
     private String labelstyleproperty;
 
+    private Map<String,String> mDynLabelstylepropertyParts;
+
     private String valuestyleproperty;
+
+    private Map<String,String> mDynValuestylepropertyParts;
 
     private CrossListReportStatiBean statiBean;
 
@@ -39,24 +47,28 @@ public class CrossListReportStatiDisplayBean
         this.label=label==null?"":label.trim();
     }
 
-    public String getLabelstyleproperty()
+    public String getLabelstyleproperty(ReportRequest rrequest)
     {
-        return labelstyleproperty;
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.labelstyleproperty,this.mDynLabelstylepropertyParts,"");
     }
 
     public void setLabelstyleproperty(String labelstyleproperty)
     {
-        this.labelstyleproperty=labelstyleproperty==null?"":labelstyleproperty.trim();
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(labelstyleproperty);
+        this.labelstyleproperty=(String)objArr[0];
+        this.mDynLabelstylepropertyParts=(Map<String,String>)objArr[1];
     }
 
-    public String getValuestyleproperty()
+    public String getValuestyleproperty(ReportRequest rrequest)
     {
-        return valuestyleproperty;
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.valuestyleproperty,this.mDynValuestylepropertyParts,"");
     }
 
     public void setValuestyleproperty(String valuestyleproperty)
     {
-        this.valuestyleproperty=valuestyleproperty==null?"":valuestyleproperty.trim();
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(valuestyleproperty);
+        this.valuestyleproperty=(String)objArr[0];
+        this.mDynValuestylepropertyParts=(Map<String,String>)objArr[1];
     }
 
     public CrossListReportStatiBean getStatiBean()

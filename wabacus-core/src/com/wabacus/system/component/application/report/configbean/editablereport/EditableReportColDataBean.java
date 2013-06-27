@@ -100,7 +100,7 @@ public class EditableReportColDataBean
 
 
 
-//    }
+
 
     public boolean isEditable()
     {
@@ -211,7 +211,7 @@ public class EditableReportColDataBean
         {
             String defaultvalue=ercbeanSrc.getInputbox().getDefaultvalue(rrequest);
             if(defaultvalue!=null&&!defaultvalue.equals(""))
-            {
+            {//为其输入框配置了默认值，则用默认值
                 if(cbean.getUpdateColBeanDest(false)!=null)
                 {
                     ercdbean.setDefaultvalue(ercbeanSrc.getInputbox().getDefaultlabel(rrequest));   
@@ -248,7 +248,7 @@ public class EditableReportColDataBean
     {
         String value_name=EditableReportAssistant.getInstance().getColParamName(cbean);
         if(ercdbean.isNeedEncode())
-        {//当前列数据需要编码显示
+        {
             ercdbean.setValuename(Consts_Private.COL_NONDISPLAY_PERMISSION_PREX+value_name);
             ercdbean.setOldvalue(ercdbean.getEncodeEditvalue());
         }else

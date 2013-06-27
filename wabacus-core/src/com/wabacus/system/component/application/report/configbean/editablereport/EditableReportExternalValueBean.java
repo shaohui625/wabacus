@@ -182,7 +182,7 @@ public class EditableReportExternalValueBean implements Cloneable
                     +"的<value/>配置错误，它引用的变量又是引用其它报表变量或列数据的变量。");
         }
         if(this.typeObj==null)
-        {//此变量没有配置自己的类型，则使用被引用的源变量的类型
+        {
             this.typeObj=((EditableReportExternalValueBean)this.refObj).getTypeObj();
         }*/
     }
@@ -240,7 +240,7 @@ public class EditableReportExternalValueBean implements Cloneable
                             +"的<value/>配置错误，引用其它报表某列值时，引用的报表："+lstTmp.get(0)+"没有配置<update/>");
                 }
             }else if("delete".equals(type))
-            {
+            {//是引用源报表中删除数据时某列的值
                 if(editsqlbean.getDeletebean()==null)
                 {//被引用的源报表没有配置<delete/>标签
                     throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()
@@ -285,7 +285,7 @@ public class EditableReportExternalValueBean implements Cloneable
 //    /**
 
 
-//     * @param rbean
+
 
 //     */
 
@@ -308,19 +308,19 @@ public class EditableReportExternalValueBean implements Cloneable
 
 
 
-//                    cb=(ColBean)paramBean.getOwner();
 
 
 
 
 
+//                    ercbeanTmp=(EditableReportColBean)cb.getExtendConfigDataForReportType(reportTypeKey);
 
 
 
 
 //                        {//如果是隐藏字段，且被别的列通过updatecol引用到
 //                            cbSrc=cb.getReportBean().getDbean().getColBeanByColProperty(ercbeanTmp.getUpdatedcol());//取到引用此<col/>的<col/>对象
-//                        }
+
 
 
 
@@ -348,6 +348,15 @@ public class EditableReportExternalValueBean implements Cloneable
         this.value=this.owner.parseStandardEditSql(sql,lstParamsBean,reportTypeKey);
     }
 
+    public void doPostLoadFinally()
+    {
+        if(this.lstParamsBean==null) return;
+        for(EditableReportParamBean paramBeanTmp:this.lstParamsBean)
+        {
+            this.owner.setRealParamnameInDoPostLoadFinally(paramBeanTmp);
+        }
+    }
+    
     public Object clone()
     {
         try

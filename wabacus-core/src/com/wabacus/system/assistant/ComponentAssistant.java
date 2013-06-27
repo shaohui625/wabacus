@@ -98,7 +98,7 @@ public class ComponentAssistant
 
 
 
-//            {
+
 
 
 //            scrolljs="/webresources/script/"+encode.toLowerCase()+"/wabacus_scroll.js";
@@ -111,7 +111,7 @@ public class ComponentAssistant
         ccbean.getPageBean().addMyCss(css);
 
         if(showScrollX&&showScrollY)
-        {
+        {//显示纵横滚动条
             ccbean.addOnloadMethod(new OnloadMethodBean(Consts_Private.ONlOAD_IMGSCROLL,"showComponentScroll('"+ccbean.getGuid()+"','"+scrollHeight
                     +"',23)"));
         }else if(showScrollX)
@@ -133,7 +133,7 @@ public class ComponentAssistant
         {
             resultBuf.append("<div style=\"margin:0;");
             if(showScrollX)
-            {//要显示横向滚动条
+            {
                 resultBuf.append("width:").append(scrollWidth).append(";overflow-x:auto;");
             }else
             {

@@ -22,7 +22,7 @@
 				<td class="cls_td1"  colspan="3"  style="text-align:left;color:red">说明：<br/>
 					&nbsp;&nbsp;1、这里上传文件全部保存在WEB服务器根目录，要换上传目录，请修改&lt;wx:fileupload/&gt;标签的savepath属性。<br/>
 					&nbsp;&nbsp;2、这里介绍的文件上传功能是用标签实现，可以独立使用在任意JSP页面中，与文件上传输入框类型不同。<br/>
-					&nbsp;&nbsp;3、这里只演示了大概功能，更多功能请参看《非正式文档》中文件上传一节的介绍。<br/>
+					&nbsp;&nbsp;3、这里只演示了大概功能，更多功能请参看《开发指南》中文件上传一节的介绍。<br/>
 				</td>
 			</tr>
 			<tr style="background-color:#FAEBD7">

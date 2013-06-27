@@ -60,6 +60,7 @@ import com.wabacus.system.commoninterface.IReportPersonalizePersistence;
 import com.wabacus.system.component.AbsComponentType;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.IReportType;
+import com.wabacus.system.component.application.report.chart.FusionChartsReportType;
 import com.wabacus.system.component.container.AbsContainerType;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.system.inputbox.AbsInputBox;
@@ -127,7 +128,7 @@ public class ConfigLoadManager
             loadInputBoxTypesConfig(root);
             loadDataTypesConfig(root);
             loadContainerTypesConfig(root);
-            loadReportTypesConfig(root);//加载报表配置文件
+            loadReportTypesConfig(root);
             createSystemJS();
             mAllPagesConfig=new HashMap<String,PageBean>();
             mAllPageChildIds=new HashMap<String,List<String>>();
@@ -166,7 +167,6 @@ public class ConfigLoadManager
 
                         rbTemp.setEleReportBean(null);
                         rbTemp.getParentContainer().getMChildren().put(rbTemp.getId(),rbTemp);
-                        
                         ComponentConfigLoadManager.loadReportInfo(rbTemp,eleReportBean,rbeanParent);
                     }
                     if(lstTemp.size()==lstExtendReports.size())
@@ -227,7 +227,7 @@ public class ConfigLoadManager
             throw new WabacusConfigLoadingException("没有配置报表配置文件");
         }
         List lstReport=eleReport.elements("report-file");
-        List<String> lstReportConfigFiles=getListConfigFilePaths(lstReport);
+        List<String> lstReportConfigFiles=getListConfigFilePaths(lstReport);//获取到所有配置文件路径
         if(lstReportConfigFiles==null||lstReportConfigFiles.size()<=0)
         {
             throw new WabacusConfigLoadingException("没有配置报表配置文件");
@@ -311,7 +311,7 @@ public class ConfigLoadManager
             }else
             {
                 hasEncrypted=true;
-                passwordTmp=DesEncryptTools.encrypt(passwordTmp);//加密
+                passwordTmp=DesEncryptTools.encrypt(passwordTmp);
                 elePasswordTmp.setText("{3DES}"+passwordTmp);
             }
         }
@@ -406,6 +406,21 @@ public class ConfigLoadManager
     private static void createSystemJS()
     {
         if(!Config.should_createjs) return;
+        File fRoot=new File(Tools.standardFilePath(Config.webroot_abspath+"\\wabacus-generatejs"));
+        if(fRoot.exists()&&fRoot.isDirectory())
+        {
+            File[] filesArr=fRoot.listFiles();
+            if(filesArr!=null)
+            {
+                for(int i=0;i<filesArr.length;i++)
+                {
+                    filesArr[i].delete();
+                }
+            }
+        }else
+        {
+            fRoot.mkdir();
+        }
         String jsFilePath=Tools.standardFilePath(Config.webroot_abspath+"\\wabacus-generatejs\\generate_system.js");
         String rowselectbgcolor=Config.getInstance().getSystemConfigValue("selectedrow-bgcolor","");
         StringBuffer scriptBuf=new StringBuffer();
@@ -491,7 +506,7 @@ public class ConfigLoadManager
             scriptBuf.append("   var boxValue=updateDestTdObj.getAttribute('value');");
             scriptBuf.append("   if(boxValue==null){");
             scriptBuf.append("      boxValue='';");
-            scriptBuf.append("   }else if (type != 'textareabox') {");
+            scriptBuf.append("   }else{");
             scriptBuf.append("      boxValue=boxValue.replace(/</g,'&lt;');boxValue=boxValue.replace(/>/g,'&gt;');boxValue=boxValue.replace(/\\\'/g,'&#039;');boxValue=boxValue.replace(/\\\"/g,'&quot;');");
             scriptBuf.append("   }var boxId=name;if(boxId.lastIndexOf('__')>0) boxId=boxId.substring(0,boxId.lastIndexOf('__'));");
             scriptBuf.append("   var inputboxSpanObj=document.getElementById('span_'+boxId+'_span');");
@@ -509,7 +524,7 @@ public class ConfigLoadManager
             scriptBuf.append("   if(style_propertyvalue==null) style_propertyvalue='';");
             scriptBuf.append("   if(onfocusmethod==null) onfocusmethod='';if(onblurmethod==null) onblurmethod='';");
             scriptBuf.append("   if(jsvalidateOnblurMethod!=null&&jsvalidateOnblurMethod!=''){");
-            scriptBuf.append("       if(onblurmethod!=''&&onblurmethod.lastIndexOf(';')!=onblurmethod.length-1) onblurmethod=onblurmethod+';';");
+            scriptBuf.append("       if(onblurmethod!=''&&onblurmethod.lastIndexOf(';')!=onblurmethod.length-1) onblurmethod=onblurmethod+';';");//如果已经有onblur事件，且没有以;结尾，则在末尾加上;，以便拼接两个函数
             scriptBuf.append("       onblurmethod=onblurmethod+jsvalidateOnblurMethod;");
             scriptBuf.append("   }");
             scriptBuf.append("   if(onfocusmethod!=''&&onfocusmethod.lastIndexOf(';')!=onfocusmethod.length-1) onfocusmethod+=';';");
@@ -522,7 +537,7 @@ public class ConfigLoadManager
                 inputbox=Config.getInstance().getInputBoxTypeByName(name);
                 if(inputbox==null) continue;
                 scriptBuf.append("   if(type=='"+name+"'){");
-                scriptBuf.append(        inputbox.filledInContainer("fillInputBoxValueToParentTd(this,'"+name+"','\"+reportguid+\"','\"+reportfamily+\"',\"+fillmode+\");"));
+                scriptBuf.append(        inputbox.filledInContainer("fillInputBoxValueToParentTd(this,'"+name+"','\"+reportguid+\"','\"+reportfamily+\"',\"+fillmode+\",'\"+name+\"');"));
                 scriptBuf.append("   }");
             }
             scriptBuf.append("   setColDisplayValueToEditable2Td(tdObj,boxstr);var colInnerWrapEle=getColInnerWrapElement(tdObj);if(colInnerWrapEle==null) colInnerWrapEle=tdObj;");
@@ -539,13 +554,13 @@ public class ConfigLoadManager
             JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(jsFilePath,scriptBuf.toString());
 
             scriptBuf=new StringBuffer();
-            scriptBuf.append("function fillInputBoxValueToParentTd(boxObj,type,reportguid,reportfamily,fillmode){");
+            scriptBuf.append("function fillInputBoxValueToParentTd(boxObj,type,reportguid,reportfamily,fillmode,boxid){");
             scriptBuf.append("   var parentTdObj=null;");
             scriptBuf.append("   if(fillmode==1){parentTdObj=getParentElementObj(boxObj,'TD');}else if(fillmode==2){parentTdObj=boxObj.dataObj.parentTdObj;}");
             scriptBuf.append("   if(parentTdObj==null) {wx_warn('没有取到输入框所属<td/>对象，设置其值失败');return;}");
             /*scriptBuf.append("   var oldValueName=parentTdObj.getAttribute('oldvalue_name');");
             scriptBuf.append("   if(oldValueName!=null&&oldValueName.indexOf(COL_NONDISPLAY_PERMISSION_PREX)==0){");
-            //如果此输入框不在前台显示明文（目前只有密码框是这种输入框），则不能将此输入框的值设置到value属性中，保存的时候会直接从输入框中取
+            
             scriptBuf.append("       if(reportfamily==ReportFamily.EDITABLELIST2||reportfamily==ReportFamily.LISTFORM){");
             scriptBuf.append("           addDataForSaving(reportguid,parentTdObj.parentNode);");
             scriptBuf.append("       }else if(reportfamily==ReportFamily.EDITABLEDETAIL2){");
@@ -567,8 +582,21 @@ public class ConfigLoadManager
             }
             scriptBuf.append("   if(label==null){label='';}");
             //scriptBuf.append("else{ label=label.replace(/</g,'&lt;');label=label.replace(/>/g,'&gt;');label=label.replace(/\\\'/g,'&#039;');label=label.replace(/\\\"/g,'&quot;');}");
-            scriptBuf.append("  if(fillmode==2) setColDisplayValueToEditable2Td(parentTdObj,label);");//如果是点击时填充，则赋完值到所属<td/>的value属性后，将它的label也填充到<td/>的innerHTML中。
-            scriptBuf.append("  parentTdObj.setAttribute('value',label);");
+            scriptBuf.append("  if(fillmode==2)");//如果是点击时填充，则赋完值到所属<td/>的value属性后，将它的label也填充到<td/>的innerHTML中。
+            scriptBuf.append("  {");
+            scriptBuf.append("     var realBoxId=boxid;");
+            scriptBuf.append("     if(realBoxId.lastIndexOf('__')>0) realBoxId=realBoxId.substring(0,realBoxId.lastIndexOf('__'));");
+            scriptBuf.append("     var inputboxSpanObj=document.getElementById('span_'+realBoxId+'_span');");
+            scriptBuf.append("     if(inputboxSpanObj!=null)");
+            scriptBuf.append("     {");
+            scriptBuf.append("         var formatemplate=inputboxSpanObj.getAttribute('formatemplate');");
+            scriptBuf.append("         if(formatemplate!=null&&formatemplate!='')");
+            scriptBuf.append("         {");
+            scriptBuf.append("               label=getEditable2ColRealValueByFormatemplate(parentTdObj,reportguid,formatemplate,inputboxSpanObj.getAttribute('formatemplate_dyncols'),label);");
+            scriptBuf.append("         }");
+            scriptBuf.append("     }");
+            scriptBuf.append("     setColDisplayValueToEditable2Td(parentTdObj,label);");
+            scriptBuf.append("  }");
             scriptBuf.append("   if(value==null){value='';}");
             //scriptBuf.append("  else{ value=value.replace(/</g,'&lt;');value=value.replace(/>/g,'&gt;');value=value.replace(/\\\'/g,'&#039;');value=value.replace(/\\\"/g,'&quot;');}");
             scriptBuf.append("  var updateDestTdObj=getUpdateColDestObj(parentTdObj,reportguid,reportfamily,parentTdObj);");
@@ -587,11 +615,11 @@ public class ConfigLoadManager
 
 
 
-//            scriptBuf.append("       }else if(reportfamily==ReportFamily.EDITABLEDETAIL2){");
 
 
 
 
+//            scriptBuf.append("       }");
 
             scriptBuf.append("}");
             JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(jsFilePath,scriptBuf.toString());
@@ -668,7 +696,7 @@ public class ConfigLoadManager
             idx=nameTemp.lastIndexOf(".");
             if(idx<=0) continue;
             String typetmp=nameTemp.substring(idx).toLowerCase();
-            nameTemp=nameTemp.substring(0,idx);//不包括后缀（即文件类型）的文件名
+            nameTemp=nameTemp.substring(0,idx);
             if(nameTemp.startsWith(Config.i18n_filename)&&typetmp.equals(".xml"))
             {
                 Map<String,Object> mResults=null;
@@ -841,11 +869,12 @@ public class ConfigLoadManager
         }
         Config.show_sql=Config.getInstance().getSystemConfigValue("show-sql",false);
         Config.skin=Config.getInstance().getSystemConfigValue("skin","");
-        Config.webroot=Config.getInstance().getSystemConfigValue("webroot","/");
-        Config.webroot=Tools.replaceAll(Config.webroot,"\\","/");
-        if(!Config.webroot.endsWith("/"))
+        if(Config.webroot==null||Config.webroot.trim().equals(""))
         {
-            Config.webroot=Config.webroot+"/";
+            Config.webroot=Config.getInstance().getSystemConfigValue("webroot","/");
+            Config.webroot=Tools.replaceAll(Config.webroot,"\\","/");
+            if(!Config.webroot.startsWith("/")) Config.webroot="/"+Config.webroot;
+            if(!Config.webroot.endsWith("/")) Config.webroot=Config.webroot+"/";
         }
         Config.encode=Config.getInstance().getSystemConfigValue("encode","utf-8");
         Config.showreport_url=Config.getInstance().getSystemConfigValue("showreport-url","");
@@ -1302,12 +1331,12 @@ public class ConfigLoadManager
             String filepathTmp=eleTmp.getTextTrim();
             if(filepathTmp==null||filepathTmp.trim().equals("")) continue;
             String pattern=eleTmp.attributeValue("pattern");
-            boolean isPattern=pattern!=null&&pattern.toLowerCase().trim().equals("true");
+            boolean isPattern=pattern!=null&&pattern.toLowerCase().trim().equals("true");//是否是正则表达式
             if(isPattern)
             {
                 boolean isClasspathType=false;
                 if(Tools.isDefineKey("classpath",filepathTmp))
-                {//配置为完整的classpath路径
+                {
                     filepathTmp=Tools.getRealKeyByDefine("classpath",filepathTmp).trim();
                     while(filepathTmp.startsWith("/"))
                     {
@@ -1349,7 +1378,7 @@ public class ConfigLoadManager
                     filepathTmp=Tools.getRealKeyByDefine("relative",filepathTmp).trim();
                     filepathTmp=WabacusAssistant.getInstance().getRealFilePath(Config.webroot_abspath,filepathTmp);
                 }else
-                {//相对wabacus.cfg.xml的路径
+                {
                     filepathTmp=WabacusAssistant.getInstance().getRealFilePath(Config.configpath,filepathTmp);
                     if(Tools.isDefineKey("classpath",Config.configpath))
                     {
@@ -1474,7 +1503,7 @@ public class ConfigLoadManager
 
     private static void loadContainerTypesConfig(Element root)
     {
-        Element eleContainertypes=XmlAssistant.getInstance().getSingleElementByName(root,"container-types");
+        Element eleContainertypes=XmlAssistant.getInstance().getSingleElementByName(root,"container-types");//root.element("pagetypes");
         if(eleContainertypes==null)  return;
         List lstContainertypes=eleContainertypes.elements("container-type");
         if(lstContainertypes==null||lstContainertypes.size()<=0) return;
@@ -1586,7 +1615,7 @@ public class ConfigLoadManager
             
             
             
-            //                } catch (UnsupportedEncodingException e)
+            
             
             
             

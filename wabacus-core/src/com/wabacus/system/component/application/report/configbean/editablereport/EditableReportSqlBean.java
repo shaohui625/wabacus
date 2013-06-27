@@ -22,10 +22,7 @@ import java.util.List;
 
 import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SubmitFunctionParamBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
-import com.wabacus.system.ReportRequest;
-import com.wabacus.system.assistant.JavaScriptAssistant;
 
 public final class EditableReportSqlBean extends AbsExtendConfigBean implements IEditableReportEditGroupOwnerBean
 {
@@ -46,14 +43,6 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean implements 
     private List<String> lstDeleteBindingReportIds;
     
     private List<ReportBean> lstDeleteBindingReportBeans;
-    
-    private String validateSaveAddingMethod;//保存添加记录时的JS校验方法名，只对editabledetail/form两种报表类型有效
-    
-    private String validateSaveUpdateMethod;//保存修改记录时的JS校验方法名，对所有可编辑报表类型都有效。对于editablelist2/listform的添加和修改保存都有效，因为它们合在一起保存
-    
-    private List<SubmitFunctionParamBean> lstValidateSavingAddDynParams;//校验添加记录时所需的动态参数,只对editabledetail/form两种报表类型有效
-    
-    private List<SubmitFunctionParamBean> lstValidateSavingUpdateDynParams;//校验修改记录时所需的动态参数。对于editablelist2/listform的添加和修改保存都有效，因为它们合在一起保存
     
     public EditableReportSqlBean(AbsConfigBean owner)
     {
@@ -158,73 +147,9 @@ public final class EditableReportSqlBean extends AbsExtendConfigBean implements 
         this.afterSaveAction=afterSaveAction;
     }
 
-    public String getValidateSaveAddingMethod()
-    {
-        return validateSaveAddingMethod;
-    }
-
-    public void setValidateSaveAddingMethod(String validateSaveAddingMethod)
-    {
-        this.validateSaveAddingMethod=validateSaveAddingMethod;
-    }
-
-    public String getValidateSaveUpdateMethod()
-    {
-        return validateSaveUpdateMethod;
-    }
-
-    public void setValidateSaveUpdateMethod(String validateSaveUpdateMethod)
-    {
-        this.validateSaveUpdateMethod=validateSaveUpdateMethod;
-    }
-
-    public List<SubmitFunctionParamBean> getLstValidateSavingAddDynParams()
-    {
-        return lstValidateSavingAddDynParams;
-    }
-
-    public void setLstValidateSavingAddDynParams(List<SubmitFunctionParamBean> lstValidateSavingAddDynParams)
-    {
-        this.lstValidateSavingAddDynParams=lstValidateSavingAddDynParams;
-    }
-
-    public List<SubmitFunctionParamBean> getLstValidateSavingUpdateDynParams()
-    {
-        return lstValidateSavingUpdateDynParams;
-    }
-
-    public void setLstValidateSavingUpdateDynParams(List<SubmitFunctionParamBean> lstValidateSavingUpdateDynParams)
-    {
-        this.lstValidateSavingUpdateDynParams=lstValidateSavingUpdateDynParams;
-    }
-
     public ReportBean getReportBean()
     {
         return this.getOwner().getReportBean();
-    }
-
-    public String getValidateSaveMethodAndParams(ReportRequest rrequest,boolean isSaveAdd)
-    {
-        String validateSaveMethod=null;
-        List<SubmitFunctionParamBean> lstValidateSavingDynParams=null;
-        if(isSaveAdd)
-        {
-            validateSaveMethod=validateSaveAddingMethod;
-            lstValidateSavingDynParams=lstValidateSavingAddDynParams;
-        }else
-        {
-            validateSaveMethod=validateSaveUpdateMethod;
-            lstValidateSavingDynParams=lstValidateSavingUpdateDynParams;
-        }
-        if(validateSaveMethod==null||validateSaveMethod.trim().equals("")) return "";
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append(" validateSaveMethod=\"{method:").append(validateSaveMethod.trim()).append("}\"");
-        if(lstValidateSavingDynParams!=null&&lstValidateSavingDynParams.size()>0)
-        {
-            resultBuf.append(" validateSaveMethodDynParams=\"").append(
-                    JavaScriptAssistant.getInstance().getRuntimeParamsValueJsonString(rrequest,lstValidateSavingDynParams)).append("\"");
-        }
-        return resultBuf.toString();
     }
     
     public String getBeforeSaveActionString(String actiontype)

@@ -22,24 +22,27 @@ import java.util.List;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
+import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ComponentAssistant;
-import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.system.component.container.AbsContainerType;
-import com.wabacus.system.intercept.ColDataByInterceptor;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
 public abstract class AbsDetailReportType extends AbsReportType
 {
+    public final static String KEY=AbsDetailReportType.class.getName();
+    
     public AbsDetailReportType(AbsContainerType parentContainerType,IComponentConfigBean comCfgBean,ReportRequest rrequest)
     {
         super(parentContainerType,comCfgBean,rrequest);
@@ -62,20 +65,22 @@ public abstract class AbsDetailReportType extends AbsReportType
         return ComponentAssistant.getInstance().showComponentScrollEndPart(isShowScrollX,isShowScrollY);
     }
 
-    public String showColLabel(ColBean cbean)
+    protected String showColLabel(ColBean cbean,AbsReportDataPojo rowDataObj)
     {
-        if(cbean.getLabel()==null) return "";//<col/>的label没有配置时，不为它显示标题列
+        String label=cbean.getLabel(rrequest);
+        if(label==null||ColBean.NON_LABEL.equals(label)) return "";//<col/>的label没有配置时，不为它显示标题列
         StringBuffer resultBuf=new StringBuffer();
-        ColDataByInterceptor coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,-1,cbean.getLabel());
-        String label=ReportAssistant.getInstance().getColGroupLabel(rrequest,cbean.getLabel(),coldataByInterceptor);
-        resultBuf.append("<td class='cls-data-th-detail' ");
+        String labelstyleproperty=this.getColLabelStyleproperty(cbean,rowDataObj);
+        ColDisplayData colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,null,-1,labelstyleproperty,label);
+        label=colDisplayData.getValue();
+        resultBuf.append("<td class='cls-data-th-detail'");
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE)
         {
             String dataheaderbgcolor=Config.getInstance().getSkinConfigValue(rrequest.getPageskin(),"table.dataheader.bgcolor");
             if(dataheaderbgcolor==null) dataheaderbgcolor="";
             resultBuf.append(" bgcolor='"+dataheaderbgcolor+"'");
         }
-        resultBuf.append(getColGroupStyleproperty(cbean.getLabelstyleproperty(rrequest),coldataByInterceptor));
+        resultBuf.append(" ").append(colDisplayData.getStyleproperty());
         if(label.equals("")) label="&nbsp;";
         resultBuf.append(">"+label+"</td>");
         return resultBuf.toString();
@@ -130,8 +135,8 @@ public abstract class AbsDetailReportType extends AbsReportType
                 String borderstyle=cbean.getBorderStylePropertyOnColBean();
                 if(borderstyle!=null&&!borderstyle.trim().equals(""))
                 {
-                    cbean.setValuestyleproperty(Tools.mergeHtmlTagPropertyString(cbean.getValuestyleproperty(),"style=\""+borderstyle+"\"",1));
-                    cbean.setLabelstyleproperty(Tools.mergeHtmlTagPropertyString(cbean.getLabelstyleproperty(),"style=\""+borderstyle+"\"",1));
+                    cbean.setValuestyleproperty(Tools.mergeHtmlTagPropertyString(cbean.getValuestyleproperty(null,true),"style=\""+borderstyle+"\"",1),true);
+                    cbean.setLabelstyleproperty(Tools.mergeHtmlTagPropertyString(cbean.getLabelstyleproperty(null,true),"style=\""+borderstyle+"\"",1),true);
                 }
             }
         }
@@ -147,12 +152,15 @@ public abstract class AbsDetailReportType extends AbsReportType
     private void constructSqlForDetailType(SqlBean sqlbean)
     {
         if(sqlbean==null||sqlbean.getLstDatasetBeans()==null) return;
-        for(ReportDataSetBean svbeanTmp:sqlbean.getLstDatasetBeans())
+        for(ReportDataSetBean dsbeanTmp:sqlbean.getLstDatasetBeans())
         {
-            String value=svbeanTmp.getValue();
-            if(value==null||value.trim().equals("")||svbeanTmp.isStoreProcedure()||svbeanTmp.getCustomizeDatasetObj()!=null) continue;
-            svbeanTmp.doPostLoadSql(false);
-            if(svbeanTmp.isIndependentDataSet()) svbeanTmp.buildPageSplitSql();
+            for(ReportDataSetValueBean dsvbeanTmp:dsbeanTmp.getLstValueBeans())
+            {
+                String value=dsvbeanTmp.getValue();
+                if(value==null||value.trim().equals("")||dsvbeanTmp.isStoreProcedure()||dsvbeanTmp.getCustomizeDatasetObj()!=null) continue;
+                dsvbeanTmp.doPostLoadSql(false);
+                if(!dsvbeanTmp.isDependentDataSet()) dsvbeanTmp.buildPageSplitSql();
+            }
         }
     }
     

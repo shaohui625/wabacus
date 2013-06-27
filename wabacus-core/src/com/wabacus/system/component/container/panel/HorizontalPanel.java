@@ -72,19 +72,19 @@ public class HorizontalPanel extends AbsPanelType
 
 
 //        /**
-//         * 挑出本次要显示的所有子组件
+
 //         */
 
 
 
 
-
+//            cdbeanTmp=new ChildDisplayBean();
 
 
 
 
 //        {//如果只有一个要显示的元素，则只要在子组件本身的<table/>中控制宽度即可，不需在当前容器对应<td/>中指定宽度
-//            IComponentConfigBean childCcbeanTmp=lstChildrenDisplayBeans.get(0).getChildConfigBean();
+
 
 
 
@@ -107,12 +107,12 @@ public class HorizontalPanel extends AbsPanelType
 
 
 
-//            }else
 
 
 
 
 
+//            if(childWidthArrTmp==null||childWidthArrTmp[0].equals("0"))
 //            {//没有配置width，或配置的width无效
 //                isAllSetWidthInParentTd=false;//最后一个子组件前面的子组件存在没有配置width的
 
@@ -120,7 +120,7 @@ public class HorizontalPanel extends AbsPanelType
 
 
 //            {//如果配置宽度大于等于100%，则不在<td/>中控制它的宽度，因为这样没有意义
-//                isAllSetWidthInParentTd=false;
+
 
 
 
@@ -232,7 +232,7 @@ public class HorizontalPanel extends AbsPanelType
      * 比如传入"30px" 得到30等。
      * @param size
      * @return
-     *//*
+     *
     private int getRealIntSizeByString(String size)
     {
         if(size==null||size.trim().equals("")) return 0;

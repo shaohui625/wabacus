@@ -18,6 +18,9 @@
  */
 package com.wabacus.system.component.application.report.configbean.editablereport;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -29,10 +32,13 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
-import com.wabacus.system.IConnection;
+import com.wabacus.config.database.type.Oracle;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
+import com.wabacus.system.buttons.EditableReportSQLButtonDataBean;
+import com.wabacus.system.datatype.BlobType;
+import com.wabacus.system.datatype.ClobType;
 import com.wabacus.util.Tools;
 import com.wabacus.util.UUIDGenerator;
 
@@ -81,7 +87,7 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
         this.returnValueParamname=returnValueParamname;
     }
 
-    public String parseAndRemoveReturnParamname(String configsql)
+    protected String parseAndRemoveReturnParamname(String configsql)
     {
         if(configsql==null||configsql.trim().equals("")) return configsql;
         int idx=configsql.indexOf("=");
@@ -118,11 +124,12 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
                 objResult=createParamBeanByColbean(Tools.getRealKeyByDefine("@",paramname),reportTypeKey,true,true);
             }else
             {
+                ((EditableReportSQLButtonDataBean)this.getOwnerGroupBean().getOwnerUpdateBean()).setHasReportDataParams(true);
                 paramBean.setParamname(paramname);
                 objResult=paramBean;
             }
-        }else if(Tools.isDefineKey("url",paramname)||Tools.isDefineKey("request",paramname)||Tools.isDefineKey("session",paramname)
-                ||Tools.isDefineKey("!",paramname)||paramname.equals("uuid{}"))
+        }else if(WabacusAssistant.getInstance().isGetRequestContextValue(paramname)
+                ||Tools.isDefineKey("!",paramname)||paramname.equals("uuid{}")||Tools.isDefineKey("increment",paramname))
         {
             paramBean.setParamname(paramname);
             objResult=paramBean;
@@ -143,11 +150,69 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
             Map<String,String> mParamValues) throws SQLException
     {
         AbsDatabaseType dbtype=rrequest.getDbType(this.ownerGroupBean.getDatasource());
-        IConnection conn = rrequest.getIConnection(this.ownerGroupBean.getDatasource());
-        dbtype.updateDBData(mRowData,mParamValues,conn,rbean,rrequest,this);
+        Connection conn=rrequest.getConnection(this.ownerGroupBean.getDatasource());
+        Oracle oracleType=null;
+        PreparedStatement pstmt=null;
+        try
+        {
+            if(Config.show_sql) log.info("Execute sql:"+sql);
+            pstmt=conn.prepareStatement(sql);
+            if(sql.trim().toLowerCase().startsWith("select ")&&(dbtype instanceof Oracle))
+            {
+                oracleType=(Oracle)dbtype;
+                if(lstParamBeans!=null&&lstParamBeans.size()>0)
+                {
+                    int colidx=1;
+                    for(EditableReportParamBean paramBean:lstParamBeans)
+                    {
+                        if((paramBean.getDataTypeObj() instanceof ClobType)||(paramBean.getDataTypeObj() instanceof BlobType)) continue;
+                        paramBean.getDataTypeObj().setPreparedStatementValue(colidx++,
+                                getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean),pstmt,dbtype);
+                    }
+                }
+                ResultSet rs=pstmt.executeQuery();
+                while(rs.next())
+                {
+                    if(lstParamBeans!=null&&lstParamBeans.size()>0)
+                    {
+                        int colidx=1;
+                        for(EditableReportParamBean paramBean:lstParamBeans)
+                        {
+                            if(!(paramBean.getDataTypeObj() instanceof ClobType)&&!(paramBean.getDataTypeObj() instanceof BlobType)) continue;
+                            String paramvalue=getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean);
+                            if(paramBean.getDataTypeObj() instanceof ClobType)
+                            {
+                                oracleType.setClobValueInSelectMode(paramvalue,(oracle.sql.CLOB)rs.getClob(colidx++));
+                            }else
+                            {
+                                oracleType.setBlobValueInSelectMode(paramBean.getDataTypeObj().label2value(paramvalue),(oracle.sql.BLOB)rs
+                                        .getBlob(colidx++));
+                            }
+                        }
+                    }
+                }
+                rs.close();
+            }else
+            {
+                if(lstParamBeans!=null&&lstParamBeans.size()>0)
+                {
+                    int idx=1;
+                    for(EditableReportParamBean paramBean:lstParamBeans)
+                    {
+                        paramBean.getDataTypeObj().setPreparedStatementValue(idx++,
+                                getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean),pstmt,dbtype);
+                    }
+                }
+                int rtnVal=pstmt.executeUpdate();
+                storeReturnValue(rrequest,mParamValues,String.valueOf(rtnVal));
+            }
+        }finally
+        {
+            WabacusAssistant.getInstance().release(null,pstmt);
+        }
     }
 
-    public String getParamValue(Map<String,String> mRowData,Map<String,String> mParamValues,ReportBean rbean,ReportRequest rrequest,
+    protected String getParamValue(Map<String,String> mRowData,Map<String,String> mParamValues,ReportBean rbean,ReportRequest rrequest,
             EditableReportParamBean paramBean)
     {
         String paramvalue=null;
@@ -158,7 +223,7 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
             {//当前变量是引用绑定保存的其它报表的<params/>中定义的某个变量值
                 paramvalue=getReferedOtherExternalValue(rbean,rrequest,paramBean,paramvalue);
             }else if(Tools.isDefineKey("@",paramvalue))
-            {//当前变量是引用绑定保存的其它报表中某列的数据
+            {
                 paramvalue=getExternalValueOfReferedCol(rbean,rrequest,paramBean,paramvalue);
             }else
             {*/
@@ -174,6 +239,9 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
         }else if("uuid{}".equals(paramBean.getParamname()))
         {
             paramvalue=UUIDGenerator.generateID();
+        }else if(Tools.isDefineKey("increment",paramBean.getParamname()))
+        {
+            paramvalue=EditableReportAssistant.getInstance().getAutoIncrementIdValue(rrequest,rbean,this.ownerGroupBean.getDatasource(),paramBean.getParamname());
         }else if(Tools.isDefineKey("!",paramBean.getParamname()))
         {
             String customizeParamName=Tools.getRealKeyByDefine("!",paramBean.getParamname());
@@ -185,14 +253,14 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
             {
                 paramvalue=mCustomizedValues.get(customizeParamName);
             }
-        }else if(Tools.isDefineKey("url",paramBean.getParamname())||Tools.isDefineKey("request",paramBean.getParamname())||Tools.isDefineKey("session",paramBean.getParamname()))
+        }else if(WabacusAssistant.getInstance().isGetRequestContextValue(paramBean.getParamname()))
         {
-            paramvalue=WabacusAssistant.getInstance().getRequestSessionValue(rrequest,paramBean.getParamname(),null);  
+            paramvalue=WabacusAssistant.getInstance().getRequestContextStringValue(rrequest,paramBean.getParamname(),null);  
         }
         return paramvalue;
     }
 
-    public void storeReturnValue(ReportRequest rrequest,Map<String,String> mExternalParamsValue,String rtnVal)
+    protected void storeReturnValue(ReportRequest rrequest,Map<String,String> mExternalParamsValue,String rtnVal)
     {
         if(this.returnValueParamname==null||this.returnValueParamname.trim().equals("")) return;
         if(Tools.isDefineKey("#",this.returnValueParamname))
@@ -210,7 +278,7 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
     /*private String getExternalValueOfReferedCol(ReportBean rbean,ReportRequest rrequest,EditableReportParamBean paramBean,String paramvalue)
     {
         ColBean referredColBean=(ColBean)((EditableReportExternalValueBean)paramBean.getOwner()).getRefObj();
-        String colParamname=referredColBean.getReportBean().getId()+referredColBean.getProperty();
+        String colParamname=referredColBean.getReportBean().getId()+referredColBean.getProperty();//被引用列对应的参数名
         if(paramvalue.indexOf(".insert.")>0)
         {
             List<Map<String,String>> lstInsertedCValues=rrequest.getLstInsertedData(referredColBean.getReportBean());
@@ -228,7 +296,7 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
             {
                 paramvalue=Tools.getRealKeyByDefine("@",paramvalue).trim();
                 if(paramvalue.endsWith(".old"))
-                {//当前变量是引用此列的旧数据
+                {
                     paramvalue=lstUpdatedCValues.get(0).get(colParamname+"_old");
                     if(paramvalue==null)
                     {
@@ -330,12 +398,12 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
         return paramvalue;
     }*/
     
-    public void setRealParamnamesInDoPostLoadFinally()
+    public void doPostLoadFinally()
     {
         if(lstParamBeans==null||lstParamBeans.size()==0) return;
         for(EditableReportParamBean paramBeanTmp:this.lstParamBeans)
         {
             this.ownerGroupBean.getOwnerUpdateBean().setRealParamnameInDoPostLoadFinally(paramBeanTmp);
         }
-    }    
+    }
 }

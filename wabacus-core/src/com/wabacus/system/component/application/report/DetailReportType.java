@@ -35,6 +35,7 @@ import com.itextpdf.text.Element;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadAssistant;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
@@ -45,12 +46,13 @@ import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.assistant.StandardExcelAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsDetailReportType;
+import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.system.component.application.report.configbean.DetailReportColBean;
 import com.wabacus.system.component.application.report.configbean.DetailReportColPositionBean;
 import com.wabacus.system.component.application.report.configbean.DetailReportDisplayBean;
 import com.wabacus.system.component.container.AbsContainerType;
-import com.wabacus.system.intercept.ColDataByInterceptor;
-import com.wabacus.system.intercept.RowDataByInterceptor;
+import com.wabacus.system.intercept.ReportDataBean;
+import com.wabacus.system.intercept.RowDataBean;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
@@ -64,7 +66,7 @@ public class DetailReportType extends AbsDetailReportType
     protected Map<String,DetailReportColPositionBean> mColPositions;
 
     protected DetailReportDisplayBean drdbean;
-    
+
     public DetailReportType(AbsContainerType parentContainerType,IComponentConfigBean comCfgBean,ReportRequest rrequest)
     {
         super(parentContainerType,comCfgBean,rrequest);
@@ -73,13 +75,13 @@ public class DetailReportType extends AbsDetailReportType
             drdbean=(DetailReportDisplayBean)((ReportBean)comCfgBean).getDbean().getExtendConfigDataForReportType(KEY);
         }
     }
-    
+
     protected void initReportAfterDoStart()
     {
         super.initReportAfterDoStart();
         if((cacheDataBean.getLstDynDisplayColids()!=null&&cacheDataBean.getLstDynDisplayColids().size()>0)
-                ||(cacheDataBean.getAttributes().get("authroize_col_display")!=null&&String.valueOf(cacheDataBean.getAttributes().get("authroize_col_display")).trim()
-                        .equals("false")))
+                ||(cacheDataBean.getAttributes().get("authroize_col_display")!=null&&String.valueOf(
+                        cacheDataBean.getAttributes().get("authroize_col_display")).trim().equals("false")))
         {
             mColPositions=calPosition(rbean.getDbean(),rbean.getDbean().getLstCols(),cacheDataBean.getLstDynDisplayColids());
             if(mColPositions==null||mColPositions.size()<=0) return;
@@ -105,68 +107,84 @@ public class DetailReportType extends AbsDetailReportType
         if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return "";
         if(mColPositions==null) return "";
         StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append(showReportScrollStartTag());
-        if(this.lstReportData==null||this.lstReportData.size()==0)
+        ReportDataBean reportDataObjFromInterceptor=null;
+        if(rbean.getInterceptor()!=null)
         {
-            resultBuf.append(showReportTablePropsForCommon()).append(">");
-            String trstylepropertyTmp=null;
-            if(this.rbean.getInterceptor()!=null)
+            reportDataObjFromInterceptor=new ReportDataBean(this,rbean.getDbean().getLstCols());
+            rbean.getInterceptor().beforeDisplayReportData(rrequest,rbean,reportDataObjFromInterceptor);
+        }
+        if(reportDataObjFromInterceptor!=null&&reportDataObjFromInterceptor.getBeforeDisplayString()!=null)
+        {
+            resultBuf.append(reportDataObjFromInterceptor.getBeforeDisplayString());
+        }
+        if(reportDataObjFromInterceptor==null||reportDataObjFromInterceptor.isShouldDisplayReportData())
+        {
+            resultBuf.append(showReportScrollStartTag());
+            if(this.lstReportData==null||this.lstReportData.size()==0)
             {
-                RowDataByInterceptor rowdataObjTmp=this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this,rrequest,0,1,rbean.getDbean().getLstCols());
-                if(rowdataObjTmp!=null)
+                resultBuf.append(showReportTablePropsForCommon()).append(">");
+                String trstylepropertyTmp=this.rbean.getDbean().getValuestyleproperty(rrequest,false);
+                if(this.rbean.getInterceptor()!=null)
                 {
+                    RowDataBean rowdataObjTmp=new RowDataBean(this,trstylepropertyTmp,rbean.getDbean().getLstCols(),null,0,1);
+                    this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this.rrequest,this.rbean,rowdataObjTmp);
                     if(rowdataObjTmp.getInsertDisplayRowHtml()!=null) resultBuf.append(rowdataObjTmp.getInsertDisplayRowHtml());
-                    trstylepropertyTmp=rowdataObjTmp.getDynTrStyleproperty();
+                    trstylepropertyTmp=rowdataObjTmp.getRowstyleproperty();
                     if(!rowdataObjTmp.isShouldDisplayThisRow()) return resultBuf.toString();
                 }
-            }
-            if(trstylepropertyTmp==null) trstylepropertyTmp="";
-            resultBuf.append("<tr "+trstylepropertyTmp+">");
-            resultBuf.append("<td bgcolor='#ffffff'>");
-            if(this.isLazyDataLoad()&&rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
-            {
-                resultBuf.append(rrequest.getStringAttribute(rbean.getId()+"_lazyloadmessage",""));
-            }else
-            {
-                resultBuf.append(rrequest.getI18NStringValue((Config.getInstance().getResources().getString(rrequest,rbean.getPageBean(),
-                        Consts.NODATA_PROMPT_KEY,true))));
-            }
-            resultBuf.append("</td></tr>");
-            if(this.rbean.getInterceptor()!=null)
-            {
-                RowDataByInterceptor rowdataObjTmp=this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this,rrequest,Integer.MAX_VALUE,1,
-                        rbean.getDbean().getLstCols());
-                if(rowdataObjTmp!=null&&rowdataObjTmp.getInsertDisplayRowHtml()!=null)
+                if(trstylepropertyTmp==null) trstylepropertyTmp="";
+                resultBuf.append("<tr "+trstylepropertyTmp+">");
+                resultBuf.append("<td bgcolor='#ffffff'>");
+                if(this.isLazyDataLoad()&&rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
                 {
-                    resultBuf.append(rowdataObjTmp.getInsertDisplayRowHtml());
+                    resultBuf.append(rrequest.getStringAttribute(rbean.getId()+"_lazyloadmessage",""));
+                }else
+                {
+                    resultBuf.append(rrequest.getI18NStringValue((Config.getInstance().getResources().getString(rrequest,rbean.getPageBean(),
+                            Consts.NODATA_PROMPT_KEY,true))));
                 }
-            }
-            resultBuf.append("</table>");
-        }else
-        {
-            if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT
-                    ||!this.cacheDataBean.shouldBatchDataExport())
-            {
-                showReportDataPart(resultBuf);
-            }else
-            {
-                for(int i=0;i<this.cacheDataBean.getPagecount();i++)
+                resultBuf.append("</td></tr>");
+                if(this.rbean.getInterceptor()!=null)
                 {
-                    if(i!=0)
+                    RowDataBean rowdataObjTmp=new RowDataBean(this,this.rbean.getDbean().getValuestyleproperty(rrequest,false),rbean.getDbean()
+                            .getLstCols(),null,Integer.MAX_VALUE,1);
+                    this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this.rrequest,this.rbean,rowdataObjTmp);
+                    if(rowdataObjTmp.getInsertDisplayRowHtml()!=null)
                     {
-                        this.cacheDataBean.setPageno(i+1);
-                        this.cacheDataBean.setRefreshNavigateInfoType(1);//不需要再计算页码之类
-                        this.setHasLoadedDataFlag(false);
-                        loadReportData(true);
+                        resultBuf.append(rowdataObjTmp.getInsertDisplayRowHtml());
                     }
+                }
+                resultBuf.append("</table>");
+            }else
+            {
+                if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT
+                        ||!this.cacheDataBean.shouldBatchDataExport())
+                {
                     showReportDataPart(resultBuf);
+                }else
+                {
+                    for(int i=0;i<this.cacheDataBean.getPagecount();i++)
+                    {
+                        if(i!=0)
+                        {
+                            this.cacheDataBean.setPageno(i+1);
+                            this.cacheDataBean.setRefreshNavigateInfoType(1);
+                            this.setHasLoadedDataFlag(false);
+                            loadReportData(true);
+                        }
+                        showReportDataPart(resultBuf);
+                    }
                 }
             }
+            resultBuf.append(showReportScrollEndTag());
         }
-        resultBuf.append(showReportScrollEndTag());
+        if(reportDataObjFromInterceptor!=null&&reportDataObjFromInterceptor.getAfterDisplayString()!=null)
+        {
+            resultBuf.append(reportDataObjFromInterceptor.getAfterDisplayString());
+        }
         return resultBuf.toString();
     }
-    
+
     private void showReportDataPart(StringBuffer resultBuf)
     {
         int[] displayrowinfo=this.getDisplayRowInfo();
@@ -174,21 +192,23 @@ public class DetailReportType extends AbsDetailReportType
         int totalcolcnt=getTotalColCount();
         if(totalcolcnt<=0) return;
         int rowidx=0;
-        Object dataObj,colDataObj;
+        AbsReportDataPojo rowDataObjTmp;
+        Object colDataObj;
+        RowDataBean rowdataObjTmp=null;
         for(int i=displayrowinfo[0];i<displayrowinfo[1];i++)
         {
             resultBuf.append(showReportTablePropsForCommon()).append(">");
-            dataObj=this.lstReportData.get(i);
+            rowDataObjTmp=this.lstReportData.get(i);
             DetailReportColBean drcbeanTmp=null;
             String valueTdContent;
             StringBuffer tdPropsBuf;
             DetailReportColPositionBean colPositionBeanTmp;
-//            boolean hasDisplayColInThisRow=false;//当前行中是否有显示列（还是所有列都不参与本次显示）
+            //            boolean hasDisplayColInThisRow=false;//当前行中是否有显示列（还是所有列都不参与本次显示）
             StringBuffer trBuf=new StringBuffer();
             List<ColBean> lstColsInThisTr=new ArrayList<ColBean>();//临时存放当前行显示的所有<col/>的配置信息
             for(ColBean cbean:rbean.getDbean().getLstCols())
             {
-                colDataObj=initDisplayCol(cbean,dataObj);
+                colDataObj=initDisplayCol(cbean,rowDataObjTmp);
                 if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype()))
                 {
                     if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE) trBuf.append(showHiddenCol(cbean,colDataObj));
@@ -197,39 +217,37 @@ public class DetailReportType extends AbsDetailReportType
                 colPositionBeanTmp=mColPositions.get(cbean.getColid());
                 if(colPositionBeanTmp.getDisplaymode()>0)
                 {
-
-                    trBuf.append(showColLabel(cbean));
+                //                    hasDisplayColInThisRow=true;
+                    trBuf.append(showColLabel(cbean,rowDataObjTmp));
                     lstColsInThisTr.add(cbean);
                 }
                 if((rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE||colPositionBeanTmp.getDisplaymode()>0)&&!cbean.isNonValueCol())
                 {
                     trBuf.append("<td class=\""+getDataTdClassName()+"\"");
                     tdPropsBuf=new StringBuffer();
-                    valueTdContent=getColValueTdPropertiesAndContent(cbean,dataObj,colDataObj,tdPropsBuf);//获取此列<td/>的属性及显示内容
+                    valueTdContent=getColValueTdPropertiesAndContent(cbean,rowDataObjTmp,colDataObj,tdPropsBuf);//获取此列<td/>的属性及显示内容
                     trBuf.append(" ").append(tdPropsBuf.toString()).append(">");
                     trBuf.append(valueTdContent);
                     trBuf.append("</td>");
                 }
                 drcbeanTmp=(DetailReportColBean)cbean.getExtendConfigDataForReportType(DetailReportType.KEY);
-
+                
                 if(drcbeanTmp.isBr()&&trBuf.length()>0)
                 {
-//                    hasDisplayColInThisRow=false;//新启一行，所以重置新行的此变量值
-                    String trstyleproperty=null;
+                    //                    hasDisplayColInThisRow=false;//新启一行，所以重置新行的此变量值
+                    String trstyleproperty=rowDataObjTmp.getRowValuestyleproperty();
                     if(this.rbean.getInterceptor()!=null)
                     {
-                        RowDataByInterceptor rowdataObj=this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this,rrequest,rowidx,totalcolcnt,lstColsInThisTr);
-                        if(rowdataObj!=null)
+                        rowdataObjTmp=new RowDataBean(this,trstyleproperty,lstColsInThisTr,rowDataObjTmp,rowidx,totalcolcnt);
+                        this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this.rrequest,this.rbean,rowdataObjTmp);
+                        if(rowdataObjTmp.getInsertDisplayRowHtml()!=null) resultBuf.append(rowdataObjTmp.getInsertDisplayRowHtml());
+                        if(!rowdataObjTmp.isShouldDisplayThisRow())
                         {
-                            if(rowdataObj.getInsertDisplayRowHtml()!=null) resultBuf.append(rowdataObj.getInsertDisplayRowHtml());
-                            if(!rowdataObj.isShouldDisplayThisRow())
-                            {
-                                trBuf=new StringBuffer();
-                                lstColsInThisTr=new ArrayList<ColBean>();
-                                continue;
-                            }
-                            trstyleproperty=rowdataObj.getDynTrStyleproperty();
+                            trBuf=new StringBuffer();
+                            lstColsInThisTr=new ArrayList<ColBean>();
+                            continue;
                         }
+                        trstyleproperty=rowdataObjTmp.getRowstyleproperty();
                     }
                     if(trstyleproperty==null) trstyleproperty="";
                     resultBuf.append("<tr ").append(trstyleproperty).append(">");
@@ -239,24 +257,21 @@ public class DetailReportType extends AbsDetailReportType
                     rowidx++;
                 }
             }
-
+            
             if(trBuf.length()>0)
-            {//最后一行还没有显示
+            {
                 String trstyleproperty=null;
                 if(this.rbean.getInterceptor()!=null)
                 {
-                    RowDataByInterceptor rowdataObj=this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this,rrequest,rowidx,totalcolcnt,
-                            lstColsInThisTr);
-                    if(rowdataObj!=null)
+                    rowdataObjTmp=new RowDataBean(this,rowDataObjTmp.getRowValuestyleproperty(),lstColsInThisTr,rowDataObjTmp,rowidx,totalcolcnt);
+                    this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this.rrequest,this.rbean,rowdataObjTmp);
+                    if(rowdataObjTmp.getInsertDisplayRowHtml()!=null) resultBuf.append(rowdataObjTmp.getInsertDisplayRowHtml());
+                    if(!rowdataObjTmp.isShouldDisplayThisRow())
                     {
-                        if(rowdataObj.getInsertDisplayRowHtml()!=null) resultBuf.append(rowdataObj.getInsertDisplayRowHtml());
-                        if(!rowdataObj.isShouldDisplayThisRow())
-                        {
-                            trBuf=null;
-                        }else
-                        {
-                            trstyleproperty=rowdataObj.getDynTrStyleproperty();
-                        }
+                        trBuf=null;
+                    }else
+                    {
+                        trstyleproperty=rowdataObjTmp.getRowstyleproperty();
                     }
                 }
                 if(trBuf!=null&&trBuf.length()>0)
@@ -268,9 +283,10 @@ public class DetailReportType extends AbsDetailReportType
             }
             if(this.rbean.getInterceptor()!=null)
             {
-                RowDataByInterceptor rowdataObjTmp=this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this,rrequest,Integer.MAX_VALUE,
-                        totalcolcnt,rbean.getDbean().getLstCols());
-                if(rowdataObjTmp!=null&&rowdataObjTmp.getInsertDisplayRowHtml()!=null)
+                rowdataObjTmp=new RowDataBean(this,this.rbean.getDbean().getValuestyleproperty(rrequest,false),rbean.getDbean().getLstCols(),rowDataObjTmp,
+                        Integer.MAX_VALUE,totalcolcnt);
+                this.rbean.getInterceptor().beforeDisplayReportDataPerRow(this.rrequest,this.rbean,rowdataObjTmp);
+                if(rowdataObjTmp.getInsertDisplayRowHtml()!=null)
                 {
                     resultBuf.append(rowdataObjTmp.getInsertDisplayRowHtml());
                 }
@@ -282,24 +298,24 @@ public class DetailReportType extends AbsDetailReportType
             }
         }
     }
-    
+
     protected String getDataTdClassName()
     {
         return "cls-data-td-detail";
     }
-    
-    protected Object initDisplayCol(ColBean cbean,Object dataObj)
+
+    protected Object initDisplayCol(ColBean cbean,AbsReportDataPojo dataObj)
     {
-        if(cbean.isNonValueCol()) return null;
-        return cbean.getDisplayValue(dataObj,rrequest);
+        if(cbean.isNonValueCol()||dataObj==null) return null;
+        return dataObj.getColStringValue(cbean);
     }
-    
+
     protected String showHiddenCol(ColBean cbean,Object colDataObj)
     {
         return "";
     }
 
-    protected String getColValueTdPropertiesAndContent(ColBean cbean,Object dataObj,Object colDataObj,StringBuffer tdPropsBuf)
+    protected String getColValueTdPropertiesAndContent(ColBean cbean,AbsReportDataPojo dataObj,Object colDataObj,StringBuffer tdPropsBuf)
     {
         if(mColPositions.get(cbean.getColid()).getDisplaymode()<=0)
         {
@@ -308,18 +324,14 @@ public class DetailReportType extends AbsDetailReportType
         }
         String col_displayvalue=(String)colDataObj;
         if(col_displayvalue==null) col_displayvalue="";
-        ColDataByInterceptor coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,0,col_displayvalue);
-        if(coldataByInterceptor!=null&&coldataByInterceptor.getDynvalue()!=null)
-        {
-            col_displayvalue=coldataByInterceptor.getDynvalue();
-        }
-        tdPropsBuf.append(getDetailTdValuestyleproperty(cbean,coldataByInterceptor));
-        return col_displayvalue;
+        ColDisplayData colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,dataObj,0,dataObj.getColValuestyleproperty(cbean.getProperty()),
+                col_displayvalue);
+        tdPropsBuf.append(getDetailTdValuestyleproperty(cbean,colDisplayData.getStyleproperty()));
+        return colDisplayData.getValue();
     }
-    
-    protected String getDetailTdValuestyleproperty(ColBean cbean,ColDataByInterceptor coldataByInterceptor)
+
+    protected String getDetailTdValuestyleproperty(ColBean cbean,String valuestyleproperty)
     {
-        String valuestyleproperty=cbean.getValuestyleproperty(rrequest);
         if(valuestyleproperty==null) valuestyleproperty="";
         DetailReportColPositionBean colPositionBean=mColPositions.get(cbean.getColid());
         valuestyleproperty=valuestyleproperty+" colspan='"+colPositionBean.getColspan()+"'";
@@ -335,9 +347,9 @@ public class DetailReportType extends AbsDetailReportType
             }
             if(widthTmp!=null&&!widthTmp.trim().equals("")) valuestyleproperty=valuestyleproperty+" width='"+widthTmp+"'";
         }
-        return getColGroupStyleproperty(valuestyleproperty,coldataByInterceptor);
+        return valuestyleproperty;
     }
-    
+
     protected String showReportTablePropsForCommon()
     {
         if(!rrequest.isDisplayOnPage()) return super.showReportTablePropsForNonOnPage();
@@ -354,13 +366,13 @@ public class DetailReportType extends AbsDetailReportType
         resultBuf.append("\"");
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
         {
-
-//            {//配置了横向滚动条
-
-
-
-
-
+            
+            //            {//配置了横向滚动条
+            
+            
+            
+            
+            
             resultBuf.append(" width=\""+getReportDataWidthOnPage()+"\"");
             if(rbean.shouldShowContextMenu())
             {
@@ -382,30 +394,27 @@ public class DetailReportType extends AbsDetailReportType
         if(mColPositions==null) return "";
         DetailReportColPositionBean colPositionBeanTmp=mColPositions.get(cbean.getColid());
         if(colPositionBeanTmp.getDisplaymode()<=0) return "";
+        int[] displayrowinfo=this.getDisplayRowInfo();
+        if(displayrowinfo[1]<=0) return "";
+        AbsReportDataPojo rowDataObj=this.lstReportData.get(displayrowinfo[0]);
+        ColDisplayData colDisplayData;
         if(showpart)
         {
             if(!showcontent) return "";
             if(cbean.isNonValueCol()) return "";
-            int[] displayrowinfo=this.getDisplayRowInfo();
-            if(displayrowinfo[1]<=0) return "";
-            String value=cbean.getDisplayValue(this.lstReportData.get(displayrowinfo[0]),rrequest);
+            String value=rowDataObj.getColStringValue(cbean);
             if(value==null) value="";
-            ColDataByInterceptor coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,0,value);
-            if(coldataByInterceptor!=null&&coldataByInterceptor.getDynvalue()!=null)
-            {//如果拦截器对象返回此列的动态数据
-                value=coldataByInterceptor.getDynvalue();
-            }
-            return value;//+showMetaData();//加上本报表要用的元数据，（因为showMetaData()方法自己会判断不重复显示，所以这里不用判断，直接调用即可）
+            colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,rowDataObj,0,rowDataObj.getColValuestyleproperty(cbean.getProperty()),value);
         }else
         {
-            String label=cbean.getLabel();
-            if(label==null) return "";
-            label=ReportAssistant.getInstance().getColGroupLabel(rrequest,label,ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,-1,label));
-            if(label.equals("")) label="&nbsp;";
-            return label;
+            String label=cbean.getLabel(rrequest);
+            if(ColBean.NON_LABEL.equals(label)) return "";
+            colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,null,-1,getColLabelStyleproperty(cbean,rowDataObj),label);
+            if(colDisplayData.getValue().equals("")) colDisplayData.setValue("&nbsp;");
         }
+        return colDisplayData.getValue();
     }
-    
+
     public void showReportOnPlainExcel(Workbook workbook)
     {
         if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return;
@@ -429,28 +438,28 @@ public class DetailReportType extends AbsDetailReportType
             }
         }
     }
-    
+
     private void showReportDataOnPlainExcel(Workbook workbook)
     {
         DisplayBean dbean=rbean.getDbean();
         if(lstReportData==null||lstReportData.size()==0)
         {
-            lstReportData=new ArrayList();
-            lstReportData.add(ReportAssistant.getInstance().getReportDataPojoInstance(rbean));
+            lstReportData=new ArrayList<AbsReportDataPojo>();
+            lstReportData.add(ReportAssistant.getInstance().getPojoClassInstance(rrequest,rbean,rbean.getPojoClassObj()));
         }
-        for(Object object:this.lstReportData)
+        for(AbsReportDataPojo rowDataObjTmp:this.lstReportData)
         {
             DetailReportColBean drcolbean=null;
-            ColDataByInterceptor coldataByInterceptor;
+            ColDisplayData colDisplayData;
             int startcolidx=0;
             int endcolidx=-1;
             if(sheetsize>0&&excelRowIdx>=sheetsize)
             {
                 createNewSheet(workbook,20);
             }
-            CellStyle titleCellStyle=StandardExcelAssistant.getInstance().getTitleCellStyleForStandardExcel(workbook);
+            CellStyle titleCellStyle=StandardExcelAssistant.getInstance().getTitleCellStyleForStandardExcel(workbook);//获取标题行的样式对象
             CellStyle dataCellStyle=StandardExcelAssistant.getInstance().getDataCellStyleForStandardExcel(workbook);
-            CellStyle dataCellStyleWithFormat=StandardExcelAssistant.getInstance().getDataCellStyleForStandardExcel(workbook);//获取带格式数据行的样式对象（比如日期类型都带格式）
+            CellStyle dataCellStyleWithFormat=StandardExcelAssistant.getInstance().getDataCellStyleForStandardExcel(workbook);
             Row dataRow=excelSheet.createRow(this.excelRowIdx);
             DetailReportColPositionBean colPositionBeanTmp;
             boolean hasDisplayColInThisRow=false;
@@ -466,7 +475,8 @@ public class DetailReportType extends AbsDetailReportType
                 if(colPositionBeanTmp.getDisplaymode()>0)
                 {
                     hasDisplayColInThisRow=true;
-                    if(cbean.getLabel()!=null)
+                    labelTmp=cbean.getLabel(rrequest);
+                    if(labelTmp!=null&&!ColBean.NON_LABEL.equals(labelTmp))
                     {//<col/>的label没有配置时，不为它显示标题列
                         String plainexceltitle=null;
                         if(this.pedebean!=null) plainexceltitle=this.pedebean.getPlainexceltitle();
@@ -478,8 +488,8 @@ public class DetailReportType extends AbsDetailReportType
                             labelTmp=cbean.getColumn();
                         }else
                         {
-                            coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,-1,cbean.getLabel());
-                            labelTmp=ReportAssistant.getInstance().getColGroupLabel(rrequest,cbean.getLabel(),coldataByInterceptor);
+                            colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,rowDataObjTmp,-1,null,cbean.getLabel(rrequest));
+                            labelTmp=colDisplayData.getValue();
                         }
                         colspan=drcolbean.getLabelcolspan();
                         if(colspan<=0) colspan=1;
@@ -501,7 +511,7 @@ public class DetailReportType extends AbsDetailReportType
                     }
                     if(!cbean.isNonValueCol())
                     {
-                        Object objvalueTmp=cbean.getRealTypeValue(object,rrequest);
+                        Object objvalueTmp=rowDataObjTmp.getColValue(cbean);
                         colspan=colPositionBeanTmp.getColspan();
                         if(colspan<=0) colspan=1;
                         startcolidx=endcolidx+1;
@@ -509,19 +519,20 @@ public class DetailReportType extends AbsDetailReportType
                         if(colspan==1)
                         {
                             cell=dataRow.createCell(endcolidx);
-                            boolean flag=StandardExcelAssistant.getInstance().setCellValue(workbook,cbean.getValuealign(),cell,objvalueTmp,cbean.getDatatypeObj(),dataCellStyleWithFormat);
+                            boolean flag=StandardExcelAssistant.getInstance().setCellValue(workbook,cbean.getValuealign(),cell,objvalueTmp,
+                                    cbean.getDatatypeObj(),dataCellStyleWithFormat);
                             if(!flag) cell.setCellStyle(StandardExcelAssistant.getInstance().setCellAlign(dataCellStyle,cbean.getValuealign()));
                         }else
                         {
                             region=new CellRangeAddress(excelRowIdx,excelRowIdx,startcolidx,endcolidx);
                             StandardExcelAssistant.getInstance().setRegionCellRealTypeValue(workbook,excelSheet,region,
-                                    StandardExcelAssistant.getInstance().setCellAlign(dataCellStyle,cbean.getValuealign()),dataCellStyleWithFormat,cbean.getValuealign(),objvalueTmp,
-                                    cbean.getDatatypeObj());
+                                    StandardExcelAssistant.getInstance().setCellAlign(dataCellStyle,cbean.getValuealign()),dataCellStyleWithFormat,
+                                    cbean.getValuealign(),objvalueTmp,cbean.getDatatypeObj());
                         }
                     }
                 }
                 if(drcolbean.isBr()&&hasDisplayColInThisRow)
-                {//当前行显示了列数据并且显示完此列后要换新行
+                {
                     hasDisplayColInThisRow=false;
                     dataRow=excelSheet.createRow(++excelRowIdx);
                     startcolidx=0;
@@ -543,7 +554,7 @@ public class DetailReportType extends AbsDetailReportType
         }else
         {
             for(int i=0;i<this.cacheDataBean.getPagecount();i++)
-            {
+            {//每一页就是一批
                 if(i!=0)
                 {
                     this.cacheDataBean.setPageno(i+1);
@@ -555,7 +566,7 @@ public class DetailReportType extends AbsDetailReportType
             }
         }
     }
-    
+
     protected int getTotalColCount()
     {
         int totalcolcount=0, colspan;
@@ -568,7 +579,7 @@ public class DetailReportType extends AbsDetailReportType
             colPositionBeanTmp=mColPositions.get(cbean.getColid());
             if(colPositionBeanTmp.getDisplaymode()>0)
             {
-                if(cbean.getLabel()!=null)
+                if(!ColBean.NON_LABEL.equals(cbean.getLabel(rrequest)))
                 {//<col/>的label没有配置时，不为它显示标题列
                     colspan=drcolbean.getLabelcolspan();
                     if(colspan<=0) colspan=1;
@@ -585,23 +596,23 @@ public class DetailReportType extends AbsDetailReportType
         }
         return totalcolcount;
     }
-    
+
     private void showReportDataOnPdf()
     {
         DisplayBean dbean=rbean.getDbean();
         if(lstReportData==null||lstReportData.size()==0)
         {
-            lstReportData=new ArrayList();
-            lstReportData.add(ReportAssistant.getInstance().getReportDataPojoInstance(rbean));
+            lstReportData=new ArrayList<AbsReportDataPojo>();
+            lstReportData.add(ReportAssistant.getInstance().getPojoClassInstance(rrequest,rbean,rbean.getPojoClassObj()));
         }
-        for(Object object:this.lstReportData)
+        for(AbsReportDataPojo rowDataObjTmp:this.lstReportData)
         {
             if(this.pdfpagesize>0&&this.pdfrowindex!=0&&this.pdfrowindex%this.pdfpagesize==0)
             {
                 this.createNewPdfPage();
             }
             DetailReportColBean drcolbean=null;
-            ColDataByInterceptor coldataByInterceptor;
+            ColDisplayData colDisplayData;
             DetailReportColPositionBean colPositionBeanTmp;
             int colspan;
             String labelTmp;
@@ -612,32 +623,28 @@ public class DetailReportType extends AbsDetailReportType
                 colPositionBeanTmp=mColPositions.get(cbean.getColid());
                 if(colPositionBeanTmp.getDisplaymode()>0)
                 {
-                    if(cbean.getLabel()!=null)
+                    labelTmp=cbean.getLabel(rrequest);
+                    if(labelTmp!=null&&!ColBean.NON_LABEL.equals(labelTmp))
                     {//<col/>的label没有配置时，不为它显示标题列
-                        coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,-1,cbean.getLabel());
-                        labelTmp=ReportAssistant.getInstance().getColGroupLabel(rrequest,cbean.getLabel(),coldataByInterceptor);
+                        colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,null,-1,null,labelTmp);
                         colspan=drcolbean.getLabelcolspan();
                         if(colspan<=0) colspan=1;
-                        addDataHeaderCell(cbean,labelTmp,1,colspan,this.getPdfCellAlign(cbean.getLabelalign(),Element.ALIGN_LEFT));
+                        addDataHeaderCell(cbean,colDisplayData.getValue(),1,colspan,this.getPdfCellAlign(cbean.getLabelalign(),Element.ALIGN_LEFT));
                     }
                     if(!cbean.isNonValueCol())
-                    {//此列有数据部分
-                        String valueTmp=cbean.getDisplayValue(object,rrequest);
-                        coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,this,cbean,this.pdfrowindex,valueTmp);
-                        if(coldataByInterceptor!=null&&coldataByInterceptor.getDynvalue()!=null)
-                        {
-                            valueTmp=coldataByInterceptor.getDynvalue();
-                        }
+                    {
+                        String valueTmp=rowDataObjTmp.getColStringValue(cbean);
+                        colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,rowDataObjTmp,this.pdfrowindex,null,valueTmp);
                         colspan=colPositionBeanTmp.getColspan();
                         if(colspan<=0) colspan=1;
-                        addDataCell(cbean,valueTmp,1,colspan,this.getPdfCellAlign(cbean.getValuealign(),Element.ALIGN_LEFT));
+                        addDataCell(cbean,colDisplayData.getValue(),1,colspan,this.getPdfCellAlign(cbean.getValuealign(),Element.ALIGN_LEFT));
                     }
                 }
             }
             this.pdfrowindex++;
         }
     }
-    
+
     public String getColSelectedMetadata()
     {
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
@@ -654,7 +661,8 @@ public class DetailReportType extends AbsDetailReportType
             if(cbeanTmp.isNonValueCol()) continue;
             positionBeanTmp=mColPositions.get(cbeanTmp.getColid());
             if(positionBeanTmp.getDisplaymode()<0) continue;
-            title=cbeanTmp.getLabel();
+            title=cbeanTmp.getLabel(rrequest);
+            if(ColBean.NON_LABEL.equals(title)) continue;
             title=title==null?"":title.replaceAll("<.*?\\>","").trim();
             resultBuf.append("<item nodeid=\"").append(cbeanTmp.getColid()).append("\"");
             resultBuf.append(" parentgroupid=\"\"");
@@ -670,7 +678,7 @@ public class DetailReportType extends AbsDetailReportType
         resultBuf.append("</span>");
         return resultBuf.toString();
     }
-    
+
     public int afterColLoading(ColBean colbean,List<XmlElementBean> lstEleColBeans)
     {
         super.afterColLoading(colbean,lstEleColBeans);
@@ -687,13 +695,15 @@ public class DetailReportType extends AbsDetailReportType
             drcolbean.setBr(true);
         }
         DetailReportDisplayBean drdbean=(DetailReportDisplayBean)colbean.getParent().getExtendConfigDataForReportType(KEY);
-        if(colbean.getLabel()==null)
+        String label=colbean.getLabel(null);
+        if(label==null||label.trim().equals(""))
         {
+            colbean.setLabel(ColBean.NON_LABEL);
             drcolbean.setLabelcolspan(0);
         }else
         {
             int ilabelcolspan=1;
-            String labelcolspan=Tools.getPropertyValueByName("colspan",colbean.getLabelstyleproperty(),true);
+            String labelcolspan=Tools.getPropertyValueByName("colspan",colbean.getLabelstyleproperty(null,true),true);
             if(labelcolspan!=null&&!labelcolspan.trim().equals(""))
             {
                 try
@@ -702,34 +712,38 @@ public class DetailReportType extends AbsDetailReportType
                 }catch(NumberFormatException e)
                 {
                     ilabelcolspan=1;
-                    log.warn("为报表"+colbean.getReportBean().getPath()+"的列"+colbean.getProperty()+"配置的labelstyleproperty中的colbean"+labelcolspan+"不是有效数字",e);
+                    log.warn("为报表"+colbean.getReportBean().getPath()+"的列"+colbean.getProperty()+"配置的labelstyleproperty中的colbean"+labelcolspan
+                            +"不是有效数字",e);
                 }
             }
+            if(ilabelcolspan<=0) ilabelcolspan=1;
             drcolbean.setLabelcolspan(ilabelcolspan);
-            if(ilabelcolspan<2&&Tools.getPropertyValueByName("width",colbean.getLabelstyleproperty(),true)==null)
+            if(ilabelcolspan<2&&Tools.getPropertyValueByName("width",colbean.getLabelstyleproperty(null,true),true)==null)
             {//只有ilabelcolspan值为1且没有在<col/>中通过labeltdproperty设置width时，才用<display/>中的labeltdwidth做为此标题列宽
                 String labeltdwidth=drdbean.getLabeltdwidth();
                 if(labeltdwidth!=null&&!labeltdwidth.trim().equals(""))
                 {
-                    colbean.setLabelstyleproperty(colbean.getLabelstyleproperty()+" width='"+labeltdwidth+"' ");
+                    colbean.setLabelstyleproperty(colbean.getLabelstyleproperty(null,true)+" width='"+labeltdwidth+"' ",true);
                 }
             }
             String labelbgcolor=drdbean.getLabelbgcolor();
-            if(labelbgcolor!=null&&!labelbgcolor.trim().equals("")&&Tools.getPropertyValueByName("bgcolor",colbean.getLabelstyleproperty(),true)==null)
+            if(labelbgcolor!=null&&!labelbgcolor.trim().equals("")
+                    &&Tools.getPropertyValueByName("bgcolor",colbean.getLabelstyleproperty(null,true),true)==null)
             {
-                colbean.setLabelstyleproperty(colbean.getLabelstyleproperty()+" bgcolor='"+labelbgcolor+"' ");
+                colbean.setLabelstyleproperty(colbean.getLabelstyleproperty(null,true)+" bgcolor='"+labelbgcolor+"' ",true);
             }
             String labelalign=drdbean.getLabelalign();
             if(labelalign!=null&&!labelalign.trim().equals("")&&(colbean.getLabelalign()==null||colbean.getLabelalign().trim().equals("")))
             {//如果没有在<col/>的labelstyleproperty中配置align，但在<display/>中配置了labelalign，则使用这里配置的labelalign
-                colbean.setLabelstyleproperty(colbean.getLabelstyleproperty()+" align='"+labelalign+"' ");
+                colbean.setLabelstyleproperty(colbean.getLabelstyleproperty(null,true)+" align='"+labelalign+"' ",true);
                 colbean.setLabelalign(labelalign.trim());
             }
-            String printlabelstyleproperty=colbean.getPrintlabelstyleproperty();
+            String printlabelstyleproperty=colbean.getPrintlabelstyleproperty(null,false);
             if(printlabelstyleproperty==null||printlabelstyleproperty.trim().equals(""))
             {
-                printlabelstyleproperty=colbean.getLabelstyleproperty();
+                colbean.setPrintlabelstyleproperty(colbean.getLabelstyleproperty(null,false),false);
             }
+            printlabelstyleproperty=colbean.getPrintlabelstyleproperty(null,true);
             if(printlabelstyleproperty==null) printlabelstyleproperty="";
             String printlabelwidth=drdbean.getPrintlabelwidth();
             if(printlabelwidth!=null&&!printlabelwidth.trim().equals("")&&drcolbean.getLabelcolspan()<2)
@@ -737,16 +751,16 @@ public class DetailReportType extends AbsDetailReportType
                 printlabelstyleproperty=Tools.removePropertyValueByName("width",printlabelstyleproperty);
                 printlabelstyleproperty=printlabelstyleproperty+" width=\""+printlabelwidth+"\"";
             }
-            colbean.setPrintlabelstyleproperty(printlabelstyleproperty);
+            colbean.setPrintlabelstyleproperty(printlabelstyleproperty,true);
         }
-        
+
         if(colbean.isNonValueCol())
         {
             drcolbean.setValuecolspan(0);
         }else
         {
             int ivaluecolspan=1;
-            String valuecolspan=Tools.getPropertyValueByName("colspan",colbean.getValuestyleproperty(),true);
+            String valuecolspan=Tools.getPropertyValueByName("colspan",colbean.getValuestyleproperty(null,true),true);
             if(valuecolspan!=null&&!valuecolspan.trim().equals(""))
             {
                 try
@@ -755,53 +769,55 @@ public class DetailReportType extends AbsDetailReportType
                 }catch(NumberFormatException e)
                 {
                     ivaluecolspan=1;
-                    log.warn("为报表"+colbean.getReportBean().getPath()+"的列"+colbean.getProperty()+"配置的valuestyleproperty中的colbean"+valuecolspan+"不是有效数字",e);
+                    log.warn("为报表"+colbean.getReportBean().getPath()+"的列"+colbean.getProperty()+"配置的valuestyleproperty中的colbean"+valuecolspan
+                            +"不是有效数字",e);
                 }
-                colbean.setValuestyleproperty(Tools.removePropertyValueByName("colspan",colbean.getValuestyleproperty()));
+                colbean.setValuestyleproperty(Tools.removePropertyValueByName("colspan",colbean.getValuestyleproperty(null,true)),true);//因为列数据占据的colspan值是动态的，可能因为授权和列选择而改变，所以这里去掉，在运行时动态加
             }
             drcolbean.setValuecolspan(ivaluecolspan);
             String valuebgcolor=drdbean.getValuebgcolor();
-            if(Tools.getPropertyValueByName("bgcolor",colbean.getValuestyleproperty(),true)==null)
+            if(Tools.getPropertyValueByName("bgcolor",colbean.getValuestyleproperty(null,true),true)==null)
             {
                 if(valuebgcolor!=null&&!valuebgcolor.trim().equals(""))
                 {
-                    colbean.setValuestyleproperty(colbean.getValuestyleproperty()+" bgcolor='"+valuebgcolor+"' ");
+                    colbean.setValuestyleproperty(colbean.getValuestyleproperty(null,true)+" bgcolor='"+valuebgcolor+"' ",true);
                 }else
                 {
-                    colbean.setValuestyleproperty(colbean.getValuestyleproperty()+" bgcolor='#ffffff' ");
+                    colbean.setValuestyleproperty(colbean.getValuestyleproperty(null,true)+" bgcolor='#ffffff' ",true);
                 }
             }
             String valuealign=drdbean.getValuealign();
             if(valuealign!=null&&!valuealign.trim().equals("")&&(colbean.getValuealign()==null||colbean.getValuealign().trim().equals("")))
             {//如果没有在<col/>的valuestyleproperty中配置algin，但在<display/>中配置了valuealign，则使用这里配置的valuealign
-                colbean.setValuestyleproperty(colbean.getValuestyleproperty()+"align='"+valuealign+"' ");
+                colbean.setValuestyleproperty(colbean.getValuestyleproperty(null,true)+"align='"+valuealign+"' ",true);
                 colbean.setValuealign(valuealign.trim());
             }
-            String printvaluestyleproperty=colbean.getPrintvaluestyleproperty();
+            String printvaluestyleproperty=colbean.getPrintvaluestyleproperty(null,false);
             if(printvaluestyleproperty==null||printvaluestyleproperty.trim().equals(""))
             {
-                printvaluestyleproperty=colbean.getValuestyleproperty();
-            }else
-            {
-                printvaluestyleproperty=Tools.removePropertyValueByName("colspan",printvaluestyleproperty);
+                colbean.setPrintvaluestyleproperty(colbean.getValuestyleproperty(null,false),false);
             }
-
-//            String printvaluewidth=drdbean.getPrintvaluewidth();
-
-//            {//在<display/>的printvaluewidth配置值优先级更高
-
-
-
-            colbean.setPrintvaluestyleproperty(printvaluestyleproperty);
+            printvaluestyleproperty=colbean.getPrintvaluestyleproperty(null,true);
+            printvaluestyleproperty=Tools.removePropertyValueByName("colspan",printvaluestyleproperty);
+            colbean.setPrintvaluestyleproperty(printvaluestyleproperty,true);
         }
         return 1;
+    }
+    
+    protected boolean isHiddenCol(ColBean cbean)
+    {
+        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) return true;
+        DetailReportColPositionBean colPositionBeanTmp=mColPositions.get(cbean.getColid());
+        return colPositionBeanTmp!=null&&colPositionBeanTmp.getDisplaymode()<=0;
     }
 
     public int beforeDisplayLoading(DisplayBean disbean,List<XmlElementBean> lstEleDisplayBeans)
     {
         super.beforeDisplayLoading(disbean,lstEleDisplayBeans);
-        Map<String,String> mJoinedAttributes=ConfigLoadAssistant.getInstance().assembleAllAttributes(lstEleDisplayBeans,
-                new String[] { "labeltdwidth", "valuetdwidth", "labelbgcolor", "valuebgcolor", "labelalign", "valuealign","printlabelwidth","printvaluewidth" });
+        Map<String,String> mJoinedAttributes=ConfigLoadAssistant.getInstance().assembleAllAttributes(
+                lstEleDisplayBeans,
+                new String[] { "labeltdwidth", "valuetdwidth", "labelbgcolor", "valuebgcolor", "labelalign", "valuealign", "printlabelwidth",
+                        "printvaluewidth" });
         String labeltdwidth=mJoinedAttributes.get("labeltdwidth");
         String valuetdwidth=mJoinedAttributes.get("valuetdwidth");
         String labelbgcolor=mJoinedAttributes.get("labelbgcolor");
@@ -880,8 +896,8 @@ public class DetailReportType extends AbsDetailReportType
         return mPositions;
     }
 
-    private int calPositionStart(DisplayBean disbean,List<ColBean> lstColBeans,List<String> lstDisplayColIds,Map<String,DetailReportColPositionBean> mPositions,
-            List<List<DetailReportColPositionBean>> lstDisplayColsPositions)
+    private int calPositionStart(DisplayBean disbean,List<ColBean> lstColBeans,List<String> lstDisplayColIds,
+            Map<String,DetailReportColPositionBean> mPositions,List<List<DetailReportColPositionBean>> lstDisplayColsPositions)
     {
         int maxcolspan=0;
         int currentRowColspan=0;
@@ -901,7 +917,7 @@ public class DetailReportType extends AbsDetailReportType
                 lstPositionBeans.add(positionBeanTmp);
             }
             if(drcolbeanTmp!=null&&drcolbeanTmp.isBr())
-            {//显示完当前列后进行分行显示
+            {
                 if(currentRowColspan>maxcolspan) maxcolspan=currentRowColspan;
                 currentRowColspan=0;
                 if(lstPositionBeans.size()>0)
@@ -939,10 +955,10 @@ public class DetailReportType extends AbsDetailReportType
                 {
                     currentRowColspan+=drcolbeanTmp.getLabelcolspan();
                     if(rrequest!=null||disbean.isColselect())
-                    {
+                    {//如果是在运行时计算位置，说明是用户在列选择或授权某列不显示时重新计算各列的位置，此时保持每行的colspan一致。
                         positionBeanTmp.setColspan(maxcolspan-currentRowColspan);
                     }else
-                    {//如果不提供列选择功能，则不强行让它们保持一样的colspan数，比如某列占据多行的情况，则它们的colspan数不一致。
+                    {
                         positionBeanTmp.setColspan(drcolbeanTmp.getValuecolspan());
                     }
                     currentRowColspan=0;

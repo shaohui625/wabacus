@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
@@ -40,7 +39,7 @@ import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.database.datasource.AbsDataSource;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.dataimport.thread.FileUpDataImportThread;
-import com.wabacus.system.dataimport.thread.TimingDataImportThread;
+import com.wabacus.system.task.TimingThread;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 import com.wabacus.util.WabacusClassLoader;
@@ -51,27 +50,22 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
 
     private static Log log=LogFactory.getLog(WabacusServlet.class);
 
-    private ServletContext context;
-
-    public void init(ServletConfig config) throws ServletException
+    public void contextInitialized(ServletContextEvent event)
     {
-        super.init(config);
-
-        this.context=config.getServletContext();
-        
         closeAllDatasources();
-
-
-//            URL baseURL=context.getResource("/");
-
-
-
-
-
-
-        Config.homeAbsPath=context.getRealPath("/");
+        Config.homeAbsPath=event.getServletContext().getRealPath("/");
         Config.homeAbsPath=Tools.standardFilePath(Config.homeAbsPath+"\\");
-        Config.configpath=config.getInitParameter("configpath");//配置文件存放的物理路径
+        /*try
+        {
+            Config.webroot=event.getServletContext().getContextPath();
+            if(!Config.webroot.endsWith("/")) Config.webroot+="/";
+        }catch(NoSuchMethodError e)
+        {
+            
+            Config.webroot=null;
+        }*/
+        Config.webroot=null;
+        Config.configpath=event.getServletContext().getInitParameter("configpath");
         if(Config.configpath==null||Config.configpath.trim().equals(""))
         {
             log.info("没有配置存放配置文件的根路径，将使用路径："+Config.homeAbsPath+"做为配置文件的根路径");
@@ -82,11 +76,34 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
                     Config.configpath,Config.homeAbsPath);
         }
         loadReportConfigFiles();
+        FileUpDataImportThread.getInstance().start();
+        TimingThread.getInstance().start();
+    }
+    
+    public void init(ServletConfig config) throws ServletException
+    {
+        super.init(config);
+
+//        closeAllDatasources();//关闭所有的连接池
+//        Config.homeAbsPath=context.getRealPath("/");
+
+//        Config.configpath=config.getInitParameter("configpath");//配置文件存放的物理路径
+
+
+
+
+
+
+
+
+//        }
+
     }
 
     public static void loadReportConfigFiles()
     {
         log.info("正在加载配置文件wabacus.cfg.xml及所有报表配置文件...");
+        TimingThread.getInstance().reset();
         ConfigLoadManager.currentDynClassLoader=new WabacusClassLoader(Thread.currentThread().getContextClassLoader());
         int flag=ConfigLoadManager.loadAllReportSystemConfigs();
         if(flag==-1)
@@ -116,6 +133,14 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
             }else if(action.equalsIgnoreCase("invokeServerAction"))
             {
                 String resultStr=WabacusFacade.invokeServerAction(request,response);
+                if(resultStr!=null&&!resultStr.trim().equals(""))
+                {
+                    PrintWriter out=response.getWriter();
+                    out.println(resultStr);
+                }
+            }else if(action.equalsIgnoreCase("ServerValidateOnBlur"))
+            {
+                String resultStr=WabacusFacade.doServerValidateOnBlur(request,response);
                 if(resultStr!=null&&!resultStr.trim().equals(""))
                 {
                     PrintWriter out=response.getWriter();
@@ -154,10 +179,27 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
                 PrintWriter out=response.getWriter();
                 out.print(WabacusFacade.getAutoCompleteColValues(request,response));
             }else if(action.equalsIgnoreCase("ShowUploadFilePage"))
-            {//显示文件上传界面
+            {
                 PrintWriter out=response.getWriter();
+                out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
                 out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset="+Config.encode+"\">");
                 WabacusFacade.showUploadFilePage(request,out);
+            }else if(action.equalsIgnoreCase("getChartDataString"))
+            {//获取图形报表数据的<chart/>数据部分
+                response.reset();
+                response.setContentType("text/xml;charset="+Config.encode);
+                StringBuffer sbuffer=new StringBuffer("<?xml version=\"1.0\" encoding=\""+Config.encode+"\"?>");
+                sbuffer.append(WabacusFacade.getChartDataString(request,response));
+                PrintWriter out=response.getWriter();
+                out.println(sbuffer.toString().trim());
+            }else if(action.equalsIgnoreCase("loadChartXmlFile"))
+            {
+                response.reset();
+                response.setContentType("text/xml;charset="+Config.encode);
+                StringBuffer sbuffer=new StringBuffer("<?xml version=\"1.0\" encoding=\""+Config.encode+"\"?>");
+                sbuffer.append(WabacusFacade.getChartDataStringFromLocalFile(request,response));
+                PrintWriter out=response.getWriter();
+                out.println(sbuffer.toString().trim());
             }else
             {
                 String type=Tools.getRequestValue(request,Consts.DISPLAYTYPE_PARAMNAME,String.valueOf(Consts.DISPLAY_ON_PAGE));
@@ -173,7 +215,7 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
                 {
                     WabacusFacade.printComponents(request,response);
                 }else if(itype==Consts.DISPLAY_ON_PLAINEXCEL)
-                {
+                {//下载纯数据
                     response.reset();
                     response.setContentType("application/vnd.ms-excel;charset="+Config.encode);
                     WabacusFacade.exportReportDataOnPlainExcel(request,response);
@@ -203,20 +245,14 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
 
     public void destroy()
     {
-        this.context=null;
+        
     }
 
-    public void contextInitialized(ServletContextEvent event)
-    {
-        FileUpDataImportThread.getInstance().start();
-        TimingDataImportThread.getInstance().start();
-    }
-    
     public void contextDestroyed(ServletContextEvent event)
     {
         closeAllDatasources();
         FileUpDataImportThread.getInstance().stopRunning();
-        TimingDataImportThread.getInstance().stopRunning();
+        TimingThread.getInstance().stopRunning();
     }
 
     private void closeAllDatasources()

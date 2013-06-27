@@ -69,6 +69,7 @@
    			<xs:element name="saveaction-peraction" minOccurs="0" type="xs:string"/>
    			<xs:element name="beforeloaddata" minOccurs="0" type="xs:string"/>
    			<xs:element name="afterloaddata" minOccurs="0" type="xs:string"/>
+   			<xs:element name="beforedisplay" minOccurs="0" type="xs:string"/>
    			<xs:element name="beforedisplay-perrow" minOccurs="0" type="xs:string"/>
    			<xs:element name="beforedisplay-percol" minOccurs="0" type="xs:string"/>
    		</xs:all>
@@ -146,27 +147,44 @@
 				<xs:element ref="wxs:imports" minOccurs="0"/>
 				<xs:element name="dynevent" type="xs:string" minOccurs="0"/>
 				<xs:element name="params" minOccurs="0">
-   			<xs:complexType>
-   				<xs:sequence>
-   					<xs:element name="param" maxOccurs="unbounded">
-   						<xs:complexType>
-   							<xs:attribute name="name" type="xs:string" use="required"/>
-   							<xs:attribute name="value" type="xs:string" use="required"/>
-   							<xs:attribute name="datatype" type="xs:string"/>
-   						</xs:complexType>
-   					</xs:element>
-   				</xs:sequence>
-   			</xs:complexType>
-   		</xs:element>
-   		<xs:element name="value" minOccurs="0" maxOccurs="unbounded">
-   			<xs:complexType>
-	   			<xs:simpleContent>
-						<xs:extension base="xs:string">
-							<xs:attribute name="datasource" type="xs:string"/>
-						</xs:extension>
-					</xs:simpleContent>
-				</xs:complexType>
-   		</xs:element>
+	   			<xs:complexType>
+	   				<xs:sequence>
+	   					<xs:element name="param" maxOccurs="unbounded">
+	   						<xs:complexType>
+	   							<xs:attribute name="name" type="xs:string" use="required"/>
+	   							<xs:attribute name="value" type="xs:string" use="required"/>
+	   							<xs:attribute name="datatype" type="xs:string"/>
+	   						</xs:complexType>
+	   					</xs:element>
+	   				</xs:sequence>
+	   			</xs:complexType>
+   			</xs:element>
+	   		<xs:element name="value" minOccurs="0" maxOccurs="unbounded">
+	   			<xs:complexType>
+		   			<xs:simpleContent>
+							<xs:extension base="xs:string">
+								<xs:attribute name="datasource" type="xs:string"/>
+							</xs:extension>
+						</xs:simpleContent>
+					</xs:complexType>
+	   		</xs:element>
+	   		<xs:element name="dataimport" minOccurs="0">
+	   			<xs:complexType>
+	   				<xs:attribute name="ref" type="xs:string"/>
+			    		<xs:attribute name="popupparams" type="xs:string"/>
+			    		<xs:attribute name="popupinitsize">
+			    			<xs:simpleType>
+			    				<xs:restriction base="xs:string">
+			    					<xs:enumeration value="max"/>
+			    					<xs:enumeration value="min"/>
+			    					<xs:enumeration value="normal"/>
+			  					</xs:restriction>
+			    			</xs:simpleType>
+			    		</xs:attribute>
+			    		<xs:attribute name="interceptor" type="xs:string"/>
+			    		<xs:attribute name="asyn" type="wxs:booleanType"/>
+	   			</xs:complexType>
+	   		</xs:element>
 			</xs:sequence>
 			<xs:attribute name="name" type="wxs:keyType"/>
 			<xs:attribute name="position" type="xs:string"/>
@@ -250,8 +268,10 @@
    	<xs:attribute name="treexpandlayer" type="xs:integer"/>
    	<xs:attribute name="blockwidth" type="xs:string"/>
    	<xs:attribute name="blockheight" type="xs:string"/>
-   	<xs:attribute name="blockstyleproperty" type="xs:string"/>
+   	<xs:attribute name="labelstyleproperty" type="xs:string"/>
+   	<xs:attribute name="valuestyleproperty" type="xs:string"/>
    	<xs:attribute name="colsinexportfile" type="xs:integer"/>
+   	<xs:attribute name="labelcolumn" type="xs:string"/>
   	</xs:complexType>
   	
    <xs:complexType name="groupType">
@@ -343,6 +363,7 @@
    		<xs:attribute name="description" type="xs:string"/>
    		<xs:attribute name="inlinecount" type="xs:string"/>
    		<xs:attribute name="sourcebox" type="xs:string"/>
+   		<xs:attribute name="formatemplate" type="xs:string"/>
    		<xs:attribute name="interceptor" type="xs:string"/>
    	</xs:complexType>
    </xs:element>
@@ -355,7 +376,7 @@
    </xs:complexType>
    
    <xs:element name="subdisplay">
-   	<xs:complexType> 
+   	<xs:complexType mixed="true"> 
    		<xs:sequence>
    			<xs:element name="statitems"  minOccurs="0">
    				<xs:complexType>
@@ -415,7 +436,7 @@
 						</xs:complexType>
 					</xs:element>
    			</xs:choice>
-   			<xs:element name="format" type="wxs:formatType"/>
+   			<xs:element name="format" minOccurs="0" type="wxs:formatType"/>
    		</xs:sequence>
    	</xs:complexType>
    </xs:element>
@@ -444,15 +465,17 @@
    <xs:element name="sql">
    	<xs:complexType>
    		<xs:sequence>
-   			<!-- <sql/>下面可以直接配置<value/>，也可以配置<select><value/></select> -->
+   			<!-- <sql/>下面可以直接配置<value/>，也可以配置<select><value/></select> ，还可以配置<select><dataset><value/></dataset></select>等等-->
    			<xs:element name="select" minOccurs="0">
    				<xs:complexType>
    					<xs:sequence>
+   						<xs:element ref="wxs:dataset" minOccurs="0" maxOccurs="unbounded"/>
    						<xs:element name="value" type="wxs:sqlValue" minOccurs="0" maxOccurs="unbounded"/>
    						<xs:element ref="wxs:condition" minOccurs="0" maxOccurs="unbounded"/>
    					</xs:sequence>
    				</xs:complexType>
    			</xs:element>
+   			<xs:element ref="wxs:dataset" minOccurs="0" maxOccurs="unbounded"/>
    			<xs:element name="value" type="wxs:sqlValue" minOccurs="0" maxOccurs="unbounded"/>
    			<xs:element ref="wxs:condition" minOccurs="0" maxOccurs="unbounded"/>
    			<xs:element name="insert" minOccurs="0">
@@ -460,11 +483,28 @@
    					<xs:complexContent>
    						<xs:extension base="wxs:updateType">
    							<xs:attribute name="condition" type="xs:string"/><!-- <insert/>在配置普通表单时，有一个condition属性 -->
+   							<xs:attribute name="addposition"><!-- 对于editablelist2/listform报表类型有效 -->
+   								<xs:simpleType>
+					    				<xs:restriction base="xs:string">
+					    					<xs:enumeration value="top"/>
+					    					<xs:enumeration value="bottom"/>
+					  					</xs:restriction>
+					    			</xs:simpleType>
+   							</xs:attribute>
+   							<xs:attribute name="callbackmethod" type="xs:string"/>
    						</xs:extension>
    					</xs:complexContent>
    				</xs:complexType>
    			</xs:element>
-   			<xs:element name="update" type="wxs:updateType" minOccurs="0"/>
+   			<xs:element name="update" minOccurs="0">
+   				<xs:complexType>
+   					<xs:complexContent>
+   						<xs:extension base="wxs:updateType">
+   							<xs:attribute name="crosspage" type="wxs:booleanType"/>
+   						</xs:extension>
+   					</xs:complexContent>
+   				</xs:complexType>
+   			</xs:element>
    			<xs:element name="delete" type="wxs:updateType" minOccurs="0"/>
    		</xs:sequence>
    		<xs:attribute name="type">
@@ -484,6 +524,17 @@
    	</xs:complexType>
    </xs:element>
    
+   <xs:element name="dataset"><!-- <sql/>中的<dataset/>配置值 -->
+   	<xs:complexType>
+   		<xs:sequence>
+   			<xs:element name="value" type="wxs:sqlValue" maxOccurs="unbounded"/>
+   		</xs:sequence>
+   		<xs:attribute name="id" type="wxs:idType"/>
+   		<xs:attribute name="styleproperty" type="xs:string"/>
+   		<xs:attribute name="mergetop" type="wxs:booleanType"/>
+   	</xs:complexType>
+   </xs:element>
+   
   	<xs:complexType name="sqlValue"><!-- <sql/>中<value/>的定义 -->
 		<xs:simpleContent>
 			<xs:extension base="xs:string">
@@ -500,14 +551,6 @@
 				</xs:attribute>
 				<xs:attribute name="seperator" type="xs:string"/>
 				<xs:attribute name="datasource" type="xs:string"/>
-				<xs:attribute name="type">
-					<xs:simpleType>
-						<xs:restriction base="xs:string">
-							<xs:enumeration value="statement"/>
-    						<xs:enumeration value="preparedstatement"/>
-						</xs:restriction>
-					</xs:simpleType>
-				</xs:attribute>
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
@@ -592,11 +635,12 @@
    		<xs:attribute name="datatype" type="xs:string"/>
    		<xs:attribute name="name" type="xs:string"/>
    		<xs:attribute name="label" type="xs:string"/>
-   		<xs:attribute name="labelstyle">
+   		<xs:attribute name="labelposition">
    			<xs:simpleType>
-    				<xs:restriction base="xs:integer">
-    					<xs:enumeration value="1"/>
-    					<xs:enumeration value="2"/>
+    				<xs:restriction base="xs:string">
+    					<xs:enumeration value="left"/>
+    					<xs:enumeration value="right"/>
+    					<xs:enumeration value="inner"/>
   					</xs:restriction>
     			</xs:simpleType>
    		</xs:attribute>
@@ -672,6 +716,7 @@
    	<xs:attribute name="confirmessage" type="xs:string"/>
    	<xs:attribute name="pageurl" type="xs:string"/>
    	<xs:attribute name="urlparams" type="xs:string"/>
+   	<xs:attribute name="refreshparentonsave" type="xs:string"/>
    	<xs:attribute name="popupparams" type="xs:string"/>
    	<xs:attribute name="pageinitsize">
   			<xs:simpleType>
@@ -799,7 +844,26 @@
    		<xs:attribute name="styleproperty" type="xs:string"/>
    		<xs:attribute name="defaultvalue" type="xs:string"/>
    		<xs:attribute name="jsvalidate" type="xs:string"/>
+   		<xs:attribute name="jsvalidatetype">
+   			<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="onblur"/>
+						<xs:enumeration value="onsubmit"/>
+						<xs:enumeration value="both"/>
+					</xs:restriction>
+				</xs:simpleType>
+   		</xs:attribute>
    		<xs:attribute name="servervalidate" type="xs:string"/>
+   		<xs:attribute name="servervalidatetype">
+   			<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="onblur"/>
+						<xs:enumeration value="onsubmit"/>
+						<xs:enumeration value="both"/>
+					</xs:restriction>
+				</xs:simpleType>
+   		</xs:attribute>
+   		<xs:attribute name="servervalidatecallback" type="xs:string"/>
    		<xs:attribute name="separator" type="xs:string"/>
    		<xs:attribute name="inputboxparams" type="xs:string"/>
    		<xs:attribute name="interceptor" type="xs:string"/>

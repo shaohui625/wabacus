@@ -30,6 +30,13 @@ A:link {
 .cls-data-tr-head-articlelist{/*文章数据列表报表数据头部<tr/>的样式*/	
 	height: 20px;
 }
+.cls-data-tr-odd{/*数据列表报表奇数行样式*/
+	background-color: #FBFBFB;
+}
+.cls-data-tr-even{/*数据列表报表偶数行样式*/
+	background-color: #FFFFFF;
+}
+
 .cls-data-th-articlelist{/*文章数据列表报表数据头部<td/>的样式*/	
 	BACKGROUND-IMAGE: url(images/datatitle_bg.gif);
 	text-align: center; 

@@ -37,6 +37,7 @@ import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.text.pdf.AcroFields.Item;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.dataexport.PDFExportBean;
@@ -44,7 +45,7 @@ import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.IComponentType;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
-import com.wabacus.system.intercept.ColDataByInterceptor;
+import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
@@ -154,7 +155,7 @@ public class PdfAssistant
                     String fieldValueTmp=null;
                     for(String fieldNameTmp:mFields.keySet())
                     {
-                        fieldValueTmp=getPdfFieldValueByName(rrequest,mReportTypeObjs,ccbean,fieldNameTmp,rowidx);//取出此域的真正内容
+                        fieldValueTmp=getPdfFieldValueByName(rrequest,mReportTypeObjs,ccbean,fieldNameTmp,rowidx);
                         if(pdfbean!=null&&pdfbean.getInterceptorObj()!=null)
                         {
                             fieldValueTmp=pdfbean.getInterceptorObj().beforeDisplayFieldWithTemplate(ccbean,mReportTypeObjs,rowidx,stamp,
@@ -188,15 +189,15 @@ public class PdfAssistant
             String fieldname,int rowidx)
     {
         if(fieldname==null||fieldname.trim().equals("")) return null;
-        if(Tools.isDefineKey("request",fieldname)||Tools.isDefineKey("session",fieldname))
+        if(WabacusAssistant.getInstance().isGetRequestContextValue(fieldname))
         {//从request/session中取数据
-            return WabacusAssistant.getInstance().getRequestSessionValue(rrequest,fieldname,"");
+            return WabacusAssistant.getInstance().getRequestContextStringValue(rrequest,fieldname,"");
         }
         if(fieldname.indexOf(".")<=0) return null;
         List<String> lstParts=Tools.parseStringToList(fieldname,".",false);
         if(lstParts.size()==1) return null;
         String reportid=lstParts.get(0);
-        Object dataObjTmp=null;
+        AbsReportDataPojo dataObjTmp=null;
         if(reportid.equals("this"))
         {
             if(!(ccbean instanceof ReportBean))
@@ -218,7 +219,7 @@ public class PdfAssistant
         if(part==null||part.trim().equals("")) return null;
         if(part.equals("title"))
         {
-            if(!rrequest.checkPermission(reportid,Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return null;
+            if(!rrequest.checkPermission(reportid,Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return null;//如果本报表不显示标题
             if(lstParts.size()==2||!"subtitle".equals(lstParts.get(2)))
             {
                 return reportTypeObjTmp.getReportBean().getTitle(rrequest);
@@ -245,21 +246,16 @@ public class PdfAssistant
                 throw new WabacusRuntimeException("导出报表"+reportTypeObjTmp.getReportBean().getPath()+"到PDF文件失败，此报表不存在property为"+colproperty+"的<col/>");
             }
             if(rrequest.getCdb(reportid).getColDisplayModeAfterAuthorize(cbean)<=0) return null;
+            ColDisplayData colDisplayData=null;
             if(lstParts.size()==3||!"label".equals(lstParts.get(3)))
-            {//显示此列的数据部分
-                String col_displayvalue=cbean.getDisplayValue(dataObjTmp,rrequest);
-                ColDataByInterceptor coldataByInterceptor=ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,reportTypeObjTmp,cbean,
-                        rowidx,col_displayvalue);
-                if(coldataByInterceptor!=null&&coldataByInterceptor.getDynvalue()!=null)
-                {
-                    col_displayvalue=coldataByInterceptor.getDynvalue();
-                }
-                return col_displayvalue;
+            {
+                String col_displayvalue=dataObjTmp.getColStringValue(cbean);
+                colDisplayData=ColDisplayData.getColDataFromInterceptor(reportTypeObjTmp,cbean,dataObjTmp,rowidx,null,col_displayvalue);
             }else
             {
-                return ReportAssistant.getInstance().getColGroupLabel(rrequest,cbean.getLabel(),
-                        ReportAssistant.getInstance().getColDataFromInterceptor(rrequest,reportTypeObjTmp,cbean,-1,cbean.getLabel()));
+                colDisplayData=ColDisplayData.getColDataFromInterceptor(reportTypeObjTmp,cbean,null,-1,null,cbean.getLabel(rrequest));
             }
+            return colDisplayData.getValue();
         }else
         {
             log.warn("导出组件"+ccbean.getPath()+"到PDF文件失败，在其PDF模板中指定的"+fieldname+"不合法");
