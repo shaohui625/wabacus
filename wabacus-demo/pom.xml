@@ -249,8 +249,7 @@
 			<groupId>com.googlecode.wabacus</groupId>
 			<artifactId>wabacus-core</artifactId>
 			<version>4.0.1</version>
-		</dependency> 
-		
+		</dependency> 		
 		<dependency>
 			<groupId>com.oracle</groupId>
 			<artifactId>ojdbc14</artifactId>
