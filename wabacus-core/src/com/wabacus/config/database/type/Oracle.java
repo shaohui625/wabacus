@@ -63,8 +63,9 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class Oracle extends AbsDatabaseType
-{
+//$ByQXO
+public class Oracle extends AbstractJdbcDatabaseType
+{//ByQXO$
     private final static Log log=LogFactory.getLog(Oracle.class);
 
     public String constructSplitPageSql(ReportDataSetValueBean svbean)

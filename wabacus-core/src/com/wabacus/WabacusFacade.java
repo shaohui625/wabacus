@@ -602,19 +602,14 @@ public class WabacusFacade
         for(int i=0;i<lstDatasetBeans.size();i++)
         {
             datasetbean=lstDatasetBeans.get(i);
+            //$ByQXO 数据存储可扩展性修改
             if(datasetbean.getCustomizeDatasetObj()!=null)
             {
                 datasetObj=datasetbean.getCustomizeDatasetObj();
-            }else if(datasetbean.isStoreProcedure())
-            {
-                datasetObj=new GetDataSetByStoreProcedure();
-            }else if(sbean.getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-            {
-                datasetObj=new GetAllDataSetByPreparedSQL();
-            }else
-            {
-                datasetObj=new GetAllDataSetBySQL();
+            }else{
+                datasetObj =datasetbean.getISQLTypeBuilder(sbean).createAllResultSetISQLType();
             }
+            //ByQXO$
             lstDatasetObjs.add(datasetObj);
         }
         return lstDatasetObjs;

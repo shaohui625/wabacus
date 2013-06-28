@@ -32,8 +32,9 @@ import org.dom4j.Element;
 
 import com.wabacus.exception.WabacusConfigLoadingException;
 
-public class JNDIDataSource extends AbsDataSource
-{
+//$ByQXO 
+public class JNDIDataSource extends AbstractJdbcDataSource
+{ //ByQXO$
     private static Log log=LogFactory.getLog(JNDIDataSource.class);
 
     private String jndi;
@@ -112,7 +113,11 @@ public class JNDIDataSource extends AbsDataSource
         {
             eleChild=(Element)lstEleProperties.get(i);
             name=eleChild.attributeValue("name");
-            value=eleChild.getText();
+
+            //$ByQXO 全局配置优先
+            value= getOverridePropertyValue(name,eleChild.getText());
+            //ByQXO$
+            
             name=name==null?"":name.trim();
             value=value==null?"":value.trim();
             if(name.equals("jndi"))

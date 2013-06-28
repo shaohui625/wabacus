@@ -35,8 +35,9 @@ import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.util.DesEncryptTools;
 
-public class C3P0DataSource extends AbsDataSource
-{
+//$ByQXO
+public class C3P0DataSource extends AbstractJdbcDataSource
+{ //ByQXO$
     private static Log log=LogFactory.getLog(C3P0DataSource.class);
     
     private DataSource ds;
@@ -102,7 +103,11 @@ public class C3P0DataSource extends AbsDataSource
         {
             eleChild=(Element)lstEleProperties.get(i);
             name=eleChild.attributeValue("name");
-            value=eleChild.getText();
+            
+            //$ByQXO 全局配置优先
+            value= getOverridePropertyValue(name,eleChild.getText());
+            //ByQXO$
+            
             name=name==null?"":name.trim();
             value=value==null?"":value.trim();
             if(value.equals(""))

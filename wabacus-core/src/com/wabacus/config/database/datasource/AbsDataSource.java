@@ -20,13 +20,13 @@ package com.wabacus.config.database.datasource;
 
 import java.sql.Connection;
 
-import javax.sql.DataSource;
-
 import org.dom4j.Element;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.system.IConnection;
 
 public abstract class AbsDataSource
 {
@@ -89,8 +89,36 @@ public abstract class AbsDataSource
         }
         this.dbType=(AbsDatabaseType)o;
     }
+ 
+    //$ByQXO 数据存储可扩展性修改
+    // public abstract DataSource getDataSource();
     
+    /**
+     * @deprecated 改用getIConnection
+     */
     public abstract Connection getConnection();
     
-    public abstract DataSource getDataSource();
+    public abstract IConnection getIConnection();
+
+    
+    private String prefix ;
+    
+    protected String getPrefix(){
+        if( null == prefix){
+            prefix = this.getName() +".";
+        }
+        return prefix;
+    }
+
+    /**
+     *   获取覆盖的系统属性
+     * @param name
+     * @param defaultValue
+     * @return
+     */
+    protected String getOverridePropertyValue(String name,String currentVal){
+        return Config.getInstance().getPropertyOverrideLoader().getOverridePropertyValue(this.getPrefix(),name,currentVal) ;
+    }
+    
+    //ByQXO$
 }

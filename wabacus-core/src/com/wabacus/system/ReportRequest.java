@@ -30,8 +30,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -98,8 +98,7 @@ public class ReportRequest
 
     private WabacusResponse wresponse;
 
-    private Map<String,Connection> connections=new HashMap<String,Connection>();
-
+  
     private Map<String,AbsDatabaseType> mDbTypes=new HashMap<String,AbsDatabaseType>();
 
     private int showtype;
@@ -917,12 +916,27 @@ public class ReportRequest
         return (CacheDataBean)mCacheDataBeans.get(reportid);
     }
     
-    public Connection getConnection()
-    {
-        return getConnection(Config.getInstance().getDefault_datasourcename());
-    }
+    //$ByQXO
+    private Map<String,IConnection> connections=new HashMap<String,IConnection>();
+
+    /**
+     *  @Deprecated 采改getIConnection以支持其它数源
+     */
+     @Deprecated 
+     public Connection getConnection(String datasource){
+         return ( (JdbcConnection)getIConnection(datasource) ).getNativeConnection();
+     }
+
+     /**
+      * @Deprecated 采改getIConnection以支持其它数源
+      */
+     public Connection getConnection()
+     {
+         return getConnection(Config.getInstance().getDefault_datasourcename());
+     }
+     
     
-    public Connection getConnection(String datasource)
+    public IConnection getIConnection(String datasource)
     {
         if(Tools.isDefineKey("i18n",datasource))
         {
@@ -930,10 +944,10 @@ public class ReportRequest
             if(this.locallanguage!=null&&!this.locallanguage.trim().equals(""))
             {
                 String dsTemp=datasource+"_"+this.locallanguage;
-                Connection conn=connections.get(dsTemp);
+                IConnection conn=connections.get(dsTemp);
                 if(conn==null)
                 {
-                    conn=Config.getInstance().getDataSource(dsTemp).getConnection();
+                    conn=Config.getInstance().getDataSource(dsTemp).getIConnection();
                     connections.put(dsTemp,conn);
                 }
                 if(conn!=null)
@@ -949,11 +963,12 @@ public class ReportRequest
         if(datasource==null||datasource.trim().equals("")||datasource.trim().equals(Consts.DEFAULT_KEY)) datasource=Config.getInstance().getDefault_datasourcename();
         if(connections.get(datasource)==null)
         {
-            connections.put(datasource,Config.getInstance().getDataSource(datasource).getConnection());
+            connections.put(datasource,Config.getInstance().getDataSource(datasource).getIConnection());
         }
         return connections.get(datasource);
     }
-
+    //ByQXO$
+    
     public AbsDatabaseType getDbType(String datasource_name)
     {
         if(Tools.isDefineKey("i18n",datasource_name))
@@ -1261,7 +1276,7 @@ public class ReportRequest
             while(itConns.hasNext())
             {
                 name=itConns.next();
-                WabacusAssistant.getInstance().release(connections.get(name),null);
+                WabacusAssistant.getInstance().release(connections.get(name));
             }
             connections.clear();
         }

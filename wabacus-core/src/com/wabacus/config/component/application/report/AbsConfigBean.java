@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.collections.MapUtils;
+
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
@@ -125,4 +127,19 @@ public abstract class AbsConfigBean implements Cloneable
             }
         }
     }
+    
+    //$ByQXO　所有属性列表Map,以便扩展类中使用
+    private Map<String,String> attrs;
+
+    public Map<String,String> getAttrs()
+    {
+        return attrs == null ? MapUtils.EMPTY_MAP : attrs;
+    }
+
+    public void setAttrs(Map<String,String> attrs)
+    {
+        this.attrs=attrs;
+    }
+    //ByQXO$
+    
 }

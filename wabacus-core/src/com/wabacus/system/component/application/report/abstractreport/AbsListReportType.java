@@ -2021,123 +2021,15 @@ public abstract class AbsListReportType extends AbsReportType
         if(alrbean.getSubdisplaybean()!=null) alrbean.getSubdisplaybean().doPostLoad();
         return 1;
     }
-
+    
+    //$ByQXO code move to  AbstractJdbcDatabaseType.constructSqlForListType
     private void constructSqlForListType(SqlBean sqlbean)
     {
-        if(sqlbean==null||sqlbean.getLstDatasetBeans()==null) return;
-        AbsListReportDisplayBean alrdbean=(AbsListReportDisplayBean)sqlbean.getReportBean().getDbean().getExtendConfigDataForReportType(
-                AbsListReportType.KEY);
-        boolean isMatchedRowGroupColAndDataset=false;
-        for(ReportDataSetBean dsbeanTmp:sqlbean.getLstDatasetBeans())
-        {
-            for(ReportDataSetValueBean dsvbeanTmp:dsbeanTmp.getLstValueBeans())
-            {
-                String value=dsvbeanTmp.getValue();
-                if(value==null||value.trim().equals("")||dsvbeanTmp.isStoreProcedure()||dsvbeanTmp.getCustomizeDatasetObj()!=null) continue;
-                dsvbeanTmp.doPostLoadSql(true);
-                if(alrdbean!=null&&alrdbean.getRowGroupColsNum()>0&&dsvbeanTmp.isMatchDatasetid(alrdbean.getRowgroupDatasetId()))
-                {
-                    if(isMatchedRowGroupColAndDataset)
-                    {
-                        throw new WabacusConfigLoadingException("报表"+sqlbean.getReportBean().getPath()+"配置了多个独立数据集，必须为其行分组列指定来自哪个数据集");
-                    }
-                    isMatchedRowGroupColAndDataset=true;
-                    List<String> lstColsColumnInRowGroup=alrdbean.getLstRowgroupColsColumn();
-                    if(lstColsColumnInRowGroup!=null&&lstColsColumnInRowGroup.size()>0)
-                    {
-                        List<Map<String,String>> lstRowgroupColsAndOrders=new ArrayList<Map<String,String>>();
-                        alrdbean.setLstRowgroupColsAndOrders(lstRowgroupColsAndOrders);
-                        if(dsvbeanTmp.getSqlWithoutOrderby().indexOf("%orderby%")<0)
-                        {
-                            dsvbeanTmp.setSqlWithoutOrderby(dsvbeanTmp.getSqlWithoutOrderby()+" %orderby%");
-                            StringBuffer orderbybuf=new StringBuffer();
-                            for(String column:lstColsColumnInRowGroup)
-                            {
-                                if(column==null) continue;
-                                orderbybuf.append(column).append(",");
-                                Map<String,String> mColAndOrders=new HashMap<String,String>();
-                                mColAndOrders.put(column,"asc");//默认都为升序排序
-                                lstRowgroupColsAndOrders.add(mColAndOrders);
-                            }
-                            if(orderbybuf.charAt(orderbybuf.length()-1)==',')
-                            {
-                                orderbybuf.deleteCharAt(orderbybuf.length()-1);
-                            }
-                            dsvbeanTmp.setOrderby(orderbybuf.toString());
-                        }else
-                        {
-                            addRowGroupColumnToOrderByClause(dsvbeanTmp,lstColsColumnInRowGroup,lstRowgroupColsAndOrders);
-                        }
-                    }
-                }
-                if(!dsvbeanTmp.isDependentDataSet()) dsvbeanTmp.buildPageSplitSql();
-            }
-        }
-    }
-
-    private void addRowGroupColumnToOrderByClause(ReportDataSetValueBean svbean,List<String> lstColsColumnInRowGroup,
-            List<Map<String,String>> lstRowgroupColsAndOrders)
-    {
-        String oldorderby=svbean.getOrderby();
-        List<String> lstOrderByColumns=Tools.parseStringToList(oldorderby,",");
-        List<Map<String,String>> lstOldOrderByColumns=new ArrayList<Map<String,String>>();
-        for(String orderby_tmp:lstOrderByColumns)
-        {
-            if(orderby_tmp==null||orderby_tmp.trim().equals("")) continue;
-            orderby_tmp=orderby_tmp.trim();
-            List<String> lstTemp=Tools.parseStringToList(orderby_tmp," ");
-            Map<String,String> mOldOrderBy=new HashMap<String,String>();
-            lstOldOrderByColumns.add(mOldOrderBy);
-            if(lstTemp.size()==1)
-            {
-                mOldOrderBy.put(lstTemp.get(0),"asc");
-            }else if(lstTemp.size()==2)
-            {
-                mOldOrderBy.put(lstTemp.get(0),lstTemp.get(1).trim().toLowerCase());
-            }else
-            {
-                throw new WabacusConfigLoadingException("报表"+svbean.getReportBean().getPath()+"配置的SQL语句中order by子句"+svbean.getOrderby()+"不合法");
-            }
-        }
-        StringBuffer orderBuf=new StringBuffer();
-        for(String rowgroupCol:lstColsColumnInRowGroup)
-        {
-            if(rowgroupCol==null) continue;
-            Map<String,String> mColAndOrders=new HashMap<String,String>();
-            lstRowgroupColsAndOrders.add(mColAndOrders);
-            Map<String,String> mTemp=null;
-            for(Map<String,String> mTemp2:lstOldOrderByColumns)
-            {
-                if(mTemp2.containsKey(rowgroupCol))
-                {
-                    mTemp=mTemp2;
-                    lstOldOrderByColumns.remove(mTemp2);
-                    break;
-                }
-            }
-            if(mTemp!=null)
-            {
-                orderBuf.append(rowgroupCol).append(" ").append(mTemp.get(rowgroupCol)).append(",");
-                mColAndOrders.put(rowgroupCol,mTemp.get(rowgroupCol));
-            }else
-            {
-                orderBuf.append(rowgroupCol).append(",");
-                mColAndOrders.put(rowgroupCol,"asc");
-            }
-        }
-        
-        for(Map<String,String> mTemp:lstOldOrderByColumns)
-        {
-            Entry<String,String> entry=mTemp.entrySet().iterator().next();
-            orderBuf.append(entry.getKey()).append(" ").append(entry.getValue()).append(",");
-        }
-        if(orderBuf.charAt(orderBuf.length()-1)==',')
-        {
-            orderBuf.deleteCharAt(orderBuf.length()-1);
-        }
-        svbean.setOrderby(orderBuf.toString());
-    }
-
+       Config.getInstance().getDbType(sqlbean.getDatasource()).constructSqlForListType(sqlbean);
+    }    
+    //addRowGroupColumnToOrderByClause move to  AbstractJdbcDatabaseType
+    //ByQXO$ 
+   
     protected void processFixedColsAndRows(ReportBean reportbean)
     {
         AbsListReportBean alrbean=(AbsListReportBean)reportbean.getExtendConfigDataForReportType(KEY);

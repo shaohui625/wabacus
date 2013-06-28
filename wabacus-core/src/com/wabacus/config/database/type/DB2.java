@@ -48,9 +48,9 @@ import com.wabacus.system.datatype.TimeType;
 import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
-
-public class DB2 extends AbsDatabaseType
-{
+//$ByQXO
+public class DB2 extends AbstractJdbcDatabaseType
+{//ByQXO$
     private static Log log=LogFactory.getLog(DB2.class);
 
     public String constructSplitPageSql(ReportDataSetValueBean svbean)

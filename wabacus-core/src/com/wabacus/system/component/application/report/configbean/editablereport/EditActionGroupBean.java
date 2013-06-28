@@ -21,8 +21,8 @@ package com.wabacus.system.component.application.report.configbean.editablerepor
 import java.util.ArrayList;
 import java.util.List;
 
-import com.wabacus.config.ConfigLoadManager;
-import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.Config;
+import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.util.Tools;
 
@@ -118,73 +118,18 @@ public class EditActionGroupBean implements Cloneable
         }
         this.lstEditActionBeans.add(actionbean);
     }
-    
+    //$ByQXO
     public void parseActionscripts(String reportTypeKey)
     {
-        ReportBean rbean=this.ownerUpdateBean.getOwner().getReportBean();
-        List<String> lstActionscripts=Tools.parseStringToList(this.actionscripts,';','\"');
-        String realSqlTmp;
-        for(String scriptTmp:lstActionscripts)
-        {
-            if(scriptTmp==null||scriptTmp.trim().equals("")) continue;
-            scriptTmp=scriptTmp.trim();
-            if(Tools.isDefineKey("class",scriptTmp))
-            {
-                scriptTmp=Tools.getRealKeyByDefine("class",scriptTmp).trim();
-                String javaname=scriptTmp;
-                String params=null;
-                int idx1=scriptTmp.indexOf("(");
-                int idx2=scriptTmp.indexOf(")");
-                if(idx1>0&&idx2==scriptTmp.length()-1)
-                {
-                    javaname=scriptTmp.substring(0,idx1).trim();
-                    params=scriptTmp.substring(idx1+1,idx2).trim();
-                }else if(idx1>=0||idx2>=0)
-                {
-                    throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的更新数据JAVA类"+scriptTmp+"不合法");
-                }
-                Object javaActionBean;
-                try
-                {
-                    javaActionBean=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(javaname).newInstance();
-                }catch(Exception e)
-                {
-                    throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的更新数据JAVA类"+scriptTmp+"无法实例化",e);
-                }
-                if(!(javaActionBean instanceof AbsJavaEditActionBean))
-                {
-                    throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的更新数据JAVA类"+scriptTmp+"没有继承"
-                            +AbsJavaEditActionBean.class.getName());
-                }
-                ((AbsEditActionBean)javaActionBean).setOwnerGroupBean(this);
-                ((AbsEditActionBean)javaActionBean).parseActionscript(reportTypeKey,params);
-                this.addActionBean((AbsEditActionBean)javaActionBean);
-            }else
-            {
-                realSqlTmp=new UpdateSqlActionBean(this).parseAndRemoveReturnParamname(scriptTmp).toLowerCase().trim();
-                if(realSqlTmp.startsWith("{")&&realSqlTmp.endsWith("}"))
-                {
-                    realSqlTmp=realSqlTmp.substring(1,realSqlTmp.length()-1).trim();
-                }
-                if(realSqlTmp.indexOf("insert ")==0)
-                {
-                    new InsertSqlActionBean(this).parseActionscript(reportTypeKey,scriptTmp);
-                }else if(realSqlTmp.indexOf("update ")==0)
-                {
-                    new UpdateSqlActionBean(this).parseActionscript(reportTypeKey,scriptTmp);
-                }else if(realSqlTmp.indexOf("delete ")==0)
-                {
-                    new DeleteSqlActionBean(this).parseActionscript(reportTypeKey,scriptTmp);
-                }else if(realSqlTmp.indexOf("call ")==0)
-                {
-                    new StoreProcedureActionBean(this).parseActionscript(reportTypeKey,scriptTmp);
-                }else
-                {
-                    throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的更新数据的SQL语句"+scriptTmp+"不合法");
-                }
-            }
-        }
+        AbsDatabaseType dbtype=Config.getInstance().getDataSource(this.getDatasource()).getDbType();
+        dbtype.parseActionscripts(this,reportTypeKey);
+    }    
+  
+    public AbsDatabaseType getDbType(){
+        final AbsDatabaseType dbtype=Config.getInstance().getDbType(this.getDatasource());
+        return dbtype;
     }
+   //ByQXO$
     
     public Object clone(AbsEditableReportEditDataBean newowner)
     {

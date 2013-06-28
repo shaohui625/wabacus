@@ -72,12 +72,22 @@ public class SqlBean extends AbsConfigBean
     {
         this.beforeSearchMethod=beforeSearchMethod;
     }
+   
+    //$ByQXO
+     private String statementTypeName;
+     
+     public String getStatementTypeName()
+     {
+         return statementTypeName;
+     }
 
     public void setStatementType(String statementtype)
     {
         if(statementtype==null||statementtype.trim().equals(""))
             statementtype=Config.getInstance().getSystemConfigValue("default-sqltype","statement");
         statementtype=statementtype.toLowerCase().trim();
+        statementTypeName =statementtype;
+        
         if(statementtype.equals("statement"))
         {
             this.stmttype=STMTYPE_STATEMENT;
@@ -86,7 +96,8 @@ public class SqlBean extends AbsConfigBean
             this.stmttype=STMTYPE_PREPAREDSTATEMENT;
         }
     }
-
+//ByQXO$
+    
     public List<ConditionBean> getLstConditions()
     {
         return lstConditions;

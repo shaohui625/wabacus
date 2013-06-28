@@ -42,9 +42,9 @@ import com.wabacus.system.datatype.ShortType;
 import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
-
-public class SQLSERVER2K extends AbsDatabaseType
-{
+//$ByQXO
+public class SQLSERVER2K extends AbstractJdbcDatabaseType
+{//ByQXO$
     private static Log log=LogFactory.getLog(SQLSERVER2K.class);
 
     public String constructSplitPageSql(ReportDataSetValueBean svbean)

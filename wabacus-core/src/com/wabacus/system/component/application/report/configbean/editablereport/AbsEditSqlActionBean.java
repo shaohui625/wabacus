@@ -87,7 +87,7 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
         this.returnValueParamname=returnValueParamname;
     }
 
-    protected String parseAndRemoveReturnParamname(String configsql)
+    public String parseAndRemoveReturnParamname(String configsql)
     {
         if(configsql==null||configsql.trim().equals("")) return configsql;
         int idx=configsql.indexOf("=");
@@ -150,69 +150,12 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
             Map<String,String> mParamValues) throws SQLException
     {
         AbsDatabaseType dbtype=rrequest.getDbType(this.ownerGroupBean.getDatasource());
-        Connection conn=rrequest.getConnection(this.ownerGroupBean.getDatasource());
-        Oracle oracleType=null;
-        PreparedStatement pstmt=null;
-        try
-        {
-            if(Config.show_sql) log.info("Execute sql:"+sql);
-            pstmt=conn.prepareStatement(sql);
-            if(sql.trim().toLowerCase().startsWith("select ")&&(dbtype instanceof Oracle))
-            {
-                oracleType=(Oracle)dbtype;
-                if(lstParamBeans!=null&&lstParamBeans.size()>0)
-                {
-                    int colidx=1;
-                    for(EditableReportParamBean paramBean:lstParamBeans)
-                    {
-                        if((paramBean.getDataTypeObj() instanceof ClobType)||(paramBean.getDataTypeObj() instanceof BlobType)) continue;
-                        paramBean.getDataTypeObj().setPreparedStatementValue(colidx++,
-                                getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean),pstmt,dbtype);
-                    }
-                }
-                ResultSet rs=pstmt.executeQuery();
-                while(rs.next())
-                {
-                    if(lstParamBeans!=null&&lstParamBeans.size()>0)
-                    {
-                        int colidx=1;
-                        for(EditableReportParamBean paramBean:lstParamBeans)
-                        {
-                            if(!(paramBean.getDataTypeObj() instanceof ClobType)&&!(paramBean.getDataTypeObj() instanceof BlobType)) continue;
-                            String paramvalue=getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean);
-                            if(paramBean.getDataTypeObj() instanceof ClobType)
-                            {
-                                oracleType.setClobValueInSelectMode(paramvalue,(oracle.sql.CLOB)rs.getClob(colidx++));
-                            }else
-                            {
-                                oracleType.setBlobValueInSelectMode(paramBean.getDataTypeObj().label2value(paramvalue),(oracle.sql.BLOB)rs
-                                        .getBlob(colidx++));
-                            }
-                        }
-                    }
-                }
-                rs.close();
-            }else
-            {
-                if(lstParamBeans!=null&&lstParamBeans.size()>0)
-                {
-                    int idx=1;
-                    for(EditableReportParamBean paramBean:lstParamBeans)
-                    {
-                        paramBean.getDataTypeObj().setPreparedStatementValue(idx++,
-                                getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean),pstmt,dbtype);
-                    }
-                }
-                int rtnVal=pstmt.executeUpdate();
-                storeReturnValue(rrequest,mParamValues,String.valueOf(rtnVal));
-            }
-        }finally
-        {
-            WabacusAssistant.getInstance().release(null,pstmt);
-        }
+        //$ByQXO
+        dbtype.updateData(mRowData,mParamValues,rbean,rrequest,this);
+        //ByQXO$        
     }
 
-    protected String getParamValue(Map<String,String> mRowData,Map<String,String> mParamValues,ReportBean rbean,ReportRequest rrequest,
+    public String getParamValue(Map<String,String> mRowData,Map<String,String> mParamValues,ReportBean rbean,ReportRequest rrequest,
             EditableReportParamBean paramBean)
     {
         String paramvalue=null;
@@ -260,7 +203,7 @@ public abstract class AbsEditSqlActionBean extends AbsEditActionBean
         return paramvalue;
     }
 
-    protected void storeReturnValue(ReportRequest rrequest,Map<String,String> mExternalParamsValue,String rtnVal)
+    public void storeReturnValue(ReportRequest rrequest,Map<String,String> mExternalParamsValue,String rtnVal)
     {
         if(this.returnValueParamname==null||this.returnValueParamname.trim().equals("")) return;
         if(Tools.isDefineKey("#",this.returnValueParamname))

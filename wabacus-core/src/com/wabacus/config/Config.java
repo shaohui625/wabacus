@@ -19,6 +19,7 @@
 package com.wabacus.config;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
 import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.database.datasource.AbsDataSource;
+import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.resource.Resources;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.config.template.TemplateBean;
@@ -248,6 +250,48 @@ public class Config
         dataexport_plainexcel_sheetsize=Integer.MIN_VALUE;
     }
     
+    //$ByQXO 全局配置功能
+    private PropertyOverrideLoader propertyOverrideLoader;
+    
+    
+    public PropertyOverrideLoader getPropertyOverrideLoader()
+    {
+        if( null == propertyOverrideLoader ){
+            propertyOverrideLoader = PropertyOverrideLoaderDefault.createPropertyOverrideLoader("wabacusPropertyOverrideLoader"); 
+        }
+        return propertyOverrideLoader;
+    }
+
+    private String getSystemConfigValue(String key)
+    {
+        if(mSystemConfig==null)
+        {
+            return "";
+        }
+        
+        String temp= this.getPropertyOverrideLoader().getOverridePropertyValue("wabacus.system.",key, mSystemConfig.get(key));
+        if(temp==null||temp.trim().equals("")) return "";
+        return temp;
+    }
+
+    
+    public Collection<String> getPageIds(){
+        if( null == mReportStructureInfo || mReportStructureInfo.size() < 1){
+            throw new IllegalArgumentException("wabacus未正确初始化！");
+        }
+        return mReportStructureInfo.keySet();
+    }
+    public AbsDatabaseType getDbType(String ds)
+    {
+        final AbsDatabaseType dbtype=Config.getInstance().getDataSource(ds).getDbType();
+        if(dbtype==null)
+        {
+            throw new WabacusConfigLoadingException("没有实现数据源"+ds+"对应数据库类型的相应实现类");
+        }
+        return dbtype;
+    }
+    //ByQXO$
+    
     public Object getResourceObject(ReportRequest rrequest,PageBean pbean,String key,boolean ismust)
     {
         if(key==null) return null;
@@ -431,17 +475,6 @@ public class Config
         }
     }
 
-    private String getSystemConfigValue(String key)
-    {
-        if(mSystemConfig==null)
-        {
-            return "";
-        }
-        String temp=mSystemConfig.get(key);
-        if(temp==null||temp.trim().equals("")) return "";
-        return temp;
-    }
-
     public PageBean getPageBean(String pageid)
     {
         if(mReportStructureInfo==null) return null;
@@ -562,7 +595,7 @@ public class Config
         }
         return datasource;
     }
-
+  
     public List<String> getUlstLocalCss(PageBean pbean)
     {
         if(this.mLocalCss==null) return null;

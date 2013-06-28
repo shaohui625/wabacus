@@ -779,7 +779,9 @@ public class ComponentConfigLoadManager
     public static void loadReportInfo(ReportBean rb,XmlElementBean eleReportBean,ReportBean rbParent) throws Exception
     {
         try
-        {
+        {   //$ByQXO　初始化属性Ｍap，以便扩展类中使用
+            rb.setAttrs(eleReportBean.getMPropertiesClone());
+            //ByQXO$
             loadComponentCommonConfig(eleReportBean,rb);
             loadApplicationCommonConfig(eleReportBean,rb);
             List<XmlElementBean> lstEleReportBeans=new ArrayList<XmlElementBean>();

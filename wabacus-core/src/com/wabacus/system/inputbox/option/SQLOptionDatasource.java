@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.typeprompt.TypePromptBean;
 import com.wabacus.config.typeprompt.TypePromptColBean;
@@ -123,13 +124,23 @@ public class SQLOptionDatasource extends AbsOptionDatasource
         {
             ReportBean rbean=this.ownerOptionBean.getOwnerInputboxObj().getOwner().getReportBean();
             ISqlDataSet ImpISQLType=null;
-            if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-            {
-                ImpISQLType=new GetAllDataSetByPreparedSQL();
-            }else
-            {
-                ImpISQLType=new GetAllDataSetBySQL();
-            }
+            //$ByQXO 数据库兼容性修改
+            List<ReportDataSetBean> lstDatasetBeans=rbean.getSbean().getLstDatasetBeans();
+            if(lstDatasetBeans != null && lstDatasetBeans.size()==1 ){
+                ImpISQLType = lstDatasetBeans.get(0).getDatasetValueBeanById(null).getISQLTypeBuilder(rbean.getSbean()).createAllResultSetISQLType();
+            }          
+            
+            if( ImpISQLType == null){
+                if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
+                {
+                    ImpISQLType=new GetAllDataSetByPreparedSQL();
+                }else
+                {
+                    ImpISQLType=new GetAllDataSetBySQL();
+                }
+            }            
+            //ByQXO$
+            
             Object objTmp=ImpISQLType.getDataSet(rrequest,rbean,this.ownerOptionBean,sql,this.lstConditions,this.getDatasource());
             if(objTmp instanceof List)
             {

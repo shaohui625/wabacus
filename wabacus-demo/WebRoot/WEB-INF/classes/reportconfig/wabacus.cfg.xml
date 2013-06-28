@@ -79,6 +79,15 @@
   			<property name="idle_test_period">50</property>   
   			<property name="acquire_increment">2</property>  
 		</datasource>
+		
+		<datasource name="ds_mongo" type="com.branchitech.wabacus.mongodb.MongodbDataSource"
+			dbtype="com.branchitech.wabacus.mongodb.MongodbDatabaseType">
+			<property name="serverAddress">127.0.0.1</property>
+			<property name="dbName">tasktop</property>
+			<property name="username"></property>
+			<property name="password"></property>
+		</datasource>
+		
 		<!--  datasource name="ds_postgresql" type="com.wabacus.config.database.datasource.C3P0DataSource"
 			dbtype="com.wabacus.config.database.type.Postgresql">
 			<property name="driver">com.mysql.jdbc.Driver</property>
@@ -142,6 +151,8 @@
 	<!-- 注册所有报表配置文件 -->
 	<report-files>
 		<report-file pattern="true">report/(report_)(\S*?)(\.xml)</report-file>
+		
+		<report-file pattern="true">test/(report_)(\S*?)(\.xml)</report-file>
 		<!--report-file pattern="true">classpath{reportconfig/report/(report_)(\S*?)(\.xml)}</report-file>
 		<report-file pattern="true">relative{reportconfig/report/(report_)(\S*?)(\.xml)}</report-file>
 		<report-file pattern="true">absolute{D:\reportconfig\report\(report_)(\S*?)(\.xml)}</report-file-->

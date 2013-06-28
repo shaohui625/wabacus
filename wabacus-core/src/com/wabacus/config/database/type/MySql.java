@@ -40,8 +40,9 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-public class MySql extends AbsDatabaseType
-{
+//$ByQXO
+public class MySql extends AbstractJdbcDatabaseType
+{//ByQXO$
     private final static Log log=LogFactory.getLog(MySql.class);
 
     public String constructSplitPageSql(ReportDataSetValueBean svbean)

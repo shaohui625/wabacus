@@ -32,8 +32,9 @@ import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.util.DesEncryptTools;
 
-public class DriverManagerDataSource extends AbsDataSource
-{
+//$ByQXO 
+public class DriverManagerDataSource extends AbstractJdbcDataSource
+{ //ByQXO$
     private static Log log=LogFactory.getLog(DriverManagerDataSource.class);
 
     private String driver;
@@ -118,7 +119,11 @@ public class DriverManagerDataSource extends AbsDataSource
         {
             eleChild=(Element)lstEleProperties.get(i);
             name=eleChild.attributeValue("name");
-            value=eleChild.getText();
+            
+            //$ByQXO 全局配置优先
+            value= getOverridePropertyValue(name,eleChild.getText());
+            //ByQXO$
+            
             name=name==null?"":name.trim();
             value=value==null?"":value.trim();
             if(name.equals("driver"))

@@ -506,7 +506,9 @@ public class ConfigLoadManager
             scriptBuf.append("   var boxValue=updateDestTdObj.getAttribute('value');");
             scriptBuf.append("   if(boxValue==null){");
             scriptBuf.append("      boxValue='';");
-            scriptBuf.append("   }else{");
+            //$ByQXO textarea时直接存放json数据时的转义问题
+            scriptBuf.append("   }else  if (type != 'textareabox') {");
+            //ByQXO$
             scriptBuf.append("      boxValue=boxValue.replace(/</g,'&lt;');boxValue=boxValue.replace(/>/g,'&gt;');boxValue=boxValue.replace(/\\\'/g,'&#039;');boxValue=boxValue.replace(/\\\"/g,'&quot;');");
             scriptBuf.append("   }var boxId=name;if(boxId.lastIndexOf('__')>0) boxId=boxId.substring(0,boxId.lastIndexOf('__'));");
             scriptBuf.append("   var inputboxSpanObj=document.getElementById('span_'+boxId+'_span');");

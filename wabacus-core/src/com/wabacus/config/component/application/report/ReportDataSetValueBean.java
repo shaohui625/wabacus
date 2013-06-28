@@ -29,7 +29,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
-import com.wabacus.config.component.application.report.condition.ConditionExpressionBean;
 import com.wabacus.config.component.application.report.condition.ConditionInSqlBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.database.type.Oracle;
@@ -40,13 +39,11 @@ import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.dataset.IReportDataSet;
+import com.wabacus.system.dataset.ISqlDataSetBuilder;
 import com.wabacus.system.dataset.sqldataset.GetAllDataSetByPreparedSQL;
 import com.wabacus.system.dataset.sqldataset.GetAllDataSetBySQL;
 import com.wabacus.system.dataset.sqldataset.GetDataSetByStoreProcedure;
-import com.wabacus.system.dataset.sqldataset.GetPartDataSetByPreparedSQL;
-import com.wabacus.system.dataset.sqldataset.GetPartDataSetBySQL;
 import com.wabacus.util.Consts;
-import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
 public class ReportDataSetValueBean extends AbsConfigBean
@@ -451,33 +448,16 @@ public class ReportDataSetValueBean extends AbsConfigBean
             return this.customizeDatasetObj;
         }else
         {
+            //$ByQXO
+            final ISqlDataSetBuilder isqlTypeBuilder=this.getDbType().getISQLTypeBuilder(this,rbean.getSbean().getStatementTypeName());
             if(this.isDependentDataSet()||cdb.isLoadAllReportData())
             {
-                if(this.isStoreProcedure())
-                {
-                    datSetObj=new GetDataSetByStoreProcedure();
-                    ((GetDataSetByStoreProcedure)datSetObj).setLoadAllData(true);
-                }else if(this.getReportBean().getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-                {
-                    datSetObj=new GetAllDataSetByPreparedSQL();
-                }else
-                {
-                    datSetObj=new GetAllDataSetBySQL();
-                }
+                datSetObj  = isqlTypeBuilder.createAllResultSetISQLType();
             }else
             {
-                if(this.isStoreProcedure())
-                {
-                    datSetObj=new GetDataSetByStoreProcedure();
-                    ((GetDataSetByStoreProcedure)datSetObj).setLoadAllData(false);
-                }else if(this.getReportBean().getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-                {
-                    datSetObj=new GetPartDataSetByPreparedSQL();
-                }else
-                {//普通sql语句
-                    datSetObj=new GetPartDataSetBySQL();
-                }
+                datSetObj  = isqlTypeBuilder.createPartResultSetISQLType();
             }
+            //ByQXO$
         }
         return datSetObj;
     }
@@ -608,7 +588,11 @@ public class ReportDataSetValueBean extends AbsConfigBean
     public void doPostLoad()
     {
         if(this.isStoreProcedure()||this.customizeDatasetObj!=null) return;
-        parseConditionInSql();
+        
+        //$ByQXO
+        this.getDbType().parseConditionInSql(this,this.value);
+        //ByQXO$
+        
         validateConditionsConfig();
         if(this.mDependParents!=null&&this.mDependParents.size()>0)
         {
@@ -619,148 +603,21 @@ public class ReportDataSetValueBean extends AbsConfigBean
             }
         }
     }
+    
+    //$ByQXO
+    //private void parseConditionInSql()
+    public ISqlDataSetBuilder getISQLTypeBuilder(SqlBean sbean){
+        final AbsDatabaseType dbType = this.getDbType();
+        return dbType.getISQLTypeBuilder(this,sbean.getStatementTypeName());
+     }
+     public AbsDatabaseType getDbType()
+     {
+         final AbsDatabaseType dbtype=Config.getInstance().getDbType(this.getDatasource());
+         return dbtype;
+     }     
+     //ByQXO$
 
-    private void parseConditionInSql()
-    {
-        if(this.value==null||this.value.trim().equals("")) return;
-        List<ConditionInSqlBean> lstConditionsInSqlBeans=new ArrayList<ConditionInSqlBean>();
-        ConditionInSqlBean csbeanTmp;
-        int placeholderIndex=0;
-        String sql=this.value;
-        StringBuffer sqlBuf=new StringBuffer();
-        int idxBracketStart;
-        int idxBracketEnd;
-        int idxJingStart;//存放sql语句中第一个有效#号的下标
-        int idxJingEnd;
-        while(true)
-        {
-            idxBracketStart=getValidIndex(sql,'{',0);
-            idxBracketEnd=getValidIndex(sql,'}',0);
-            idxJingStart=getValidIndex(sql,'#',0);
-            if(idxJingStart<0)
-            {
-                idxJingEnd=-1;
-            }else
-            {
-                idxJingEnd=getValidIndex(sql,'#',idxJingStart+1);
-            }
-            if(idxBracketStart<0&&idxBracketEnd<0&&idxJingStart<0&&idxJingEnd<0) break;
-                
-                
-                
-            validateCondition(sql,idxBracketStart,idxBracketEnd,idxJingStart,idxJingEnd);
-            if(idxJingEnd>=0&&(idxJingEnd<idxBracketStart||idxBracketStart<0))
-            {
-                String prex=sql.substring(0,idxJingStart);
-                String expression=sql.substring(idxJingStart,idxJingEnd+1);
-                String suffix=sql.substring(idxJingEnd+1);
-                if(expression.equals("#dynamic-columns#"))
-                {
-                    prex=prex.trim();
-                    suffix=suffix.trim();
-                    if(prex.endsWith("[")&&suffix.startsWith("]")||prex.endsWith("(")&&suffix.startsWith(")"))
-                    {
-                        sqlBuf.append(prex).append("#dynamic-columns#").append(suffix.substring(0,1));
-                        sql=suffix.substring(1);
-                        continue;
-                    }
-                }
-                String conditionname=expression;
-                expression="#data#";//这里用#data#占位符即可，方便解析pattern，不用标识<condition/>的name，因为会在对应的ConditionInSqlBean的中标识
-                if(prex.endsWith("%"))
-                {
-                    prex=prex.substring(0,prex.length()-1);
-                    expression="%"+expression;
-                }
-                if(prex.endsWith("'"))
-                {
-                    prex=prex.substring(0,prex.length()-1);
-                    expression="'"+expression;
-                }
-                if(suffix.startsWith("%"))
-                {
-                    suffix=suffix.substring(1);
-                    expression=expression+"%";
-                }
-                if(suffix.startsWith("'"))
-                {
-                    suffix=suffix.substring(1);
-                    expression=expression+"'";
-                }
-                sql=suffix;
-                csbeanTmp=new ConditionInSqlBean(this);
-                lstConditionsInSqlBeans.add(csbeanTmp);
-                csbeanTmp.setConditionname(conditionname);
-                csbeanTmp.setPlaceholder(" [CONDITION_PLACEHOLDER_"+placeholderIndex+"] ");
-                ConditionExpressionBean expressionBean=new ConditionExpressionBean();
-                csbeanTmp.setConditionExpression(expressionBean);
-                expressionBean.setValue(expression);
-                if(this.getReportBean().getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT) expressionBean.parseConditionExpression();
-                sqlBuf.append(prex).append(csbeanTmp.getPlaceholder());
-                placeholderIndex++;
-            }else if(idxBracketStart<idxJingStart&&idxBracketEnd>idxJingEnd&&idxBracketStart>=0&&idxJingEnd>=0)
-            {
-                
-                sqlBuf.append(sql.substring(0,idxBracketStart));
-                String expression=sql.substring(idxBracketStart,idxBracketEnd+1);
-                if(expression.equals("{#condition#}"))
-                {
-                    csbeanTmp=new ConditionInSqlBean(this);
-                    csbeanTmp.setConditionname("{#condition#}");
-                    lstConditionsInSqlBeans.add(csbeanTmp);
-                    sqlBuf.append(" {#condition#} ");
-                }else if(expression.equals(ReportDataSetValueBean.dependsConditionPlaceHolder))
-                {
-                    sqlBuf.append(" ").append(ReportDataSetValueBean.dependsConditionPlaceHolder).append(" ");
-                }else
-                {
-                    csbeanTmp=new ConditionInSqlBean(this);
-                    csbeanTmp.setPlaceholder(" [CONDITION_PLACEHOLDER_"+placeholderIndex+"] ");
-                    sqlBuf.append(csbeanTmp.getPlaceholder());
-                    if(idxBracketStart==0&&idxJingStart==1&&idxBracketEnd==expression.length()-1&&idxJingEnd==expression.length()-2)
-                    {
-                        csbeanTmp.setConditionname(expression);
-                    }else
-                    {
-                        expression=expression.substring(1,expression.length()-1);
-                        String conditionname=sql.substring(idxJingStart+1,idxJingEnd);//放在一个{}中的一定是从同一个<condition/>（即name属性相同）中取值做为条件，因此在这里可以取到此name属性（在##之间的值），
-                        if(conditionname.equals("data"))
-                        {//在sql语句中配置为#data#形式
-                            throw new WabacusConfigLoadingException("解析报表"+this.getReportBean().getPath()+"的查询SQL语句"+this.value
-                                    +"失败，不能在其中直接使用占位符#data#，这是一个框架做为保留字的字符串，请使用#conditionname#格式");
-                        }
-                        expression=Tools.replaceAll(expression,"#"+conditionname+"#","#data#");
-                        csbeanTmp.setConditionname(conditionname);
-                        ConditionExpressionBean expressionBean=new ConditionExpressionBean();
-                        csbeanTmp.setConditionExpression(expressionBean);
-                        expressionBean.setValue(expression);
-                        if(this.getReportBean().getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT) expressionBean.parseConditionExpression();
-                    }
-                    lstConditionsInSqlBeans.add(csbeanTmp);
-                    placeholderIndex++;
-                }
-                sql=sql.substring(idxBracketEnd+1);
-            }else
-            {
-                throw new WabacusConfigLoadingException("解析报表"+this.getReportBean()+"的SQL语句："+this.value+"中的动态条件失败，无法解析其中用{}和##括住的动态条件");
-            }
-        }
-        if(!sql.equals("")) sqlBuf.append(sql);
-        if(lstConditionsInSqlBeans==null||lstConditionsInSqlBeans.size()==0
-                ||(lstConditionsInSqlBeans.size()==1&&lstConditionsInSqlBeans.get(0).getConditionname().equals("{#condition#}")))
-        {
-            this.lstConditionInSqlBeans=null;
-        }else
-        {
-            this.value=sqlBuf.toString();
-            this.lstConditionInSqlBeans=lstConditionsInSqlBeans;
-        }
-        this.value=Tools.replaceAllOnetime(this.value,"\\{","{");
-        this.value=Tools.replaceAllOnetime(this.value,"\\}","}");
-        this.value=Tools.replaceAllOnetime(this.value,"\\#","#");
-    }
-
-    private void validateCondition(String sql,int idxBracketStart,int idxBracketEnd,int idxJingStart,int idxJingEnd)
+    public void validateCondition(String sql,int idxBracketStart,int idxBracketEnd,int idxJingStart,int idxJingEnd)
     {
         if(idxBracketStart>=0&&idxBracketEnd<0||idxBracketStart<0&&idxBracketEnd>=0||idxBracketStart>=idxBracketEnd&&idxBracketEnd>=0)
         {
@@ -797,7 +654,7 @@ public class ReportDataSetValueBean extends AbsConfigBean
         }
     }
 
-    private int getValidIndex(String sql,char sign,int startindex)
+    public static int getValidIndex(String sql,char sign,int startindex)
     {
         if(sql==null||sql.equals("")) return -1;
         char c;
@@ -869,74 +726,16 @@ public class ReportDataSetValueBean extends AbsConfigBean
 
     public void doPostLoadSql(boolean isListReportType)
     {
-        if(value==null||value.trim().equals("")||this.isStoreProcedure()||this.customizeDatasetObj!=null) return;
-        this.sqlWithoutOrderby=sqlprex+Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL+sqlsuffix;
-        if(isListReportType)
-        {
-            this.sqlWithoutOrderby=this.sqlWithoutOrderby+" "+Consts_Private.PLACEHODER_FILTERCONDITION;
-        }
-        this.sqlWithoutOrderby=this.sqlWithoutOrderby+" %orderby%";
-        String sqlKernel=value;
-        String sqlTemp=Tools.removeBracketAndContentInside(value,true);
-        sqlTemp=Tools.replaceAll(sqlTemp,"  "," ");
-        if(sqlTemp.toLowerCase().indexOf("order by")>0)
-        {
-            int idx_orderby=value.toLowerCase().lastIndexOf("order by");
-            sqlKernel=value.substring(0,idx_orderby);
-            String orderbyTmp=value.substring(idx_orderby+"order by ".length());
-            List<String> lstOrderByColumns=Tools.parseStringToList(orderbyTmp,",",false);
-            StringBuffer orderbuf=new StringBuffer();
-            for(String orderby_tmp:lstOrderByColumns)
-            {
-                if(orderby_tmp==null||orderby_tmp.trim().equals("")) continue;
-                orderby_tmp=orderby_tmp.trim();
-                int idx=orderby_tmp.indexOf(".");
-                if(idx>0)
-                {
-                    orderbuf.append(orderby_tmp.substring(idx+1));
-                }else
-                {
-                    orderbuf.append(orderby_tmp);
-                }
-                orderbuf.append(",");
-            }
-            orderbyTmp=orderbuf.toString();
-            if(orderbyTmp.charAt(orderbyTmp.length()-1)==',') orderbyTmp=orderbyTmp.substring(0,orderbyTmp.length()-1);
-            this.orderby=orderbyTmp;
-        }else
-        {
-            String column=null;
-            for(ColBean cbTmp:this.getReportBean().getDbean().getLstCols())
-            {
-                if(!cbTmp.isControlCol()&&!cbTmp.isNonFromDbCol()&&!cbTmp.isNonValueCol()&&!cbTmp.isSequenceCol()&&cbTmp.isMatchDataSet(this))
-                {
-                    column=cbTmp.getColumn();
-                    if(column!=null&&!column.trim().equals("")) break;
-                }
-            }
-            //            log.debug("没有为查询报表"+this.getReportBean().getPath()+"的数据配置order by子句，将会按"+column+"字段进行排序");
-            this.orderby=column;
-        }
-        this.sql_kernel=sqlKernel;
-        if(!this.isDependentDataSet())
-        {
-            this.sqlCount="select count(*) from ("+Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL+")  wx_tabletemp ";
-            if(isListReportType)
-            {
-                this.sqlCount=this.sqlCount+Consts_Private.PLACEHODER_FILTERCONDITION;
-                this.filterdata_sql="select distinct %FILTERCOLUMN%  from ("+this.sql_kernel+") wx_tblfilter "
-                        +Consts_Private.PLACEHODER_FILTERCONDITION+" order by  %FILTERCOLUMN%";
-            }
-        }
+      //$ByQXO
+       this.getDbType().doPostLoadSql(this,isListReportType);
+       //ByQXO$
     }
 
     public void buildPageSplitSql()
     {
-        AbsDatabaseType dbtype=Config.getInstance().getDataSource(this.getDatasource()).getDbType();
-        if(dbtype==null)
-        {
-            throw new WabacusConfigLoadingException("没有实现数据源"+this.getDatasource()+"对应数据库类型的相应实现类");
-        }
+        //$ByQXO
+        AbsDatabaseType dbtype=getDbType();
+       //ByQXO$
         this.setSplitpage_sql(dbtype.constructSplitPageSql(this));
     }
 
