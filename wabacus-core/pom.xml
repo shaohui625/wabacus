@@ -12,7 +12,7 @@
 	<artifactId>wabacus-core</artifactId>
 	<packaging>jar</packaging>
 	<name>wabacus core</name>
-	<version>4.1.2</version>
+	<version>4.1.2-enhance</version>
 	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
 	<url>https://code.google.com/p/wabacus/</url>
 	<properties>
@@ -262,6 +262,44 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+	
+      
+       <plugin>
+        <groupId>org.codehaus.groovy.maven</groupId>
+        <artifactId>gmaven-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <id>groovy-magic</id>
+            <phase>package</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <source>
+              	def patchDir =  new File("etc/patch-classes")
+              	if(patchDir.exists()){
+	              	def jar =  project.build.directory+'/'+project.artifactId+'-'+project.version+'.jar';
+	              	
+	             println "add patch classes to artifact jar:${jar}";	
+	              	def tmpjar =jar +".tmp.zip";
+	              	ant.move(file:jar,tofile:tmpjar);
+	                ant.zip(destfile:jar,update:false,duplicate:"preserve"){
+	                	fileset(dir:patchDir);         
+	                	zipfileset(src:tmpjar);       	                		
+	                }; 
+	                ant.delete(file:tmpjar);      
+	            
+                }else{
+                	println "no patch classes";
+                }
+              </source>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
