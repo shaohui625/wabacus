@@ -37,27 +37,11 @@
 </dependency>
 
 	<dependency>
-	 <groupId>branchitech</groupId>
-	 <artifactId>branchitech-el</artifactId>
-	 <version>1.0-201304181335</version>
-	</dependency>
-	<dependency>
 	 <groupId>org.mvel</groupId>
 	 <artifactId>mvel2</artifactId>
 	 <version>2.1.4.Final</version>
 	</dependency>
 
-		<dependency>
-			<groupId>com.branchitech.utils</groupId>
-			<artifactId>branchitech-utils-commons</artifactId>
-			<version>1.0.4</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>slf4j-api</artifactId>
-					<groupId>org.slf4j</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
 <dependency>
 	<groupId>org.jongo</groupId>
 	<artifactId>jongo</artifactId>
@@ -257,7 +241,13 @@
 			<groupId>com.googlecode.wabacus</groupId>
 			<artifactId>wabacus-core</artifactId>
 			<version>${verson.wabacus-core}</version>
+		</dependency>
+		    	<dependency>
+			<groupId>com.googlecode.wabacus</groupId>
+			<artifactId>wabacus-extra</artifactId>
+			<version>${verson.wabacus-core}</version>
 		</dependency> 		
+			
 		<dependency>
 			<groupId>com.oracle</groupId>
 			<artifactId>ojdbc14</artifactId>

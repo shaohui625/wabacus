@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+		<relativePath></relativePath>
+	</parent>
+	
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.googlecode.wabacus</groupId>
+	<artifactId>wabacus-parent</artifactId>
+	<version>1.0</version>
+	<packaging>pom</packaging>
+	<name>wabacus-parent</name>
+	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
+	
+	
+	<url>https://code.google.com/p/wabacus/</url>
+	
+	<properties>
+		<gpg.skip>false</gpg.skip>
+			 <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<licenses>
+		<license>
+			<name>GNU Lesser GPL 2.0</name>
+			<url>http://www.gnu.org/licenses/lgpl.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<scm>
+		<connection>scm:svn:http://wabacus.googlecode.com/svn/</connection>
+		<developerConnection>scm:svn:https://wabacus.googlecode.com/svn/</developerConnection>
+		<url>http://wabacus.googlecode.com/svn/</url>
+	</scm>
+	<developers>
+		<developer>
+			<id>wuweixing</id>
+			<name>星星</name>
+			<email>349446658@qq.com</email>
+		</developer>
+
+		<developer>
+			<id>heutangbin</id>
+			<name>heutangbin</name>
+			<email>heutangbin@gmail.com</email>
+		</developer>
+
+		<developer>
+			<id>qxodream</id>
+			<name>qxodream</name>
+			<email>qxodream@gmail.com</email>
+		</developer>
+
+		<developer>
+			<id>madj</id>
+			<name>madj</name>
+			<email>madj@163.com</email>
+		</developer>
+
+
+		<developer>
+			<id>hilltop919</id>
+			<name>hilltop919</name>
+			<email>hilltop919@gmail.com</email>
+		</developer>
+	</developers>
+	<build>
+	<plugins>
+				<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.4</version>
+				<configuration>
+					<skip>${gpg.skip}</skip>
+				</configuration>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	
+	</build>
+</project>

@@ -1,22 +1,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
  
- 	<parent>
-		<groupId>org.sonatype.oss</groupId>
-		<artifactId>oss-parent</artifactId>
-		<version>7</version>
+	<parent>
+		<groupId>com.googlecode.wabacus</groupId>
+		<artifactId>wabacus-parent</artifactId>
+		<version>1.0</version>
+		<relativePath>./wabacus-parent/pom.xml</relativePath>
 	</parent>
-
+	
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.googlecode.wabacus</groupId>
 	<artifactId>wabacus</artifactId>
 	<version>4.1.2-enhance</version>
   <packaging>pom</packaging>
   <name>wabacus</name>
-  <description></description>
-  <properties>
-	</properties>
-  <modules>
+  	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
+		<modules>
+			<module>wabacus-parent</module>
   	<module>wabacus-core</module>
+  	<module>wabacus-extra</module>
   	<module>wabacus-demo</module>
   </modules>  
 </project>

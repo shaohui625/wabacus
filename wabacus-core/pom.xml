@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<parent>
-		<groupId>org.sonatype.oss</groupId>
-		<artifactId>oss-parent</artifactId>
-		<version>7</version>
-		<relativePath></relativePath>
+		<groupId>com.googlecode.wabacus</groupId>
+		<artifactId>wabacus-parent</artifactId>
+		<version>1.0</version>
+		<relativePath>../wabacus-parent/pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.googlecode.wabacus</groupId>
@@ -29,7 +29,6 @@
 		<connection>scm:svn:http://wabacus.googlecode.com/svn/</connection>
 		<developerConnection>scm:svn:https://wabacus.googlecode.com/svn/</developerConnection>
 		<url>http://wabacus.googlecode.com/svn/</url>
-
 	</scm>
 	<developers>
 		<developer>
