@@ -12,34 +12,34 @@ create table tbl_dynamicolumns(
 	layer3 varchar (50) ,
 	col_column varchar (50) 
 );
-insert into tbl_dynamicolumns values('[åŠ¨æ€]ä¸ªäººèµ„æ–™','[åŠ¨æ€]å§“å','[åŠ¨æ€]ä¸­æ–‡å','name');
-insert into tbl_dynamicolumns values('[åŠ¨æ€]ä¸ªäººèµ„æ–™','[åŠ¨æ€]å§“å','[åŠ¨æ€]è‹±æ–‡å','ename');
-insert into tbl_dynamicolumns values('[åŠ¨æ€]ä¸ªäººèµ„æ–™',null,'[åŠ¨æ€]æ€§åˆ«','sex');
-insert into tbl_dynamicolumns values('[åŠ¨æ€]ä¸ªäººèµ„æ–™',null,'[åŠ¨æ€]å¹´é¾„','age');
-insert into tbl_dynamicolumns values(null,null,'[åŠ¨æ€]å‡ºç”Ÿæ—¥æœŸ','birthday');
+insert into tbl_dynamicolumns values('[¶¯Ì¬]¸öÈË×ÊÁÏ','[¶¯Ì¬]ĞÕÃû','[¶¯Ì¬]ÖĞÎÄÃû','name');
+insert into tbl_dynamicolumns values('[¶¯Ì¬]¸öÈË×ÊÁÏ','[¶¯Ì¬]ĞÕÃû','[¶¯Ì¬]Ó¢ÎÄÃû','ename');
+insert into tbl_dynamicolumns values('[¶¯Ì¬]¸öÈË×ÊÁÏ',null,'[¶¯Ì¬]ĞÔ±ğ','sex');
+insert into tbl_dynamicolumns values('[¶¯Ì¬]¸öÈË×ÊÁÏ',null,'[¶¯Ì¬]ÄêÁä','age');
+insert into tbl_dynamicolumns values(null,null,'[¶¯Ì¬]³öÉúÈÕÆÚ','birthday');
 create table tbl_area(
 	province	varchar(20),
 	city		varchar(20),
 	county		varchar(20)
 );
-insert into tbl_area values('æ±Ÿè¥¿','å®œæ˜¥','ä¸Šé«˜');
-insert into tbl_area values('æ±Ÿè¥¿','å®œæ˜¥','é«˜å®‰');
-insert into tbl_area values('æ±Ÿè¥¿','å®œæ˜¥','ä¸‡è½½');
-insert into tbl_area values('æ±Ÿè¥¿','å®œæ˜¥','å¥‰æ–°');
-insert into tbl_area values('æ±Ÿè¥¿','å—æ˜Œ','è¿›è´¤');
-insert into tbl_area values('æ±Ÿè¥¿','å—æ˜Œ','æ–°å»º');
-insert into tbl_area values('æ±Ÿè¥¿','æŠšå·','ä¸œä¹¡');
-insert into tbl_area values('æ±Ÿè¥¿','æŠšå·','ä¸´å·');
-insert into tbl_area values('å¹¿ä¸œ','æ·±åœ³','å®å®‰');
-insert into tbl_area values('å¹¿ä¸œ','æ·±åœ³','ç¦ç”°');
-insert into tbl_area values('å¹¿ä¸œ','æ·±åœ³','å—å±±');
-insert into tbl_area values('å¹¿ä¸œ','ä¸œè','å¡˜å¦');
-insert into tbl_area values('å¹¿ä¸œ','ä¸œè','é•¿å®‰');
-insert into tbl_area values('ç¦å»º','æ³‰å·','æƒ å®‰');
-insert into tbl_area values('ç¦å»º','æ³‰å·','å®‰æºª');
-insert into tbl_area values('ç¦å»º','æ³‰å·','å—å®‰');
-insert into tbl_area values('ç¦å»º','ç¦å·','æ°¸æ³°');
-insert into tbl_area values('ç¦å»º','ç¦å·','è¿æ±Ÿ');
+insert into tbl_area values('½­Î÷','ÒË´º','ÉÏ¸ß');
+insert into tbl_area values('½­Î÷','ÒË´º','¸ß°²');
+insert into tbl_area values('½­Î÷','ÒË´º','ÍòÔØ');
+insert into tbl_area values('½­Î÷','ÒË´º','·îĞÂ');
+insert into tbl_area values('½­Î÷','ÄÏ²ı','½øÏÍ');
+insert into tbl_area values('½­Î÷','ÄÏ²ı','ĞÂ½¨');
+insert into tbl_area values('½­Î÷','¸§Öİ','¶«Ïç');
+insert into tbl_area values('½­Î÷','¸§Öİ','ÁÙ´¨');
+insert into tbl_area values('¹ã¶«','ÉîÛÚ','±¦°²');
+insert into tbl_area values('¹ã¶«','ÉîÛÚ','¸£Ìï');
+insert into tbl_area values('¹ã¶«','ÉîÛÚ','ÄÏÉ½');
+insert into tbl_area values('¹ã¶«','¶«İ¸','ÌÁÏÃ');
+insert into tbl_area values('¹ã¶«','¶«İ¸','³¤°²');
+insert into tbl_area values('¸£½¨','ÈªÖİ','»İ°²');
+insert into tbl_area values('¸£½¨','ÈªÖİ','°²Ïª');
+insert into tbl_area values('¸£½¨','ÈªÖİ','ÄÏ°²');
+insert into tbl_area values('¸£½¨','¸£Öİ','ÓÀÌ©');
+insert into tbl_area values('¸£½¨','¸£Öİ','Á¬½­');
 
 create table tbl_baseinfo(
 	uuid		varchar(50),
@@ -51,44 +51,44 @@ create table tbl_baseinfo(
 	deptno		varchar(20)
 );
 
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0001','10001','å®‹æ–‡å',1,25,'1978-01-03','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0002','10002','å‘¨ç‡•',0,38,'1978-12-21','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0003','10003','å‘¨çº¢',0,45,'1968-05-23','0003');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0004','10004','èƒ¡æ™ºæ³¢',1,35,'1963-08-12','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0005','10005','èƒ¡ç§€é’',1,36,'1965-06-11','0002');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0006','10006','æ¶‚ç¦è‹±',0,56,'1959-05-03','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0007','10007','å®‹èŠ‚æ–Œ',1,45,'1957-11-05','0002');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0008','10008','å‘¨è‹±é¾™',1,26,'1980-10-09','0003');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0009','10009','å´æ ‘é’',1,32,'1983-11-15','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0010','10010','èŒƒæ–°å',1,36,'1983-08-17','0012');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0011','10011','å´å›½å‘',1,26,'1980-07-19','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0012','10012','å´å¿—æ«',1,43,'1978-08-13','0002');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0013','10013','èŒƒåšç´',0,28,'1977-03-03','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0014','10014','å‘¨å‹‡ä¼Ÿ',1,36,'1978-07-05','0005');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0015','10015','å‘¨èŠ‚å',1,46,'1976-05-17','0009');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0016','10016','èŒƒå‘˜æ³¢',1,35,'1978-07-16','0009');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0017','10017','èƒ¡å†¬ç´',0,56,'1980-06-15','0005');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0018','10018','ç‹æ´ªæš',0,28,'1980-08-21','0007');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0019','10019','å´å¿—æ¸…',1,37,'1968-07-27','0004');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0020','10020','å´å¿—å›½',1,38,'1987-08-29','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0021','10021','å´æ¸…çŠ',0,28,'1969-06-25','0009');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0022','10022','ç‹å¿—å°–',1,36,'1980-07-26','0012');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0023','10023','å´è‰¯å…‰',1,28,'1986-03-25','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0024','10024','èƒ¡çŸä¹',1,37,'1976-03-21','0004');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0025','10025','æ´ªäº®äº®',1,46,'1978-04-23','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0026','10026','ä»˜ç‘æ˜',1,45,'1966-06-12','0006');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0027','10027','èƒ¡å¿—è¹',0,29,'1985-07-11','0010');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0028','10028','é«˜æ´ªæ³¢',1,34,'1975-03-10','0008');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0029','10029','åˆ˜é“­ç½²',1,38,'1973-07-15','0006');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0030','10030','èƒ¡å©·',0,36,'1976-11-03','0010');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0031','10031','å´å»ºä¸­',1,39,'1988-12-15','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0032','10032','å´å¿—è¯š',1,26,'1986-04-19','0007');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0033','10033','è‹ä¼Ÿå®˜',1,28,'1963-10-26','0007');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0034','10034','å´åœ†è›¾',0,29,'1968-08-27','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0035','10035','å´èŠçº¢',0,23,'1965-01-21','0002');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0036','10036','ä¸‡å…´å›½',1,27,'1958-11-20','0011');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0037','10037','èŒƒè´µçº¢',0,45,'1980-10-23','0001');
-insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0038','10038','å®‹å›½ç',0,36,'1982-06-13','0008');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0001','10001','ËÎÎÄ»ª',1,25,'1978-01-03','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0002','10002','ÖÜÑà',0,38,'1978-12-21','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0003','10003','ÖÜºì',0,45,'1968-05-23','0003');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0004','10004','ºúÖÇ²¨',1,35,'1963-08-12','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0005','10005','ºúĞãÇà',1,36,'1965-06-11','0002');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0006','10006','Í¿çùÓ¢',0,56,'1959-05-03','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0007','10007','ËÎ½Ú±ó',1,45,'1957-11-05','0002');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0008','10008','ÖÜÓ¢Áú',1,26,'1980-10-09','0003');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0009','10009','ÎâÊ÷Çà',1,32,'1983-11-15','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0010','10010','·¶ĞÂ»ª',1,36,'1983-08-17','0012');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0011','10011','Îâ¹ú·¢',1,26,'1980-07-19','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0012','10012','ÎâÖ¾·ã',1,43,'1978-08-13','0002');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0013','10013','·¶¼áÇÙ',0,28,'1977-03-03','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0014','10014','ÖÜÓÂÎ°',1,36,'1978-07-05','0005');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0015','10015','ÖÜ½Ú»ª',1,46,'1976-05-17','0009');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0016','10016','·¶Ô±²¨',1,35,'1978-07-16','0009');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0017','10017','ºú¶¬ÇÙ',0,56,'1980-06-15','0005');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0018','10018','ÍõºéÃ¶',0,28,'1980-08-21','0007');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0019','10019','ÎâÖ¾Çå',1,37,'1968-07-27','0004');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0020','10020','ÎâÖ¾¹ú',1,38,'1987-08-29','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0021','10021','ÎâÇåÉº',0,28,'1969-06-25','0009');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0022','10022','ÍõÖ¾¼â',1,36,'1980-07-26','0012');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0023','10023','ÎâÁ¼¹â',1,28,'1986-03-25','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0024','10024','ºúçäÀÖ',1,37,'1976-03-21','0004');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0025','10025','ºéÁÁÁÁ',1,46,'1978-04-23','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0026','10026','¸¶ÈğÃ÷',1,45,'1966-06-12','0006');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0027','10027','ºúÖ¾Ó¨',0,29,'1985-07-11','0010');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0028','10028','¸ßºé²¨',1,34,'1975-03-10','0008');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0029','10029','ÁõÃúÊğ',1,38,'1973-07-15','0006');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0030','10030','ºúæÃ',0,36,'1976-11-03','0010');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0031','10031','Îâ½¨ÖĞ',1,39,'1988-12-15','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0032','10032','ÎâÖ¾³Ï',1,26,'1986-04-19','0007');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0033','10033','ËÕÎ°¹Ù',1,28,'1963-10-26','0007');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0034','10034','ÎâÔ²¶ê',0,29,'1968-08-27','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0035','10035','ÎâÖ¥ºì',0,23,'1965-01-21','0002');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0036','10036','ÍòĞË¹ú',1,27,'1958-11-20','0011');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0037','10037','·¶¹óºì',0,45,'1980-10-23','0001');
+insert into tbl_baseinfo values('8a9f8189297d71b001297d71b01a0038','10038','ËÎ¹úÕä',0,36,'1982-06-13','0008');
 
 create table tbl_department(
 	guid			varchar(50),
@@ -100,36 +100,36 @@ create table tbl_department(
 	description		text
 );
 
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0001','0001','ç”Ÿäº§è´¨é‡éƒ¨','å´åäº‘','2001-01-03','ä¼˜ç§€','æ ¹æ®å®¢æˆ·è¦æ±‚çš„äº§å“äº¤è´§æœŸï¼Œå®‰æ’ç”Ÿäº§ï¼Œå®‰æ’æµ‹è¯•ï¼Œå®‰æ’åŒ…è£…ï¼ŒæŒ‰æ—¶æŒ‰è´¨å®Œæˆäº§å“ï¼Œå¯¹ç ”å‘äº§å“æµ‹è¯•æ ·æœºç”Ÿäº§æ”¯æŒï¼Œç®¡ç†ç”Ÿäº§è½¦é—´ï¼Œ5Sï¼Œç²¾ç›Šç”Ÿäº§ï¼Œç”Ÿäº§ç‰©æ–™ã€åŠæˆå“å’Œæˆå“ç®¡ç†ï¼Œç”Ÿäº§è´¨é‡ç®¡ç†ï¼Œç”Ÿäº§äººå‘˜ç®¡ç†ï¼Œæ“ä½œå·¥æŠ€èƒ½åŸ¹è®­ï¼Œåˆ¶å®šç”Ÿäº§å„éƒ¨åˆ†çš„åˆ¶åº¦å’Œæµç¨‹ï¼Œå¯¹é”€å”®çš„äº§å“è´¨é‡è¿›è¡Œè·Ÿè¸ªå’Œç®¡ç†ï¼Œå¤„ç†å®¢æˆ·äº§å“æŠ•è¯‰ï¼Œæå‡ºäº§å“è´¨é‡æ•´æ”¹æ„è§ï¼Œç»„ç»‡å’Œæé«˜äº§å“è®¤è¯ï¼ˆ3Cï¼ŒCCEEï¼ŒCCIBï¼ŒCEï¼‰ã€è´¨é‡è®¤è¯ï¼ˆISO9000-ISO90004ï¼‰ã€ç¯å¢ƒè®¤è¯ï¼ˆISO14000ï¼‰ï¼Œåˆ¶å®šå’Œå®Œå–„å…¨é¢è´¨é‡ç®¡ç†ï¼ˆTQMï¼‰');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0002','0002','ç‰©æµéƒ¨','è‹ä¼Ÿæ ¹','2001-01-03','å¾ˆå·®','å°†é”€å”®éƒ¨è·å¾—çš„å®¢æˆ·è®¢å•å½•å…¥åˆ°ERPç³»ç»Ÿï¼Œå¹¶ç”Ÿæˆç›¸åº”çš„åŠ å·¥å•ï¼Œå¯¹æˆå“æŒ‰ç…§å®¢æˆ·è¦æ±‚çš„æ—¥æœŸå’Œå‘è´§åœ°ç‚¹å®Œæˆæˆå“å‘è¿ï¼Œè¡¡é‡å…¬å¸å¯¹å®¢æˆ·åŠæ—¶äº¤è´§ç‡ï¼›æŒ‰ç…§ç‰©æµåè®®å‘ä¾›åº”å•†è´­ä¹°ç‰©æ–™ï¼Œå‚¬ç¼´ç‰©æ–™ï¼Œå¯¹ç‰©æ–™è¿›è¡Œè´¨é‡æ£€æŸ¥ï¼Œå¹¶å¯¹ä¾›åº”å•†æ¥æ–™è¿›è¡Œæ›´æ€»å’Œç‰©æ–™FIFOç®¡ç†ï¼Œæ”¶åˆ°å‘ç¥¨åç»„ç»‡ä»˜æ¬¾ï¼Œè¡¡é‡ä¾›åº”å•†å¯¹å…¬å¸çš„åŠæ—¶äº¤è´§ç‡ï¼Œä»¥åŠä¿ç¨ç‰©æ–™å’ŒæŠ¥å…³å®åŠ¡å¤„ç†ï¼Œæ§åˆ¶åº“å­˜ï¼Œåˆ¶å®šç‰©æµåˆ¶åº¦å’Œç›¸åº”æµç¨‹');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0003','0003','é‡‡è´­éƒ¨','èƒ¡å¿ å','2001-11-13','è‰¯å¥½','å‰æœŸä¾›åº”å•†çš„æœå¯»ï¼Œå¯¹ä¾›åº”å•†çš„è®¤è¯å’Œè€ƒæ ¸ï¼Œè°ˆåˆ¤ç‰©æ–™ä»·æ ¼ï¼Œåˆ¶å®šç‰©æµé‡‡è´­åè®®ï¼Œå¯¹ä¾›åº”å•†çš„äº§å“å’Œé€è´§è¿›è¡Œè´¨é‡æ›´æ€»ï¼Œéç”Ÿäº§æ€§ç‰©æ–™çš„é‡‡è´­ï¼Œåˆ¶å®šæ‰€æœ‰é‡‡è´­ææ–™çš„æµç¨‹å’Œåˆ¶åº¦ï¼Œå¯¹å·¥ä¸šé¡¹ç›®é‡‡è´­çš„æ”¯æŒ');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0004','0004','è´¢åŠ¡éƒ¨','èƒ¡æ–°ç«‹','2003-06-09','è‰¯å¥½','å¯¹å…¬å¸çš„ç»è¥çŠ¶å†µè¿›è¡Œåˆ†æï¼Œæä¾›å†³ç­–è´¢åŠ¡æ•°æ®æ”¯æŒï¼Œå„ç§å‡­è¯å½•å…¥ç³»ç»Ÿï¼Œå¯¹ä¾›åº”å•†å¼€å…·çš„å‘ç¥¨ä»˜æ¬¾ï¼Œå¼€å‘ç¥¨ç»™å®¢æˆ·ï¼Œå¹¶è¿›è¡Œåº”æ”¶æ¬¾çš„å·¥ä½œï¼Œå¯¹å„ç§å‡­è¯æ±‡æ€»äº§ç”Ÿæ€»è´¦ï¼Œå‡ºå…·è´¢åŠ¡æŠ¥è¡¨ï¼ˆèµ„äº§è´Ÿå€ºè¡¨ï¼ŒæŸç›Šè¡¨ï¼Œç°é‡‘æµé‡è¡¨ï¼‰ï¼Œç®¡ç†å…¬å¸å­˜æ¬¾å’Œç°é‡‘ï¼Œç®¡ç†æ”¯ç¥¨ã€æ±‡ç¥¨ã€å‘ç¥¨ã€æ”¶æ®ï¼ŒæŠ¥é”€ï¼Œç®¡ç†å…¬å¸å›ºå®šèµ„äº§');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0005','0005','ç ”å‘æŠ€æœ¯éƒ¨','æ½˜æ—æ·˜','2003-12-03','è‰¯å¥½','è´Ÿè´£å¯¹ç°æœ‰äº§å“å‡çº§æ›´æ–°ï¼Œæ€§èƒ½ä¼˜åŒ–ï¼Œäº§å“æ”¹è¿›ï¼Œæ–°äº§å“ç ”å‘ï¼Œäº§å“ç”Ÿäº§æŠ€æœ¯æ”¯æŒï¼Œç®¡ç†ç ”å‘è®¾å¤‡å’Œç ”å‘å®éªŒå®¤');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0006','0006','äººäº‹è¡Œæ”¿éƒ¨','èƒ¡æ–°å','2003-12-09','ä¼˜ç§€','å‘å±•å…¬å¸ä¼ä¸šæ–‡åŒ–ï¼Œåˆ¶å®šå…¬å¸äººäº‹åˆ¶åº¦ï¼Œç®¡ç†å‘˜å·¥å…¥èŒç¦»èŒï¼ŒåŠ³åŠ¨åˆåŒç®¡ç†ï¼Œå‘˜å·¥ä¿¡æ¯ç®¡ç†ï¼Œåˆ¶å®šå‘˜å·¥ç¦åˆ©å’Œå¥–æƒ©åˆ¶åº¦ï¼Œåˆ¶å®šå…¬å¸åŸ¹è®­æ”¿ç­–å’Œåˆ¶åº¦ï¼Œå®‰æ’å‡ºå·®äººå‘˜çš„é£Ÿå®¿ï¼Œç®¡ç†å…¬å¸ç­è½¦ï¼Œç®¡ç†å…¬å¸é£Ÿå ‚ï¼Œç®¡ç†å…¬å¸åŠå…¬è®¾å¤‡');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0007','0007','ä¿¡æ¯ç®¡ç†éƒ¨','è‹å°ç´','2004-03-12','ä¼˜ç§€','ç®¡ç†å…¬å¸çš„ä¿¡æ¯è®¾å¤‡ï¼Œä¿è¯è®¾å¤‡å’Œä¿¡æ¯çš„å®‰å…¨ï¼Œæä¾›ç¨³å®šï¼Œå®‰å…¨ï¼Œé«˜æ•ˆçš„åº”ç”¨æœåŠ¡ï¼Œé…åˆå…¬å¸æˆ˜ç•¥è§„åˆ’ï¼Œåˆ¶å®šä¿¡æ¯ç®¡ç†å‘å±•è®¡åˆ’ï¼Œå¸¦é¢†å’Œæ”¯æŒä¸šåŠ¡éƒ¨é—¨ï¼Œæä¾›ä¼˜è´¨çš„äº§å“å’ŒæœåŠ¡');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0008','0008','é”€å”®å¸‚åœºéƒ¨','æ½˜äº‘é¹','2004-03-12','è¾ƒå¥½','ä¸ºå…¬å¸äº§å“ç­–åˆ’è¥é”€æ´»åŠ¨ï¼Œæ ‘ç«‹å…¬å¸å“ç‰Œå½±å“åŠ›ï¼Œæ‰©å¤§äº§å“å¸‚åœºå æœ‰é¢ï¼Œç®¡ç†åˆ†é”€å•†ã€ä»£ç†å•†ç½‘ç»œï¼Œåˆ¶å®šå…¬å¸å¹´åº¦é”€å”®è®¡åˆ’ï¼Œå¯¹é”€å”®æ´»åŠ¨è¿›è¡Œç›‘ç£å’Œç®¡ç†ï¼Œè€ƒæ ¸é”€å”®ä¸šç»©ï¼Œä¸ºå®¢æˆ·æä¾›ä¼˜è´¨äº§å“å’ŒæœåŠ¡');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a0009','0009','å”®åæœåŠ¡éƒ¨','æ½˜äº‘é£','2004-03-12','è¾ƒå¥½','æä¾›äº§å“å®¢æˆ·æœåŠ¡ï¼Œäº§å“å®‰è£…ï¼Œäº§å“è°ƒè¯•ï¼Œäº§å“ç»´ä¿®ï¼Œäº§å“é…ä»¶ç®¡ç†ï¼Œäº§å“å”®åæœåŠ¡ç®¡ç†ï¼Œæä¾›ä¼˜è´¨çš„äº§å“å”®åæœåŠ¡');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a00010','0010','å·¥ä¸šå·¥ç¨‹éƒ¨','å´é‡‘å‡','2005-01-06','è¾ƒå¥½','è§„åˆ’ç”Ÿäº§çº¿ï¼Œæä¾›ç²¾ç›Šç”Ÿäº§æ–¹æ³•å’Œæµç¨‹ï¼Œåˆ¶å®šäº§å“ç”Ÿäº§å·¥è‰ºå·¥åºï¼Œäº§å“ç”Ÿäº§æ“ä½œæ‰‹å†Œï¼Œç”Ÿäº§è½¦é—´å¸ƒå±€ç®¡ç†ï¼Œä¼˜åŒ–ç”Ÿäº§å·¥è‰ºå·¥åºï¼Œæä¾›å·¥ä½œæ•ˆç‡ï¼Œè§„åˆ’å®‰å…¨ç”Ÿäº§ç¯å¢ƒï¼Œäº§å“æŠ€æœ¯å˜æ›´ç®¡ç†ï¼Œé›¶éƒ¨ä»¶ç‰ˆæœ¬å‡çº§ç®¡ç†ï¼Œå·¥ç¨‹å˜æ›´ç®¡ç†ï¼Œå°†æ–°ç ”å‘çš„äº§å“å·¥ä¸šåŒ–ï¼Œæ–°äº§å“ç”Ÿäº§çº¿è§„åˆ’ï¼Œæ“ä½œå·¥WIåŸ¹è®­');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a00011','0011','è®¾å¤‡ç»´ä¿®éƒ¨','å´å¹³çº¢','2005-01-06','è‰¯å¥½','è´Ÿè´£å…¬å¸æ‰€æœ‰æ•…éšœè®¾å¤‡çš„ç»´ä¿®ä¸æ›´æ–°');
-insert into tbl_department values('3a8f8189297d71b001297d71b01a00012','0012','ä¿å«å¤„','èƒ¡å»ºå›½','2005-01-08','ä¼˜ç§€','ç»´æŠ¤å…¬å¸åŠå‘˜å·¥å®‰å…¨ï¼Œä¿éšœå…¬å¸è´¢äº§ä¸å—ç ´å');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0001','0001','Éú²úÖÊÁ¿²¿','Îâ»ªÔÆ','2001-01-03','ÓÅĞã','¸ù¾İ¿Í»§ÒªÇóµÄ²úÆ·½»»õÆÚ£¬°²ÅÅÉú²ú£¬°²ÅÅ²âÊÔ£¬°²ÅÅ°ü×°£¬°´Ê±°´ÖÊÍê³É²úÆ·£¬¶ÔÑĞ·¢²úÆ·²âÊÔÑù»úÉú²úÖ§³Ö£¬¹ÜÀíÉú²ú³µ¼ä£¬5S£¬¾«ÒæÉú²ú£¬Éú²úÎïÁÏ¡¢°ë³ÉÆ·ºÍ³ÉÆ·¹ÜÀí£¬Éú²úÖÊÁ¿¹ÜÀí£¬Éú²úÈËÔ±¹ÜÀí£¬²Ù×÷¹¤¼¼ÄÜÅàÑµ£¬ÖÆ¶¨Éú²ú¸÷²¿·ÖµÄÖÆ¶ÈºÍÁ÷³Ì£¬¶ÔÏúÊÛµÄ²úÆ·ÖÊÁ¿½øĞĞ¸ú×ÙºÍ¹ÜÀí£¬´¦Àí¿Í»§²úÆ·Í¶Ëß£¬Ìá³ö²úÆ·ÖÊÁ¿Õû¸ÄÒâ¼û£¬×éÖ¯ºÍÌá¸ß²úÆ·ÈÏÖ¤£¨3C£¬CCEE£¬CCIB£¬CE£©¡¢ÖÊÁ¿ÈÏÖ¤£¨ISO9000-ISO90004£©¡¢»·¾³ÈÏÖ¤£¨ISO14000£©£¬ÖÆ¶¨ºÍÍêÉÆÈ«ÃæÖÊÁ¿¹ÜÀí£¨TQM£©');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0002','0002','ÎïÁ÷²¿','ËÕÎ°¸ù','2001-01-03','ºÜ²î','½«ÏúÊÛ²¿»ñµÃµÄ¿Í»§¶©µ¥Â¼Èëµ½ERPÏµÍ³£¬²¢Éú³ÉÏàÓ¦µÄ¼Ó¹¤µ¥£¬¶Ô³ÉÆ·°´ÕÕ¿Í»§ÒªÇóµÄÈÕÆÚºÍ·¢»õµØµãÍê³É³ÉÆ··¢ÔË£¬ºâÁ¿¹«Ë¾¶Ô¿Í»§¼°Ê±½»»õÂÊ£»°´ÕÕÎïÁ÷Ğ­ÒéÏò¹©Ó¦ÉÌ¹ºÂòÎïÁÏ£¬´ß½ÉÎïÁÏ£¬¶ÔÎïÁÏ½øĞĞÖÊÁ¿¼ì²é£¬²¢¶Ô¹©Ó¦ÉÌÀ´ÁÏ½øĞĞ¸ü×ÜºÍÎïÁÏFIFO¹ÜÀí£¬ÊÕµ½·¢Æ±ºó×éÖ¯¸¶¿î£¬ºâÁ¿¹©Ó¦ÉÌ¶Ô¹«Ë¾µÄ¼°Ê±½»»õÂÊ£¬ÒÔ¼°±£Ë°ÎïÁÏºÍ±¨¹ØÊµÎñ´¦Àí£¬¿ØÖÆ¿â´æ£¬ÖÆ¶¨ÎïÁ÷ÖÆ¶ÈºÍÏàÓ¦Á÷³Ì');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0003','0003','²É¹º²¿','ºúÖÒ»ª','2001-11-13','Á¼ºÃ','Ç°ÆÚ¹©Ó¦ÉÌµÄËÑÑ°£¬¶Ô¹©Ó¦ÉÌµÄÈÏÖ¤ºÍ¿¼ºË£¬Ì¸ÅĞÎïÁÏ¼Û¸ñ£¬ÖÆ¶¨ÎïÁ÷²É¹ºĞ­Òé£¬¶Ô¹©Ó¦ÉÌµÄ²úÆ·ºÍËÍ»õ½øĞĞÖÊÁ¿¸ü×Ü£¬·ÇÉú²úĞÔÎïÁÏµÄ²É¹º£¬ÖÆ¶¨ËùÓĞ²É¹º²ÄÁÏµÄÁ÷³ÌºÍÖÆ¶È£¬¶Ô¹¤ÒµÏîÄ¿²É¹ºµÄÖ§³Ö');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0004','0004','²ÆÎñ²¿','ºúĞÂÁ¢','2003-06-09','Á¼ºÃ','¶Ô¹«Ë¾µÄ¾­Óª×´¿ö½øĞĞ·ÖÎö£¬Ìá¹©¾ö²ß²ÆÎñÊı¾İÖ§³Ö£¬¸÷ÖÖÆ¾Ö¤Â¼ÈëÏµÍ³£¬¶Ô¹©Ó¦ÉÌ¿ª¾ßµÄ·¢Æ±¸¶¿î£¬¿ª·¢Æ±¸ø¿Í»§£¬²¢½øĞĞÓ¦ÊÕ¿îµÄ¹¤×÷£¬¶Ô¸÷ÖÖÆ¾Ö¤»ã×Ü²úÉú×ÜÕË£¬³ö¾ß²ÆÎñ±¨±í£¨×Ê²ú¸ºÕ®±í£¬ËğÒæ±í£¬ÏÖ½ğÁ÷Á¿±í£©£¬¹ÜÀí¹«Ë¾´æ¿îºÍÏÖ½ğ£¬¹ÜÀíÖ§Æ±¡¢»ãÆ±¡¢·¢Æ±¡¢ÊÕ¾İ£¬±¨Ïú£¬¹ÜÀí¹«Ë¾¹Ì¶¨×Ê²ú');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0005','0005','ÑĞ·¢¼¼Êõ²¿','ÅËÁÖÌÔ','2003-12-03','Á¼ºÃ','¸ºÔğ¶ÔÏÖÓĞ²úÆ·Éı¼¶¸üĞÂ£¬ĞÔÄÜÓÅ»¯£¬²úÆ·¸Ä½ø£¬ĞÂ²úÆ·ÑĞ·¢£¬²úÆ·Éú²ú¼¼ÊõÖ§³Ö£¬¹ÜÀíÑĞ·¢Éè±¸ºÍÑĞ·¢ÊµÑéÊÒ');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0006','0006','ÈËÊÂĞĞÕş²¿','ºúĞÂ»ª','2003-12-09','ÓÅĞã','·¢Õ¹¹«Ë¾ÆóÒµÎÄ»¯£¬ÖÆ¶¨¹«Ë¾ÈËÊÂÖÆ¶È£¬¹ÜÀíÔ±¹¤ÈëÖ°ÀëÖ°£¬ÀÍ¶¯ºÏÍ¬¹ÜÀí£¬Ô±¹¤ĞÅÏ¢¹ÜÀí£¬ÖÆ¶¨Ô±¹¤¸£ÀûºÍ½±³ÍÖÆ¶È£¬ÖÆ¶¨¹«Ë¾ÅàÑµÕş²ßºÍÖÆ¶È£¬°²ÅÅ³ö²îÈËÔ±µÄÊ³ËŞ£¬¹ÜÀí¹«Ë¾°à³µ£¬¹ÜÀí¹«Ë¾Ê³ÌÃ£¬¹ÜÀí¹«Ë¾°ì¹«Éè±¸');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0007','0007','ĞÅÏ¢¹ÜÀí²¿','ËÕĞ¡ÇÙ','2004-03-12','ÓÅĞã','¹ÜÀí¹«Ë¾µÄĞÅÏ¢Éè±¸£¬±£Ö¤Éè±¸ºÍĞÅÏ¢µÄ°²È«£¬Ìá¹©ÎÈ¶¨£¬°²È«£¬¸ßĞ§µÄÓ¦ÓÃ·şÎñ£¬ÅäºÏ¹«Ë¾Õ½ÂÔ¹æ»®£¬ÖÆ¶¨ĞÅÏ¢¹ÜÀí·¢Õ¹¼Æ»®£¬´øÁìºÍÖ§³ÖÒµÎñ²¿ÃÅ£¬Ìá¹©ÓÅÖÊµÄ²úÆ·ºÍ·şÎñ');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0008','0008','ÏúÊÛÊĞ³¡²¿','ÅËÔÆÅô','2004-03-12','½ÏºÃ','Îª¹«Ë¾²úÆ·²ß»®ÓªÏú»î¶¯£¬Ê÷Á¢¹«Ë¾Æ·ÅÆÓ°ÏìÁ¦£¬À©´ó²úÆ·ÊĞ³¡Õ¼ÓĞ¶î£¬¹ÜÀí·ÖÏúÉÌ¡¢´úÀíÉÌÍøÂç£¬ÖÆ¶¨¹«Ë¾Äê¶ÈÏúÊÛ¼Æ»®£¬¶ÔÏúÊÛ»î¶¯½øĞĞ¼à¶½ºÍ¹ÜÀí£¬¿¼ºËÏúÊÛÒµ¼¨£¬Îª¿Í»§Ìá¹©ÓÅÖÊ²úÆ·ºÍ·şÎñ');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a0009','0009','ÊÛºó·şÎñ²¿','ÅËÔÆ·É','2004-03-12','½ÏºÃ','Ìá¹©²úÆ·¿Í»§·şÎñ£¬²úÆ·°²×°£¬²úÆ·µ÷ÊÔ£¬²úÆ·Î¬ĞŞ£¬²úÆ·Åä¼ş¹ÜÀí£¬²úÆ·ÊÛºó·şÎñ¹ÜÀí£¬Ìá¹©ÓÅÖÊµÄ²úÆ·ÊÛºó·şÎñ');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a00010','0010','¹¤Òµ¹¤³Ì²¿','Îâ½ğÉı','2005-01-06','½ÏºÃ','¹æ»®Éú²úÏß£¬Ìá¹©¾«ÒæÉú²ú·½·¨ºÍÁ÷³Ì£¬ÖÆ¶¨²úÆ·Éú²ú¹¤ÒÕ¹¤Ğò£¬²úÆ·Éú²ú²Ù×÷ÊÖ²á£¬Éú²ú³µ¼ä²¼¾Ö¹ÜÀí£¬ÓÅ»¯Éú²ú¹¤ÒÕ¹¤Ğò£¬Ìá¹©¹¤×÷Ğ§ÂÊ£¬¹æ»®°²È«Éú²ú»·¾³£¬²úÆ·¼¼Êõ±ä¸ü¹ÜÀí£¬Áã²¿¼ş°æ±¾Éı¼¶¹ÜÀí£¬¹¤³Ì±ä¸ü¹ÜÀí£¬½«ĞÂÑĞ·¢µÄ²úÆ·¹¤Òµ»¯£¬ĞÂ²úÆ·Éú²úÏß¹æ»®£¬²Ù×÷¹¤WIÅàÑµ');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a00011','0011','Éè±¸Î¬ĞŞ²¿','ÎâÆ½ºì','2005-01-06','Á¼ºÃ','¸ºÔğ¹«Ë¾ËùÓĞ¹ÊÕÏÉè±¸µÄÎ¬ĞŞÓë¸üĞÂ');
+insert into tbl_department values('3a8f8189297d71b001297d71b01a00012','0012','±£ÎÀ´¦','ºú½¨¹ú','2005-01-08','ÓÅĞã','Î¬»¤¹«Ë¾¼°Ô±¹¤°²È«£¬±£ÕÏ¹«Ë¾²Æ²ú²»ÊÜÆÆ»µ');
 
 create table tbl_dept_pingjia(
 	guid			varchar(50),
 	pingjia			varchar(30)
 );
 
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0001','å¾ˆå¥½');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0002','å¾ˆå·®');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0003','è¾ƒå¥½');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0004','è¾ƒå·®');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0005','å¾ˆå¥½');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0006','è¾ƒå¥½');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0007','è¾ƒå¥½');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0008','å¾ˆå¥½');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0009','è¾ƒå¥½');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a00010','è¾ƒå¥½');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a00011','å¾ˆå·®');
-insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a00012','å¾ˆå¥½');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0001','ºÜºÃ');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0002','ºÜ²î');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0003','½ÏºÃ');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0004','½Ï²î');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0005','ºÜºÃ');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0006','½ÏºÃ');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0007','½ÏºÃ');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0008','ºÜºÃ');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a0009','½ÏºÃ');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a00010','½ÏºÃ');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a00011','ºÜ²î');
+insert into tbl_dept_pingjia values('3a8f8189297d71b001297d71b01a00012','ºÜºÃ');
 
 create table tbl_detailinfo(
 	no		varchar(20),
@@ -147,44 +147,44 @@ create table tbl_detailinfo(
 	orderline	int
 );
 
-insert into tbl_detailinfo values('10001','songwenhua',1320.2,'2008-11-03','æ±Ÿè¥¿','å—æ˜Œ','è¿›è´¤',1,'å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_chiay.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',101538111);
-insert into tbl_detailinfo values('10002','zhouyuan',2345.32,'2003-02-21','å¹¿ä¸œ','æ·±åœ³','å®å®‰',0,'æ’çƒ,æ—…æ¸¸,è·‘æ­¥','/WabacusDemo/wabacusdemo/uploadfile/2_claudxyz.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',111538112);
-insert into tbl_detailinfo values('10003','zhouhong',4323.23,'2005-03-23','ç¦å»º','æ³‰å·','æƒ å®‰',0,'è¶³çƒ,çˆ¬å±±,æ¸¸æ³³','/WabacusDemo/wabacusdemo/uploadfile/2_cuidenghong123.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',121538113);
-insert into tbl_detailinfo values('10004','huzhibo',6352,'2006-08-22','æ±Ÿè¥¿','å®œæ˜¥','é«˜å®‰',1,'æ’çƒ,æ—…æ¸¸','/WabacusDemo/wabacusdemo/uploadfile/2_cxz003.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',131538114);
-insert into tbl_detailinfo values('10005','huxiuqing',4367.2,'2005-06-01','ç¦å»º','æ³‰å·','å®‰æºª',0,'è¶³çƒ,æ—…æ¸¸,è·‘æ­¥,å¥èº«','/WabacusDemo/wabacusdemo/uploadfile/2_e_mi_tuo_fo.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',141538115);
-insert into tbl_detailinfo values('10006','tuqiying',5355.2,'2006-05-23','å¹¿ä¸œ','ä¸œè','å¡˜å¦',0,'è·‘æ­¥,å¥èº«','/WabacusDemo/wabacusdemo/uploadfile/2_emon123.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',151538116);
-insert into tbl_detailinfo values('10007','songjiebin',7434.34,'2002-11-03','æ±Ÿè¥¿','å—æ˜Œ','è¿›è´¤',0,'è·‘æ­¥,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_fanyuanwaifdl.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',161538117);
-insert into tbl_detailinfo values('10008','zhouyinglong',7436.5,'2000-10-19','ç¦å»º','æ³‰å·','æƒ å®‰',0,'æ¸¸æ³³,æ’çƒ,æ—…æ¸¸,','/WabacusDemo/wabacusdemo/uploadfile/2_fellowcheng.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',171538118);
-insert into tbl_detailinfo values('10009','wushuqing',3455.3,'2009-11-15','æ±Ÿè¥¿','æŠšå·','ä¸´å·',1,'ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_gaohenggaoheng.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',181538119);
-insert into tbl_detailinfo values('10010','fanxinhua',3466.3,'2007-08-20','æ±Ÿè¥¿','å—æ˜Œ','è¿›è´¤',0,'æ¸¸æ³³,æ’çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_haiyong_sea.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',191538120);
-insert into tbl_detailinfo values('10011','woguofa',3677.4,'2000-07-29','æ±Ÿè¥¿','æŠšå·','ä¸´å·',0,'è·‘æ­¥,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_huahua320.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',201538121);
-insert into tbl_detailinfo values('10012','wuzhifeng',7637.3,'2002-08-23','å¹¿ä¸œ','æ·±åœ³','ç¦ç”°',0,'æ¸¸æ³³,æ’çƒ,æ—…æ¸¸','/WabacusDemo/wabacusdemo/uploadfile/2_huiyaxiong.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',211538122);
-insert into tbl_detailinfo values('10013','fanjianqin',6346.3,'2006-03-23','æ±Ÿè¥¿','å®œæ˜¥','é«˜å®‰',0,'çˆ¬å±±,æ’çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_hyblusea.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',221538123);
-insert into tbl_detailinfo values('10014','zhouyongwei',7598,'2004-07-15','ç¦å»º','æ³‰å·','æƒ å®‰',0,'è¶³çƒ,è·‘æ­¥,å¥èº«','/WabacusDemo/wabacusdemo/uploadfile/2_ivfangwang_long.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',231538124);
-insert into tbl_detailinfo values('10015','zhoujiehua',9346.3,'2000-05-07','å¹¿ä¸œ','æ·±åœ³','å®å®‰',1,'æ—…æ¸¸,è·‘æ­¥,å¥èº«','/WabacusDemo/wabacusdemo/uploadfile/2_jaffy.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',241538125);
-insert into tbl_detailinfo values('10016','fanyuanbo',7463.3,'2003-07-06','æ±Ÿè¥¿','æŠšå·','ä¸´å·',0,'è·‘æ­¥,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_javaalpha.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',51538126);
-insert into tbl_detailinfo values('10017','hudongqin',8998.2,'2008-06-05','æ±Ÿè¥¿','å®œæ˜¥','ä¸Šé«˜',0,'è¶³çƒ,çˆ¬å±±,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_jennyvenus.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',281538127);
-insert into tbl_detailinfo values('10018','zhouhong',7654.7,'2007-08-11','ç¦å»º','ç¦å·','æ°¸æ³°',0,'è¶³çƒ,çˆ¬å±±,æ’çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_jjkodada.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',271538128);
-insert into tbl_detailinfo values('10019','wuzhiqing',6745.3,'2006-07-17','å¹¿ä¸œ','æ·±åœ³','å—å±±',1,'å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_kaiyekai.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',281538129);
-insert into tbl_detailinfo values('10020','wuzhiguo',7655.4,'2005-08-20','å¹¿ä¸œ','æ·±åœ³','ç¦ç”°',0,'è¶³çƒ,çˆ¬å±±','/WabacusDemo/wabacusdemo/uploadfile/2_kakajay008.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',291538130);
-insert into tbl_detailinfo values('10021','wuqingshan',10080.3,'2005-06-15','ç¦å»º','ç¦å·','è¿æ±Ÿ',0,'æ—…æ¸¸,è·‘æ­¥','/WabacusDemo/wabacusdemo/uploadfile/2_lbh119.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',301538131);
-insert into tbl_detailinfo values('10022','wangzhijian',2980.9,'2006-07-20','æ±Ÿè¥¿','å®œæ˜¥','é«˜å®‰',1,'å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_liufang12381.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',311538132);
-insert into tbl_detailinfo values('10023','wuliangguang',3800,'2007-03-20','å¹¿ä¸œ','æ·±åœ³','ç¦ç”°',0,'è¶³çƒ,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_liuxk99.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',321538134);
-insert into tbl_detailinfo values('10024','huwenle',9890.3,'2006-03-23','å¹¿ä¸œ','æ·±åœ³','ç¦ç”°',1,'è¶³çƒ,çˆ¬å±±,æ¸¸æ³³,æ’çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_luojianfeng.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',331538135);
-insert into tbl_detailinfo values('10025','hongliangliang',6551,'2008-04-21','ç¦å»º','æ³‰å·','æƒ å®‰',1,'æ’çƒ,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_luxiaoshuai.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',341538136);
-insert into tbl_detailinfo values('10026','fuluiming',3455.3,'2003-06-22','ç¦å»º','ç¦å·','è¿æ±Ÿ',1,'è·‘æ­¥,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_lzj_freedom.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',351538137);
-insert into tbl_detailinfo values('10027','huzhiying',5764.3,'2009-07-12','æ±Ÿè¥¿','å®œæ˜¥','ä¸Šé«˜',0,'æ—…æ¸¸,è·‘æ­¥,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_minvt.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',361538138);
-insert into tbl_detailinfo values('10028','gaohongbo',9832.3,'2007-03-13','ç¦å»º','ç¦å·','è¿æ±Ÿ',0,'æ’çƒ,æ—…æ¸¸,è·‘æ­¥','/WabacusDemo/wabacusdemo/uploadfile/2_pepeet.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',371538139);
-insert into tbl_detailinfo values('10029','liumingshu',4645,'2006-07-16','æ±Ÿè¥¿','å—æ˜Œ','æ–°å»º',0,'è·‘æ­¥,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_pxh360395296.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',381538140);
-insert into tbl_detailinfo values('10030','huting',5789,'2004-11-02','å¹¿ä¸œ','æ·±åœ³','å—å±±',0,'çˆ¬å±±,æ¸¸æ³³,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_pzy0428.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',391538141);
-insert into tbl_detailinfo values('10031','wujianzhong',3456,'2007-12-25','ç¦å»º','ç¦å·','æ°¸æ³°',0,'è¶³çƒ,çˆ¬å±±,æ¸¸æ³³','/WabacusDemo/wabacusdemo/uploadfile/2_q107770540.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',401538142);
-insert into tbl_detailinfo values('10032','wuzhicheng',9253,'2003-04-10','æ±Ÿè¥¿','å—æ˜Œ','è¿›è´¤',1,'è¶³çƒ,çˆ¬å±±,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_qiubojuncode.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',411538143);
-insert into tbl_detailinfo values('10033','shuweiguan',8992.5,'2000-10-16','å¹¿ä¸œ','ä¸œè','å¡˜å¦',0,'å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_shineboyadh.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',421538144);
-insert into tbl_detailinfo values('10034','wuyuane',7687,'2002-08-23','ç¦å»º','ç¦å·','æ°¸æ³°',1,'è¶³çƒ,çˆ¬å±±,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_songpengasp.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',431538145);
-insert into tbl_detailinfo values('10035','wuzhihong',2336,'2006-01-22','æ±Ÿè¥¿','å®œæ˜¥','é«˜å®‰',0,'æ’çƒ,æ—…æ¸¸,è·‘æ­¥','/WabacusDemo/wabacusdemo/uploadfile/2_steptodream.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',441538146);
-insert into tbl_detailinfo values('10036','wanxingguo',8566.3,'2005-11-23','ç¦å»º','æ³‰å·','å®‰æºª',0,'æ¸¸æ³³,æ’çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_stonekind.jpg','å‹¤å·èŠ‚çº¦ï¼Œç§¯æä¸Šè¿›','',451538147);
-insert into tbl_detailinfo values('10037','fanguihong',3246,'2001-10-25','æ±Ÿè¥¿','å—æ˜Œ','æ–°å»º',1,'è·‘æ­¥,å¥èº«,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_tashiwoweiyi.jpg','å¥½åƒæ‡’åšï¼Œæ¸¸æ‰‹å¥½é—²ï¼Œå¥½é€¸æ¶åŠ³','',461538148);
-insert into tbl_detailinfo values('10038','songguozhen',9675,'2003-06-18','å¹¿ä¸œ','ä¸œè','é•¿å®‰',1,'è¶³çƒ,çˆ¬å±±,ç¯®çƒ','/WabacusDemo/wabacusdemo/uploadfile/2_teng_s2000.jpg','åŠªåŠ›å‹¤å¥‹ï¼Œä¸Šè¿›å¥½å­¦','',471538149);
+insert into tbl_detailinfo values('10001','songwenhua',1320.2,'2008-11-03','½­Î÷','ÄÏ²ı','½øÏÍ',1,'½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_chiay.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',101538111);
+insert into tbl_detailinfo values('10002','zhouyuan',2345.32,'2003-02-21','¹ã¶«','ÉîÛÚ','±¦°²',0,'ÅÅÇò,ÂÃÓÎ,ÅÜ²½','/WabacusDemo/wabacusdemo/uploadfile/2_claudxyz.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',111538112);
+insert into tbl_detailinfo values('10003','zhouhong',4323.23,'2005-03-23','¸£½¨','ÈªÖİ','»İ°²',0,'×ãÇò,ÅÀÉ½,ÓÎÓ¾','/WabacusDemo/wabacusdemo/uploadfile/2_cuidenghong123.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',121538113);
+insert into tbl_detailinfo values('10004','huzhibo',6352,'2006-08-22','½­Î÷','ÒË´º','¸ß°²',1,'ÅÅÇò,ÂÃÓÎ','/WabacusDemo/wabacusdemo/uploadfile/2_cxz003.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',131538114);
+insert into tbl_detailinfo values('10005','huxiuqing',4367.2,'2005-06-01','¸£½¨','ÈªÖİ','°²Ïª',0,'×ãÇò,ÂÃÓÎ,ÅÜ²½,½¡Éí','/WabacusDemo/wabacusdemo/uploadfile/2_e_mi_tuo_fo.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',141538115);
+insert into tbl_detailinfo values('10006','tuqiying',5355.2,'2006-05-23','¹ã¶«','¶«İ¸','ÌÁÏÃ',0,'ÅÜ²½,½¡Éí','/WabacusDemo/wabacusdemo/uploadfile/2_emon123.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',151538116);
+insert into tbl_detailinfo values('10007','songjiebin',7434.34,'2002-11-03','½­Î÷','ÄÏ²ı','½øÏÍ',0,'ÅÜ²½,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_fanyuanwaifdl.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',161538117);
+insert into tbl_detailinfo values('10008','zhouyinglong',7436.5,'2000-10-19','¸£½¨','ÈªÖİ','»İ°²',0,'ÓÎÓ¾,ÅÅÇò,ÂÃÓÎ,','/WabacusDemo/wabacusdemo/uploadfile/2_fellowcheng.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',171538118);
+insert into tbl_detailinfo values('10009','wushuqing',3455.3,'2009-11-15','½­Î÷','¸§Öİ','ÁÙ´¨',1,'ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_gaohenggaoheng.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',181538119);
+insert into tbl_detailinfo values('10010','fanxinhua',3466.3,'2007-08-20','½­Î÷','ÄÏ²ı','½øÏÍ',0,'ÓÎÓ¾,ÅÅÇò','/WabacusDemo/wabacusdemo/uploadfile/2_haiyong_sea.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',191538120);
+insert into tbl_detailinfo values('10011','woguofa',3677.4,'2000-07-29','½­Î÷','¸§Öİ','ÁÙ´¨',0,'ÅÜ²½,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_huahua320.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',201538121);
+insert into tbl_detailinfo values('10012','wuzhifeng',7637.3,'2002-08-23','¹ã¶«','ÉîÛÚ','¸£Ìï',0,'ÓÎÓ¾,ÅÅÇò,ÂÃÓÎ','/WabacusDemo/wabacusdemo/uploadfile/2_huiyaxiong.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',211538122);
+insert into tbl_detailinfo values('10013','fanjianqin',6346.3,'2006-03-23','½­Î÷','ÒË´º','¸ß°²',0,'ÅÀÉ½,ÅÅÇò','/WabacusDemo/wabacusdemo/uploadfile/2_hyblusea.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',221538123);
+insert into tbl_detailinfo values('10014','zhouyongwei',7598,'2004-07-15','¸£½¨','ÈªÖİ','»İ°²',0,'×ãÇò,ÅÜ²½,½¡Éí','/WabacusDemo/wabacusdemo/uploadfile/2_ivfangwang_long.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',231538124);
+insert into tbl_detailinfo values('10015','zhoujiehua',9346.3,'2000-05-07','¹ã¶«','ÉîÛÚ','±¦°²',1,'ÂÃÓÎ,ÅÜ²½,½¡Éí','/WabacusDemo/wabacusdemo/uploadfile/2_jaffy.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',241538125);
+insert into tbl_detailinfo values('10016','fanyuanbo',7463.3,'2003-07-06','½­Î÷','¸§Öİ','ÁÙ´¨',0,'ÅÜ²½,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_javaalpha.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',51538126);
+insert into tbl_detailinfo values('10017','hudongqin',8998.2,'2008-06-05','½­Î÷','ÒË´º','ÉÏ¸ß',0,'×ãÇò,ÅÀÉ½,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_jennyvenus.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',281538127);
+insert into tbl_detailinfo values('10018','zhouhong',7654.7,'2007-08-11','¸£½¨','¸£Öİ','ÓÀÌ©',0,'×ãÇò,ÅÀÉ½,ÅÅÇò','/WabacusDemo/wabacusdemo/uploadfile/2_jjkodada.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',271538128);
+insert into tbl_detailinfo values('10019','wuzhiqing',6745.3,'2006-07-17','¹ã¶«','ÉîÛÚ','ÄÏÉ½',1,'½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_kaiyekai.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',281538129);
+insert into tbl_detailinfo values('10020','wuzhiguo',7655.4,'2005-08-20','¹ã¶«','ÉîÛÚ','¸£Ìï',0,'×ãÇò,ÅÀÉ½','/WabacusDemo/wabacusdemo/uploadfile/2_kakajay008.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',291538130);
+insert into tbl_detailinfo values('10021','wuqingshan',10080.3,'2005-06-15','¸£½¨','¸£Öİ','Á¬½­',0,'ÂÃÓÎ,ÅÜ²½','/WabacusDemo/wabacusdemo/uploadfile/2_lbh119.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',301538131);
+insert into tbl_detailinfo values('10022','wangzhijian',2980.9,'2006-07-20','½­Î÷','ÒË´º','¸ß°²',1,'½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_liufang12381.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',311538132);
+insert into tbl_detailinfo values('10023','wuliangguang',3800,'2007-03-20','¹ã¶«','ÉîÛÚ','¸£Ìï',0,'×ãÇò,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_liuxk99.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',321538134);
+insert into tbl_detailinfo values('10024','huwenle',9890.3,'2006-03-23','¹ã¶«','ÉîÛÚ','¸£Ìï',1,'×ãÇò,ÅÀÉ½,ÓÎÓ¾,ÅÅÇò','/WabacusDemo/wabacusdemo/uploadfile/2_luojianfeng.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',331538135);
+insert into tbl_detailinfo values('10025','hongliangliang',6551,'2008-04-21','¸£½¨','ÈªÖİ','»İ°²',1,'ÅÅÇò,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_luxiaoshuai.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',341538136);
+insert into tbl_detailinfo values('10026','fuluiming',3455.3,'2003-06-22','¸£½¨','¸£Öİ','Á¬½­',1,'ÅÜ²½,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_lzj_freedom.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',351538137);
+insert into tbl_detailinfo values('10027','huzhiying',5764.3,'2009-07-12','½­Î÷','ÒË´º','ÉÏ¸ß',0,'ÂÃÓÎ,ÅÜ²½,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_minvt.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',361538138);
+insert into tbl_detailinfo values('10028','gaohongbo',9832.3,'2007-03-13','¸£½¨','¸£Öİ','Á¬½­',0,'ÅÅÇò,ÂÃÓÎ,ÅÜ²½','/WabacusDemo/wabacusdemo/uploadfile/2_pepeet.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',371538139);
+insert into tbl_detailinfo values('10029','liumingshu',4645,'2006-07-16','½­Î÷','ÄÏ²ı','ĞÂ½¨',0,'ÅÜ²½,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_pxh360395296.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',381538140);
+insert into tbl_detailinfo values('10030','huting',5789,'2004-11-02','¹ã¶«','ÉîÛÚ','ÄÏÉ½',0,'ÅÀÉ½,ÓÎÓ¾,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_pzy0428.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',391538141);
+insert into tbl_detailinfo values('10031','wujianzhong',3456,'2007-12-25','¸£½¨','¸£Öİ','ÓÀÌ©',0,'×ãÇò,ÅÀÉ½,ÓÎÓ¾','/WabacusDemo/wabacusdemo/uploadfile/2_q107770540.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',401538142);
+insert into tbl_detailinfo values('10032','wuzhicheng',9253,'2003-04-10','½­Î÷','ÄÏ²ı','½øÏÍ',1,'×ãÇò,ÅÀÉ½,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_qiubojuncode.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',411538143);
+insert into tbl_detailinfo values('10033','shuweiguan',8992.5,'2000-10-16','¹ã¶«','¶«İ¸','ÌÁÏÃ',0,'½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_shineboyadh.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',421538144);
+insert into tbl_detailinfo values('10034','wuyuane',7687,'2002-08-23','¸£½¨','¸£Öİ','ÓÀÌ©',1,'×ãÇò,ÅÀÉ½,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_songpengasp.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',431538145);
+insert into tbl_detailinfo values('10035','wuzhihong',2336,'2006-01-22','½­Î÷','ÒË´º','¸ß°²',0,'ÅÅÇò,ÂÃÓÎ,ÅÜ²½','/WabacusDemo/wabacusdemo/uploadfile/2_steptodream.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',441538146);
+insert into tbl_detailinfo values('10036','wanxingguo',8566.3,'2005-11-23','¸£½¨','ÈªÖİ','°²Ïª',0,'ÓÎÓ¾,ÅÅÇò','/WabacusDemo/wabacusdemo/uploadfile/2_stonekind.jpg','ÇÚÍµ½ÚÔ¼£¬»ı¼«ÉÏ½ø','',451538147);
+insert into tbl_detailinfo values('10037','fanguihong',3246,'2001-10-25','½­Î÷','ÄÏ²ı','ĞÂ½¨',1,'ÅÜ²½,½¡Éí,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_tashiwoweiyi.jpg','ºÃ³ÔÀÁ×ö£¬ÓÎÊÖºÃÏĞ£¬ºÃÒİ¶ñÀÍ','',461538148);
+insert into tbl_detailinfo values('10038','songguozhen',9675,'2003-06-18','¹ã¶«','¶«İ¸','³¤°²',1,'×ãÇò,ÅÀÉ½,ÀºÇò','/WabacusDemo/wabacusdemo/uploadfile/2_teng_s2000.jpg','Å¬Á¦ÇÚ·Ü£¬ÉÏ½øºÃÑ§','',471538149);
 
 
 create table tbl_zhaoping(
@@ -195,15 +195,15 @@ create table tbl_zhaoping(
 	xueli		varchar(30),
 	primary key (id)
 );
-insert into tbl_zhaoping values(null,'ç½‘ç»œå·¥ç¨‹å¸ˆ',5030,1,'æœ¬ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping values(null,'è½¯ä»¶å·¥ç¨‹å¸ˆ',6800,3,'æœ¬ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping values(null,'é«˜çº§ä¼šè®¡å¸ˆ',8000,1,'ç¡•å£«ä»¥ä¸Š');
-insert into tbl_zhaoping values(null,'è®¡ç®—æœºè¿è¡Œç»´æŠ¤å·¥ç¨‹å¸ˆ',4500,2,'ä¸“ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping values(null,'ç­–åˆ’ç»ç†',8200,1,'æœ¬ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping values(null,'è´¨é‡ç®¡ç†å·¥ç¨‹å¸ˆ',5500,5,'æœ¬ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping values(null,'æ™®å·¥',1200,20,'æ— ');
-insert into tbl_zhaoping values(null,'å¨å¸ˆ',3000,2,'æ— ');
-insert into tbl_zhaoping values(null,'é¡¹ç›®ç»ç†',8500,2,'æœ¬ç§‘ä»¥ä¸Š');
+insert into tbl_zhaoping values(null,'ÍøÂç¹¤³ÌÊ¦',5030,1,'±¾¿ÆÒÔÉÏ');
+insert into tbl_zhaoping values(null,'Èí¼ş¹¤³ÌÊ¦',6800,3,'±¾¿ÆÒÔÉÏ');
+insert into tbl_zhaoping values(null,'¸ß¼¶»á¼ÆÊ¦',8000,1,'Ë¶Ê¿ÒÔÉÏ');
+insert into tbl_zhaoping values(null,'¼ÆËã»úÔËĞĞÎ¬»¤¹¤³ÌÊ¦',4500,2,'×¨¿ÆÒÔÉÏ');
+insert into tbl_zhaoping values(null,'²ß»®¾­Àí',8200,1,'±¾¿ÆÒÔÉÏ');
+insert into tbl_zhaoping values(null,'ÖÊÁ¿¹ÜÀí¹¤³ÌÊ¦',5500,5,'±¾¿ÆÒÔÉÏ');
+insert into tbl_zhaoping values(null,'ÆÕ¹¤',1200,20,'ÎŞ');
+insert into tbl_zhaoping values(null,'³øÊ¦',3000,2,'ÎŞ');
+insert into tbl_zhaoping values(null,'ÏîÄ¿¾­Àí',8500,2,'±¾¿ÆÒÔÉÏ');
 
 
 create table tbl_zhaopingdesc(
@@ -211,15 +211,15 @@ create table tbl_zhaopingdesc(
 	yaoqiu		varchar(3000),
 	description	varchar(3000)
 );
-insert into tbl_zhaopingdesc values(1,'ä¸¤å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œå·¥ä½œåˆ»è‹¦ï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œèƒ½å‡ºå·®','è´Ÿè´£å…¬å¸ç½‘ç»œæ¶æ„ä¸ç»´æŠ¤ä»¥åŠç½‘ç»œç›¸å…³äº§å“çš„é‡‡è´­');
-insert into tbl_zhaopingdesc values(2,'ä¸‰å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œå­¦ä¹ èƒ½åŠ›å¼ºï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œèƒ½å‡ºå·®','è´Ÿè´£å…¬å¸æ‰€ç”¨è½¯ä»¶çš„å¼€å‘ä¸ç»´æŠ¤ï¼Œå¹¶åŸ¹è®­å…¬å¸å‘˜å·¥ä½¿ç”¨');
-insert into tbl_zhaopingdesc values(3,'äº”å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œæ€ç»´æ´»è·ƒï¼Œè®¤çœŸè´Ÿè´£','è´Ÿè´£å…¬å¸åšå¸');
-insert into tbl_zhaopingdesc values(4,'å·¥ä½œåˆ»è‹¦ï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œèƒ½å‡ºå·®','è´Ÿè´£å…¬å¸æ‰€ç”¨ç”µè„‘è¿›è¡Œå®‰è£…ä¸ç»´æŠ¤');
-insert into tbl_zhaopingdesc values(5,'ä¸‰å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œæ€ç»´æ´»è·ƒï¼Œè®¤çœŸè´Ÿè´£ï¼Œè´£ä»»å¿ƒå¼ºï¼Œäº²å’ŒåŠ›å¼º','è´Ÿè´£å…¬å¸æ–°äº§å“çš„ç­–åˆ’ä»¥åŠå…¬å¸å…¶å®ƒæ´»åŠ¨çš„ç»„ç»‡å’Œç­–åˆ’');
-insert into tbl_zhaopingdesc values(6,'ï¼Œè®¤çœŸè´Ÿè´£ï¼Œå·¥ä½œåˆ»è‹¦ï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œèƒ½å‡ºå·®','è´Ÿè´£å…¬å¸äº§å“çš„æµ‹è¯•');
-insert into tbl_zhaopingdesc values(7,'å·¥ä½œåˆ»è‹¦ï¼Œç§¯æè‚¯å¹²ï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œæœä»å®‰æ’','è´Ÿè´£å…¬å¸äº§å“çš„ç”Ÿäº§');
-insert into tbl_zhaopingdesc values(8,'ä¸‰å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œå·¥ä½œåˆ»è‹¦ï¼Œè®²å«ç”Ÿ','è´Ÿè´£å…¬å¸é£Ÿå ‚ç‚’èœç…®é¥­');
-insert into tbl_zhaopingdesc values(9,'ä¸‰å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œè¡¨è¾¾èƒ½åŠ›å¼ºï¼Œäº²å’ŒåŠ›å¼º','è´Ÿè´£é¢†å¯¼å…¬å¸äº§å“å°ç»„çš„å¼€å‘ä¸æµ‹è¯•');
+insert into tbl_zhaopingdesc values(1,'Á½ÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬¹¤×÷¿Ì¿à£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬ÄÜ³ö²î','¸ºÔğ¹«Ë¾ÍøÂç¼Ü¹¹ÓëÎ¬»¤ÒÔ¼°ÍøÂçÏà¹Ø²úÆ·µÄ²É¹º');
+insert into tbl_zhaopingdesc values(2,'ÈıÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬Ñ§Ï°ÄÜÁ¦Ç¿£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬ÄÜ³ö²î','¸ºÔğ¹«Ë¾ËùÓÃÈí¼şµÄ¿ª·¢ÓëÎ¬»¤£¬²¢ÅàÑµ¹«Ë¾Ô±¹¤Ê¹ÓÃ');
+insert into tbl_zhaopingdesc values(3,'ÎåÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬Ë¼Î¬»îÔ¾£¬ÈÏÕæ¸ºÔğ','¸ºÔğ¹«Ë¾×öÕÊ');
+insert into tbl_zhaopingdesc values(4,'¹¤×÷¿Ì¿à£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬ÄÜ³ö²î','¸ºÔğ¹«Ë¾ËùÓÃµçÄÔ½øĞĞ°²×°ÓëÎ¬»¤');
+insert into tbl_zhaopingdesc values(5,'ÈıÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬Ë¼Î¬»îÔ¾£¬ÈÏÕæ¸ºÔğ£¬ÔğÈÎĞÄÇ¿£¬Ç×ºÍÁ¦Ç¿','¸ºÔğ¹«Ë¾ĞÂ²úÆ·µÄ²ß»®ÒÔ¼°¹«Ë¾ÆäËü»î¶¯µÄ×éÖ¯ºÍ²ß»®');
+insert into tbl_zhaopingdesc values(6,'£¬ÈÏÕæ¸ºÔğ£¬¹¤×÷¿Ì¿à£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬ÄÜ³ö²î','¸ºÔğ¹«Ë¾²úÆ·µÄ²âÊÔ');
+insert into tbl_zhaopingdesc values(7,'¹¤×÷¿Ì¿à£¬»ı¼«¿Ï¸É£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬·ş´Ó°²ÅÅ','¸ºÔğ¹«Ë¾²úÆ·µÄÉú²ú');
+insert into tbl_zhaopingdesc values(8,'ÈıÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬¹¤×÷¿Ì¿à£¬½²ÎÀÉú','¸ºÔğ¹«Ë¾Ê³ÌÃ³´²ËÖó·¹');
+insert into tbl_zhaopingdesc values(9,'ÈıÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬±í´ïÄÜÁ¦Ç¿£¬Ç×ºÍÁ¦Ç¿','¸ºÔğÁìµ¼¹«Ë¾²úÆ·Ğ¡×éµÄ¿ª·¢Óë²âÊÔ');
 
 create table tbl_zhaoping2(
 	id		int  NOT NULL,
@@ -229,15 +229,15 @@ create table tbl_zhaoping2(
 	xueli		varchar(30),
 	primary key (id)
 );
-insert into tbl_zhaoping2 values(1,'ç½‘ç»œå·¥ç¨‹å¸ˆ2',5030,1,'æœ¬ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping2 values(2,'è½¯ä»¶å·¥ç¨‹å¸ˆ2',6800,3,'æœ¬ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping2 values(3,'é«˜çº§ä¼šè®¡å¸ˆ2',8000,1,'ç¡•å£«ä»¥ä¸Š');
-insert into tbl_zhaoping2 values(4,'è®¡ç®—æœºè¿è¡Œç»´æŠ¤å·¥ç¨‹å¸ˆ2',4500,2,'ä¸“ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping2 values(5,'ç­–åˆ’ç»ç†2',8200,1,'æœ¬ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping2 values(6,'è´¨é‡ç®¡ç†å·¥ç¨‹å¸ˆ2',5500,5,'æœ¬ç§‘ä»¥ä¸Š');
-insert into tbl_zhaoping2 values(7,'æ™®å·¥2',1200,20,'æ— ');
-insert into tbl_zhaoping2 values(8,'å¨å¸ˆ2',3000,2,'æ— ');
-insert into tbl_zhaoping2 values(9,'é¡¹ç›®ç»ç†2',8500,2,'æœ¬ç§‘ä»¥ä¸Š');
+insert into tbl_zhaoping2 values(1,'ÍøÂç¹¤³ÌÊ¦2',5030,1,'±¾¿ÆÒÔÉÏ');
+insert into tbl_zhaoping2 values(2,'Èí¼ş¹¤³ÌÊ¦2',6800,3,'±¾¿ÆÒÔÉÏ');
+insert into tbl_zhaoping2 values(3,'¸ß¼¶»á¼ÆÊ¦2',8000,1,'Ë¶Ê¿ÒÔÉÏ');
+insert into tbl_zhaoping2 values(4,'¼ÆËã»úÔËĞĞÎ¬»¤¹¤³ÌÊ¦2',4500,2,'×¨¿ÆÒÔÉÏ');
+insert into tbl_zhaoping2 values(5,'²ß»®¾­Àí2',8200,1,'±¾¿ÆÒÔÉÏ');
+insert into tbl_zhaoping2 values(6,'ÖÊÁ¿¹ÜÀí¹¤³ÌÊ¦2',5500,5,'±¾¿ÆÒÔÉÏ');
+insert into tbl_zhaoping2 values(7,'ÆÕ¹¤2',1200,20,'ÎŞ');
+insert into tbl_zhaoping2 values(8,'³øÊ¦2',3000,2,'ÎŞ');
+insert into tbl_zhaoping2 values(9,'ÏîÄ¿¾­Àí2',8500,2,'±¾¿ÆÒÔÉÏ');
 
 
 create table tbl_zhaopingdesc2(
@@ -245,15 +245,15 @@ create table tbl_zhaopingdesc2(
 	yaoqiu		varchar(3000),
 	description	varchar(3000)
 );
-insert into tbl_zhaopingdesc2 values(1,'ä¸¤å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œå·¥ä½œåˆ»è‹¦ï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œèƒ½å‡ºå·®','è´Ÿè´£å…¬å¸ç½‘ç»œæ¶æ„ä¸ç»´æŠ¤ä»¥åŠç½‘ç»œç›¸å…³äº§å“çš„é‡‡è´­');
-insert into tbl_zhaopingdesc2 values(2,'ä¸‰å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œå­¦ä¹ èƒ½åŠ›å¼ºï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œèƒ½å‡ºå·®','è´Ÿè´£å…¬å¸æ‰€ç”¨è½¯ä»¶çš„å¼€å‘ä¸ç»´æŠ¤ï¼Œå¹¶åŸ¹è®­å…¬å¸å‘˜å·¥ä½¿ç”¨');
-insert into tbl_zhaopingdesc2 values(3,'äº”å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œæ€ç»´æ´»è·ƒï¼Œè®¤çœŸè´Ÿè´£','è´Ÿè´£å…¬å¸åšå¸');
-insert into tbl_zhaopingdesc2 values(4,'å·¥ä½œåˆ»è‹¦ï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œèƒ½å‡ºå·®','è´Ÿè´£å…¬å¸æ‰€ç”¨ç”µè„‘è¿›è¡Œå®‰è£…ä¸ç»´æŠ¤');
-insert into tbl_zhaopingdesc2 values(5,'ä¸‰å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œæ€ç»´æ´»è·ƒï¼Œè®¤çœŸè´Ÿè´£ï¼Œè´£ä»»å¿ƒå¼ºï¼Œäº²å’ŒåŠ›å¼º','è´Ÿè´£å…¬å¸æ–°äº§å“çš„ç­–åˆ’ä»¥åŠå…¬å¸å…¶å®ƒæ´»åŠ¨çš„ç»„ç»‡å’Œç­–åˆ’');
-insert into tbl_zhaopingdesc2 values(6,'ï¼Œè®¤çœŸè´Ÿè´£ï¼Œå·¥ä½œåˆ»è‹¦ï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œèƒ½å‡ºå·®','è´Ÿè´£å…¬å¸äº§å“çš„æµ‹è¯•');
-insert into tbl_zhaopingdesc2 values(7,'å·¥ä½œåˆ»è‹¦ï¼Œç§¯æè‚¯å¹²ï¼Œèƒ½æ‰¿å—å·¥ä½œå‹åŠ›ï¼Œæœä»å®‰æ’','è´Ÿè´£å…¬å¸äº§å“çš„ç”Ÿäº§');
-insert into tbl_zhaopingdesc2 values(8,'ä¸‰å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œå·¥ä½œåˆ»è‹¦ï¼Œè®²å«ç”Ÿ','è´Ÿè´£å…¬å¸é£Ÿå ‚ç‚’èœç…®é¥­');
-insert into tbl_zhaopingdesc2 values(9,'ä¸‰å¹´ä»¥ä¸Šç›¸å…³å·¥ä½œç»éªŒï¼Œè¡¨è¾¾èƒ½åŠ›å¼ºï¼Œäº²å’ŒåŠ›å¼º','è´Ÿè´£é¢†å¯¼å…¬å¸äº§å“å°ç»„çš„å¼€å‘ä¸æµ‹è¯•');
+insert into tbl_zhaopingdesc2 values(1,'Á½ÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬¹¤×÷¿Ì¿à£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬ÄÜ³ö²î','¸ºÔğ¹«Ë¾ÍøÂç¼Ü¹¹ÓëÎ¬»¤ÒÔ¼°ÍøÂçÏà¹Ø²úÆ·µÄ²É¹º');
+insert into tbl_zhaopingdesc2 values(2,'ÈıÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬Ñ§Ï°ÄÜÁ¦Ç¿£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬ÄÜ³ö²î','¸ºÔğ¹«Ë¾ËùÓÃÈí¼şµÄ¿ª·¢ÓëÎ¬»¤£¬²¢ÅàÑµ¹«Ë¾Ô±¹¤Ê¹ÓÃ');
+insert into tbl_zhaopingdesc2 values(3,'ÎåÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬Ë¼Î¬»îÔ¾£¬ÈÏÕæ¸ºÔğ','¸ºÔğ¹«Ë¾×öÕÊ');
+insert into tbl_zhaopingdesc2 values(4,'¹¤×÷¿Ì¿à£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬ÄÜ³ö²î','¸ºÔğ¹«Ë¾ËùÓÃµçÄÔ½øĞĞ°²×°ÓëÎ¬»¤');
+insert into tbl_zhaopingdesc2 values(5,'ÈıÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬Ë¼Î¬»îÔ¾£¬ÈÏÕæ¸ºÔğ£¬ÔğÈÎĞÄÇ¿£¬Ç×ºÍÁ¦Ç¿','¸ºÔğ¹«Ë¾ĞÂ²úÆ·µÄ²ß»®ÒÔ¼°¹«Ë¾ÆäËü»î¶¯µÄ×éÖ¯ºÍ²ß»®');
+insert into tbl_zhaopingdesc2 values(6,'£¬ÈÏÕæ¸ºÔğ£¬¹¤×÷¿Ì¿à£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬ÄÜ³ö²î','¸ºÔğ¹«Ë¾²úÆ·µÄ²âÊÔ');
+insert into tbl_zhaopingdesc2 values(7,'¹¤×÷¿Ì¿à£¬»ı¼«¿Ï¸É£¬ÄÜ³ĞÊÜ¹¤×÷Ñ¹Á¦£¬·ş´Ó°²ÅÅ','¸ºÔğ¹«Ë¾²úÆ·µÄÉú²ú');
+insert into tbl_zhaopingdesc2 values(8,'ÈıÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬¹¤×÷¿Ì¿à£¬½²ÎÀÉú','¸ºÔğ¹«Ë¾Ê³ÌÃ³´²ËÖó·¹');
+insert into tbl_zhaopingdesc2 values(9,'ÈıÄêÒÔÉÏÏà¹Ø¹¤×÷¾­Ñé£¬±í´ïÄÜÁ¦Ç¿£¬Ç×ºÍÁ¦Ç¿','¸ºÔğÁìµ¼¹«Ë¾²úÆ·Ğ¡×éµÄ¿ª·¢Óë²âÊÔ');
 
 CREATE TABLE tbl_salary2 (
 	no varchar(50),
@@ -657,7 +657,7 @@ CREATE  PROCEDURE `sp_testInsertData`(
 )
 BEGIN
     insert into tbl_department(guid,deptno,deptname,manager,builtdate,performance,description) values (in_uuid,in_deptno,in_deptname,in_manager,in_builtdate,in_performance,in_description);
-    set out_rtnValue=concat('æ·»åŠ å·¥å·ï¼š',in_deptno,'ï¼Œå§“åï¼š',in_deptname,'çš„è®°å½•æˆåŠŸ');
+    set out_rtnValue=concat('Ìí¼Ó¹¤ºÅ£º',in_deptno,'£¬ĞÕÃû£º',in_deptname,'µÄ¼ÇÂ¼³É¹¦');
 END$$
 
 
@@ -674,7 +674,7 @@ CREATE PROCEDURE `sp_testUpdateData`(
 )
 BEGIN
     update tbl_department set deptno=in_deptno,manager=in_manager,builtdate=in_builtdate,performance=in_performance,description=in_description where deptno=in_deptno_old;
-    set out_rtnValue=concat('ä¿®æ”¹å·¥å·ï¼š',in_deptno_old,'çš„è®°å½•æˆåŠŸ');
+    set out_rtnValue=concat('ĞŞ¸Ä¹¤ºÅ£º',in_deptno_old,'µÄ¼ÇÂ¼³É¹¦');
 END$$
 
 DROP PROCEDURE IF EXISTS `WabacusDemoDB`.`sp_testDeleteData`$$
@@ -696,7 +696,7 @@ CREATE PROCEDURE `sp_testInvokeServerSP`(
 )
 BEGIN
     update tbl_detailinfo set marriage=0 where no=in_param_no;
-    insert into tbl_log(uuid,createdate,content,updatetype)values(in_uuid,in_now,in_content,'è®¾ç½®ä¸ºæœªå©šçŠ¶æ€');
+    insert into tbl_log(uuid,createdate,content,updatetype)values(in_uuid,in_now,in_content,'ÉèÖÃÎªÎ´»é×´Ì¬');
 END$$
 
 DROP PROCEDURE IF EXISTS sp_selectEmployeeData$$
