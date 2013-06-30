@@ -1,0 +1,6 @@
+analyseLocally=false
+eclipse.preferences.version=1
+extraProperties=sonar.password\=0000\r\nsonar.host.url\=http\://service.branchitech.com/sonar\r\nsonar.jdbc.password\={aes}Tl8DQ+OS6OSqjXOgIOYkgw\=\=\r\nsonar.jdbc.username\=sonar\r\nsonar.jdbc.url\=jdbc\:mysql\://service.branchitech.com\:3306/sonar?useUnicode\=true&characterEncoding\=utf8\r\nsonar.login\=viewer\r\nsonar.jdbc.driver\=com.mysql.jdbc.Driver
+projectKey=com.googlecode.wabacus\:wabacus-extra
+serverUrl=http\://service.branchitech.com/sonar
+version=2

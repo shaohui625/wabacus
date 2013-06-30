@@ -80,8 +80,8 @@
   			<property name="acquire_increment">2</property>  
 		</datasource>
 		
-		<datasource name="ds_mongo" type="com.branchitech.wabacus.mongodb.MongodbDataSource"
-			dbtype="com.branchitech.wabacus.mongodb.MongodbDatabaseType">
+		<datasource name="ds_mongo" type="com.wabacus.extra.mongodb.MongodbDataSource"
+			dbtype="com.wabacus.extra.mongodb.MongodbDatabaseType">
 			<property name="serverAddress">127.0.0.1</property>
 			<property name="dbName">tasktop</property>
 			<property name="username"></property>
