@@ -26,11 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.typeprompt.TypePromptBean;
 import com.wabacus.config.typeprompt.TypePromptColBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
@@ -187,20 +189,18 @@ public class SQLOptionDatasource extends AbsOptionDatasource
         ReportBean rbean=this.ownerOptionBean.getOwnerInputboxObj().getOwner().getReportBean();
         try
         {
+            
+            
+         
             TypePromptBean typePromptBean=((TextBox)this.ownerOptionBean.getOwnerInputboxObj()).getTypePromptBean();
             List<TypePromptColBean> lstPColsBean=typePromptBean.getLstPColBeans();
             if(lstPColsBean==null||lstPColsBean.size()==0) return null;
-            ISqlDataSet sqlDataSet=null;
-            if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-            {
-                sqlDataSet=new GetAllDataSetByPreparedSQL();
-            }else
-            {
-                sqlDataSet=new GetAllDataSetBySQL();
-                txtValue=Tools.removeSQLKeyword(txtValue);
-            }
-            String sqlTemp=Tools.replaceAll(sql,"#data#",txtValue);
-            Object objTmp=sqlDataSet.getDataSet(rrequest,rbean,this,sqlTemp,this.getLstConditions(),this.getDatasource());
+
+            //$ByQXO
+            AbsDatabaseType dbType=Config.getInstance().getDbType(this.getDatasource());
+            Object objTmp= dbType.getPromptDataList(rrequest,rbean,this,txtValue);
+            //ByQXO$
+            
             int cnt=0;
             if(objTmp instanceof List)
             {

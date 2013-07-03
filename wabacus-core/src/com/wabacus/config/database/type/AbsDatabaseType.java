@@ -43,6 +43,8 @@ import com.wabacus.system.component.application.report.configbean.editablereport
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
 import com.wabacus.system.dataset.ISqlDataSetBuilder;
 import com.wabacus.system.datatype.IDataType;
+import com.wabacus.system.inputbox.option.SQLOptionDatasource;
+import com.wabacus.system.inputbox.option.TypepromptOptionBean;
 import com.wabacus.util.Tools;
 
 public abstract class AbsDatabaseType
@@ -334,5 +336,12 @@ public abstract class AbsDatabaseType
     public abstract void doPostLoadSql(ReportDataSetValueBean rdsbean,boolean isListReportType);
     
     public abstract void constructSqlForListType(SqlBean sqlbean); //.../report/abstractreport/AbsListReportType.constructSqlForListType
+    
+    public abstract void doPostLoadSQLOptionDatasource(TypepromptOptionBean tpBean);
+    
+    
+    public abstract  Object getPromptDataList(ReportRequest rrequest, ReportBean rbean,
+            SQLOptionDatasource typeObj, String typedata);
+    
 //ByQXO$
 }

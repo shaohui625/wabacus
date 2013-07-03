@@ -35,12 +35,15 @@ import org.apache.commons.logging.LogFactory;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.application.report.ColBean;
+import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.condition.ConditionExpressionBean;
 import com.wabacus.config.component.application.report.condition.ConditionInSqlBean;
+import com.wabacus.config.typeprompt.TypePromptBean;
+import com.wabacus.config.typeprompt.TypePromptColBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.IConnection;
 import com.wabacus.system.JdbcConnection;
@@ -57,10 +60,17 @@ import com.wabacus.system.component.application.report.configbean.editablereport
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.StoreProcedureActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
+import com.wabacus.system.dataset.ISqlDataSet;
 import com.wabacus.system.dataset.ISqlDataSetBuilder;
 import com.wabacus.system.dataset.QueryStatementType;
+import com.wabacus.system.dataset.sqldataset.GetAllDataSetByPreparedSQL;
+import com.wabacus.system.dataset.sqldataset.GetAllDataSetBySQL;
 import com.wabacus.system.datatype.BlobType;
 import com.wabacus.system.datatype.ClobType;
+import com.wabacus.system.inputbox.TextBox;
+import com.wabacus.system.inputbox.option.AbsOptionDatasource;
+import com.wabacus.system.inputbox.option.SQLOptionDatasource;
+import com.wabacus.system.inputbox.option.TypepromptOptionBean;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
@@ -799,5 +809,70 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
         {
             WabacusAssistant.getInstance().release(null,pstmt);
         }
+    }
+    
+    
+    
+    
+    public void doPostLoadSQLOptionDatasource(TypepromptOptionBean tpBean){
+        
+        ReportBean rbean=tpBean.getOwnerInputboxObj().getOwner().getReportBean();
+
+        AbsOptionDatasource optionDatasourceObj=tpBean.getOptionDatasourceObj();
+    String sql=((SQLOptionDatasource)optionDatasourceObj).getSql();
+    sql=Tools.formatStringBlank(sql).trim();
+    if(!sql.toLowerCase().startsWith("select")||sql.toLowerCase().indexOf("from")<=0)
+    {
+        throw new WabacusConfigLoadingException("为报表"+rbean.getPath()+"配置的输入联想配置的SQL语句"+sql+"不合法");
+    }
+    sql=sql.substring("select".length()).trim();
+    if(sql.toLowerCase().indexOf("distinct")!=0)
+    {
+        sql=" distinct "+sql;
+    }
+    sql="select "+sql;
+    String sqlOuter=null;
+    List<ConditionBean> lstConditions=((SQLOptionDatasource)optionDatasourceObj).getLstConditions();
+    if(lstConditions!=null&&lstConditions.size()>0)
+    {
+        if(sql.indexOf("{#condition#}")<0)
+        {
+            sqlOuter="select * from ("+sql+") tblTypepromptTmp where {#condition#}";
+        }
+    }
+    if(sql.indexOf(TypePromptBean.MATCHCONDITION_PLACEHOLDER)<0)
+    {
+        if(sqlOuter==null)
+        {
+            sqlOuter="select * from ("+sql+") tblTypepromptTmp where "+TypePromptBean.MATCHCONDITION_PLACEHOLDER;
+        }else
+        {
+            sqlOuter+=" and "+TypePromptBean.MATCHCONDITION_PLACEHOLDER;
+        }
+    }
+    if(sqlOuter!=null) sql=sqlOuter;
+    ((SQLOptionDatasource)optionDatasourceObj).setSql(Tools.replaceAll(sql,TypePromptBean.MATCHCONDITION_PLACEHOLDER,tpBean.getMatchColConditionExpression()));
+    }
+    
+    
+    public  Object getPromptDataList(ReportRequest rrequest, ReportBean rbean,
+            SQLOptionDatasource typeObj, String txtValue){
+        
+        TypePromptBean typePromptBean=((TextBox)typeObj.getOwnerOptionBean().getOwnerInputboxObj()).getTypePromptBean();
+        List<TypePromptColBean> lstPColsBean=typePromptBean.getLstPColBeans();
+        if(lstPColsBean==null||lstPColsBean.size()==0) return null;
+        
+        ISqlDataSet sqlDataSet=null;
+        if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
+        {
+            sqlDataSet=new GetAllDataSetByPreparedSQL();
+        }else
+        {
+            sqlDataSet=new GetAllDataSetBySQL();
+            txtValue=Tools.removeSQLKeyword(txtValue);
+        }
+        String sqlTemp=Tools.replaceAll(typeObj.getSql(),"#data#",txtValue);
+        Object objTmp=sqlDataSet.getDataSet(rrequest,rbean,typeObj,sqlTemp,typeObj.getLstConditions(),typeObj.getDatasource());
+        return objTmp;
     }
 }

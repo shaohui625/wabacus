@@ -776,7 +776,9 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
                 col_displayvalue=ercdatabean.getDefaultvalue();
             }else
             {
-                col_displayvalue=dataObj.getColStringValue(cbean);
+                //$ByQXO 解决count数据大于实际结果数据时报错问题
+                col_displayvalue=  dataObj == null ? null : dataObj.getColStringValue(cbean);
+                //ByQXO$
                 if(col_displayvalue==null||col_displayvalue.equals("null")) col_displayvalue="";
             }
             if(ercbean!=null) col_displayvalue=ercbean.getRealColDisplayValue(rrequest,dataObj,col_displayvalue);

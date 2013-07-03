@@ -83,47 +83,20 @@ public class TypepromptOptionBean extends AbsOptionBean
     
     public void doPostLoad()
     {
+        
+      
         if(this.optionDatasourceObj instanceof SQLOptionDatasource)
         {
-            ReportBean rbean=this.ownerInputboxObj.getOwner().getReportBean();
-            String sql=((SQLOptionDatasource)this.optionDatasourceObj).getSql();
-            sql=Tools.formatStringBlank(sql).trim();
-            if(!sql.toLowerCase().startsWith("select")||sql.toLowerCase().indexOf("from")<=0)
-            {
-                throw new WabacusConfigLoadingException("为报表"+rbean.getPath()+"配置的输入联想配置的SQL语句"+sql+"不合法");
-            }
-            sql=sql.substring("select".length()).trim();
-            if(sql.toLowerCase().indexOf("distinct")!=0)
-            {
-                sql=" distinct "+sql;
-            }
-            sql="select "+sql;
-            String sqlOuter=null;
-            List<ConditionBean> lstConditions=((SQLOptionDatasource)this.optionDatasourceObj).getLstConditions();
-            if(lstConditions!=null&&lstConditions.size()>0)
-            {
-                if(sql.indexOf("{#condition#}")<0)
-                {
-                    sqlOuter="select * from ("+sql+") tblTypepromptTmp where {#condition#}";
-                }
-            }
-            if(sql.indexOf(TypePromptBean.MATCHCONDITION_PLACEHOLDER)<0)
-            {
-                if(sqlOuter==null)
-                {
-                    sqlOuter="select * from ("+sql+") tblTypepromptTmp where "+TypePromptBean.MATCHCONDITION_PLACEHOLDER;
-                }else
-                {
-                    sqlOuter+=" and "+TypePromptBean.MATCHCONDITION_PLACEHOLDER;
-                }
-            }
-            if(sqlOuter!=null) sql=sqlOuter;
-            ((SQLOptionDatasource)this.optionDatasourceObj).setSql(Tools.replaceAll(sql,TypePromptBean.MATCHCONDITION_PLACEHOLDER,getMatchColConditionExpression()));
+            //$ByQXO
+            AbsDatabaseType dbType=Config.getInstance().getDbType(((SQLOptionDatasource)optionDatasourceObj).getDatasource());
+            dbType.doPostLoadSQLOptionDatasource(this);
+            //ByQXO$
+            
         }
         super.doPostLoad();
     }
 
-    private String getMatchColConditionExpression()
+    public String getMatchColConditionExpression()
     {
         TypePromptBean typePromptBean=((TextBox)this.ownerInputboxObj).getTypePromptBean();
         List<TypePromptColBean> lstPromptColBeans=typePromptBean.getLstPColBeans();

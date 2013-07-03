@@ -1133,7 +1133,10 @@ public class ComponentConfigLoadManager
                     }
                 }
             }
-            rb.setPojoClassCache(true);
+            //$ByQXO 设置pojoClassCache=false将在文件系统中生成报表类
+            rb.setPojoClassCache(Config.getInstance().getSystemConfigValue("pojoClassCache",true));
+           //ByQXO$
+            
             LoadExtendConfigManager.loadAfterExtendConfigForReporttype(rb,lstEleReportBeans);
             
         }catch(Exception e)
@@ -2287,6 +2290,11 @@ public class ComponentConfigLoadManager
     {
         if(eleColBean==null) return null;
         ColBean cb=new ColBean(dbean);
+        
+        //$ByQXO 支持行扩展
+        cb.setAttrs(eleColBean.getMPropertiesClone());
+        //ByQXO$
+        
         String column=eleColBean.attributeValue("column");
         if(column==null||column.trim().equals(""))
         {

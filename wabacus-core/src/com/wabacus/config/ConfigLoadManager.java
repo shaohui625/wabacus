@@ -1401,6 +1401,11 @@ public class ConfigLoadManager
             throw new WabacusConfigLoadingException("没有在wabacus.cfg.xml文件中配置数据源");
         }
         Map<String,AbsDataSource> mDataSources=new HashMap<String,AbsDataSource>();
+        
+        //$ByQXO 预先设置以便数据源间相互引用
+        Config.getInstance().setMDataSources(mDataSources);
+        //ByQXO$
+        
         Element eleDataSource=null;
         String name;
         for(int i=0;i<lstEleDatasource.size();i++)
