@@ -44,6 +44,7 @@ import com.wabacus.config.typeprompt.TypePromptColBean;
 import com.wabacus.extra.AbstractWabacusScriptExprContext;
 import com.wabacus.extra.LoginInfoFinder;
 import com.wabacus.extra.LoginInfoFinderImpl;
+import com.wabacus.extra.expr.AbstractQueryBuilder;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.inputbox.TextBox;
@@ -91,20 +92,11 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return this.getMongodbConnection().getJongo();
     }
 
-    public static Mapper getJongoMapper() {
+    protected static Mapper getJongoMapper() {
         return JsonMapperFactory.getJongoMapper();
     }
 
-    /**
-     * 根据查询条件获取符合条件的数据
-     * 
-     * @param mongoQuery
-     * @return
-     */
-    public List findAsList(Map mongoQuery) {
-        return findAsList(mongoQuery, this.getTabname());
-    }
-
+    @Override
     public List findAsList(Map mongoQuery, String c) {
         final String json = toJson(mongoQuery);
         return findAsList(json, c);
@@ -183,22 +175,13 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return IteratorUtils.toList(iterator);
     }
 
-    /**
-     * 返回符合条的记录数
-     * 
-     * @param query
-     * @return
-     */
-    public Number count(Map query) {
-        return count(query, this.getTabname());
-    }
-
-    public Number count(String query) {
-        return count(query, this.getTabname());
-    }
-
+    @Override
     public Number count(Map query, String c) {
         return count(toJson(query), c);
+    }
+
+    public final Number count(String query) {
+        return count(query, this.getTabname());
     }
 
     public Number count(String query, String c) {
@@ -207,32 +190,7 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return count;
     }
 
-    public Object deleteByQuery(Map query, String c) {
-
-        final String json = toJson(query);
-        return getCollection(c).remove(json);
-    }
-
-    public Object deleteByQuery(Map query) {
-        return this.deleteByQuery(query, this.getTabname());
-    }
-
-    public int delete() {
-        return delete(this.getPk());
-    }
-
-    public int delete(String idProp) {
-        final Map attrs = attrs(idProp);
-        if (attrs.isEmpty()) {
-            throw new IllegalArgumentException("指定ID的的值为空!id=" + idProp);
-        }
-        return delete(attrs);
-    }
-
-    public int delete(Map query) {
-        return delete(query, this.getTabname());
-    }
-
+    @Override
     public int delete(Map query, String c) {
         return delete(toJson(query), c);
     }
@@ -247,26 +205,6 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return delete(query, c);
     }
 
-    public int update() {
-        return update(this.getPk());
-    }
-
-    public int update(String idProp) {
-        final AttrsBuilder newAttrsBuilder = this.newAttrsBuilder(true);
-        Map atts = newAttrsBuilder.getAtts();
-        final Object idVal = atts.remove(idProp);
-        if (null == idVal || StringUtils.EMPTY.equals(idVal)) {
-            throw new IllegalArgumentException("指定ID的的值为空!id=" + idProp);
-        }
-        return update(toMap(idProp, idVal), atts);
-    }
-
-    public Map<String, Object> toMap(String idProp, Object val) {
-        final Map<String, Object> map = new HashMap<String, Object>();
-        map.put(idProp, val);
-        return map;
-    }
-
     public Map jsonStrToMap(String json) {
         if (StringUtils.isBlank(json)) {
             return MapUtils.EMPTY_MAP;
@@ -274,14 +212,11 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return jsonToObject(json, Map.class);
     }
 
-    public int update(Map query, Map data) {
-        return update(query, data, this.getTabname());
-    }
-
     protected boolean isHistoryRevFeature() {
         return BooleanUtils.toBoolean(getReportAttr("historyRevFeature"));
     }
 
+    @Override
     public int update(Map query, Map updateModifier, String c) {
         final String qjson = toJson(query);
 
@@ -384,29 +319,6 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
                 "historyRevRepo", "historyRevRepo");
     }
 
-    public Object insert() {
-        return insert(this.getPk());
-    }
-
-    /**
-     * 
-     * @param idProp
-     *            - 主键属性名
-     * @return 调用此方法等同于 insert( newAttrsBuilder(true).remove(idProp))
-     */
-    public Object insert(String idProp) {
-        final AttrsBuilder attrsBuilder = newAttrsBuilder(true).remove(idProp);
-        return insert(attrsBuilder);
-    }
-
-    public Object insert(AttrsBuilder aBuilder) {
-        return insert(aBuilder.getAtts());
-    }
-
-    public Object insert(Map data) {
-        return insert(data, this.getTabname());
-    }
-
     public Object insert(Map data, String c) {
         final String json = toJson(data);
         LOG.debug("mongodb insert data:{}, on:{}", json, c);
@@ -472,17 +384,9 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return ret;
     }
 
-    public List distinct(String colKey) {
-        return distinct(colKey, MapUtils.EMPTY_MAP, this.getTabname());
-    }
-
-    public List distinct(String colKey, Map query) {
-        return distinct(colKey, query, this.getTabname());
-    }
-
     // ["deptno":["$regex":data+".*","$options":'i']]
 
-    public class CustomQueryBuilder {
+    public class CustomQueryBuilder extends AbstractQueryBuilder {
 
         // public QueryBuilder regex(Object regex)
         // {
@@ -534,13 +438,14 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         }
     }
 
+    @Override
     public CustomQueryBuilder newQuery() {
         return new CustomQueryBuilder();
     }
 
     public List distinct(String colKey, boolean filterCondition) {
         Map<String, Object> map = null;
-        if (filterCondition) {
+        if (!filterCondition) {
             map = this.getQueryConditionMap();
         } else {
             map = new HashMap<String, Object>();
@@ -562,11 +467,6 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return distinct.as(String.class);
     }
 
-    public List<Map<String, String>> findTypePrompts(CustomQueryBuilder qbuilder, String c,
-            SQLOptionDatasource typeObj) {
-        return findTypePrompts(qbuilder.toMap(), c, typeObj);
-    }
-
     /**
      * @return 获取排序字符串
      */
@@ -581,7 +481,7 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return s != null && s.length() > 0 ? s.toString() : "";// this.rbean.getSbean().getOrderby();
     }
 
-    //
+    @Override
     public List<Map<String, String>> findTypePrompts(Map query, String c, SQLOptionDatasource typeObj) {
         final String json = toJson(query);
         return findTypePrompts(json, c, typeObj);

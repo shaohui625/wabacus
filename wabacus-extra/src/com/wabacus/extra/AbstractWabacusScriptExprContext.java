@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.apache.commons.beanutils.BeanComparator;
@@ -34,6 +35,7 @@ import com.google.common.collect.Maps;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JsonUtils;
+import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
@@ -41,6 +43,7 @@ import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.MessageCollector;
 import com.wabacus.extra.database.PojoMapper;
+import com.wabacus.extra.expr.AbstractQueryBuilder;
 import com.wabacus.extra.mongodb.JongoResultHandlerFactory;
 import com.wabacus.extra.mongodb.JsonMapperFactory;
 import com.wabacus.system.CacheDataBean;
@@ -49,6 +52,7 @@ import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
 import com.wabacus.system.datatype.AbsDateTimeType;
 import com.wabacus.system.datatype.VarcharType;
+import com.wabacus.system.inputbox.option.SQLOptionDatasource;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
@@ -472,6 +476,16 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         return newMapper;
     }
 
+    public final List distinct(String colKey) {
+        return distinct(colKey, MapUtils.EMPTY_MAP, this.getTabname());
+    }
+
+    public final List distinct(String colKey, Map query) {
+        return distinct(colKey, query, this.getTabname());
+    }
+
+    public abstract List distinct(String colKey, Map query, String c);
+
     private ResultHandler newMapper = null;
 
     public ResultHandler setJsonResultHandler(final ResultHandler newMapper) {
@@ -589,12 +603,12 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
                 final List<ColBean> lstCols = this.rbean.getDbean().getLstCols();
                 for (Iterator iterator = lstCols.iterator(); iterator.hasNext();) {
                     ColBean colBean = (ColBean) iterator.next();
-                    if("true".equals(colBean.getAttrs().get("pk"))){
+                    if ("true".equals(colBean.getAttrs().get("pk"))) {
                         pk = colBean.getColumn();
                         break;
                     }
                 }
-            }            
+            }
             if (StringUtils.isBlank(pk)) {
                 throw new IllegalAccessError("在请report定义中pk属性中指定主键!");
             }
@@ -637,8 +651,6 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         }
 
     }
-
-
 
     protected String[] getOrderByArray() {
         String[] orderbys = (String[]) rrequest.getAttribute(rbean.getId(), "ORDERBYARRAY");
@@ -707,16 +719,13 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         final List<ColBean> lstCols = this.rbean.getDbean().getLstCols();
         for (ColBean colBean : lstCols) {
             final String column = colBean.getColumn();
-           if (StringUtils.isNotBlank(column) && column.equals(p)) {
-               return  colBean;    
+            if (StringUtils.isNotBlank(column) && column.equals(p)) {
+                return colBean;
             }
         }
         return null;
     }
 
-
-    
-    
     public Map<String, Object> attrs(Collection<String> args) {
         final Map<String, Object> vars = new HashMap<String, Object>();
         for (String name : args) {
@@ -819,4 +828,147 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         return attrsBuilder;
     }
 
+    public final int delete() {
+        return delete(this.getPk());
+    }
+
+    public final Object deleteByQuery(Map query, String c) {
+        return this.delete(query, c);
+    }
+
+    public final Object deleteByQuery(Map query) {
+        return this.deleteByQuery(query, this.getTabname());
+    }
+
+    public final int delete(String idProp) {
+        final Map attrs = attrs(idProp);
+        if (attrs.isEmpty()) {
+            throw new IllegalArgumentException("指定ID的的值为空!id=" + idProp);
+        }
+        return delete(attrs);
+    }
+
+    public final int delete(Map query) {
+        return delete(query, this.getTabname());
+    }
+
+    public abstract int delete(Map data, String c);
+
+    public final int update() {
+        return update(this.getPk());
+    }
+
+    public final int update(String idProp) {
+        final AttrsBuilder newAttrsBuilder = this.newAttrsBuilder(true);
+        Map atts = newAttrsBuilder.getAtts();
+        final Object idVal = atts.remove(idProp);
+
+        if (null == idVal || StringUtils.EMPTY.equals(idVal)) {
+            throw new IllegalArgumentException("指定ID的的值为空!id=" + idProp);
+        }
+        return update(toMap(idProp, idVal), atts);
+    }
+
+    public final Map<String, Object> toMap(String idProp, Object val) {
+        final Map<String, Object> map = new HashMap<String, Object>();
+        map.put(idProp, val);
+        return map;
+    }
+
+    public Map jsonStrToMap(String json) {
+        if (StringUtils.isBlank(json)) {
+            return MapUtils.EMPTY_MAP;
+        }
+        return jsonToObject(json, Map.class);
+    }
+
+    /**
+     * 根据查询条件获取符合条件的数据
+     * 
+     * @param query
+     * @return
+     */
+    public final List findAsList(Map query) {
+        return findAsList(query, this.getTabname());
+    }
+
+    public abstract List findAsList(Map mongoQuery, String c);
+
+    /**
+     * 返回符合条的记录数
+     * 
+     * @param query
+     * @return
+     */
+    public final Number count(Map query) {
+        return count(query, this.getTabname());
+    }
+
+    public abstract Number count(Map query, String c);
+
+    public final int update(Map query, Map data) {
+        return update(query, data, this.getTabname());
+    }
+
+    public final Object insert() {
+        return insert(this.getPk());
+    }
+
+    /**
+     * 
+     * @param idProp
+     *            - 主键属性名
+     * @return 调用此方法等同于 insert( newAttrsBuilder(true).remove(idProp))
+     */
+    public final Object insert(String idProp) {
+        final AttrsBuilder attrsBuilder = newAttrsBuilder(true);
+        // .remove(idProp);
+        Map atts = attrsBuilder.getAtts();
+        Object idValue = atts.get(idProp);
+        if (null == idValue) {
+            ColBean colBean = this.getColBeanByColumn(idProp);
+            String idGenerator = colBean.getAttrs().get("idGenerator");
+            if ("UUID".equals(idGenerator)) {
+                atts.put(idProp, UUID.randomUUID().toString());
+            }
+        }
+        return insert(atts);
+    }
+
+    public final Object insert(AttrsBuilder aBuilder) {
+        return insert(aBuilder.getAtts());
+    }
+
+    public final Object insert(Map data) {
+        return insert(data, this.getTabname());
+    }
+
+    public abstract Object insert(Map data, String tablename);
+
+    /**
+     * 
+     * @param query
+     *            - 查询条件
+     * @param data
+     *            - 要更新的数据
+     * @param tabname
+     *            - 表名
+     * @return
+     */
+    public abstract int update(Map query, Map data, String tabname);
+
+    public abstract AbstractQueryBuilder newQuery();
+
+    public final List<Map<String, String>> findTypePrompts(AbstractQueryBuilder qbuilder, String c,
+            SQLOptionDatasource typeObj) {
+        return findTypePrompts(qbuilder.toMap(), c, typeObj);
+    }
+
+    public abstract List<Map<String, String>> findTypePrompts(Map query, String c,
+            SQLOptionDatasource typeObj);
+
+    public final int getTypePromptLimit() {
+        int typePromptLimit = Config.getInstance().getSystemConfigValue("typePromptsLimit", 15);
+        return typePromptLimit;
+    }
 }
