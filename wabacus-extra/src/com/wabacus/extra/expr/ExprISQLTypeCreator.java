@@ -1,4 +1,4 @@
-package com.wabacus.extra.mongodb;
+package com.wabacus.extra.expr;
 
 import com.wabacus.system.dataset.ISqlDataSet;
 import com.wabacus.system.dataset.ISqlDataSetCreator;
@@ -10,17 +10,16 @@ import com.wabacus.system.dataset.ISqlDataSetCreator;
  * @author qxo(qxodream@gmail.com) 
  * @since  2013-5-11
  */
-public class ISQLTypeCreatorMongo implements ISqlDataSetCreator
+public class ExprISQLTypeCreator implements ISqlDataSetCreator
 {
 
     public ISqlDataSet createAllDataSet()
     {
-        return new MongodbGetAllResultSet();
+        return new ExprGetAllResultSet();
     }
 
     public ISqlDataSet createPartDataSet()
     {
-        return new MongoGetPartResultSet();
+        return new ExprGetPartResultSet();
     }
-
 }

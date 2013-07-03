@@ -3,8 +3,6 @@ package com.wabacus.extra;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
-import com.wabacus.extra.mongodb.MongoExprContext;
-import com.wabacus.extra.mongodb.MongodbDatabaseType;
 import com.wabacus.system.ReportRequest;
 
 /**
@@ -16,9 +14,10 @@ import com.wabacus.system.ReportRequest;
  */
 public class WabacusScriptExprContextFactoryDefult implements WabacusScriptExprContextFactory {
 
-    public WabacusScriptExprContext createScriptExprContext(Class<? extends AbsDatabaseType> dbTypeClass, ReportRequest rrequest,
+    public WabacusScriptExprContext createScriptExprContext(AbsDatabaseType dbType, ReportRequest rrequest,
             ReportBean rbean, ReportDataSetValueBean datasetbean) {
-        assert dbTypeClass.isAssignableFrom(MongodbDatabaseType.class);
-        return new MongoExprContext(rrequest, rbean, datasetbean);
+        // assert dbTypeClass.isAssignableFrom(AbstractWabacusScriptExprContext.class);
+        // return new MongoExprContext(rrequest, rbean, datasetbean);
+        return null;
     }
 }

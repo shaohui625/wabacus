@@ -6,20 +6,20 @@
 	<local-resources>
     	<resources><!-- 
 	     
-	      	<resource key ="pOptions1" type="com.branchitech.wabacus.options.StringSplitOptionRes"  separator="[,;  　]"> 
+	      	<resource key ="pOptions1" type="com.wabacus.extra..options.StringSplitOptionRes"  separator="[,;  　]"> 
 	      	优秀,良好,较好,很差
 	      	</resource>
 	      	
-	      <resource key ="pOptions2" type="com.branchitech.wabacus.options.MvelTextOptionRes" > 
+	      <resource key ="pOptions2" type="com.wabacus.extra..options.MvelTextOptionRes" > 
 	     ['优秀':1,'良好':2,'较好':3,'很差':4]
 	      	</resource>
-	      	<resource key ="pOptions3" type="com.branchitech.wabacus.options.MvelTextOptionRes" > 
+	      	<resource key ="pOptions3" type="com.wabacus.extra..options.MvelTextOptionRes" > 
 	     	 {'优秀','良好','较好','很差'}
 	      	</resource>
-	      	<resource key ="pOptions4" type="com.branchitech.wabacus.options.MvelTextOptionRes" > 
+	      	<resource key ="pOptions4" type="com.wabacus.extra..options.MvelTextOptionRes" > 
 	    '优秀,良好,较好,很差'.split(',')
 	      	</resource>
-	      <resource key ="pOptions5" type="com.branchitech.wabacus.options.YamlTextOptionRes" > 
+	      <resource key ="pOptions5" type="com.wabacus.extra..options.YamlTextOptionRes" > 
 	     {优秀 : 1, 良好 : 2, 较好 : 3, 很差 : 4}
 	      	</resource>
 	      	 -->

@@ -2,6 +2,7 @@ package com.wabacus.extra.mongodb;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.beanutils.BeanUtils;
@@ -15,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.DBObject;
+import com.wabacus.extra.AbstractWabacusScriptExprContext;
+
 
 public class JongoResultHandlerFactory {
 	/**
@@ -31,9 +34,10 @@ public class JongoResultHandlerFactory {
 		converter.setPatterns(new String[] { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm","yyyy-MM-dd"});
 		ConvertUtils.register(converter, Date.class);
 
+		ConvertUtils.register(new org.dummy.CustomStringConverter(), String.class);//FIXME
 	}
-
-	public final static <T> ResultHandler<T> newMapper(final Class<T> clazz) {
+	
+	public final static <T> ResultHandler<T> newMapper(final Class<T> clazz,final AbstractWabacusScriptExprContext context) {
 		return new ResultHandler<T>() {
 			public T map(DBObject result) {
 				
@@ -42,10 +46,12 @@ public class JongoResultHandlerFactory {
 				
 				
 				if (result instanceof BsonDocument) {
-					
+				    
+				 map = getUnmarshaller().unmarshall(((BsonDocument) result), HashMap.class);//FIMXE
+				   
 						//return  JsonMapperFactory.getJsonMapper().readValue(((BsonDocument) result).toByteArray(), clazz);
-					    final T ret = getUnmarshaller().unmarshall(((BsonDocument) result), clazz);
-						return ret;
+				//	    final T ret = getUnmarshaller().unmarshall(((BsonDocument) result), clazz);
+				//		return ret;
 //						try {
 //						return  JsonMapperFactory.getJsonMapper().readValue(result.toString(), clazz);
 //					} catch (JsonParseException e) {
@@ -60,11 +66,10 @@ public class JongoResultHandlerFactory {
 				}
 				T ret;
 				try {
-					ret = clazz.newInstance();
+					ret = (T)context.createPojoClassInstance(clazz);
 					BeanUtils.copyProperties(ret, map);
 					return ret;
-				} catch (InstantiationException e) {
-					throw new NestableRuntimeException(e);
+			
 				} catch (IllegalAccessException e) {
 					throw new NestableRuntimeException(e);
 

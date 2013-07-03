@@ -34,8 +34,8 @@ public final class StringSplitOptionRes extends OptionRes {
 		if (null != text) {
 			final String[] arr = text.trim().split(sp);
 			for (String name : arr) {
-				final OptionBean oBean = new OptionBean();
-				oBean.setLabel(name);
+				final OptionBean oBean = new OptionBean(name);
+				//oBean.setLabel(name);
 				oBean.setValue(name);
 				lstOptions.add(oBean);
 			}

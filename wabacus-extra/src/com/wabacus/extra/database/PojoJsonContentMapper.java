@@ -1,4 +1,4 @@
-package com.wabacus.extra.mongodb;
+package com.wabacus.extra.database;
 
 import java.util.Map;
 
@@ -7,6 +7,7 @@ import org.jongo.ResultHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.wabacus.extra.AbstractWabacusScriptExprContext;
 import com.wabacus.extra.AlterException;
 
 /**
@@ -28,9 +29,9 @@ public class PojoJsonContentMapper implements PojoMapper {
 
 	private String idProp;
 
-	private MongoExprContext context;
+	private AbstractWabacusScriptExprContext context;
 
-	public PojoJsonContentMapper(MongoExprContext context) {
+	public PojoJsonContentMapper(AbstractWabacusScriptExprContext context) {
 		super();
 		this.context = context;
 		pojoClass = context.getReportPojoClass();

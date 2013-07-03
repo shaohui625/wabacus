@@ -22,9 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.wabacus.config.component.application.report.ConditionBean;
+import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.util.RegexTools;
 
-public class OptionBean implements Cloneable
+public class OptionBean extends XmlElementBean  implements Cloneable
 {
 
     private int sourceType;
@@ -38,6 +39,11 @@ public class OptionBean implements Cloneable
     private String[] type;
 
     private List<ConditionBean> lstConditions=new ArrayList<ConditionBean>();//当为SQL语句查询选项数据时，且需要从request/session中获取条件数据，这里存放所有的条件bean
+
+    public OptionBean(String name) {
+        super(name);
+        this.setLabel(name);
+    }
 
     public void setLabel(String label)
     {

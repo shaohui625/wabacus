@@ -27,9 +27,11 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
+import com.fasterxml.jackson.databind.module.SimpleDeserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.mongodb.util.JSON;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.extra.mongodb.bson.BsonDeserializers;
 import com.wabacus.extra.mongodb.bson.CustomBsonModule;
 
@@ -95,12 +97,13 @@ public final class JsonMapperFactory {
 		module.addSerializer(ObjectId.class, new BsonObjectIdSerializer());
 		module.addDeserializer(String.class, new BsonDeserializers.CustomStringDeserializer());
 		
+	//	  module.addDeserializer(AbsReportDataPojo.class, new BsonDeserializers.AbsReportDataPojoDeserializer());
+		    
+		  
 		mapper.registerModule(module);
 		return mapper;
 	}
-	
 
-    
 	
 	  public static class BsonObjectIdSerializer extends JsonSerializer<ObjectId>
 	    {

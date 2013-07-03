@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<applications xmlns="http://www.wabacus.com"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.wabacus.com ../xsd/wabacus.applications.xsd">
+	
+<page xmlns="http://www.wabacus.com" id="rowgrouppage11">
+
+	
+
+	   <tabpanel id="tab1" titlestyle="2" margin="10">
+	   
+	   		   <report   id="report2" title="简单行分组2" dataexport="richexcel|word"
+		   
+		    pk="_id"	  data-write-roles="ROLE_USER" data-read-roles="ROLE_USER"
+		    filterDataExpr="if('name'.equals(filterColumn)) {  return ['A','B','C'] ;}  [];"
+		   >
+			   <display>
+			   			<col column="guid" property="_id"  displaytype="hidden" pk="true" />
+			   
+				    <col column="name" label="所属部门" filter="true"  clickorderby="true" filterwidth="120px" rowgroup="true"></col>
+				    <col column="type" label="工号" clickorderby="true" valuestyleproperty="style='mso-number-format:\@' width='15%'"></col>
+			
+			   </display>
+			   <sql datasource="ds_mongo">
+			   <!-- 
+			   							@code{
+										tabname ="tbl_area";
+										orderBy = [ "name":-1   ]
+								}
+								var queryMap = this.getQueryConditionMap();
+								findAsList(queryMap,tabname);
+			    -->
+				    <value>
+					<![CDATA[
+						@code{
+							sqlCount = "10";
+						}
+					    var bean = getBean("yamlLoader");
+					    var list = bean.loadYaml('classpath:/RowGroupTestData.yml');
+					   	var retList = 	toReportPojoList(list );
+					   	
+					   	return retList;
+					]]>
+				</value>
+				
+			   </sql>
+			   <format>
+			      <value>
+				  </value>
+			   </format>
+		  </report>
+		  <!-- pagesize="-1" -->
+		   <report   id="report1" title="简单行分组" dataexport="richexcel|word" 
+		   
+		    pk="_id"	  data-write-roles="ROLE_SYS_ADMIN" data-read-roles="ROLE_USER"
+		   >
+			   <display>
+			   			<col column="guid" property="_id"  displaytype="hidden" pk="true" />
+			   
+				    <col column="name" label="所属部门" filter="true"  clickorderby="true" filterwidth="120px" rowgroup="true"></col>
+				    <col column="type" label="工号" clickorderby="true" valuestyleproperty="style='mso-number-format:\@' width='15%'"></col>
+			
+			   </display>
+			   <sql datasource="ds_mongo">
+			   <!-- 
+			   							@code{
+										tabname ="tbl_area";
+										orderBy = [ "name":-1   ]
+								}
+								var queryMap = this.getQueryConditionMap();
+								findAsList(queryMap,tabname);
+			    -->
+				    <value>
+					<![CDATA[
+									@code{
+										tabname ="tbl_area";
+										orderBy = [ "name":-1   ]
+								}
+								var queryMap = this.getQueryConditionMap();
+								findAsList(queryMap,tabname);
+					]]>
+				</value>
+				
+			   </sql>
+			   <format>
+			      <value>
+				  </value>
+			   </format>
+		  </report>
+	</tabpanel>
+	
+</page>
+
+</applications>

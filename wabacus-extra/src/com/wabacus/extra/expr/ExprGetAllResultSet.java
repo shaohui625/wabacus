@@ -1,4 +1,4 @@
-package com.wabacus.extra.mongodb;
+package com.wabacus.extra.expr;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +13,7 @@ import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.extra.AbstractWabacusScriptExprContext;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ListReportAssistant;
@@ -24,9 +25,9 @@ import com.wabacus.system.datatype.IDataType;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
-public class MongodbGetAllResultSet implements ISqlDataSet {
+public class ExprGetAllResultSet implements ISqlDataSet {
 
-	private static Log LOG = LogFactory.getLog(MongodbGetAllResultSet.class);
+	private static Log LOG = LogFactory.getLog(ExprGetAllResultSet.class);
 
 	//@Override
 	public int getRecordcount(ReportRequest rrequest,
@@ -81,7 +82,7 @@ public class MongodbGetAllResultSet implements ISqlDataSet {
           //  sql=Tools.replaceAll(sql,Consts_Private.PLACEHODER_FILTERCONDITION,"");
         }
         
-        final Map extraVars = MongoExprContext.initExtraVarsIf(rrequest);
+        final Map extraVars = AbstractWabacusScriptExprContext.initExtraVarsIf(rrequest);
         extraVars.put("filterColumn", colunmname);
         extraVars.put("filterCondition", filterCondition);
         
@@ -156,7 +157,7 @@ public class MongodbGetAllResultSet implements ISqlDataSet {
 		if (Config.show_sql) {
 			LOG.info("Execute expr: " + sql);
 		}
-		MongoExprContext ctx = eval(rrequest, rbean,datasetbean, sql);
+		AbstractWabacusScriptExprContext ctx = eval(rrequest, rbean,datasetbean, sql);
 		final Object result = ctx.getResult();
 		return result;
 
@@ -187,12 +188,12 @@ public class MongodbGetAllResultSet implements ISqlDataSet {
 //	}
 
 	public List evalAsList(ReportRequest rrequest, ReportBean rbean,ReportDataSetValueBean datasetbean,  String sql) {
-		MongoExprContext ctx = eval(rrequest, rbean,datasetbean, sql);
+	    AbstractWabacusScriptExprContext ctx = eval(rrequest, rbean,datasetbean, sql);
 		final Object result = ctx.getResult();
 		return asList(ctx, result);
 	}
 
-	public List asList(MongoExprContext ctx, final Object result) {
+	public List asList(AbstractWabacusScriptExprContext ctx, final Object result) {
 		List retList = null;
 		if (result instanceof List) {
 			retList = (List) result;
@@ -202,7 +203,8 @@ public class MongodbGetAllResultSet implements ISqlDataSet {
 		return retList;
 	}
 
-	public MongoExprContext eval(ReportRequest rrequest, ReportBean rbean,ReportDataSetValueBean datasetbean, String sql) {
-		return MongodbDatabaseType.eval(sql, rrequest, rbean,datasetbean);
+	public AbstractWabacusScriptExprContext eval(ReportRequest rrequest, ReportBean rbean,ReportDataSetValueBean datasetbean, String sql) {
+	    AbstractExprDatabaseType dbType  = (AbstractExprDatabaseType)datasetbean.getDbType();
+		return dbType.eval(sql, rrequest, rbean,datasetbean);
 	}
 }

@@ -1,4 +1,4 @@
-package com.wabacus.extra.mongodb;
+package com.wabacus.extra.database;
 
 /**
  * 报表POJO类实例化

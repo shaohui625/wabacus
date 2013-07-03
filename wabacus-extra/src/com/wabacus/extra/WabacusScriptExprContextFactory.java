@@ -14,6 +14,6 @@ import com.wabacus.system.ReportRequest;
  */
 public interface WabacusScriptExprContextFactory {
 
-    public WabacusScriptExprContext createScriptExprContext(Class<? extends AbsDatabaseType> dbTypeClass, ReportRequest rrequest,
+    public WabacusScriptExprContext createScriptExprContext(AbsDatabaseType dbType, ReportRequest rrequest,
             ReportBean rbean, ReportDataSetValueBean datasetbean);
 }

@@ -30,60 +30,60 @@ import com.wabacus.config.resource.OptionRes;
  */
 public abstract class AbstractTextFormOptionRes extends OptionRes {
 
-	/**
+    /**
 	 * 
 	 */
-	public final Object getValue(Element itemElement) {
-		final String text = itemElement.getText();
-		if (StringUtils.isNotBlank(text)) {
-			final Object ret = textToObject(text.trim());
-			return toList(ret);
-		}
-		return ListUtils.EMPTY_LIST;
-	}
+    public final Object getValue(Element itemElement) {
+        final String text = itemElement.getText();
+        if (StringUtils.isNotBlank(text)) {
+            final Object ret = textToObject(text.trim());
+            return toList(ret);
+        }
+        return ListUtils.EMPTY_LIST;
+    }
 
-	protected abstract Object textToObject(final String text);
+    protected abstract Object textToObject(final String text);
 
-	protected List<OptionBean> toList(Object ret) {
-		if (null == ret) {
-			return ListUtils.EMPTY_LIST;
-		}
-		if (ret instanceof String) {
-			ret = ((String) ret).split(StringSplitOptionRes.DEFAULT_SEPARATOR);
-		}
-		final List<OptionBean> lstOptions = new ArrayList<OptionBean>();
+    protected List<OptionBean> toList(Object ret) {
+        if (null == ret) {
+            return ListUtils.EMPTY_LIST;
+        }
+        if (ret instanceof String) {
+            ret = ((String) ret).split(StringSplitOptionRes.DEFAULT_SEPARATOR);
+        }
+        final List<OptionBean> lstOptions = new ArrayList<OptionBean>();
 
-		if (ret instanceof Map) {
-			final Set<Map.Entry> entrySet = ((Map) ret).entrySet();
-			for (Map.Entry entry : entrySet) {
-				final OptionBean oBean = new OptionBean();
-				oBean.setLabel(toStr(entry.getKey()));
-				oBean.setValue(toStr(entry.getValue()));
-				lstOptions.add(oBean);
-			}
-		} else if (ret instanceof Collection) {
-			for (Object entry : (Collection) ret) {
-				final OptionBean oBean = new OptionBean();
-				final String str = toStr(entry);
-				oBean.setLabel(str);
-				oBean.setValue(str);
-				lstOptions.add(oBean);
-			}
-		} else if (null != ret && ret.getClass().isArray()) {
-			for (Object entry : (Object[]) ret) {
-				final OptionBean oBean = new OptionBean();
-				final String str = toStr(entry);
-				oBean.setLabel(str);
-				oBean.setValue(str);
-				lstOptions.add(oBean);
-			}
-		} else {
-			throw new NotImplementedException("ret:" + ret + " 此类型对象尚未支持！");
-		}
-		return lstOptions;
-	}
+        if (ret instanceof Map) {
+            final Set<Map.Entry> entrySet = ((Map) ret).entrySet();
+            for (Map.Entry entry : entrySet) {
+                final OptionBean oBean = new OptionBean(toStr(entry.getKey()));
+                // oBean.setLabel(toStr(entry.getKey()));
+                oBean.setValue(toStr(entry.getValue()));
+                lstOptions.add(oBean);
+            }
+        } else if (ret instanceof Collection) {
+            for (Object entry : (Collection) ret) {
+                final String str = toStr(entry);
+                final OptionBean oBean = new OptionBean(str);
+                // oBean.setLabel(str);
+                oBean.setValue(str);
+                lstOptions.add(oBean);
+            }
+        } else if (null != ret && ret.getClass().isArray()) {
+            for (Object entry : (Object[]) ret) {
+                final String str = toStr(entry);
+                final OptionBean oBean = new OptionBean(str);
+                // oBean.setLabel(str);
+                oBean.setValue(str);
+                lstOptions.add(oBean);
+            }
+        } else {
+            throw new NotImplementedException("ret:" + ret + " 此类型对象尚未支持！");
+        }
+        return lstOptions;
+    }
 
-	protected static String toStr(Object val) {
-		return val == null ? null : val.toString();
-	}
+    protected static String toStr(Object val) {
+        return val == null ? null : val.toString();
+    }
 }

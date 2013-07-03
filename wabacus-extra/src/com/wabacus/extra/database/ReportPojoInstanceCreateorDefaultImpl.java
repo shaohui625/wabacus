@@ -1,4 +1,5 @@
-package com.wabacus.extra.mongodb;
+package com.wabacus.extra.database;
+
 
 public class ReportPojoInstanceCreateorDefaultImpl implements ReportPojoInstanceCreateor {
 
