@@ -971,6 +971,7 @@ public class WabacusFacade
         PrintWriter out=null;
         try
         {
+            response.setContentType("text/html;charset=UTF-8");
             out=response.getWriter();
         }catch(IOException e1)
         {

@@ -82,7 +82,7 @@
 		
 		
 		<datasource name="ds_expr" type="com.wabacus.extra.expr.jdbc.ExprJdbcDataSource"
-			dbtype="com.wabacus.extra.expr.jdbc.JdbcDatabaseType">
+			dbtype="com.wabacus.extra.expr.jdbc.ExprJdbcDatabaseType">
 			<property name="target">ds_mysql</property>
 		</datasource>
 		<!-- ds_expr -->

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dom4j.Element;
@@ -34,7 +35,7 @@ import com.wabacus.util.Consts_Private;
 import com.wabacus.util.RegexTools;
 import com.wabacus.util.Tools;
 
-public abstract class AbsDataImportConfigBean
+public abstract class AbsDataImportConfigBean implements Cloneable
 {
     private static Log log=LogFactory.getLog(AbsDataImportConfigBean.class);
     
@@ -247,4 +248,47 @@ public abstract class AbsDataImportConfigBean
             return realfilename.trim().equals(this.filename);
         }
     }
+    
+    //$ByQXO　所有属性列表Map,以便扩展类中使用
+
+    @Override
+    public Object clone() 
+    {
+         try
+        {
+           AbsDataImportConfigBean ret = (AbsDataImportConfigBean)super.clone();
+           if(this.attrs != null){
+               ret.attrs = new HashMap<String,String>(this.attrs);
+           }
+            return ret;
+        }catch(CloneNotSupportedException e)
+        {
+            throw new IllegalStateException(e.getMessage(),e);
+        }
+    }
+    
+  
+    private Map<String,String> attrs;
+
+    public Map<String,String> getAttrs()
+    {
+        return attrs == null ? MapUtils.EMPTY_MAP : attrs;
+    }
+
+    public void setAttrs(Map<String,String> attrs)
+    {
+        this.attrs=attrs;
+    }
+    
+    public void mergeAttrs(Map<String,String> overrideAttrs){
+        if(overrideAttrs == null || overrideAttrs.isEmpty()){
+            return;
+        }
+        if(attrs == null){
+            attrs = new HashMap<String,String>();
+        }
+        attrs.putAll(overrideAttrs);
+    }    
+    //ByQXO$
+    
 }

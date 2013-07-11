@@ -7,23 +7,27 @@
 		<version>7</version>
 		<relativePath></relativePath>
 	</parent>
-	
+
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.googlecode.wabacus</groupId>
 	<artifactId>wabacus-parent</artifactId>
-	<version>1.0</version>
+	<version>1.0.1</version>
 	<packaging>pom</packaging>
 	<name>wabacus-parent</name>
 	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
-	
-	
-	<url>https://code.google.com/p/wabacus/</url>
-	
-	<properties>
-		<gpg.skip>false</gpg.skip>
-			 <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
 
+
+	<url>https://code.google.com/p/wabacus/</url>
+
+	<properties>
+		<!-- <skip.javadoc>true</skip.javadoc> -->
+		<!-- <skip.javasource>false</skip.javasource> -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<version.maven-javadoc-plugin>2.9</version.maven-javadoc-plugin>
+		<version.maven-source-plugin>2.2.1</version.maven-source-plugin>
+		<version.maven-compiler-plugin>3.1</version.maven-compiler-plugin>
+		<version.maven-gpg-plugin>1.4</version.maven-gpg-plugin>
+	</properties>
 	<licenses>
 		<license>
 			<name>GNU Lesser GPL 2.0</name>
@@ -69,25 +73,95 @@
 		</developer>
 	</developers>
 	<build>
-	<plugins>
-				<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-gpg-plugin</artifactId>
-				<version>1.4</version>
-				<configuration>
-					<skip>${gpg.skip}</skip>
-				</configuration>
-				<executions>
-					<execution>
-						<id>sign-artifacts</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>sign</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+		<plugins>
+
+
+	<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-gpg-plugin</artifactId>
+			<version>${version.maven-gpg-plugin}</version>
+		</plugin>
+
+
 		</plugins>
-	
+
 	</build>
+	<profiles>
+		<profile>
+			<id>oss</id>
+			<properties>
+				<gpg.skip>false</gpg.skip>
+				<skip.javadoc>false</skip.javadoc>
+				<skip.javasource>false</skip.javasource>
+			</properties>
+			<build>
+				<pluginManagement>
+
+
+					<plugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-source-plugin</artifactId>
+							<version>${version.maven-source-plugin}</version>
+							<configuration>
+								<!-- <outputDirectory>${project.build.dist}</outputDirectory> -->
+							</configuration>
+							<executions>
+								<execution>
+									<id>attach-sources</id>
+									<phase>verify</phase>
+									<goals>
+										<goal>jar</goal>
+									</goals>
+									<configuration>
+										<skip>${skip.javasource}</skip>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-javadoc-plugin</artifactId>
+							<version>${version.maven-javadoc-plugin}</version>
+							<configuration>
+								<!-- <jarOutputDirectory>${project.build.dist}</jarOutputDirectory> -->
+							</configuration>
+							<executions>
+								<execution>
+									<id>attach-javadocs</id>
+									<phase>verify</phase>
+									<goals>
+										<goal>jar</goal>
+									</goals>
+									<configuration>
+										<skip>${skip.javadoc}</skip>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-gpg-plugin</artifactId>
+							<version>${version.maven-gpg-plugin}</version>
+							<configuration>
+								<skip>${gpg.skip}</skip>
+							</configuration>
+							<executions>
+								<execution>
+									<id>sign-artifacts</id>
+									<phase>verify</phase>
+									<goals>
+										<goal>sign</goal>
+									</goals>
+								</execution>
+							</executions>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
+
+		</profile>
+
+	</profiles>
 </project>

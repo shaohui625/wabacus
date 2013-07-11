@@ -31,6 +31,7 @@ import com.mongodb.DB;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import com.mongodb.WriteResult;
+import com.mongodb.util.JSON;
 import com.mongodb.util.JSONSerializers;
 import com.mongodb.util.ObjectSerializer;
 import com.wabacus.config.Config;
@@ -50,6 +51,8 @@ import com.wabacus.system.ReportRequest;
 import com.wabacus.system.inputbox.TextBox;
 import com.wabacus.system.inputbox.option.SQLOptionDatasource;
 
+import de.undercouch.bson4jackson.types.ObjectId;
+
 import foodev.jsondiff.JsonDiff;
 
 /**
@@ -59,7 +62,7 @@ import foodev.jsondiff.JsonDiff;
  * @author qxo(qxodream@gmail.com)
  * 
  */
-public final class MongoExprContext extends AbstractWabacusScriptExprContext {
+public class MongoExprContext extends AbstractWabacusScriptExprContext {
 
     /**
      * Logger for this class
@@ -264,6 +267,11 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
                 if (id instanceof Map && ((Map) id).containsKey("$oid")) {
                     id = ((Map) id).get("$oid");
                 }
+                if(id instanceof ObjectId){
+                    ObjectId _id = (ObjectId)id;
+                    id = new org.bson.types.ObjectId(_id.getTime(), _id.getMachine(), _id.getInc());
+                }
+                
                 final WriteResult ret = isDelete ? collection.remove("{_id:#}", id) : collection.update(
                         "{_id:#}", id).with(modifier);
                 // TODO更新是否成功
@@ -443,6 +451,7 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return new CustomQueryBuilder();
     }
 
+    @Override
     public List distinct(String colKey, boolean filterCondition) {
         Map<String, Object> map = null;
         if (!filterCondition) {
@@ -456,6 +465,7 @@ public final class MongoExprContext extends AbstractWabacusScriptExprContext {
         return distinct(colKey, map, this.getTabname());
     }
 
+    @Override
     public List distinct(String colKey, Map query, String c) {
         if (LOG.isDebugEnabled()) {
             LOG.info("mongodb distinct  key:{}, on:{} query:{}", new Object[] { colKey, c, query });

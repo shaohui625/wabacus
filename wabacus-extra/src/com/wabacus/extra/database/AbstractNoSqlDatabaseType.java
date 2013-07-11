@@ -1,23 +1,18 @@
 package com.wabacus.extra.database;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
-import com.wabacus.system.inputbox.option.SQLOptionDatasource;
-import com.wabacus.util.Tools;
 
 public abstract class AbstractNoSqlDatabaseType extends AbsDatabaseType {
     /**
@@ -37,7 +32,7 @@ public abstract class AbstractNoSqlDatabaseType extends AbsDatabaseType {
     }
 
     @Override
-    public String getSequnceValue(IConnection conn, String seqname) throws SQLException {
+    public Object getSequnceValue(IConnection conn, String seqname) throws SQLException {
         throw new NotImplementedException();
     }
 
@@ -56,7 +51,5 @@ public abstract class AbstractNoSqlDatabaseType extends AbsDatabaseType {
     public String constructSplitPageSql(ReportDataSetValueBean svbean, String dynorderby) {
         throw new NotImplementedException();
     }
-    
-    
 
 }

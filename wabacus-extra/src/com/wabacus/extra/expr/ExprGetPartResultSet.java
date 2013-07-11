@@ -65,7 +65,7 @@ public class ExprGetPartResultSet extends ExprGetAllResultSet {
         }
         try {
             if (StringUtils.isNotBlank(sqlCount)) {
-                AbstractWabacusScriptExprContext ctx = eval(rrequest, rbean, datasetbean, sqlCount);
+                AbstractWabacusScriptExprContext ctx = eval(rrequest,null, rbean, datasetbean, sqlCount);
                 final Object result = ctx.getResult();
                 if (result instanceof Number) {
                     recordcount = (Number) result;

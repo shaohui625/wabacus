@@ -7,6 +7,7 @@ import java.util.Date;
 import org.apache.commons.lang.time.DateUtils;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
+import org.jongo.marshall.jackson.oid.ObjectIdDeserializer;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -27,7 +28,7 @@ public class BsonDeserializers extends SimpleDeserializers {
     public BsonDeserializers() {
         addDeserializer(Date.class, new DateDeserializer());
 
-        // addDeserializer(String.class, new ObjectIdDeserializer());
+        addDeserializer(String.class, new ObjectIdDeserializer());
         NativeDeserializer nativeDeserializer = new NativeDeserializer();
         addDeserializer(MinKey.class, new MinKeyDeserializer());
         addDeserializer(MaxKey.class, new MaxKeyDeserializer());

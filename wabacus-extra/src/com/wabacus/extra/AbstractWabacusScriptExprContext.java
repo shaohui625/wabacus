@@ -2,6 +2,7 @@ package com.wabacus.extra;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +24,7 @@ import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.bson.types.ObjectId;
 import org.jongo.ResultHandler;
@@ -41,12 +43,14 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
+import com.wabacus.config.database.datasource.AbsDataSource;
 import com.wabacus.exception.MessageCollector;
 import com.wabacus.extra.database.PojoMapper;
 import com.wabacus.extra.expr.AbstractQueryBuilder;
 import com.wabacus.extra.mongodb.JongoResultHandlerFactory;
 import com.wabacus.extra.mongodb.JsonMapperFactory;
 import com.wabacus.system.CacheDataBean;
+import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
@@ -150,15 +154,27 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
      * @param list
      * @return
      */
-    public static List<Map<String, String>> toPromptListMap(Collection<String> list) {
+    public static List<Map<String, String>> toPromptListMap(Collection<Object> list) {
         List<Map<String, String>> ret = new ArrayList<Map<String, String>>();
-        for (String val : list) {
+        for (Object obj : list) {
+            if (obj == null) {
+                continue;
+            }
+            final String val = obj.toString();
             Map<String, String> item = new HashMap<String, String>();
             item.put("value", val);
             item.put("label", val);
             ret.add(item);
         }
         return ret;
+    }
+
+    public Object getHttpSessionAttr(String attrName) {
+        return rrequest.getRequest().getSession().getAttribute(attrName);
+    }
+
+    public Object getHttpRequestAttr(String attrName) {
+        return rrequest.getRequest().getAttribute(attrName);
     }
 
     /**
@@ -484,6 +500,18 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         return distinct(colKey, query, this.getTabname());
     }
 
+    public abstract Map<String, Object> getQueryConditionMap();
+
+    public List distinct(String colKey, boolean filterCondition) {
+        Map<String, Object> map = null;
+        if (!filterCondition) {
+            map = this.getQueryConditionMap();
+        } else {
+            map = Maps.newHashMap();
+        }
+        return distinct(colKey, map, this.getTabname());
+    }
+
     public abstract List distinct(String colKey, Map query, String c);
 
     private ResultHandler newMapper = null;
@@ -578,11 +606,10 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
             if (StringUtils.isBlank(tabname)) {
                 tabname = getSqlKernel();
             }
-
-            // if (StringUtils.isBlank(tabname)) {
-            // throw new NotImplementedException();
+            if (StringUtils.isBlank(tabname)) {
+                throw new NotImplementedException();
             // // tabname = this.rbean.getSbean().getSql_kernel();
-            // }
+            }
         }
     }
 
@@ -707,7 +734,8 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
 
         for (ColBean colBean : lstCols) {
             final String column = colBean.getColumn();
-            if (StringUtils.isNotBlank(column) && !nonDbCols.contains(column)) {
+
+            if (StringUtils.isNotBlank(column) && !column.startsWith("{") && !nonDbCols.contains(column)) {
                 final String property = colBean.getProperty();
                 cols.add(StringUtils.isEmpty(property) ? column : property);
             }
@@ -715,10 +743,10 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         return cols;
     }
 
-    public ColBean getColBeanByColumn(String p) {
+    public ColBean getColBeanByProperty(String p) {
         final List<ColBean> lstCols = this.rbean.getDbean().getLstCols();
         for (ColBean colBean : lstCols) {
-            final String column = colBean.getColumn();
+            final String column = colBean.getProperty();
             if (StringUtils.isNotBlank(column) && column.equals(p)) {
                 return colBean;
             }
@@ -926,13 +954,32 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         Map atts = attrsBuilder.getAtts();
         Object idValue = atts.get(idProp);
         if (null == idValue) {
-            ColBean colBean = this.getColBeanByColumn(idProp);
-            String idGenerator = colBean.getAttrs().get("idGenerator");
+            ColBean colBean = this.getColBeanByProperty(idProp);
+            String idGenerator = colBean == null ? null : colBean.getAttrs().get("idGenerator");
+            if (null == idGenerator) {
+                idGenerator = this.rbean.getAttrs().get("pkGenerator");
+            }
             if ("UUID".equals(idGenerator)) {
                 atts.put(idProp, UUID.randomUUID().toString());
+            } else if (Tools.isDefineKey("sequence", idGenerator)) {
+                String seqname = Tools.getRealKeyByDefine("sequence", idGenerator);
+                IConnection iConnection = this.getRrequest().getIConnection(this.getDataSourceName());
+                Object seqVal;
+                try {
+                    seqVal = this.getDataSource().getDbType().getSequnceValue(iConnection, seqname);
+                    atts.put(idProp, seqVal);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e.getMessage(), e);
+                }
             }
         }
         return insert(atts);
+    }
+
+    protected AbsDataSource getDataSource() {
+        final AbsDataSource dataSource = (AbsDataSource) Config.getInstance().getDataSource(
+                this.getDataSourceName());
+        return dataSource;
     }
 
     public final Object insert(AttrsBuilder aBuilder) {
@@ -971,4 +1018,13 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         int typePromptLimit = Config.getInstance().getSystemConfigValue("typePromptsLimit", 15);
         return typePromptLimit;
     }
+
+    protected final String getDataSourceName() {
+        String datasource = datasetbean == null ? null : this.datasetbean.getDatasource();
+        if (null == datasource) {
+            datasource = this.rbean.getSbean().getDatasource();
+        }
+        return datasource;
+    }
+
 }

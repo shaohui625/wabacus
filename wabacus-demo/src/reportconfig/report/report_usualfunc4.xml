@@ -1471,7 +1471,7 @@
 		<buttons align="center">
 			<button name="btn1" label="页面导入按钮" position="bottom" class="com.wabacus.system.buttons.DataImportButton">
 					<dataimport ref="${dataimport.multifiles};${dataimport.multifiles2}" popupparams="{width:300,height:200}"/>
-				</button>
+				</button>	
 		</buttons>
 	</page>
 	

@@ -257,7 +257,8 @@ public class Config
     public PropertyOverrideLoader getPropertyOverrideLoader()
     {
         if( null == propertyOverrideLoader ){
-            propertyOverrideLoader = PropertyOverrideLoaderDefault.createPropertyOverrideLoader("wabacusPropertyOverrideLoader"); 
+            
+            propertyOverrideLoader = PropertyOverrideLoaderDefault.createPropertyOverrideLoader("wabacusPropertyOverrideLoader",getSystemConfigValue("propertyOverrideLoader")); 
         }
         return propertyOverrideLoader;
     }
@@ -268,8 +269,10 @@ public class Config
         {
             return "";
         }
-        
-        String temp= this.getPropertyOverrideLoader().getOverridePropertyValue("wabacus.system.",key, mSystemConfig.get(key));
+        String temp=mSystemConfig.get(key);
+        if( null != propertyOverrideLoader){
+            temp= propertyOverrideLoader.getOverridePropertyValue("wabacus.system.",key, temp);
+        }
         if(temp==null||temp.trim().equals("")) return "";
         return temp;
     }

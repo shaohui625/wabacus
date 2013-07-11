@@ -45,6 +45,7 @@ import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
 public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType {
+
     /**
      * Logger for this class
      */
@@ -136,11 +137,6 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
 
     @Override
     public IDataType getWabacusDataTypeByColumnType(String columntype) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public String getSequnceValue(IConnection conn, String seqname) throws SQLException {
         throw new NotImplementedException();
     }
 
@@ -304,8 +300,9 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
                     // } else if (realSqlTmp.indexOf("call") == 0) {
                     // new StoreProcedureActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
                 } else {
-                    throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据的SQL语句"
-                            + scriptTmp + "不合法");
+                    new InsertSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
+//                    throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据的SQL语句"
+//                            + scriptTmp + "不合法");
                 }
             }
         }

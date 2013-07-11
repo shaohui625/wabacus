@@ -19,6 +19,7 @@
 package com.wabacus.config.component;
 
 import java.util.List;
+import java.util.Map;
 
 import com.wabacus.config.OnloadMethodBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
@@ -153,4 +154,12 @@ public interface IComponentConfigBean
     public void doPostLoad();
     
     public void doPostLoadFinally();
+    
+    //$ByQXO　所有属性列表Map,以便扩展类中使用
+    public Map<String,String> getAttrs();
+    
+    public void setAttrs(Map<String,String> attrs);
+    
+    public void mergeAttrs(Map<String,String> overrideAttrs);
+    //ByQXO$
 }

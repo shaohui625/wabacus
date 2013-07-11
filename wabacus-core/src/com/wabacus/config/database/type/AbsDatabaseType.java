@@ -326,7 +326,7 @@ public abstract class AbsDatabaseType
    }
    
    
-    public abstract String getSequnceValue(IConnection conn,String seqname) throws SQLException;
+    public abstract Object getSequnceValue(IConnection conn,String seqname) throws SQLException;
     
     public abstract ISqlDataSetBuilder getISQLTypeBuilder(ReportDataSetValueBean bean,String statementtype);
     public abstract void parseActionscripts(EditActionGroupBean eagbean,String reportTypeKey);

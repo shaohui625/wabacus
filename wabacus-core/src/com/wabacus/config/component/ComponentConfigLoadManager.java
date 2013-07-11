@@ -355,6 +355,7 @@ public class ComponentConfigLoadManager
         String dataexport=eleComponent.attributeValue("dataexport");
         String contextmenu=eleComponent.attributeValue("contextmenu");
         String onload=eleComponent.attributeValue("onload");
+        acbean.mergeAttrs(eleComponent.getMPropertiesClone());
         if(id==null||id.trim().equals(""))
         {
             throw new WabacusConfigLoadingException("没有为页面"+acbean.getPageBean().getId()+"中子组件配置id属性");
@@ -780,7 +781,7 @@ public class ComponentConfigLoadManager
     {
         try
         {   //$ByQXO　初始化属性Ｍap，以便扩展类中使用
-            rb.setAttrs(eleReportBean.getMPropertiesClone());
+           // rb.mergeAttrs(eleReportBean.getMPropertiesClone());
             //ByQXO$
             loadComponentCommonConfig(eleReportBean,rb);
             loadApplicationCommonConfig(eleReportBean,rb);

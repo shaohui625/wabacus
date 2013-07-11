@@ -7,6 +7,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.common.collect.Maps;
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
@@ -27,184 +28,186 @@ import com.wabacus.util.Tools;
 
 public class ExprGetAllResultSet implements ISqlDataSet {
 
-	private static Log LOG = LogFactory.getLog(ExprGetAllResultSet.class);
+    private static Log LOG = LogFactory.getLog(ExprGetAllResultSet.class);
 
-	//@Override
-	public int getRecordcount(ReportRequest rrequest,
-			AbsReportType reportTypeObj, ReportDataSetValueBean datasetbean) {
-			return 0;
-	}
+    // @Override
+    public int getRecordcount(ReportRequest rrequest, AbsReportType reportTypeObj,
+            ReportDataSetValueBean datasetbean) {
+        return 0;
+    }
 
-	//@Override
-	public Object getDataSet(ReportRequest rrequest,
-			AbsReportType reportTypeObj, ReportDataSetValueBean datasetbean,
-			List lstReportData) {
-		 	ReportBean rbean=reportTypeObj.getReportBean();
-	        String sql=datasetbean.getValue();
-	        String datasetid=datasetbean.getId();
-	        
-	        //FIXME!!!
-		   return getDataSet(rrequest,rbean,datasetbean,reportTypeObj,sql);
-	}
+    // @Override
+    public Object getDataSet(ReportRequest rrequest, AbsReportType reportTypeObj,
+            ReportDataSetValueBean datasetbean, List lstReportData) {
+        ReportBean rbean = reportTypeObj.getReportBean();
+        String sql = datasetbean.getValue();
+        // String datasetid=datasetbean.getId();
 
-	//@Override
-	public Object getDataSet(ReportRequest rrequest, ReportBean rbean,
-			Object typeObj, String sql, List<ConditionBean> lstConditionBeans,
-			String datasource) {
-	
-		  return getDataSet(rrequest,rbean,null,typeObj,sql);
-		  
-		//throw new NotImplementedException();
-	}
+        // FIXME!!!
+        return getDataSet(rrequest, rbean, datasetbean, reportTypeObj, sql);
+    }
 
-	//@Override
-	public Object getColFilterDataSet(ReportRequest rrequest,
-			ColBean filterColBean, ReportDataSetValueBean datasetbean,
-			Map<String, List<String>> mSelectedFilterValues) {
-        String sql=datasetbean.getFilterdata_sql();
-        ReportBean rbean=filterColBean.getReportBean();
-        if(sql==null||sql.trim().equals(""))
-        {
-            throw new WabacusRuntimeException("没有取到报表"+rbean.getPath()+"要获取过滤数据的SQL语句");
+    // @Override
+    public Object getDataSet(ReportRequest rrequest, ReportBean rbean, Object typeObj, String sql,
+            List<ConditionBean> lstConditionBeans, String datasource) {
+
+        return getDataSet(rrequest, rbean, null, typeObj, sql);
+
+        // throw new NotImplementedException();
+    }
+
+    // @Override
+    public Object getColFilterDataSet(ReportRequest rrequest, ColBean filterColBean,
+            ReportDataSetValueBean datasetbean, Map<String, List<String>> mSelectedFilterValues) {
+        String sql = datasetbean.getFilterdata_sql();
+        ReportBean rbean = filterColBean.getReportBean();
+        if (sql == null || sql.trim().equals("")) {
+            throw new WabacusRuntimeException("没有取到报表" + rbean.getPath() + "要获取过滤数据的SQL语句");
         }
-        if(filterColBean.getColumn()==null||filterColBean.getColumn().trim().equals("")) return null;
-        //sql=Tools.replaceAll(sql,"%FILTERCOLUMN%",filterColBean.getColumn());
-        
+        if (filterColBean.getColumn() == null || filterColBean.getColumn().trim().equals(""))
+            return null;
+        // sql=Tools.replaceAll(sql,"%FILTERCOLUMN%",filterColBean.getColumn());
+
         final String colunmname = filterColBean.getColumn();
         boolean filterCondition = false;
-        if(mSelectedFilterValues!=null&&mSelectedFilterValues.size()>0)
-        {
-                filterCondition =false;
-       //     sql=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,datasetbean,sql);
-        }else
-        {
-            filterCondition=true;
-          //  sql=Tools.replaceAll(sql,Consts_Private.PLACEHODER_FILTERCONDITION,"");
+        if (mSelectedFilterValues != null && mSelectedFilterValues.size() > 0) {
+            filterCondition = false;
+            // sql=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,datasetbean,sql);
+        } else {
+            filterCondition = true;
+            // sql=Tools.replaceAll(sql,Consts_Private.PLACEHODER_FILTERCONDITION,"");
         }
-        
+
         final Map extraVars = AbstractWabacusScriptExprContext.initExtraVarsIf(rrequest);
         extraVars.put("filterColumn", colunmname);
         extraVars.put("filterCondition", filterCondition);
-        
-        final Object dataSet = getDataSet(rrequest,rbean,datasetbean,rrequest.getAttribute(rbean.getId()+"_WABACUS_FILTERBEAN"),sql);
+
+        final Object dataSet = getDataSet(rrequest, rbean, datasetbean,
+                rrequest.getAttribute(rbean.getId() + "_WABACUS_FILTERBEAN"), sql);
         return dataSet;
-	}
+    }
 
-	//@Override
-	public Object getStatisticDataSet(ReportRequest rrequest,AbsReportType reportObj,ReportDataSetValueBean svbean,Object typeObj,String sql,boolean isStatisticForOnePage)
-    {
-    	  
-    	    	List<String> lstConditions=new ArrayList<String>();
-    	    	List<IDataType> lstConditionsTypes=new ArrayList<IDataType>();
-	            ReportBean rbean=reportObj.getReportBean();
-	            String sqlTmp=svbean.getSqlWithoutOrderby();
-	            sqlTmp=Tools.replaceAll(sqlTmp,"%orderby%","");
-	            sqlTmp=Tools.replaceAll(sqlTmp,Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,svbean.getSql_kernel());
-	            sqlTmp=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sqlTmp,lstConditions,lstConditionsTypes);
-	            sqlTmp=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,svbean,sqlTmp);
-	            CacheDataBean cdb=rrequest.getCdb(rbean.getId());
-	            
-	            if(svbean.isDependentDataSet())
-	            {
-	                List lstReportData=null;
-	                if(!cdb.isLoadAllReportData()&&!isStatisticForOnePage)
-	                {
-	                    lstReportData=(List)rrequest.getAttribute(rbean.getId()+"wx_all_data_tempory");
-	                    if(lstReportData==null)
-	                    {
-	                        lstReportData=ReportAssistant.getInstance().loadReportDataSet(rrequest,reportObj,true);
-	                        rrequest.setAttribute(rbean.getId()+"wx_all_data_tempory",lstReportData);
-	                    }
-	                }else
-	                {
-	                    lstReportData=reportObj.getLstReportData();
-	                }
-	                String realConExpress=svbean.getRealDependsConditionExpression(lstReportData);
-	                if(realConExpress==null||realConExpress.trim().equals(""))
-	                {
-	                    sqlTmp=ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(rbean,sqlTmp,ReportDataSetValueBean.dependsConditionPlaceHolder);
-	                }else
-	                {
-	                    sqlTmp=Tools.replaceAll(sqlTmp,ReportDataSetValueBean.dependsConditionPlaceHolder,realConExpress);
-	                }
-	            }
-	            sql=Tools.replaceAll(sql,StatisticItemAndDataSetBean.STATISQL_PLACEHOLDER,sqlTmp);
-	            if(rbean.getInterceptor()!=null&&typeObj!=null)
-	            {
-	                Object obj=rbean.getInterceptor().beforeLoadData(rrequest,rbean,typeObj,sql);
-	                if(!(obj instanceof String)) return obj;
-	                sql=(String)obj;
-	            }
-	            return getDataSet(rrequest,rbean,svbean,null,sql);
-	
-	}
+    // @Override
+    public Object getStatisticDataSet(ReportRequest rrequest, AbsReportType reportObj,
+            ReportDataSetValueBean svbean, Object typeObj, String sql, boolean isStatisticForOnePage) {
 
-	
-    public Object getDataSet(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean datasetbean,Object typeObj,String sql)
-    {
-		// Statement stmt = null;
+        List<String> lstConditions = new ArrayList<String>();
+        List<IDataType> lstConditionsTypes = new ArrayList<IDataType>();
+        ReportBean rbean = reportObj.getReportBean();
+        String sqlTmp = svbean.getSqlWithoutOrderby();
+        sqlTmp = Tools.replaceAll(sqlTmp, "%orderby%", "");
+        sqlTmp = Tools.replaceAll(sqlTmp, Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,
+                svbean.getSql_kernel());
+        sqlTmp = ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest, rbean, svbean, sqlTmp,
+                lstConditions, lstConditionsTypes);
+        sqlTmp = ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest, rbean, svbean,
+                sqlTmp);
+        CacheDataBean cdb = rrequest.getCdb(rbean.getId());
 
-		final ReportAssistant rptAst = ReportAssistant.getInstance();
-		// final Object reportDataPojoInstance=rptAst.getReportDataPojoInstance(reportbean);
+        if (svbean.isDependentDataSet()) {
+            List lstReportData = null;
+            if (!cdb.isLoadAllReportData() && !isStatisticForOnePage) {
+                lstReportData = (List) rrequest.getAttribute(rbean.getId() + "wx_all_data_tempory");
+                if (lstReportData == null) {
+                    lstReportData = ReportAssistant.getInstance().loadReportDataSet(rrequest, reportObj,
+                            true);
+                    rrequest.setAttribute(rbean.getId() + "wx_all_data_tempory", lstReportData);
+                }
+            } else {
+                lstReportData = reportObj.getLstReportData();
+            }
+            String realConExpress = svbean.getRealDependsConditionExpression(lstReportData);
+            if (realConExpress == null || realConExpress.trim().equals("")) {
+                sqlTmp = ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(rbean, sqlTmp,
+                        ReportDataSetValueBean.dependsConditionPlaceHolder);
+            } else {
+                sqlTmp = Tools.replaceAll(sqlTmp, ReportDataSetValueBean.dependsConditionPlaceHolder,
+                        realConExpress);
+            }
+        }
+        sql = Tools.replaceAll(sql, StatisticItemAndDataSetBean.STATISQL_PLACEHOLDER, sqlTmp);
+        if (rbean.getInterceptor() != null && typeObj != null) {
+            Object obj = rbean.getInterceptor().beforeLoadData(rrequest, rbean, typeObj, sql);
+            if (!(obj instanceof String))
+                return obj;
+            sql = (String) obj;
+        }
+        return getDataSet(rrequest, rbean, svbean, null, sql);
 
-	//	sql = rptAst.addDynamicConditionExpressionsToSql(rrequest, reportbean, sql, lstConditionBeans, null, null);
-		if (rbean.getInterceptor() != null && typeObj != null) {
-			Object obj = rbean.getInterceptor().beforeLoadData(rrequest, rbean, typeObj, sql);
-			if (!(obj instanceof String))
-				return obj;
-			sql = (String) obj;
-		}
-		if (Config.show_sql) {
-			LOG.info("Execute expr: " + sql);
-		}
-		AbstractWabacusScriptExprContext ctx = eval(rrequest, rbean,datasetbean, sql);
-		final Object result = ctx.getResult();
-		return result;
+    }
 
-	}
+    public Object getDataSet(ReportRequest rrequest, ReportBean rbean, ReportDataSetValueBean datasetbean,
+            Object typeObj, String sql) {
+        // Statement stmt = null;
 
-//	public Object getResultSet(ReportRequest rrequest, AbsReportType reportObj, Object typeObj, String sql) {
-//		try {
-//			ReportBean rbean = reportObj.getReportBean();
-//			// sql=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,sql,null,null);
-//			// sql=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,sql);
-//			if (rbean.getInterceptor() != null && typeObj != null) {
-//				Object obj = rbean.getInterceptor().beforeLoadData(rrequest, rbean, typeObj, sql);
-//				if (!(obj instanceof String)) {
-//					return obj;
-//				}
-//				sql = (String) obj;
-//			}
-//			
-//		
-//			MongoExprContext ctx = eval(rrequest, rbean, sql);
-//			final Object result = ctx.getResult();
-//			return result;
-//		} catch (IllegalArgumentException ex) {
-//			throw ex;
-//		} catch (Exception e) {
-//			throw new WabacusRuntimeException("从数据库取数据失败，执行exor：" + sql + "抛出异常", e);
-//		}
-//	}
+        final ReportAssistant rptAst = ReportAssistant.getInstance();
+        // final Object reportDataPojoInstance=rptAst.getReportDataPojoInstance(reportbean);
 
-	public List evalAsList(ReportRequest rrequest, ReportBean rbean,ReportDataSetValueBean datasetbean,  String sql) {
-	    AbstractWabacusScriptExprContext ctx = eval(rrequest, rbean,datasetbean, sql);
-		final Object result = ctx.getResult();
-		return asList(ctx, result);
-	}
+        // sql = rptAst.addDynamicConditionExpressionsToSql(rrequest, reportbean, sql, lstConditionBeans,
+        // null, null);
+        if (rbean.getInterceptor() != null && typeObj != null) {
+            Object obj = rbean.getInterceptor().beforeLoadData(rrequest, rbean, typeObj, sql);
+            if (!(obj instanceof String))
+                return obj;
+            sql = (String) obj;
+        }
+        if (Config.show_sql) {
+            LOG.info("Execute expr: " + sql);
+        }
+        Map vars = Maps.newHashMap();
+        vars.put("typeObj", typeObj);
+        AbstractWabacusScriptExprContext ctx = eval(rrequest, vars, rbean, datasetbean, sql);
+        final Object result = ctx.getResult();
+        return result;
 
-	public List asList(AbstractWabacusScriptExprContext ctx, final Object result) {
-		List retList = null;
-		if (result instanceof List) {
-			retList = (List) result;
-		} else {
-			retList = ctx.asList(retList);
-		}
-		return retList;
-	}
+    }
 
-	public AbstractWabacusScriptExprContext eval(ReportRequest rrequest, ReportBean rbean,ReportDataSetValueBean datasetbean, String sql) {
-	    AbstractExprDatabaseType dbType  = (AbstractExprDatabaseType)datasetbean.getDbType();
-		return dbType.eval(sql, rrequest, rbean,datasetbean);
-	}
+    // public Object getResultSet(ReportRequest rrequest, AbsReportType reportObj, Object typeObj, String
+    // sql) {
+    // try {
+    // ReportBean rbean = reportObj.getReportBean();
+    // // sql=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,sql,null,null);
+    // // sql=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,sql);
+    // if (rbean.getInterceptor() != null && typeObj != null) {
+    // Object obj = rbean.getInterceptor().beforeLoadData(rrequest, rbean, typeObj, sql);
+    // if (!(obj instanceof String)) {
+    // return obj;
+    // }
+    // sql = (String) obj;
+    // }
+    //
+    //
+    // MongoExprContext ctx = eval(rrequest, rbean, sql);
+    // final Object result = ctx.getResult();
+    // return result;
+    // } catch (IllegalArgumentException ex) {
+    // throw ex;
+    // } catch (Exception e) {
+    // throw new WabacusRuntimeException("从数据库取数据失败，执行exor：" + sql + "抛出异常", e);
+    // }
+    // }
+
+    public List evalAsList(ReportRequest rrequest, ReportBean rbean, ReportDataSetValueBean datasetbean,
+            String sql) {
+        AbstractWabacusScriptExprContext ctx = eval(rrequest, null, rbean, datasetbean, sql);
+        final Object result = ctx.getResult();
+        return asList(ctx, result);
+    }
+
+    public List asList(AbstractWabacusScriptExprContext ctx, final Object result) {
+        List retList = null;
+        if (result instanceof List) {
+            retList = (List) result;
+        } else {
+            retList = ctx.asList(retList);
+        }
+        return retList;
+    }
+
+    public AbstractWabacusScriptExprContext eval(ReportRequest rrequest, Map vars, ReportBean rbean,
+            ReportDataSetValueBean datasetbean, String sql) {
+        AbstractExprDatabaseType dbType = (AbstractExprDatabaseType) (datasetbean == null ? Config
+                .getInstance().getDbType(rbean.getSbean().getDatasource()) : datasetbean.getDbType());
+        return dbType.eval(sql, vars,rrequest, rbean, datasetbean);
+    }
 }

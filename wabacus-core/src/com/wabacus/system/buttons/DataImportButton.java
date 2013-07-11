@@ -20,6 +20,7 @@ package com.wabacus.system.buttons;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
@@ -107,6 +108,8 @@ public class DataImportButton extends WabacusButton
         this.dataimportBean=new DataImportBean();
         List<AbsDataImportConfigBean> lstDataImports=new ArrayList<AbsDataImportConfigBean>();
         List<String> lst=Tools.parseStringToList(ref,";");
+        
+        Map<String,String> mPropertiesClone=eleDataImportBean.getMPropertiesClone();
         for(String strTmp:lst)
         {
             if(strTmp.equals("")) continue;
@@ -119,7 +122,9 @@ public class DataImportButton extends WabacusButton
             {
                 throw new WabacusConfigLoadingException("加载组件"+this.ccbean.getPath()+"失败，配置的数据导出项"+strTmp+"对应的资源项不是数据导出项资源类型");
             }
-            lstDataImports.add((AbsDataImportConfigBean)obj);
+            AbsDataImportConfigBean cb=(AbsDataImportConfigBean) ( (AbsDataImportConfigBean)obj).clone();
+            cb.mergeAttrs(mPropertiesClone);
+            lstDataImports.add(cb);
         }
         this.dataimportBean.setLstDataImportItems(lstDataImports);
         popupparams=WabacusAssistant.getInstance().addDefaultPopupParams(popupparams,popupinitsize,"300","160",null);

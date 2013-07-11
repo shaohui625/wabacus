@@ -26,7 +26,7 @@ import com.wabacus.system.dataimport.DataImportItem;
 public interface IDataImportInterceptor
 {
     public boolean doImportStart(DataImportItem dataImportItem);
-
+    
     public boolean beforeImportRow(Connection conn,DataImportItem dataImportItem,
             List<String> lstColNames,List lstColValues);
 

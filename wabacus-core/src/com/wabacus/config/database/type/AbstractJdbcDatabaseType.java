@@ -82,18 +82,20 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
 
 
     @Override
-    public String getSequnceValue(IConnection conn,String seqname) throws SQLException
+    public Object getSequnceValue(IConnection conn,String seqname) throws SQLException
     {
         return getSequnceValue(((JdbcConnection)conn).getNativeConnection(),seqname);
     }
-    public String getSequnceValue(Connection conn,String seqname) throws SQLException
+    public Object getSequnceValue(Connection conn,String seqname) throws SQLException
     {
         //不同数据库获取sequence方式是不同的,此处应用改为AbsDatabaseType中获取
-        String sql="select "+Tools.getRealKeyByDefine("sequence",seqname)+".nextval from dual";
+        String sql= this.getSequenceValueSql(Tools.getRealKeyByDefine("sequence",seqname)); //"select "+Tools.getRealKeyByDefine("sequence",seqname)+".nextval from dual";
         Statement stmt=conn.createStatement();
         ResultSet rs=stmt.executeQuery(sql);
         rs.next();
-        final String seqVal=String.valueOf(rs.getInt(1));
+        
+        Object seqVal =   rs.getObject(1);
+        
         rs.close();
         stmt.close();
         return seqVal;

@@ -106,6 +106,13 @@ public abstract class AbsConfigBean implements Cloneable
         try
         {
             AbsConfigBean newbean=(AbsConfigBean)super.clone();
+           
+            //$ByQXO
+            if(attrs != null){
+               newbean.setAttrs(new HashMap(attrs));
+           }
+           //ByQXO$
+            
             newbean.setParent(parent);
             return newbean;
         }catch(CloneNotSupportedException e)
@@ -140,6 +147,17 @@ public abstract class AbsConfigBean implements Cloneable
     {
         this.attrs=attrs;
     }
+    
+    public void mergeAttrs(Map<String,String> overrideAttrs){
+        if(overrideAttrs == null || overrideAttrs.isEmpty()){
+            return;
+        }
+        if(attrs == null){
+            attrs = new HashMap<String,String>();
+        }
+        attrs.putAll(overrideAttrs);
+    }    
+    
     //ByQXO$
     
 }

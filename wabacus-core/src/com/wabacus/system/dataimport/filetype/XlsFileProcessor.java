@@ -28,12 +28,13 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.config.resource.dataimport.configbean.XlsDataImportBean;
@@ -48,7 +49,19 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 
     private Sheet sheetObj;
 
+    public void setSheetObj(Sheet sheetObj)
+    {
+        this.sheetObj=sheetObj;
+        
+        layoutObj.init();
+    }
+
     private IXlsDataLayout layoutObj;
+
+    public IXlsDataLayout getLayoutObj()
+    {
+        return layoutObj;
+    }
 
     private XlsDataImportBean xlsConfigBean;
 
@@ -56,13 +69,20 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
     {
         super(configBean);
         xlsConfigBean=(XlsDataImportBean)configBean;
-        
-        
-        
-        
-        
         layoutObj=new HorizontalDataLayout();
         
+    }
+    
+    private  Workbook workbook;
+
+    public Sheet getSheetObj()
+    {
+        return sheetObj;
+    }
+
+    public Workbook getWorkbook()
+    {
+        return workbook;
     }
 
     public void init(File datafile)
@@ -70,8 +90,8 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
         try
         {
             bis=new BufferedInputStream(new FileInputStream(datafile));
-            POIFSFileSystem fs=new POIFSFileSystem(bis);
-            HSSFWorkbook workbook=new HSSFWorkbook(fs);
+          //  POIFSFileSystem fs=new POIFSFileSystem(bis);
+           workbook= WorkbookFactory.create(bis);
             String sheet=xlsConfigBean.getSheet();
             if(sheet==null||sheet.trim().equals(""))
             {
@@ -90,6 +110,8 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
                         +"中没有取到所需的sheet");
             }
             layoutObj.init();
+        }catch(InvalidFormatException e){
+            throw new WabacusDataImportException("数据导入失败:"+datafile.getAbsolutePath(),e);
         }catch(FileNotFoundException e)
         {
             throw new WabacusDataImportException("数据导入失败，没有找到数据文件"+datafile.getAbsolutePath(),e);
@@ -126,6 +148,8 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
     {
         try
         {
+            this.workbook = null;
+            this.sheetObj = null;
             if(bis!=null) bis.close();
         }catch(IOException e)
         {
@@ -174,11 +198,42 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
                     lstResults.add("");
                 }else
                 {
-                    lstResults.add(cellTmp.getRichStringCellValue().getString());
+                     lstResults.add(getCellValue(cellTmp));
                 }
             }
             return lstResults;
         }
+        
+        
+        public  String getCellValue(Cell cell){
+
+            if(cell == null) return "";
+            
+            if(true){
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+                
+                return cell.getRichStringCellValue().getString();
+            }
+            if(cell.getCellType() == Cell.CELL_TYPE_STRING){
+
+                return cell.getStringCellValue();
+
+            }else if(cell.getCellType() == Cell.CELL_TYPE_BOOLEAN){
+
+                return Boolean.toString(cell.getBooleanCellValue());
+
+            }else if(cell.getCellType() == Cell.CELL_TYPE_FORMULA){
+
+                return cell.getCellFormula() ;
+
+            }else if(cell.getCellType() == Cell.CELL_TYPE_NUMERIC){
+
+                return Double.toString(cell.getNumericCellValue());
+
+            }
+            return "";
+        }
+        
 
         public List getRowData(int recordidx)
         {

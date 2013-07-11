@@ -19,8 +19,11 @@
 package com.wabacus.config.resource.dataimport;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.dom4j.Attribute;
 import org.dom4j.Element;
 
 import com.wabacus.config.Config;
@@ -47,6 +50,10 @@ public class DataImportRes extends AbsResource
         String filetype=eleDataImport.attributeValue("filetype");
         AbsDataImportConfigBean dataimportcbean=AbsDataImportConfigBean.createDataImportConfigBean(
                 key,filetype);
+        Map<String,String> vars=getAttributeMap(eleDataImport);
+        dataimportcbean.setAttrs(vars);
+        
+        
         String filename=eleDataImport.attributeValue("filename");
         if(filename!=null)
         {
@@ -211,5 +218,17 @@ public class DataImportRes extends AbsResource
         dataimportcbean.doPostLoad();
         dataimportcbean.buildImportSqls();
         return dataimportcbean;
+    }
+
+    //TODO移动工具类中
+    protected static Map<String,String> getAttributeMap(Element eleDataImport)
+    {
+        Map<String,String> vars = new HashMap<String,String>();
+        List<Attribute> attributes=eleDataImport.attributes();
+        for(Attribute attribute:attributes)
+        {
+            vars.put(attribute.getName(),attribute.getValue());
+        }
+        return vars;
     }
 }

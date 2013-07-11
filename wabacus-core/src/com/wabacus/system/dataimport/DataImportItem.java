@@ -32,6 +32,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -162,21 +163,8 @@ public class DataImportItem
             }
             conn=Config.getInstance().getDataSource(configBean.getDatasource()).getConnection();
             AbsDatabaseType dbtype=Config.getInstance().getDataSource(configBean.getDatasource()).getDbType();
-            if(dynimportype==null||dynimportype.trim().equals("")||dynimportype.trim().equals(configBean.getImporttype()))
-            {
-                doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
-            }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_APPEND)
-                    ||dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_OVERWRITE))
-            {
-                doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(dynimportype));
-            }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_DELETE))
-            {
-                doDeleteData(conn,dbtype);
-            }else
-            {
-                log.warn("为数据文件"+this.datafileObj.getAbsolutePath()+"动态指定的导入类型无效，将采用静态配置的导入类型对其进行数据导入");
-                doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
-            }
+            doDataImport(conn,dbtype);
+            conn.commit();
             log.info("导入数据文件"+datafileObj.getAbsolutePath()+"到导入项"+configBean.getReskey()+"成功");
             try
             {
@@ -221,6 +209,25 @@ public class DataImportItem
         {
             fileProcessor.destroy();
             WabacusAssistant.getInstance().release(conn,null);
+        }
+    }
+
+    public void doDataImport(Connection conn,AbsDatabaseType dbtype) throws SQLException
+    {
+        if(dynimportype==null||dynimportype.trim().equals("")||dynimportype.trim().equals(configBean.getImporttype()))
+        {
+            doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
+        }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_APPEND)
+                ||dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_OVERWRITE))
+        {
+            doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(dynimportype));
+        }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_DELETE))
+        {
+            doDeleteData(conn,dbtype);
+        }else
+        {
+            log.warn("为数据文件"+this.datafileObj.getAbsolutePath()+"动态指定的导入类型无效，将采用静态配置的导入类型对其进行数据导入");
+            doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
         }
     }
 
@@ -399,7 +406,14 @@ public class DataImportItem
             if(this.shouldBatchCommit(i))
             {
                 hasUnCommitData=false;
-                pstmtInsert.executeBatch();
+                
+                //$ByQXO 
+                if(false && batchupdatesize==1){
+                    pstmtInsert.executeUpdate();
+                }else{
+                    pstmtInsert.executeBatch();
+                }
+                //ByQXO$
             }
             if(configBean.getInterceptor()!=null)
             {
@@ -517,7 +531,9 @@ public class DataImportItem
         mDataColValues=new HashMap<String,Object>();
         for(int k=0;k<lstColNames.size();k++)
         {
-            mDataColValues.put(lstColNames.get(k),lstDataColValues.get(k));
+            if(k<lstDataColValues.size()){
+                mDataColValues.put(lstColNames.get(k),lstDataColValues.get(k));
+            }
         }
         return mDataColValues;
     }
@@ -550,6 +566,9 @@ public class DataImportItem
                 {
                     objDataVal=WabacusAssistant.getInstance().getValueFromSession(session,String.valueOf(objCol));
                 }
+                
+            } else  if(Tools.isDefineKey("UUID",String.valueOf(objCol))){
+                objDataVal= UUID.randomUUID().toString();
             }else if(matchFileIndex)
             {
                 if((Integer)objCol<lstDataColValuesPerRow.size()) objDataVal=lstDataColValuesPerRow.get((Integer)objCol);

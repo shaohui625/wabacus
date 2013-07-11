@@ -45,7 +45,7 @@
 	  	<tabpanel id="tp1" titlestyle="2" margin="10px" titlewidth="120px" >
 	  
 	  		<report id="report1"  title="url{tableName}数据列表" parenttitle="数据维护"   type="editablelist2"   dataexport="richexcel|plainexcel|word"
-				 pk="_id"	  	pojoMapper="com.wabacus.extra.mongodb.PojoJsonContentMapper"  jsonContentProp="jsonContent"
+				 pk="_id"	  	pojoMapper="com.wabacus.extra.database.PojoJsonContentMapper"  jsonContentProp="jsonContent"
 				 
 				 				 historyRevFeature="true"
 				 >
