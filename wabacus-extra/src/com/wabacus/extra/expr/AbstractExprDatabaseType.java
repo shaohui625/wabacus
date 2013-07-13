@@ -26,7 +26,6 @@ import com.wabacus.extra.AbstractWabacusScriptExprContext;
 import com.wabacus.extra.AlterException;
 import com.wabacus.extra.WabacusScriptEngineHelper;
 import com.wabacus.extra.database.AbstractNoSqlDatabaseType;
-import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
@@ -245,65 +244,70 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
     @Override
     public void parseActionscripts(EditActionGroupBean eagbean, String reportTypeKey) {
         ReportBean rbean = eagbean.getOwnerUpdateBean().getOwner().getReportBean();
-        List<String> lstActionscripts = Tools.parseStringToList(eagbean.getActionscripts(), ';', '\"');
         String realSqlTmp;
-        for (String scriptTmp : lstActionscripts) {
-            if (scriptTmp == null || scriptTmp.trim().equals(""))
-                continue;
-            scriptTmp = scriptTmp.trim();
-            if (Tools.isDefineKey("class", scriptTmp)) {
-                scriptTmp = Tools.getRealKeyByDefine("class", scriptTmp).trim();
-                String javaname = scriptTmp;
-                String params = null;
-                int idx1 = scriptTmp.indexOf("(");
-                int idx2 = scriptTmp.indexOf(")");
-                if (idx1 > 0 && idx2 == scriptTmp.length() - 1) {
-                    javaname = scriptTmp.substring(0, idx1).trim();
-                    params = scriptTmp.substring(idx1 + 1, idx2).trim();
-                } else if (idx1 >= 0 || idx2 >= 0) {
-                    throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据JAVA类"
-                            + scriptTmp + "不合法");
-                }
-                Object javaActionBean;
-                try {
-                    javaActionBean = ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(
-                            javaname).newInstance();
-                } catch (Exception e) {
-                    throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据JAVA类"
-                            + scriptTmp + "无法实例化", e);
-                }
-                if (!(javaActionBean instanceof AbsJavaEditActionBean)) {
-                    throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据JAVA类"
-                            + scriptTmp + "没有继承" + AbsJavaEditActionBean.class.getName());
-                }
-                ((AbsEditActionBean) javaActionBean).setOwnerGroupBean(eagbean);
-                ((AbsEditActionBean) javaActionBean).parseActionscript(reportTypeKey, params);
-                eagbean.addActionBean((AbsEditActionBean) javaActionBean);
-            } else {
-                realSqlTmp = new UpdateSqlActionBean(eagbean).parseAndRemoveReturnParamname(scriptTmp)
-                        .toLowerCase().trim();
-                if (realSqlTmp.startsWith("{") && realSqlTmp.endsWith("}")) {
-                    realSqlTmp = realSqlTmp.substring(1, realSqlTmp.length() - 1).trim();
-                }
-                if (realSqlTmp.indexOf("insert") == 0) {
-                    new InsertSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
-                } else if (realSqlTmp.indexOf("update") == 0) {
-                    UpdateSqlActionBean updateBean = new UpdateSqlActionBean(eagbean);
-                    updateBean.setSql(scriptTmp);
+        String scriptTmp = eagbean.getActionscripts();
+        if (scriptTmp == null || scriptTmp.trim().equals("")) {
+            return;
+        }
+        scriptTmp = scriptTmp.trim();
+        if (Tools.isDefineKey("class", scriptTmp)) {
+            scriptTmp = Tools.getRealKeyByDefine("class", scriptTmp).trim();
+            String javaname = scriptTmp;
+            String params = null;
+            int idx1 = scriptTmp.indexOf("(");
+            int idx2 = scriptTmp.indexOf(")");
+            if (idx1 > 0 && idx2 == scriptTmp.length() - 1) {
+                javaname = scriptTmp.substring(0, idx1).trim();
+                params = scriptTmp.substring(idx1 + 1, idx2).trim();
+            } else if (idx1 >= 0 || idx2 >= 0) {
+                throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据JAVA类"
+                        + scriptTmp + "不合法");
+            }
+            Object javaActionBean;
+            try {
+                javaActionBean = ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(javaname)
+                        .newInstance();
+            } catch (Exception e) {
+                throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据JAVA类"
+                        + scriptTmp + "无法实例化", e);
+            }
+            if (!(javaActionBean instanceof AbsJavaEditActionBean)) {
+                throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据JAVA类"
+                        + scriptTmp + "没有继承" + AbsJavaEditActionBean.class.getName());
+            }
+            ((AbsEditActionBean) javaActionBean).setOwnerGroupBean(eagbean);
+            ((AbsEditActionBean) javaActionBean).parseActionscript(reportTypeKey, params);
+            eagbean.addActionBean((AbsEditActionBean) javaActionBean);
+        } else {
+            realSqlTmp = new UpdateSqlActionBean(eagbean).parseAndRemoveReturnParamname(scriptTmp)
+                    .toLowerCase().trim();
+            if (realSqlTmp.startsWith("{") && realSqlTmp.endsWith("}")) {
+                realSqlTmp = realSqlTmp.substring(1, realSqlTmp.length() - 1).trim();
+            }
+            if (realSqlTmp.indexOf("insert") == 0) {
+                new InsertSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
+            } else if (realSqlTmp.indexOf("update") == 0) {
+                UpdateSqlActionBean updateBean = new UpdateSqlActionBean(eagbean);
+                updateBean.setSql(scriptTmp);
 
-                    constructUpdateSql(scriptTmp, rbean, reportTypeKey, updateBean);
-                    eagbean.addActionBean(updateBean);
-                    // new UpdateSqlActionBean(eagbean).parseActionscript(
-                    // reportTypeKey, scriptTmp);
-                } else if (realSqlTmp.indexOf("delete") == 0) {
-                    new DeleteSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
-                    // } else if (realSqlTmp.indexOf("call") == 0) {
-                    // new StoreProcedureActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
-                } else {
-                    new InsertSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
-//                    throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据的SQL语句"
-//                            + scriptTmp + "不合法");
-                }
+                constructUpdateSql(scriptTmp, rbean, reportTypeKey, updateBean);
+                eagbean.addActionBean(updateBean);
+                // new UpdateSqlActionBean(eagbean).parseActionscript(
+                // reportTypeKey, scriptTmp);
+            } else if (realSqlTmp.indexOf("delete") == 0) {
+                new DeleteSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
+                // } else if (realSqlTmp.indexOf("call") == 0) {
+                // new StoreProcedureActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
+            } else {
+                UpdateSqlActionBean updateBean = new UpdateSqlActionBean(eagbean);
+                updateBean.setSql(scriptTmp);
+
+                constructUpdateSql(scriptTmp, rbean, reportTypeKey, updateBean);
+                eagbean.addActionBean(updateBean);
+                
+               // new InsertSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
+                // throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据的SQL语句"
+                // + scriptTmp + "不合法");
             }
         }
     }
@@ -410,6 +414,11 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
     @Override
     public void doPostLoadSQLOptionDatasource(TypepromptOptionBean tpBean) {
 
+    }
+
+    @Override
+    public String parseAndTrimScript(String content) {
+        return content == null ? StringUtils.EMPTY : content.trim();
     }
 
     // public String parseAndValidPromptSql(ReportBean rbean,
