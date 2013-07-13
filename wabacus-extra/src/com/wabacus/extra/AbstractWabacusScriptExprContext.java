@@ -254,6 +254,15 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         return toReportPojoList(srcList, true);
     }
 
+    public List toReportPojoList(Object vo) {
+        if (vo == null) {
+            return ListUtils.EMPTY_LIST;
+        }
+        final List srcList = new ArrayList();
+        srcList.add(vo);
+        return toReportPojoList(srcList, true);
+    }
+
     public List toReportPojoList(Collection srcList, boolean doPaging) {
 
         if (srcList == null || srcList.size() < 1) {
@@ -608,7 +617,7 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
             }
             if (StringUtils.isBlank(tabname)) {
                 throw new NotImplementedException();
-            // // tabname = this.rbean.getSbean().getSql_kernel();
+                // // tabname = this.rbean.getSbean().getSql_kernel();
             }
         }
     }
@@ -887,8 +896,7 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
     }
 
     public final int update(String idProp) {
-        final AttrsBuilder newAttrsBuilder = this.newAttrsBuilder(true);
-        Map atts = newAttrsBuilder.getAtts();
+        Map atts = attrsToMap();
         final Object idVal = atts.remove(idProp);
 
         if (null == idVal || StringUtils.EMPTY.equals(idVal)) {
@@ -897,10 +905,26 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         return update(toMap(idProp, idVal), atts);
     }
 
+    public Map attrsToMap() {
+        final AttrsBuilder newAttrsBuilder = this.newAttrsBuilder(true);
+        Map atts = newAttrsBuilder.getAtts();
+        return atts;
+    }
+
     public final Map<String, Object> toMap(String idProp, Object val) {
         final Map<String, Object> map = new HashMap<String, Object>();
         map.put(idProp, val);
         return map;
+    }
+
+    public final static Object populate(Object bean, Map properties) throws IllegalAccessException,
+            InvocationTargetException {
+         BeanUtils.populate(bean, properties);
+         return bean;
+    }
+
+    public final Object populateAttrs(Object bean) throws IllegalAccessException, InvocationTargetException {
+       return populate(bean, this.attrsToMap());
     }
 
     public Map jsonStrToMap(String json) {
