@@ -877,4 +877,10 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
         Object objTmp=sqlDataSet.getDataSet(rrequest,rbean,typeObj,sqlTemp,typeObj.getLstConditions(),typeObj.getDatasource());
         return objTmp;
     }
+    @Override
+    public String parseAndTrimScript(String content)
+    {
+        return Tools.formatStringBlank(content).trim() ;
+    }  
+    
 }

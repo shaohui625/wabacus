@@ -2562,6 +2562,7 @@ public class ComponentConfigLoadManager
         return editBean;
     }
 
+    //$ByQXO 解决不同的script预处理的问题
     private static boolean loadEditActionGroupConfig(XmlElementBean eleEditBean,AbsEditableReportEditDataBean editBean)
     {
         boolean hasValidActionscript=false;
@@ -2572,10 +2573,11 @@ public class ComponentConfigLoadManager
             for(XmlElementBean eleActionGroupBeanTmp:lstValueBeans)
             {
                 if(eleActionGroupBeanTmp==null) continue;
-                String actionScripts=Tools.formatStringBlank(eleActionGroupBeanTmp.getContent()).trim();
+                String datasource=eleActionGroupBeanTmp.attributeValue("datasource");
+                String actionScripts= Config.getInstance().getDbType(datasource).parseAndTrimScript(eleActionGroupBeanTmp.getContent());
+                
                 if(actionScripts.equals("")) continue;
                 hasValidActionscript=true;
-                String datasource=eleActionGroupBeanTmp.attributeValue("datasource");
                 actionGroupBeanTmp=new EditActionGroupBean(editBean);
                 if(datasource!=null) actionGroupBeanTmp.setDatasource(datasource.trim());
                 actionGroupBeanTmp.setActionscripts(actionScripts);
@@ -2583,7 +2585,7 @@ public class ComponentConfigLoadManager
             }
         }else
         {//没有配置<value/>子标签，则直接加载<insert/>、<update/>、<delete/>标签本身的脚本
-            String actionScripts=Tools.formatStringBlank(eleEditBean.getContent()).trim();
+            String actionScripts= Config.getInstance().getDbType(null).parseAndTrimScript(eleEditBean.getContent());
             if(!actionScripts.equals(""))
             {
                 actionGroupBeanTmp=new EditActionGroupBean(editBean);
@@ -2594,6 +2596,7 @@ public class ComponentConfigLoadManager
         }
         return hasValidActionscript;
     }
+    //ByQXO$
 
     public static XmlElementBean getEleSqlUpdateBean(List<XmlElementBean> lstEleSqlBeans,String updatetype)
     {

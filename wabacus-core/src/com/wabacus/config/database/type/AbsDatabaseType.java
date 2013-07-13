@@ -343,5 +343,7 @@ public abstract class AbsDatabaseType
     public abstract  Object getPromptDataList(ReportRequest rrequest, ReportBean rbean,
             SQLOptionDatasource typeObj, String typedata);
     
+    public abstract String parseAndTrimScript(String content);
+    
 //ByQXO$
 }
