@@ -53,7 +53,7 @@ public class DataImportReportUpload extends AbsFileUpload
         {
             Map<String,String> mFormFieldValues=(Map<String,String>)request.getAttribute("WX_FILE_UPLOAD_FIELDVALUES");
             request.setAttribute("LST_DATAIMPORT_CONFIGBEANS",buttonObj.getLstDataImportItems());
-            flag=interceptorObj.beforeDisplayFileUploadInterface(request,mFormFieldValues,out);
+            flag=buttonObj.getDataimportInterceptorObj().beforeDisplayFileUploadInterface(request,mFormFieldValues,out);
         }
         if(flag)
         {
