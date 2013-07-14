@@ -5,10 +5,10 @@
 	<parent>
 		<groupId>com.googlecode.wabacus</groupId>
 		<artifactId>wabacus-parent</artifactId>
-		<version>1.0.1</version>
+		<version>1.0.2</version>
 		<relativePath>../wabacus-parent/pom.xml</relativePath>
 	</parent>
-	<version>4.1.2-enhance-fix1-b1</version>
+	<version>4.1.2-enhance-fix1-b3</version>
 	<artifactId>wabacus-extra</artifactId>
 	<packaging>jar</packaging>
 
@@ -41,6 +41,12 @@
 		</testResources>
 
 		<plugins>
+		
+		 <plugin>
+	        <groupId>org.apache.maven.plugins</groupId>
+	        <artifactId>maven-compiler-plugin</artifactId>
+	        <version>${version.maven-compiler-plugin}</version>
+        </plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
@@ -308,7 +314,7 @@
 		<dependency>
 			<groupId>org.jooq</groupId>
 			<artifactId>jooq</artifactId>
-			<version>3.1.0</version>
+			<version>3.1.0-java5</version>
 		</dependency>
 
 		<dependency>
