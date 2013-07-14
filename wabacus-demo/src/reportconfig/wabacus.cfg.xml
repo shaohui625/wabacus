@@ -146,8 +146,7 @@
 		<interceptor class="com.wabacusdemo.testpageinterceptor.PageInterceptor3"/><!-- 没有配置pageid属性，则对所有页面有效 -->
 	</global-interceptors>
 	
-	<i18n-resources file="resources/i18n/ApplicationResources.xml"/>
-	
+	<i18n-resources file="resources/i18n/ApplicationResources.xml"/>	
 	<!-- 注册所有全局资源文件 -->
 	<global-resources>
 		<resource-file>resources/resources_business_ch.xml</resource-file>
