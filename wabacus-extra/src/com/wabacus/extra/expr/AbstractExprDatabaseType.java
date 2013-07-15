@@ -32,6 +32,7 @@ import com.wabacus.system.component.application.report.configbean.editablereport
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsJavaEditActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.DeleteSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportParamBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportSqlBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
@@ -187,9 +188,12 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
                         cbean.getProperty(), reportTypeKey, false, false);
                 if (paramBean != null) {
                     lstParamsBean.add(paramBean);
-                    // updatebean.addParamBeanInUpdateClause(cbean, paramBean);
-                    // updatebean.addParamBeanInExternalValuesWhereClause(cbean,
-                    // paramBean);
+                    Map<String, String> attrs = cbean.getAttrs();
+                    if ("false".equals(attrs.get("editable")) || "false".equals(attrs.get("updatable"))) {
+                        EditableReportColBean ercbeanUpdateSrc = (EditableReportColBean) cbean
+                                .getExtendConfigDataForReportType(reportTypeKey);
+                        ercbeanUpdateSrc.setEditableWhenUpdate(0);
+                    }
                 }
 
             }
@@ -221,6 +225,13 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
             EditableReportParamBean paramBean = insertSqlBean.createParamBeanByColbean(cbean.getProperty(),
                     reportTypeKey, false, false);
             if (paramBean != null) {
+                Map<String, String> attrs = cbean.getAttrs();
+                if ("false".equals(attrs.get("editable")) || "false".equals(attrs.get("insertable"))) {
+                    EditableReportColBean ercbeanUpdateSrc = (EditableReportColBean) cbean
+                            .getExtendConfigDataForReportType(reportTypeKey);
+                    ercbeanUpdateSrc.setEditableWhenInsert(0);
+                }
+                
                 lstParamsBean.add(paramBean);
             }
         }
@@ -304,8 +315,8 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
 
                 constructUpdateSql(scriptTmp, rbean, reportTypeKey, updateBean);
                 eagbean.addActionBean(updateBean);
-                
-               // new InsertSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
+
+                // new InsertSqlActionBean(eagbean).parseActionscript(reportTypeKey, scriptTmp);
                 // throw new WabacusConfigLoadingException("加载报表" + rbean.getPath() + "失败，配置的更新数据的SQL语句"
                 // + scriptTmp + "不合法");
             }
