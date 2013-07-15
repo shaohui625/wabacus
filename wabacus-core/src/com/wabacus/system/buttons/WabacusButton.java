@@ -18,6 +18,10 @@
  */
 package com.wabacus.system.buttons;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -212,5 +216,41 @@ public class WabacusButton extends AbsButtonType
     
     public void loadExtendConfig(XmlElementBean eleButtonBean)
     {
+       // System.out.println("eleButtonBean:"+eleButtonBean);
+        
+        setAttrs(eleButtonBean.getMPropertiesClone());
     }
+    
+    
+    
+    //$ByQXO　所有属性列表Map,以便扩展类中使用
+    private Map<String,String> attrs;
+
+    public Map<String,String> getAttrs()
+    {
+        return attrs == null ? MapUtils.EMPTY_MAP : attrs;
+    }
+
+    public void setAttrs(Map<String,String> attrs)
+    {
+        this.attrs=attrs;
+    }
+    
+    public void mergeAttrs(Map<String,String> overrideAttrs){
+        if(overrideAttrs == null || overrideAttrs.isEmpty()){
+            return;
+        }
+        if(attrs == null){
+            attrs = new HashMap<String,String>();
+        }
+        attrs.putAll(overrideAttrs);
+    }
+
+    @Override
+    public String getButtonType()
+    {
+        return this.getAttrs().get("type");
+    }    
+    
+    //ByQXO$
 }
