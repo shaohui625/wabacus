@@ -703,8 +703,7 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         if (data == null) {
             data = rrequest.getAttribute(name);
         }
-
-        if (data instanceof String) {
+       if (data instanceof String) {
             final ColBean col = this.rbean.getDbean().getColBeanByColColumn(name);
             if (null != col && col.getDatatypeObj() != null) {
                 data = col.getDatatypeObj().label2value((String) data);
@@ -896,7 +895,18 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
     }
 
     public final int update(String idProp) {
+        return update(idProp, null);
+    }
+
+    public final int update(Map extraData) {
+        return update(this.getPk(), extraData);
+    }
+
+    public final int update(String idProp, Map extraData) {
         Map atts = attrsToMap();
+        if (extraData != null) {
+            atts.putAll(extraData);
+        }
         final Object idVal = atts.remove(idProp);
 
         if (null == idVal || StringUtils.EMPTY.equals(idVal)) {
@@ -919,12 +929,12 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
 
     public final static Object populate(Object bean, Map properties) throws IllegalAccessException,
             InvocationTargetException {
-         BeanUtils.populate(bean, properties);
-         return bean;
+        BeanUtils.populate(bean, properties);
+        return bean;
     }
 
     public final Object populateAttrs(Object bean) throws IllegalAccessException, InvocationTargetException {
-       return populate(bean, this.attrsToMap());
+        return populate(bean, this.attrsToMap());
     }
 
     public Map jsonStrToMap(String json) {
@@ -1049,6 +1059,19 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
             datasource = this.rbean.getSbean().getDatasource();
         }
         return datasource;
+    }
+
+    private transient ExprContextAddonFacade addon = null;
+
+    public ExprContextAddonFacade getAddon() {
+        if (null == addon) {
+            addon = (ExprContextAddonFacade) WabacusBeanFactory.getInstance().getBean(
+                    "exprContextAddonFacade");
+            if (null == addon) {
+                addon = ExprContextAddonFacade.DUMMY;
+            }
+        }
+        return addon;
     }
 
 }

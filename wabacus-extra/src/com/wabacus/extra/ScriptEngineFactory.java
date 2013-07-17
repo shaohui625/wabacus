@@ -16,7 +16,7 @@ public final class ScriptEngineFactory {
         if (null == scriptEngine) {
             scriptEngine = SystemHelper.loadServiceIf(ScriptEngine.class, null);
             if (null == scriptEngine) {
-                scriptEngine = new ScriptEngineMvel();
+                scriptEngine = new ScriptEngineMvelCompiled();
             }
         }
         return scriptEngine;

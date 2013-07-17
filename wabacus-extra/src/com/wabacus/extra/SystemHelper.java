@@ -79,6 +79,8 @@ public final class SystemHelper {
         return null;
     }
 
+    private static final boolean AT_LEAST_JAVA6 = isJavaVersionAtLeast(1.6f);
+
     private static <T> Iterator<T> loadServies(Class<T> serviceClass, ClassLoader classLoader) {
         if (null == classLoader) {
             classLoader = getClassLoader(serviceClass);

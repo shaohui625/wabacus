@@ -13,11 +13,11 @@ import com.wabacus.config.Config;
  */
 public final class WabacusHelper {
 
-	private WabacusHelper() {
-		super();
-	}
+    private WabacusHelper() {
+        super();
+    }
 
-	public static Collection<String> getPageIds() {
-		return  Config.getInstance().getPageIds();		
-	}
+    public static Collection<String> getPageIds() {
+        return Config.getInstance().getPageIds();
+    }
 }

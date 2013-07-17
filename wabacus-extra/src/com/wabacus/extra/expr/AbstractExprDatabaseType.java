@@ -102,6 +102,8 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
             String sqlCount = (String) vars.get("sqlCount");
             if (StringUtils.isBlank(sqlCount)) {
                 sqlCount = "this.count(getQueryConditionMap())";
+            }else{
+                LOG.info("custom count:{}",sqlCount);
             }
             sbean.setSqlCount(sqlCount);
         }
