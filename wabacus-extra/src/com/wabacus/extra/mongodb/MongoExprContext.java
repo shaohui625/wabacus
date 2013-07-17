@@ -144,8 +144,11 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
      */
     public Find skipAndLimit(Find find) {
 
-        CacheDataBean cdb = getCacheDataBean();
+        final CacheDataBean cdb = getCacheDataBean();
         int pagesize = cdb.getPagesize();
+        if( pagesize == -1){
+            return find;
+        }
         int pageno = cdb.getFinalPageno();
         if (pageno > 1) {
             int start = (pageno - 1) * pagesize;
