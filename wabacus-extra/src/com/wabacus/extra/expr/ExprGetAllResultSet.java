@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 import com.wabacus.config.Config;
@@ -28,7 +28,7 @@ import com.wabacus.util.Tools;
 
 public class ExprGetAllResultSet implements ISqlDataSet {
 
-    private static Log LOG = LogFactory.getLog(ExprGetAllResultSet.class);
+    private static Logger LOG = LoggerFactory.getLogger(ExprGetAllResultSet.class);
 
     // @Override
     public int getRecordcount(ReportRequest rrequest, AbsReportType reportTypeObj,
@@ -152,7 +152,7 @@ public class ExprGetAllResultSet implements ISqlDataSet {
             sql = (String) obj;
         }
         if (Config.show_sql) {
-            LOG.info("Execute expr: " + sql);
+            LOG.info("Execute expr:{} ", sql);
         }
         Map vars = Maps.newHashMap();
         vars.put("typeObj", typeObj);

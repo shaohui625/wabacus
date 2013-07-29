@@ -13,13 +13,17 @@ import org.mvel2.templates.TemplateRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Maps;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
+import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.config.typeprompt.TypePromptBean;
+import com.wabacus.config.typeprompt.TypePromptColBean;
 import com.wabacus.exception.MessageCollector;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.extra.AbstractWabacusScriptExprContext;
@@ -27,6 +31,7 @@ import com.wabacus.extra.AlterException;
 import com.wabacus.extra.WabacusScriptEngineHelper;
 import com.wabacus.extra.database.AbstractNoSqlDatabaseType;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.buttons.AbsButtonType;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsJavaEditActionBean;
@@ -34,11 +39,11 @@ import com.wabacus.system.component.application.report.configbean.editablereport
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportParamBean;
-import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportSqlBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
 import com.wabacus.system.dataset.ISqlDataSetBuilder;
 import com.wabacus.system.datatype.IDataType;
+import com.wabacus.system.inputbox.TextBox;
 import com.wabacus.system.inputbox.option.SQLOptionDatasource;
 import com.wabacus.system.inputbox.option.TypepromptOptionBean;
 import com.wabacus.util.Consts;
@@ -179,8 +184,8 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
         List<EditableReportParamBean> lstParamsBean = new ArrayList<EditableReportParamBean>();
         if (true) {// 没有指定要更新的字段，则将所有从数据库取数据的<col/>（不包括hidden="1"和="2"的<col/>）全部更新到表中
 
-            EditableReportSqlBean ersqlbean = (EditableReportSqlBean) rbean.getSbean()
-                    .getExtendConfigDataForReportType(EditableReportSqlBean.class);
+        //    EditableReportSqlBean ersqlbean = (EditableReportSqlBean) rbean.getSbean()
+         //           .getExtendConfigDataForReportType(EditableReportSqlBean.class);
             // final EditableReportUpdateDataBean updatebean = ersqlbean.getUpdatebean();
 
             List<ColBean> lstColBeans = rbean.getDbean().getLstCols();
@@ -191,10 +196,12 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
                 if (paramBean != null) {
                     lstParamsBean.add(paramBean);
                     Map<String, String> attrs = cbean.getAttrs();
-                    if ("false".equals(attrs.get("editable")) || "false".equals(attrs.get("updatable"))) {
+                    if (true && ( "false".equals(attrs.get("editable")) || "false".equals(attrs.get("updatable"))) ) {
                         EditableReportColBean ercbeanUpdateSrc = (EditableReportColBean) cbean
                                 .getExtendConfigDataForReportType(reportTypeKey);
-                        ercbeanUpdateSrc.setEditableWhenUpdate(0);
+                        if(ercbeanUpdateSrc != null){
+                            ercbeanUpdateSrc.setEditableWhenUpdate(0);
+                        }
                     }
                 }
 
@@ -231,7 +238,9 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
                 if ("false".equals(attrs.get("editable")) || "false".equals(attrs.get("insertable"))) {
                     EditableReportColBean ercbeanUpdateSrc = (EditableReportColBean) cbean
                             .getExtendConfigDataForReportType(reportTypeKey);
-                    ercbeanUpdateSrc.setEditableWhenInsert(0);
+                    if(ercbeanUpdateSrc != null){
+                        ercbeanUpdateSrc.setEditableWhenInsert(0);
+                    }
                 }
                 
                 lstParamsBean.add(paramBean);
@@ -410,15 +419,31 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
 
     public Object getPromptDataList(ReportRequest rrequest, ReportBean rbean, SQLOptionDatasource typeObj,
             String typedata) {
-
+        
+        if(StringUtils.isBlank(typedata)){
+            return null;
+        }
+       // typedata = typedata.trim();
         final SqlBean sbean = rbean.getSbean();
-        String sqlTemp = typeObj.getSql();//
+        final String sqlTemp = typeObj.getSql();//
         // sqlTemp = Tools.replaceAll(typeObj.getSql(),"#data#",typedata);
-        LOG.debug("expr：{} data:{}", sqlTemp, typedata);
-        Map vars = new HashMap();
+        if(LOG.isDebugEnabled()){
+            LOG.debug("expr：{} data:{}", sqlTemp, typedata);
+        }
+
+        
+        final Map<String,Object> vars = Maps.newHashMap();
         vars.put("typeObj", typeObj);
         vars.put("data", typedata);
 
+         final TypePromptBean typePromptBean = ((TextBox) typeObj.getOwnerOptionBean().getOwnerInputboxObj())
+                .getTypePromptBean();
+         if(typePromptBean != null  &&  typePromptBean.getLstPColBeans().size() >0 ){
+             TypePromptColBean typePromptColBean = typePromptBean.getLstPColBeans().get(0);
+             String matchmode = typePromptColBean.getAttrs().get("matchmode");
+             vars.put("matchmode", matchmode);
+         }
+             
         List<ReportDataSetValueBean> lstDatasetValueBeans = rbean.getSbean()
                 .getLstDatasetValueBeansByValueid(null);// FIXME
         return eval(sqlTemp, vars, rrequest, rbean, lstDatasetValueBeans.get(0)).getResult();
@@ -434,6 +459,12 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
         return content == null ? StringUtils.EMPTY : content.trim();
     }
 
+    @Override
+    public String parseButtonsClickevent(IComponentConfigBean ccbean, AbsButtonType buttonObj,
+            String clickevent) {
+        return clickevent.trim();
+    }
+
     // public String parseAndValidPromptSql(ReportBean rbean,
     // SQLPromptDataSource typeObj, String sql) {
     // if (typeObj.getClass().isAssignableFrom(SQLPromptDataSource.class)) {
@@ -442,4 +473,6 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
     // }
     // return typeObj.parseAndValidPromptSql(rbean, sql);
     // }
+    
+    
 }

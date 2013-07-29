@@ -31,7 +31,6 @@ import com.mongodb.DB;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import com.mongodb.WriteResult;
-import com.mongodb.util.JSON;
 import com.mongodb.util.JSONSerializers;
 import com.mongodb.util.ObjectSerializer;
 import com.wabacus.config.Config;
@@ -52,7 +51,6 @@ import com.wabacus.system.inputbox.TextBox;
 import com.wabacus.system.inputbox.option.SQLOptionDatasource;
 
 import de.undercouch.bson4jackson.types.ObjectId;
-
 import foodev.jsondiff.JsonDiff;
 
 /**
@@ -146,7 +144,7 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
 
         final CacheDataBean cdb = getCacheDataBean();
         int pagesize = cdb.getPagesize();
-        if( pagesize == -1){
+        if (pagesize == -1) {
             return find;
         }
         int pageno = cdb.getFinalPageno();
@@ -270,11 +268,11 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
                 if (id instanceof Map && ((Map) id).containsKey("$oid")) {
                     id = ((Map) id).get("$oid");
                 }
-                if(id instanceof ObjectId){
-                    ObjectId _id = (ObjectId)id;
+                if (id instanceof ObjectId) {
+                    ObjectId _id = (ObjectId) id;
                     id = new org.bson.types.ObjectId(_id.getTime(), _id.getMachine(), _id.getInc());
                 }
-                
+
                 final WriteResult ret = isDelete ? collection.remove("{_id:#}", id) : collection.update(
                         "{_id:#}", id).with(modifier);
                 // TODO更新是否成功
@@ -339,10 +337,10 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
     /**
      * @return 产生报表查询条件Map
      */
-    public Map<String, Object> getQueryConditionMap() {
-        SqlBean sbean = rbean.getSbean();
+    public Map<String, Object> getQueryConditionMap(final Collection<String> excludes) {
+        final SqlBean sbean = rbean.getSbean();
         final List<ConditionBean> lstConditions = sbean.getLstConditions();
-        Map<String, Object> ret = new HashMap<String, Object>();
+        final Map<String, Object> ret = new HashMap<String, Object>();
         for (Iterator<ConditionBean> iterator = lstConditions.iterator(); iterator.hasNext();) {
             final ConditionBean cdbean = (ConditionBean) iterator.next();
             final ConditionExpressionBean conditionExpression = cdbean.getConditionExpression();
@@ -352,7 +350,7 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
             }
 
             try {
-                Map vars = new HashMap();
+                final Map vars = new HashMap();
                 final Object data = getReqAttr(cdbean);
                 vars.putAll(rrequest.getAttributes());
                 vars.put("data", data == null ? cdbean.getDefaultvalue() : data);
@@ -406,6 +404,10 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
 
         private QueryBuilder builder = new QueryBuilder();
 
+        public final AbstractQueryBuilder like(String key, String value) {
+            return this.regex(key, value);
+        }
+
         public CustomQueryBuilder regex(String key, String regex) {
             regex(key, regex, Pattern.CASE_INSENSITIVE);
             return this;
@@ -413,6 +415,13 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
 
         public CustomQueryBuilder put(String key) {
             builder.put(key);
+            return this;
+        }
+
+        public CustomQueryBuilder putAll(Map<String, Object> map) {
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                builder.put(entry.getKey()).is(entry.getValue());
+            }
             return this;
         }
 
@@ -452,6 +461,13 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
     @Override
     public CustomQueryBuilder newQuery() {
         return new CustomQueryBuilder();
+    }
+
+    @Override
+    public AbstractQueryBuilder newQuery(Map<String, Object> initMap) {
+        final CustomQueryBuilder builder = new CustomQueryBuilder();
+        builder.putAll(initMap);
+        return builder;
     }
 
     @Override
@@ -495,12 +511,12 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
     }
 
     @Override
-    public List<Map<String, String>> findTypePrompts(Map query, String c, SQLOptionDatasource typeObj) {
+    public List<Map<String, String>> findTypePrompts(Map query, SQLOptionDatasource typeObj, String c) {
         final String json = toJson(query);
-        return findTypePrompts(json, c, typeObj);
+        return findTypePrompts(json, typeObj, c);
     }
 
-    public List<Map<String, String>> findTypePrompts(String query, String c, SQLOptionDatasource typeObj) {
+    public List<Map<String, String>> findTypePrompts(String query, SQLOptionDatasource typeObj, String c) {
         TypePromptBean typePromptBean = ((TextBox) typeObj.getOwnerOptionBean().getOwnerInputboxObj())
                 .getTypePromptBean();
         List<TypePromptColBean> lstPColBeans = typePromptBean.getLstPColBeans();
@@ -524,6 +540,14 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
         }
         fields.put("_id", 0);
         final Find find = getCollection(c).find(query).projection(toJson(fields));
+        
+     
+        int typePromptLimit =  typePromptBean.getResultcount() ;
+        if(typePromptLimit < 1){
+            typePromptLimit= getTypePromptLimit();
+        }
+        find.limit(typePromptLimit);
+        
         final List asList = asList(find.as(HashMap.class).iterator());
         return asList;
     }

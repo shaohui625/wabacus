@@ -22,6 +22,7 @@ import org.apache.commons.collections.ComparatorUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections.SetUtils;
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -509,7 +510,14 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         return distinct(colKey, query, this.getTabname());
     }
 
-    public abstract Map<String, Object> getQueryConditionMap();
+    /**
+     * @return 产生报表查询条件Map
+     */
+    public final Map<String, Object> getQueryConditionMap() {
+        return getQueryConditionMap(SetUtils.EMPTY_SET);
+    }
+
+    public abstract Map<String, Object> getQueryConditionMap(final Collection<String> excludes);
 
     public List distinct(String colKey, boolean filterCondition) {
         Map<String, Object> map = null;
@@ -703,7 +711,7 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         if (data == null) {
             data = rrequest.getAttribute(name);
         }
-       if (data instanceof String) {
+        if (data instanceof String) {
             final ColBean col = this.rbean.getDbean().getColBeanByColColumn(name);
             if (null != col && col.getDatatypeObj() != null) {
                 data = col.getDatatypeObj().label2value((String) data);
@@ -983,9 +991,16 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
      * @return 调用此方法等同于 insert( newAttrsBuilder(true).remove(idProp))
      */
     public final Object insert(String idProp) {
+        return insert(idProp, null);
+    }
+
+    public final Object insert(String idProp, Map extraData) {
         final AttrsBuilder attrsBuilder = newAttrsBuilder(true);
         // .remove(idProp);
         Map atts = attrsBuilder.getAtts();
+        if (extraData != null) {
+            atts.putAll(extraData);
+        }
         Object idValue = atts.get(idProp);
         if (null == idValue) {
             ColBean colBean = this.getColBeanByProperty(idProp);
@@ -1039,17 +1054,36 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
     public abstract int update(Map query, Map data, String tabname);
 
     public abstract AbstractQueryBuilder newQuery();
+    
+    public abstract AbstractQueryBuilder newQuery(final Map<String,Object> initMap);
 
-    public final List<Map<String, String>> findTypePrompts(AbstractQueryBuilder qbuilder, String c,
-            SQLOptionDatasource typeObj) {
-        return findTypePrompts(qbuilder.toMap(), c, typeObj);
+    public final AbstractQueryBuilder newQuery(final boolean filter) {
+        return filter ? newQuery(this.getQueryConditionMap()) : newQuery();
+    }
+    public final List<Map<String, String>> findTypePrompts(AbstractQueryBuilder qbuilder,
+            SQLOptionDatasource typeObj, String c) {
+        return findTypePrompts(qbuilder.toMap(), typeObj, c);
     }
 
-    public abstract List<Map<String, String>> findTypePrompts(Map query, String c,
-            SQLOptionDatasource typeObj);
+    @Deprecated
+    public final List<Map<String, String>> findTypePrompts(Map query, String c, SQLOptionDatasource typeObj) {
+        return findTypePrompts(query, typeObj, c);
+    }
+
+    public final List<Map<String, String>> findTypePrompts(Map query, SQLOptionDatasource typeObj) {
+        return findTypePrompts(query, typeObj, this.getTabname());
+    }
+
+    public final List<Map<String, String>> findTypePrompts(AbstractQueryBuilder qbuilder,
+            SQLOptionDatasource typeObj) {
+        return findTypePrompts(qbuilder.toMap(), typeObj, this.getTabname());
+    }
+
+    public abstract List<Map<String, String>> findTypePrompts(Map query, SQLOptionDatasource typeObj,
+            String c);
 
     public final int getTypePromptLimit() {
-        int typePromptLimit = Config.getInstance().getSystemConfigValue("typePromptsLimit", 15);
+        int typePromptLimit = Config.getInstance().getSystemConfigValue("typePromptsLimit", 50);
         return typePromptLimit;
     }
 
