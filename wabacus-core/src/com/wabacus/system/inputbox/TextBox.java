@@ -286,6 +286,7 @@ public class TextBox extends AbsInputBox implements Cloneable
             }
             tpColbeanTmp=new TypePromptColBean();
             tpColbeanTmp.setLabel(Config.getInstance().getResourceString(null,rbean.getPageBean(),label.trim(),true));
+            tpColbeanTmp.setAttrs(elePromptColBeanTmp.getMPropertiesClone());
             if(title!=null&&!title.trim().equals(""))
             {
                 tpColbeanTmp.setTitle(Config.getInstance().getResourceString(null,rbean.getPageBean(),title.trim(),true));
@@ -297,17 +298,21 @@ public class TextBox extends AbsInputBox implements Cloneable
                 tpColbeanTmp.setMatchmode(0);
             }else
             {
-                matchmode=matchmode==null?"":matchmode.toLowerCase().trim();
+                //$ByQXO 以支持其他匹配方式
+                matchmode=matchmode==null ? Config.getInstance().getSystemConfigValue("defaultPromptMatchMode","start") : matchmode.toLowerCase().trim();
+                tpColbeanTmp.getAttrs().put("matchmode",matchmode);
                 if("anywhere".equals(matchmode))
                 {
                     tpColbeanTmp.setMatchmode(2);
                 }else if("start".equals(matchmode))
                 {
                     tpColbeanTmp.setMatchmode(1);
-                }else
+                }else if(!"none".equals(matchmode))
                 {
-                    tpColbeanTmp.setMatchmode(0);
+                    tpColbeanTmp.setMatchmode(2);  //ByQXOy为了使end start_or_end之式匹配起作用
                 }
+                //ByQXO$
+                
                 if(tpColbeanTmp.getMatchmode()>0)
                 {
                     isHasMatchCol=true;

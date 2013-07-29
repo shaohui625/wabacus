@@ -30,12 +30,15 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.component.application.report.SqlBean;
+import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.buttons.AbsButtonType;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.DeleteSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
@@ -345,5 +348,13 @@ public abstract class AbsDatabaseType
     
     public abstract String parseAndTrimScript(String content);
     
-//ByQXO$
+    public  String parseButtonsClickevent(IComponentConfigBean ccbean,AbsButtonType buttonObj,String clickevent){
+        if(clickevent.indexOf('\"')>=0)
+        {
+            throw new WabacusConfigLoadingException("加载组件"+ccbean.getPath()+"的按钮"+buttonObj.getName()+"失败，按钮事件中不能用双引号，只能用单引用，如果有多级，可以加上转义字符\\");
+        }
+        return Tools.formatStringBlank(clickevent.trim());        
+    }
+    
+    //ByQXO$
 }

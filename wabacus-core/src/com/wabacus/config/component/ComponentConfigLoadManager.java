@@ -51,6 +51,7 @@ import com.wabacus.config.component.application.report.extendconfig.LoadExtendCo
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
 import com.wabacus.config.component.other.ButtonsBean;
+import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.dataexport.DataExportsConfigBean;
 import com.wabacus.config.dataexport.PDFExportBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
@@ -353,6 +354,15 @@ public class ComponentConfigLoadManager
         String right=eleComponent.attributeValue("right");
         String scrollstyle=eleComponent.attributeValue("scrollstyle");
         String dataexport=eleComponent.attributeValue("dataexport");
+        
+        //$ByQXO 支持全局方式配置数据导出类型
+        if( null == dataexport){
+            dataexport = Config.getInstance().getSystemConfigValue("dataexport",null);
+        }else{
+            dataexport = Config.getInstance().getSystemConfigValue(dataexport,dataexport);
+        }
+        //ByQXO$
+        
         String contextmenu=eleComponent.attributeValue("contextmenu");
         String onload=eleComponent.attributeValue("onload");
         acbean.mergeAttrs(eleComponent.getMPropertiesClone());
@@ -1536,11 +1546,10 @@ public class ComponentConfigLoadManager
             String clickevent=eleButtonBean.getContent();
             if(clickevent!=null&&!clickevent.trim().equals(""))
             {
-                if(clickevent.indexOf('\"')>=0)
-                {
-                    throw new WabacusConfigLoadingException("加载组件"+ccbean.getPath()+"的按钮"+buttonname+"失败，按钮事件中不能用双引号，只能用单引用，如果有多级，可以加上转义字符\\");
-                }
-                buttonObj.setClickEvent(Tools.formatStringBlank(clickevent.trim()));
+               //$ByQXO   让com.wabacus.system.buttons.ServerSQLActionButton直接支持服务器端其他脚本
+                AbsDatabaseType dbType=Config.getInstance().getDbType(null);//FIXME 获取 按钮所在报表采用的数据源对应的DbType
+                buttonObj.setClickEvent(dbType.parseButtonsClickevent(ccbean,buttonObj,clickevent));
+                //ByQXO$
             }else
             {
                 List<String> lstImports=ConfigLoadAssistant.getInstance().loadImportsConfig(eleButtonBean);

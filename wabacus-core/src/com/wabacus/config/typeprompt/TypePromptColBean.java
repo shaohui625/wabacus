@@ -18,7 +18,9 @@
  */
 package com.wabacus.config.typeprompt;
 
-public class TypePromptColBean implements Cloneable
+import com.wabacus.config.AbstractConfigExtendable;
+
+public class TypePromptColBean extends AbstractConfigExtendable implements Cloneable
 {
     private String label;
     
