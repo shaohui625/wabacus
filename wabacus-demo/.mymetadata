@@ -2,12 +2,12 @@
 <project-module
   type="WEB"
   name="wabacus-demo"
-  id="myeclipse.1286762030671"
+  id="myeclipse.1286762030571"
   context-root="/WabacusDemo"
   j2ee-spec="5.0"
   archive="wabacus-demo.war">
   <attributes>
-    <attribute name="webrootdir" value="WebRoot" />
+    <attribute name="webrootdir" value="src/main/webapp" />
   </attributes>
 </project-module>
 
