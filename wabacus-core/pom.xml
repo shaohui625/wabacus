@@ -11,7 +11,7 @@
 	<artifactId>wabacus-core</artifactId>
 	<packaging>jar</packaging>
 	<name>wabacus-core</name>
-	<version>4.1.2-enhance-fix1-b4</version>
+	<version>4.1.2-enhance-fix1-b15</version>
 	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
 	<url>https://code.google.com/p/wabacus/</url>
 	<properties>
@@ -96,7 +96,7 @@
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.16</version>
-			<scope>runtime</scope>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -136,24 +136,52 @@
 		<dependency>
 			<groupId>jaxen</groupId>
 			<artifactId>jaxen</artifactId>
-			<version>1.1.1</version>
+			<version>1.1.6</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>xml-apis</artifactId>
+					<groupId>xml-apis</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>xerces</artifactId>
+					<groupId>xercesImpl</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>xercesImpl</artifactId>
+					<groupId>xerces</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>xmlParserAPIs</artifactId>
+					<groupId>xerces</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>xalan</artifactId>
+					<groupId>xalan</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.javassist</groupId>
 			<artifactId>javassist</artifactId>
-			<version>3.14.0-GA</version>
+			<version>3.16.1-GA</version>
 		</dependency>
 		<dependency>
 			<groupId>dom4j</groupId>
 			<artifactId>dom4j</artifactId>
 			<version>1.6.1</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>xml-apis</artifactId>
+					<groupId>xml-apis</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>commons-fileupload</groupId>
 			<artifactId>commons-fileupload</artifactId>
 			<version>1.2.2</version>
 		</dependency>
-
 
 		<dependency>
 			<groupId>com.itextpdf</groupId>
@@ -166,12 +194,14 @@
 			<groupId>com.lowagie</groupId>
 			<artifactId>itext</artifactId>
 			<version>4.2.0</version>
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>com.itextpdf</groupId>
 			<artifactId>itext-asian</artifactId>
 			<version>5.2.0</version>
+			<scope>provided</scope>
 		</dependency>
 
 
@@ -179,8 +209,8 @@
 			<groupId>com.itextpdf</groupId>
 			<artifactId>itext-xtra</artifactId>
 			<version>5.1.3</version>
+			<scope>provided</scope>
 		</dependency>
-
 
 		<dependency>
 			<groupId>com.oracle</groupId>
@@ -188,13 +218,6 @@
 			<version>10.2.0.4.0</version>
 			<scope>provided</scope>
 		</dependency>
-
-
-
-
-
-
-
 		<dependency>
 			<groupId>db2</groupId>
 			<artifactId>db2jcc</artifactId>
