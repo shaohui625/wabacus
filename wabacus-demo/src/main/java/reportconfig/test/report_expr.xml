@@ -88,17 +88,17 @@
 						<condition name="txtdeptno" label="部门编号"  >
 							<value>
 								<![CDATA[
-									newQuery().regex("deptno",data)
+									newQuery().like("deptno",data)
 								]]>
 							</value>
 							<inputbox>
 								<typeprompt width="200" count="15">
 									<promptcol label="deptno" matchmode="anywhere"/>
-<!-- 									<datasource>findTypePrompts(newQuery().regex("deptno",data).toMap(),tabname,typeObj)</datasource> -->
+<!-- 									<datasource>findTypePrompts(newQuery().like("deptno",data).toMap(),tabname,typeObj)</datasource> -->
 									
 									
 										<datasource>
-								<option source='@{findTypePrompts(newQuery().regex("deptno",data).toMap(),tabname,typeObj)}'/>
+								<option source='@{findTypePrompts(newQuery().like("deptno",data).toMap(),tabname,typeObj)}'/>
 							</datasource>
 								</typeprompt>
 							</inputbox>
@@ -177,16 +177,16 @@
 						<condition name="txtdeptno" label="部门编号"  >
 							<value>
 								<![CDATA[
-									newQuery().regex("deptno",data)
+									newQuery().like("deptno",data)
 								]]>
 							</value>
 					<inputbox>
 
 							<typeprompt width="200" count="15">
 									<promptcol label="deptno" matchmode="anywhere"/>
-									<!-- <datasource>findTypePrompts(newQuery().regex("deptno",data).toMap(),"tbl_department",typeObj)</datasource> -->
+									<!-- <datasource>findTypePrompts(newQuery().like("deptno",data).toMap(),"tbl_department",typeObj)</datasource> -->
 										<datasource>
-								<option source='@{findTypePrompts(newQuery().regex("deptno",data).toMap(),"tbl_department",typeObj)}'/>
+								<option source='@{findTypePrompts(newQuery().like("deptno",data).toMap(),"tbl_department",typeObj)}'/>
 							</datasource>
 							</typeprompt>
 

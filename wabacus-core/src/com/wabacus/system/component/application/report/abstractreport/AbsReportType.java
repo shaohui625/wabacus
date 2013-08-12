@@ -577,6 +577,11 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     
     public void displayOnPage(AbsComponentTag displayTag)
     {
+        //$ByQXO
+        if("true".equals(this.wresponse.getRRequest().getAttribute("no-response"))){
+            return ;
+        }
+        //ByQXO$
         if(!this.shouldDisplayMe())
         {//如果没有显示权限，则返回空
             wresponse.println("&nbsp;");

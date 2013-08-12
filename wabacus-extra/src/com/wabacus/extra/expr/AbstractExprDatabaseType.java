@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.mvel2.templates.TemplateRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +27,12 @@ import com.wabacus.exception.MessageCollector;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.extra.AbstractWabacusScriptExprContext;
 import com.wabacus.extra.AlterException;
+import com.wabacus.extra.SystemHelper;
 import com.wabacus.extra.WabacusScriptEngineHelper;
 import com.wabacus.extra.database.AbstractNoSqlDatabaseType;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.buttons.AbsButtonType;
+import com.wabacus.system.component.application.report.configbean.crosslist.CrossListReportDynDatasetBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsJavaEditActionBean;
@@ -377,23 +378,40 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
                 ctx.setResult(eval);
             }
         } catch (RuntimeException ex) {
-            LOG.error("脚本运行出错:" + ex.getMessage(), ex);
-
-            final Throwable rootCause = ExceptionUtils.getRootCause(ex);
-            if (rootCause instanceof RuntimeException) {
-                final MessageCollector mc = ctx.getRrequest().getWResponse().getMessageCollector();
-                if (rootCause instanceof AlterException) {
-                    mc.warn(rootCause.getMessage(), rootCause.getMessage(), rootCause,
-                            Consts.STATECODE_NONREFRESHPAGE);
-                } else {
-                    mc.error(rootCause.getMessage(), false);
-                }
-                throw (RuntimeException) rootCause;
-            }
+            handleEx(ctx, ex);
             throw ex;
+        }catch(java.lang.AssertionError ex){
+        	   handleEx(ctx, ex);
+        	   throw ex;
         }
         return ctx;
     }
+
+	protected void handleEx(AbstractWabacusScriptExprContext ctx,
+			Throwable ex) {
+		LOG.error("脚本运行出错:" + ex.getMessage(), ex);
+
+		final Throwable rootCause = SystemHelper.getRootCause(ex);
+		  final MessageCollector mc = ctx.getRrequest().getWResponse().getMessageCollector();
+			 
+	
+		if (rootCause instanceof RuntimeException) {
+			 final String message = SystemHelper.friendlyMessage(rootCause);
+		     if (rootCause instanceof AlterException) {
+		        mc.warn(message, message, rootCause,
+		                Consts.STATECODE_NONREFRESHPAGE);
+		    } else {
+		        mc.error(message, false);
+		    }
+		    throw (RuntimeException) rootCause;
+		}else if (rootCause instanceof java.lang.AssertionError){
+			 final String message = SystemHelper.friendlyMessage(rootCause);
+		      mc.warn(message, message, rootCause,
+		                Consts.STATECODE_NONREFRESHPAGE);
+		    throw (AssertionError) rootCause;
+		}
+		
+	}
 
     public AbstractWabacusScriptExprContext eval(String script, Map vars, ReportRequest rrequest,
             ReportBean rbean, ReportDataSetValueBean datasetbean) {
@@ -474,5 +492,7 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
     // return typeObj.parseAndValidPromptSql(rbean, sql);
     // }
     
-    
+    public void doPostLoadCrossListReportDynDatasetBean (CrossListReportDynDatasetBean crdBean){
+    	LOG.info("doPostLoadCrossListReportDynDatasetBean...");
+    }
 }

@@ -3,6 +3,8 @@
 	<name>WabacusDemo</name>
 	<comment></comment>
 	<projects>
+		<project>wabacus-core</project>
+		<project>wabacus-extra</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

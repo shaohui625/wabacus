@@ -28,7 +28,7 @@ import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.system.component.application.report.CrossListReportType;
 import com.wabacus.system.dataset.IDynamicColGroupDataSet;
 
-public class TestCrossListDynColGroupDataset1 implements IDynamicColGroupDataSet
+public class TestCrossListDynColGroupDataset3 implements IDynamicColGroupDataSet
 {
 
     public List<Map<String,String>> getDynamicColGroupDataSet(CrossListReportType crossListReportTypeObj,ReportDataSetValueBean datasetbean,
@@ -37,27 +37,26 @@ public class TestCrossListDynColGroupDataset1 implements IDynamicColGroupDataSet
         //此类只演示单行标题的动态列
         List<Map<String,String>> lstResults=new ArrayList<Map<String,String>>();
         Map<String,String> mTmp=new HashMap<String,String>();
-        final String fieldKey="layer3";
+        final String fieldKey="{no-fromdb}";//"layer3";
         mTmp.put(fieldKey,"[动态]中文名");//显示label
-        mTmp.put("col_column","name");//取此列数据的字段名
+        mTmp.put("col_column","manager");//取此列数据的字段名
         lstResults.add(mTmp);
         mTmp=new HashMap<String,String>();
         mTmp.put(fieldKey,"[动态]英文名");
-        mTmp.put("col_column","ename");
+        mTmp.put("col_column","deptname");
         lstResults.add(mTmp);
         mTmp=new HashMap<String,String>();
         mTmp.put(fieldKey,"[动态]性别");
-        mTmp.put("col_column","sex");
+        mTmp.put("col_column","manager");
         lstResults.add(mTmp);
         mTmp=new HashMap<String,String>();
         mTmp.put(fieldKey,"[动态]年龄");
-        mTmp.put("col_column","age");
+        mTmp.put("col_column","deptname");
         lstResults.add(mTmp);
         mTmp=new HashMap<String,String>();
         mTmp.put(fieldKey,"[动态]出生日期");
-        mTmp.put("col_column","birthday");
+        mTmp.put("col_column","deptname");
         lstResults.add(mTmp);
         return lstResults;
     }
-
 }

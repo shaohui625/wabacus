@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -129,7 +130,7 @@ public final class PropertyOverrideLoaderDefault implements PropertyOverrideLoad
             {//load from classpath or url
                 final InputStream in=getInpuStream(loader);
                 ploader=new PropertyOverrideLoaderDefault(in);
-            }else
+            }else if(StringUtils.isNotBlank(loader))
             {
                 try
                 {
@@ -159,7 +160,14 @@ public final class PropertyOverrideLoaderDefault implements PropertyOverrideLoad
         try
         {
             final boolean url=ResourceUtils.isUrl(loader);
-            InputStream in=url?null:ResourceUtils.getClassLoader().getResourceAsStream(loader);
+            InputStream in=null;
+            if(!url){
+                ClassLoader contextClassLoader= ResourceUtils.getClassLoader();
+                in = contextClassLoader.getResourceAsStream(loader);
+                if(in == null){
+                    in = contextClassLoader.getSystemResourceAsStream(loader);
+                }
+            }
             if(in!=null)
             {
                 return in;

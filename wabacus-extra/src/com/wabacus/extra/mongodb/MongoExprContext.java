@@ -362,9 +362,8 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
                     final Map<String, Object> eMap = (Map<String, Object>) ev;
                     for (Iterator iter2 = eMap.entrySet().iterator(); iter2.hasNext();) {
                         Map.Entry<String, Object> entry = (Map.Entry<String, Object>) iter2.next();
-                        final Object cv = entry.getValue();
-                        if (entry.getKey() == null || cv == null
-                                || (cv instanceof String && StringUtils.isBlank((String) cv))) {
+                        final Object cv = filterValue(entry.getValue());
+                        if (entry.getKey() == null || cv == null ) {
                             continue;
                         }
                         ret.put(entry.getKey(), cv);
