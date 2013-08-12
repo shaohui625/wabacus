@@ -32,6 +32,7 @@ import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ListReportAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.component.application.report.CrossListReportType;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.configbean.statistic.StatisticItemAndDataSetBean;
 import com.wabacus.util.Consts_Private;
@@ -132,12 +133,30 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
         try
         {
             sql=svbean.getSplitpage_sql();
-            ColBean cbeanClickOrderby=ListReportAssistant.getInstance().getClickOrderByCbean(rrequest,rbean);
-            if(cbeanClickOrderby!=null&&cbeanClickOrderby.isMatchDataSet(svbean))
-            {
-                String[] orderbys=(String[])rrequest.getAttribute(rbean.getId(),"ORDERBYARRAY");
-                sql=rrequest.getDbType(svbean.getDatasource()).constructSplitPageSql(svbean,orderbys[0]+" "+orderbys[1]);
+
+            //$ByQXO 支持动态列的排序
+            String[] orderbys=(String[])rrequest.getAttribute(rbean.getId(),"ORDERBYARRAY");
+            if(orderbys!=null && orderbys.length==2){ 
+                ColBean cbeanClickOrderby=null;
+                cbeanClickOrderby=  rbean.getDbean().getColBeanByColColumn(orderbys[0]);
+                if( cbeanClickOrderby == null && reportTypeObj instanceof CrossListReportType){
+                    List<ColBean>   lstDisplayColBeans=((CrossListReportType)reportTypeObj).getLstDisplayColBeans();
+                    for(ColBean colBean:lstDisplayColBeans)
+                    {
+                       if(colBean.getColumn().equals(orderbys[0])){
+                           cbeanClickOrderby = colBean;
+                           break;
+                       }
+                    }
+                }
+                //     ColBean cbeanClickOrderby=ListReportAssistant.getInstance().getClickOrderByCbean(rrequest,rbean);
+                if(cbeanClickOrderby!=null&&cbeanClickOrderby.isMatchDataSet(svbean))
+                {
+                    sql=rrequest.getDbType(svbean.getDatasource()).constructSplitPageSql(svbean,orderbys[0]+" "+orderbys[1]);
+                }
             }
+            //ByQXO$
+            
             sql=Tools.replaceAll(sql,Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,sqlKernel);
             sql=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,svbean,sql);
             sql=Tools.replaceAll(sql,"%START%",String.valueOf(startEndRownumArr[0]));

@@ -337,6 +337,12 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
     {
         ColBean cbConfig=this.getCbeanOwner();
         ColBean cbResult=new ColBean(disbean,colidx);
+        
+        //$ByQXO 支持动态列的排序
+        cbConfig.cloneExtendConfig(cbResult);
+        cbResult.setAttrs(cbConfig.getAttrs());
+        //ByQXO$
+        
         cbResult.setLabel(label);
         cbResult.setDatasetValueId(this.getDatasetBean().getDatasetbean().getId());
         cbResult.setLabelstyleproperty(cbConfig.getLabelstyleproperty(rrequest,false),true);

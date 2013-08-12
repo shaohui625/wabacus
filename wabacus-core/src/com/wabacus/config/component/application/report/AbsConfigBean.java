@@ -120,7 +120,7 @@ public abstract class AbsConfigBean extends AbstractConfigExtendable  implements
         }
     }
 
-    protected void cloneExtendConfig(AbsConfigBean newConfigBean)
+    public void cloneExtendConfig(AbsConfigBean newConfigBean)
     {
         if(mExtendConfigForReportType!=null)
         {

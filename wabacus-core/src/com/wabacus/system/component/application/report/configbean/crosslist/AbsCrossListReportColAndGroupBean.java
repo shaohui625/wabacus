@@ -319,6 +319,13 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             IDataType dataTypeObj,int colidx)
     {
         ColBean cbResult=new ColBean(disbean,colidx);
+        
+        //$ByQXO 支持动态列排序
+        ColBean cbConfig=(ColBean)this.getOwner();
+        cbConfig.cloneExtendConfig(cbResult);
+        cbResult.setAttrs(cbConfig.getAttrs());
+        //ByQXO$
+        
         cbResult.setLabel(label);
         cbResult.setDatasetValueId(this.getDatasetBean().getDatasetbean().getId());
         cbResult.setLabelstyleproperty(labelstyleproperty,false);
