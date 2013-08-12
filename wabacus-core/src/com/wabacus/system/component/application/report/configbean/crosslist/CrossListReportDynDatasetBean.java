@@ -263,7 +263,14 @@ public class CrossListReportDynDatasetBean
     
     public void doPostLoad()
     {
-        ReportBean reportbean=this.datasetbean.getReportBean();
+        //ReportBean reportbean=this.datasetbean.getReportBean();        
+       // datasetbean.getDbType().
+        datasetbean.getDbType().doPostLoadCrossListReportDynDatasetBean(this);
+    }
+
+     public void doPostLoadCrossListReportDynDatasetBean (CrossListReportDynDatasetBean crdBean){
+        
+        ReportBean reportbean = this.datasetbean.getReportBean();
         if(this.datasetbean.isSql())
         {
             String sql=this.datasetbean.getValue().trim();

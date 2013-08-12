@@ -39,6 +39,7 @@ import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.buttons.AbsButtonType;
+import com.wabacus.system.component.application.report.configbean.crosslist.CrossListReportDynDatasetBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.DeleteSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
@@ -356,5 +357,8 @@ public abstract class AbsDatabaseType
         return Tools.formatStringBlank(clickevent.trim());        
     }
     
+    public void doPostLoadCrossListReportDynDatasetBean (CrossListReportDynDatasetBean crdBean){
+        crdBean.doPostLoadCrossListReportDynDatasetBean(crdBean);
+    }
     //ByQXO$
 }
