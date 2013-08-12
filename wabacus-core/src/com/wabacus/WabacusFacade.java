@@ -173,6 +173,13 @@ public class WabacusFacade
         {
             rrequest.destroy(success);
         }
+        
+        //$ByQXO 
+        if("true".equals(rrequest.getAttribute("no-response"))){
+            return;
+        }
+        //ByQXO$
+        
         if(errorinfo!=null&&!errorinfo.trim().equals(""))
         {
             wresponse.println(errorinfo,true);
