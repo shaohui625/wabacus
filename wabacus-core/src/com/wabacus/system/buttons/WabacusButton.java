@@ -111,6 +111,11 @@ public class WabacusButton extends AbsButtonType
         {
             resultBuf.append("<input type=\"button\" value=\""+labeltemp+"\" ");
             resultBuf.append(mystyleproperty);
+            //$ByQXO
+            if(isDisabled){
+                resultBuf.append(" disabled ");
+            }
+            //ByQXO$
             resultBuf.append(" onclick=\""+getRealClickEvent(rrequest,clickevent)+"\"").append(">");
         }
         return resultBuf.toString();
