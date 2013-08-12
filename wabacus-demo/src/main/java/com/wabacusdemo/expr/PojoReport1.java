@@ -1,9 +1,12 @@
 package com.wabacusdemo.expr;
 
-import com.wabacus.config.component.application.report.AbsReportDataPojo;
-import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.system.ReportRequest;
 import java.util.Date;
+
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
+import com.wabacus.config.component.application.report.ColBean;
+import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.system.ReportRequest;
 
 public class PojoReport1 extends AbsReportDataPojo
 {
@@ -17,6 +20,7 @@ public class PojoReport1 extends AbsReportDataPojo
 public void setDeptno(String deptno)
 {
     this.deptno=deptno;
+    this.setDynamicColData("deptno",deptno);
 }
 
 private String deptname;
@@ -43,6 +47,8 @@ private String deptname;
   public void setDeptname(String paramString)
   {
     this.deptname = paramString;
+
+    this.setDynamicColData("deptname",paramString);
   }
 
   public String getDeptname()
@@ -89,6 +95,26 @@ private String deptname;
   {
     return this.performance;
   }
+
+ 
+public Object getColValue(ColBean cbean)
+{
+    if(cbean.getProperty()==null||cbean.getProperty().trim().equals("")) return null;
+    if(cbean.isNonValueCol()||cbean.isSequenceCol()||cbean.isControlCol()) return null;
+    if("[DYN_COL_DATA]".equals(cbean.getProperty()))
+    {
+        return getDynamicColData(cbean.getColumn());
+    }else
+    {
+        try
+        {
+            return cbean.getGetMethod().invoke(this,new Object[] {});
+        }catch(Exception e)
+        {
+            throw new WabacusRuntimeException("从POJO中获取报表"+cbean.getReportBean().getPath()+"的列"+cbean.getColumn()+"数据失败",e);
+        }
+    }
+}
 }
 
 /* Location:           R:\tomcat\webapps\WabacusDemo\WEB-INF\classes\

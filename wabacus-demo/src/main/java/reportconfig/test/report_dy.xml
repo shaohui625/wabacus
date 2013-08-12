@@ -22,7 +22,7 @@
 	  	<tabpanel id="tp1" titlestyle="2" margin="10px" titlewidth="120px" >
 	  
 	  		<report id="report1" title="部门信息列表" parenttitle="编辑方式一" type="crosslist"   dataexport="richexcel|plainexcel|word"
-				 pk="guid"	 pojoTabname="tbl_department" 
+				 pk="guid"	 pojoTabname="tbl_department"   pojoclass="com.wabacusdemo.expr.PojoReport1"
 				 ><!-- pojoclass="com.wabacusdemo.expr.PojoReport1" -->
 			<display>
 						<col column="guid" property="guid"  displaytype="hidden" pk="true"  idGenerator="UUID" />
@@ -36,7 +36,7 @@
 						</col>
 		
 		<col column="{no-fromdb}"  property="fromdb110" realvalue="col_column"  clickorderby="true"
-				dataset="class{com.wabacusdemo.TestCrossListDynColGroupDataset3}"><!-- 
+				dataset="class{com.wabacusdemo.expr.TestCrossListDynColGroupDataset3}"><!-- 
 				<format>
 				
 					System.out.println("a:........");
