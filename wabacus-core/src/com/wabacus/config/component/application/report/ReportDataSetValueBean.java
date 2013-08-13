@@ -30,6 +30,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.condition.ConditionInSqlBean;
+import com.wabacus.config.database.datasource.AbsDataSource;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.database.type.Oracle;
 import com.wabacus.exception.WabacusConfigLoadingException;
@@ -615,6 +616,12 @@ public class ReportDataSetValueBean extends AbsConfigBean
          final AbsDatabaseType dbtype=Config.getInstance().getDbType(this.getDatasource());
          return dbtype;
      }     
+     
+     public AbsDataSource getDatasourceObj()
+     {
+         final AbsDataSource dbtype=Config.getInstance().getDataSource(this.getDatasource());
+         return dbtype;
+     }   
      //ByQXO$
 
     public void validateCondition(String sql,int idxBracketStart,int idxBracketEnd,int idxJingStart,int idxJingEnd)
@@ -640,11 +647,11 @@ public class ReportDataSetValueBean extends AbsConfigBean
         {
             throw new WabacusConfigLoadingException("解析报表"+this.getReportBean()+"的SQL语句："+this.value+"中的动态条件失败，#和#之间不是有效的<condition/>的name属性值");
         }
-        if(idxBracketStart<idxJingStart&&idxBracketEnd<idxJingEnd&&idxBracketStart>=0)
+        if(false && idxBracketStart<idxJingStart&&idxBracketEnd<idxJingEnd&&idxBracketStart>=0)
         {
             throw new WabacusConfigLoadingException("解析报表"+this.getReportBean()+"的SQL语句："+this.value+"中的动态条件失败，{、}、#、#之间的关系混乱");
         }
-        if(idxBracketEnd<idxJingStart&&idxBracketStart>=0)
+        if(false && idxBracketEnd<idxJingStart&&idxBracketStart>=0)
         {
             throw new WabacusConfigLoadingException("解析报表"+this.getReportBean()+"的SQL语句："+this.value+"中的动态条件失败，{、}之间的条件表达式没有指定动态条件的name属性");
         }

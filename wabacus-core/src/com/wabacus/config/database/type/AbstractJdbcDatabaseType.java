@@ -606,15 +606,15 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
         int placeholderIndex=0;
         String sql=value;
         StringBuffer sqlBuf=new StringBuffer();
-        int idxBracketStart;
+        int idxBracketStart=0;
         int idxBracketEnd;
         int idxJingStart;//存放sql语句中第一个有效#号的下标
         int idxJingEnd;
         while(true)
         {
-            idxBracketStart=ReportDataSetValueBean.getValidIndex(sql,'{',0);
-            idxBracketEnd=ReportDataSetValueBean.getValidIndex(sql,'}',0);
-            idxJingStart=ReportDataSetValueBean.getValidIndex(sql,'#',0);
+            idxBracketStart=ReportDataSetValueBean.getValidIndex(sql,'{',idxBracketStart>0 ? idxBracketStart+1 : 0);
+            idxBracketEnd=ReportDataSetValueBean.getValidIndex(sql,'}',idxBracketStart>0 ? idxBracketStart : 0);
+            idxJingStart=ReportDataSetValueBean.getValidIndex(sql,'#',idxBracketStart>0 ? idxBracketStart : 0);
             if(idxJingStart<0)
             {
                 idxJingEnd=-1;
@@ -720,7 +720,8 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
                 sql=sql.substring(idxBracketEnd+1);
             }else
             {
-                throw new WabacusConfigLoadingException("解析报表"+bean.getReportBean()+"的SQL语句："+value+"中的动态条件失败，无法解析其中用{}和##括住的动态条件");
+                System.out.println("XX");
+             //  throw new WabacusConfigLoadingException("解析报表"+bean.getReportBean()+"的SQL语句："+value+"中的动态条件失败，无法解析其中用{}和##括住的动态条件");
             }
         }
         if(!sql.equals("")) sqlBuf.append(sql);

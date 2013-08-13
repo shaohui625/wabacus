@@ -151,6 +151,8 @@ public class ReportAssistant
     public String parseRuntimeSqlAndCondition(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean svbean,String sql,List<String> lstConditionValues,
             List<IDataType> lstConditionTypes)
     {
+        
+        sql = svbean.getDatasourceObj().getRuntimeQueryBuilder().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sql,lstConditionValues,lstConditionTypes);
         List<ConditionBean> lstConditionBeans=rbean.getSbean().getLstConditions();
         if(lstConditionBeans==null||lstConditionBeans.size()==0)
         {
