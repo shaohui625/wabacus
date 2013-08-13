@@ -23,11 +23,12 @@ import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.Map.Entry;
+import java.util.StringTokenizer;
 
 import javassist.CannotCompileException;
 import javassist.ClassClassPath;
@@ -898,6 +899,14 @@ public class ReportAssistant
         {
             ClassPool pool=ClassPoolAssistant.getInstance().createClassPool();
             CtClass cclass=pool.makeClass(Consts.BASE_PACKAGE_NAME+"."+className);
+            
+            //$ByQXO 全局导入java package以减少不必要的重复代码
+            String globalJavaImportPackages =  Config.getInstance().getSystemConfigValue("globalJavaImportPackages",null);
+            if( null != globalJavaImportPackages ){
+                ClassPoolAssistant.getInstance().addImportPackages(pool,(List<String>)Arrays.asList(globalJavaImportPackages.trim().split("[ ;,]+")));
+            }
+            //ByQXO$
+            
             if(lstImports==null) lstImports=new ArrayList<String>();
             if(!lstImports.contains("com.wabacus.config.component.application.report"))
                 lstImports.add("com.wabacus.config.component.application.report");
