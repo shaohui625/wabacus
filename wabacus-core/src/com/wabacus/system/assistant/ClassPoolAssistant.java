@@ -18,6 +18,7 @@
  */
 package com.wabacus.system.assistant;
 
+import java.util.Arrays;
 import java.util.List;
 
 import javassist.CannotCompileException;
@@ -31,6 +32,7 @@ import javassist.CtNewConstructor;
 import javassist.CtNewMethod;
 import javassist.Modifier;
 
+import com.wabacus.config.Config;
 import com.wabacus.exception.WabacusConfigLoadingException;
 
 
@@ -51,6 +53,14 @@ public class ClassPoolAssistant
         ClassPool pool=new ClassPool();
         pool.appendSystemPath();
         pool.insertClassPath(new ClassClassPath(ClassPoolAssistant.class));
+        
+        //$ByQXO 全局导入java package以减少不必要的重复代码
+        String globalJavaImportPackages =  Config.getInstance().getSystemConfigValue("globalJavaImportPackages",null);
+        if( null != globalJavaImportPackages ){
+            ClassPoolAssistant.getInstance().addImportPackages(pool,(List<String>)Arrays.asList(globalJavaImportPackages.trim().split("[ ;,]+")));
+        }
+        //ByQXO$
+        
         return pool;
     }
     
