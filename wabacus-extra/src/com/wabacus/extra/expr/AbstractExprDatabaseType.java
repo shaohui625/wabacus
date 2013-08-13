@@ -432,7 +432,7 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
         return ctx;
     }
 
-    protected abstract AbstractWabacusScriptExprContext createDefaultExprContext(ReportRequest rrequest,
+    public abstract AbstractWabacusScriptExprContext createDefaultExprContext(ReportRequest rrequest,
             ReportBean rbean, ReportDataSetValueBean datasetbean);
 
     public Object getPromptDataList(ReportRequest rrequest, ReportBean rbean, SQLOptionDatasource typeObj,

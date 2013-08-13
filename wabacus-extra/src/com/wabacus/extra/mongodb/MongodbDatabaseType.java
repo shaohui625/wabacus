@@ -9,7 +9,7 @@ import com.wabacus.system.ReportRequest;
 public class MongodbDatabaseType extends AbstractExprDatabaseType {
 
     @Override
-    protected AbstractWabacusScriptExprContext createDefaultExprContext(ReportRequest rrequest,
+    public AbstractWabacusScriptExprContext createDefaultExprContext(ReportRequest rrequest,
             ReportBean rbean, ReportDataSetValueBean datasetbean) {
         return new MongoExprContext(rrequest, rbean, datasetbean);
     }
