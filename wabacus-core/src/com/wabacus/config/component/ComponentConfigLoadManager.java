@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dom4j.Document;
@@ -2223,7 +2224,7 @@ public class ComponentConfigLoadManager
         Map<String,String> mDisplayProperties=ConfigLoadAssistant.getInstance().assembleAllAttributes(lstEleDisplayBeans,
                 new String[] { "dataheader", "colselect", "colselectwidth", "colselectmaxheight", "labelstyleproperty", "valuestyleproperty" });
         String dataheader=mDisplayProperties.get("dataheader");
-        String colselect=mDisplayProperties.get("colselect");
+        String colselect= Config.getInstance().getSystemConfigValue("global-colselect",mDisplayProperties.get("colselect"));
         String colselectwidth=mDisplayProperties.get("colselectwidth");
         String colselectmaxheight=mDisplayProperties.get("colselectmaxheight");
         String labelstyleproperty=mDisplayProperties.get("labelstyleproperty");
@@ -2249,10 +2250,14 @@ public class ComponentConfigLoadManager
                 throw new WabacusConfigLoadingException("加载报表"+dbean.getReportBean().getPath()+"的<display/>标签失败，配置的colselect属性："+colselect+"无效");
             }
         }
-        if(colselectwidth==null||colselectwidth.trim().equals(""))
+        if(StringUtils.isBlank(colselectwidth))
         {
             colselectwidth=Config.getInstance().getSystemConfigValue("default-colselect-width","");
         }
+        if(StringUtils.isBlank(colselectmaxheight)){
+            colselectmaxheight=Config.getInstance().getSystemConfigValue("default-colselect-height","350");
+        }
+        
         if(colselectwidth!=null) dbean.setColselectwidth(Tools.getWidthHeightIntValue(colselectwidth.trim()));
         if(colselectmaxheight!=null) dbean.setColselectmaxheight(Tools.getWidthHeightIntValue(colselectmaxheight.trim()));
         if(labelstyleproperty!=null) dbean.setLabelstyleproperty(labelstyleproperty.trim(),false);

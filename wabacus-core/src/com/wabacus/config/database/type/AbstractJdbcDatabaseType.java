@@ -720,7 +720,7 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
                 sql=sql.substring(idxBracketEnd+1);
             }else
             {
-                System.out.println("XX");
+               // System.out.println("XX");
              //  throw new WabacusConfigLoadingException("解析报表"+bean.getReportBean()+"的SQL语句："+value+"中的动态条件失败，无法解析其中用{}和##括住的动态条件");
             }
         }
@@ -824,16 +824,17 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
         AbsOptionDatasource optionDatasourceObj=tpBean.getOptionDatasourceObj();
     String sql=((SQLOptionDatasource)optionDatasourceObj).getSql();
     sql=Tools.formatStringBlank(sql).trim();
-    if(!sql.toLowerCase().startsWith("select")||sql.toLowerCase().indexOf("from")<=0)
-    {
-        throw new WabacusConfigLoadingException("为报表"+rbean.getPath()+"配置的输入联想配置的SQL语句"+sql+"不合法");
+
+    if(sql.toLowerCase().startsWith("select") ){
+        if(sql.toLowerCase().indexOf("from")<=0)   {
+            throw new WabacusConfigLoadingException("为报表"+rbean.getPath()+"配置的输入联想配置的SQL语句"+sql+"不合法");
+        }
+        sql=sql.substring("select".length()).trim();
+        if( sql.toLowerCase().indexOf("distinct")!=0) {
+            sql=" distinct "+sql;
+        }
+        sql="select "+sql;        
     }
-    sql=sql.substring("select".length()).trim();
-    if(sql.toLowerCase().indexOf("distinct")!=0)
-    {
-        sql=" distinct "+sql;
-    }
-    sql="select "+sql;
     String sqlOuter=null;
     List<ConditionBean> lstConditions=((SQLOptionDatasource)optionDatasourceObj).getLstConditions();
     if(lstConditions!=null&&lstConditions.size()>0)

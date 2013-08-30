@@ -22,6 +22,7 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.Map;
 
+import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dom4j.Element;
@@ -84,4 +85,16 @@ public abstract class AbsNumberType extends AbsDataType
     }
     
     protected abstract Map<String,AbsNumberType> getAllMNumberTypeObjects();
+
+    public Object convertValue(Object from)
+    {
+         if(from == null){
+             return null;
+         }
+         if(from instanceof String){
+             return (Number)getNumber((String)from);
+         }
+        return ConvertUtils.convert(from,this.getJavaTypeClass());
+        // return (Number)from;
+    }   
 }

@@ -179,7 +179,16 @@ public class DataExportButton extends WabacusButton
         {//Consts.DATAEXPORT_RICHEXCEL
             exporturl=Config.showreport_onrichexcel_url;
         }
-        if(rbean!=null&&rbean.getDbean().isColselect())
+        //$ByQXO 可全局配置导出有无列选择功能export-colsect-feature,并可配置export-colsect-feature=false来全局禁用
+        Boolean colselect =  rbean!=null ? rbean.getDbean().getColselect() : null;
+        final Config config=Config.getInstance();
+        if( colselect == null){
+            colselect= config.getSystemConfigValue("export-colsect-feature",false);
+        }else if(colselect){
+            colselect= config.getSystemConfigValue("export-colsect-feature",colselect.booleanValue());
+        }
+        //ByQXO$
+        if(colselect)
         {
             StringBuffer paramsBuf=new StringBuffer();
             paramsBuf.append("{reportguid:\"").append(rbean.getGuid()).append("\"");

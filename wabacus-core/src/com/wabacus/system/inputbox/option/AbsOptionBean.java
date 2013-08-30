@@ -18,6 +18,7 @@
  */
 package com.wabacus.system.inputbox.option;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.application.report.ReportBean;
@@ -61,7 +62,20 @@ public abstract class AbsOptionBean implements Cloneable
             SQLOptionDatasource sqldatasource=new SQLOptionDatasource();
             String datasource=eleOptionBean.attributeValue("datasource");
             if(datasource!=null) sqldatasource.setDatasource(datasource.trim());
-            sqldatasource.setSql(Tools.getRealKeyByDefine("@",source));
+            String sql=Tools.getRealKeyByDefine("@",source).trim();
+            sqldatasource.setSql(sql);
+            sqldatasource.setLstConditions(ComponentConfigLoadManager.loadConditionsInOtherPlace(eleOptionBean,rbean));
+            optionDatasourceObjTmp=sqldatasource;
+        }else if(Tools.isDefineKey("#",source))
+        {
+            SQLOptionDatasource sqldatasource=new SQLOptionDatasource();
+            String datasource=eleOptionBean.attributeValue("datasource");
+            if(datasource!=null) sqldatasource.setDatasource(datasource.trim());
+            String sql=Tools.getRealKeyByDefine("#",source).trim();
+            if( sql.toLowerCase().indexOf("@") ==-1){
+                sql = new StringBuilder("@{").append(sql).append("}").toString();
+            }
+            sqldatasource.setSql(sql);
             sqldatasource.setLstConditions(ComponentConfigLoadManager.loadConditionsInOtherPlace(eleOptionBean,rbean));
             optionDatasourceObjTmp=sqldatasource;
         }else if(Tools.isDefineKey("class",source))

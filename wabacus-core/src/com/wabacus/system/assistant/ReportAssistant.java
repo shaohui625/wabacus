@@ -152,7 +152,8 @@ public class ReportAssistant
             List<IDataType> lstConditionTypes)
     {
         
-        sql = svbean.getDatasourceObj().getRuntimeQueryBuilder().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sql,lstConditionValues,lstConditionTypes);
+        sql=parseRuntimeSql(rrequest,rbean,svbean,sql,lstConditionValues,lstConditionTypes);
+        
         List<ConditionBean> lstConditionBeans=rbean.getSbean().getLstConditions();
         if(lstConditionBeans==null||lstConditionBeans.size()==0)
         {
@@ -176,9 +177,23 @@ public class ReportAssistant
         return sql;
     }
 
+    protected String parseRuntimeSql(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean svbean,String sql,
+            List<String> lstConditionValues,List<IDataType> lstConditionTypes)
+    {
+        String ds=rbean.getSbean().getDatasource();
+        if( null == ds){
+            ds = svbean.getDatasource();
+        }
+        sql = Config.getInstance().getDataSource(ds).getRuntimeQueryBuilder().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sql,lstConditionValues,lstConditionTypes);
+        return sql;
+    }
+
     public String addDynamicConditionExpressionsToSql(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean svbean,String sql,List<ConditionBean> lstConditionBeans,
             List<String> lstConditionValues,List<IDataType> lstConditionTypes)
     {
+        
+        sql=parseRuntimeSql(rrequest,rbean,svbean,sql,lstConditionValues,lstConditionTypes);
+        
         if(lstConditionBeans==null||lstConditionBeans.size()==0) return removeConditionPlaceHolderFromSql(rbean,sql,"{#condition#}");
         StringBuffer dynConditionsBuf=new StringBuffer();
         String conditionExpressionTmp;
@@ -901,14 +916,7 @@ public class ReportAssistant
         {
             ClassPool pool=ClassPoolAssistant.getInstance().createClassPool();
             CtClass cclass=pool.makeClass(Consts.BASE_PACKAGE_NAME+"."+className);
-            
-            //$ByQXO 全局导入java package以减少不必要的重复代码
-            String globalJavaImportPackages =  Config.getInstance().getSystemConfigValue("globalJavaImportPackages",null);
-            if( null != globalJavaImportPackages ){
-                ClassPoolAssistant.getInstance().addImportPackages(pool,(List<String>)Arrays.asList(globalJavaImportPackages.trim().split("[ ;,]+")));
-            }
-            //ByQXO$
-            
+
             if(lstImports==null) lstImports=new ArrayList<String>();
             if(!lstImports.contains("com.wabacus.config.component.application.report"))
                 lstImports.add("com.wabacus.config.component.application.report");
@@ -930,12 +938,7 @@ public class ReportAssistant
             {
                 ClassPoolAssistant.getInstance().addMethod(cclass,"public void format(){"+formatMethod+" \n}");
             }
-            if(!rbean.isPojoClassCache())
-            {
-                cclass.writeFile(Config.homeAbsPath+"WEB-INF/classes");
-            }
-            Class c=ConfigLoadManager.currentDynClassLoader.loadClass(Consts.BASE_PACKAGE_NAME+"."+className,cclass.toBytecode());
-            cclass.detach();
+            final Class c=  ClassPoolAssistant.getInstance().generateClass(cclass);
             pool.clearImportedPackages();
             pool=null;
             return c;
@@ -1058,7 +1061,8 @@ public class ReportAssistant
             CtMethod generateMethod=CtNewMethod.make("public String generateClickEvent("+ReportRequest.class.getName()+"  rrequest,"
                     +AbsButtonType.class.getName()+" buttonObj){"+clickevent+" \n}",cclass);
             cclass.addMethod(generateMethod);
-            Class cls=ConfigLoadManager.currentDynClassLoader.loadClass(Consts.BASE_PACKAGE_NAME+"."+classname+"_Event",cclass.toBytecode());
+            
+            final Class cls=  ClassPoolAssistant.getInstance().generateClass(cclass);
             return (IButtonClickeventGenerate)cls.newInstance();
         }catch(Exception e)
         {
@@ -1066,6 +1070,8 @@ public class ReportAssistant
         }
     }
 
+    private boolean pojoClassCache = Config.getInstance().getSystemConfigValue("pojoClassCache",true);
+    
     public Class buildInterceptorClass(String className,List<String> lstImports,String preaction,String postaction,String saveaction,
             String saverowaction,String savesqlaction,String beforeloaddata,String afterloaddata,String beforedisplay,String displayperrow,
             String displaypercol)
@@ -1080,7 +1086,6 @@ public class ReportAssistant
             lstImportsLocal.add("com.wabacus.config.component.application.report");
             lstImportsLocal.add("com.wabacus.system.component.application.report.configbean.editablereport");
             ClassPoolAssistant.getInstance().addImportPackages(pool,lstImportsLocal);
-
             cclass.setSuperclass(pool.get(AbsInterceptorDefaultAdapter.class.getName()));
             StringBuffer tmpBuf=null;
             if(preaction!=null&&!preaction.trim().equals(""))
@@ -1163,8 +1168,8 @@ public class ReportAssistant
                 tmpBuf.append(postaction.trim()).append(" \n}");
                 ClassPoolAssistant.getInstance().addMethod(cclass,tmpBuf.toString());
             }
-            Class c=ConfigLoadManager.currentDynClassLoader.loadClass(Consts.BASE_PACKAGE_NAME+"."+className+"_Interceptor",cclass.toBytecode());
-            cclass.detach();
+           
+            final Class c=  ClassPoolAssistant.getInstance().generateClass(cclass);
             pool.clearImportedPackages();
             pool=null;
             return c;

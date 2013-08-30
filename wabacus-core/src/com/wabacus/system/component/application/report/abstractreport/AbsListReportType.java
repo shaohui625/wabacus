@@ -1892,8 +1892,8 @@ public abstract class AbsListReportType extends AbsReportType
         statitemBean.setProperty(property.trim());
         if(value==null)
         {
-            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，必须配置<statitem/>的value属性");
-        }
+         //   throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，必须配置<statitem/>的value属性");
+        }else{
         value=value.trim();
         int idxl=value.indexOf("(");
         int idxr=value.lastIndexOf(")");
@@ -1912,6 +1912,7 @@ public abstract class AbsListReportType extends AbsReportType
             throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，"+value+"中统计字段为空");
         }
         statitemBean.setValue(value);
+        }
         statitemBean.setDatatypeObj(ConfigLoadAssistant.loadDataType(eleStatitemBean));
         statitemBean.setLstConditions(ComponentConfigLoadManager.loadConditionsInOtherPlace(eleStatitemBean,reportbean));
         if(statiscope!=null)

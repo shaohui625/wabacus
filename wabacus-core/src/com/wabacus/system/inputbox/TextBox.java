@@ -370,7 +370,7 @@ public class TextBox extends AbsInputBox implements Cloneable
                     mOption.put(nameTmp,valueTmp);
                 }
                 ob.setMPromptcolValues(mOption);
-            }else if(Tools.isDefineKey("@",source)||Tools.isDefineKey("class",source))
+            }else if(Tools.isDefineKey("@",source)||Tools.isDefineKey("#",source)||Tools.isDefineKey("class",source))
             {
                 ob.loadOptionDynDatasourceObj(eleOptionTmp,source);
             }else if(Tools.isDefineKey("$",source))

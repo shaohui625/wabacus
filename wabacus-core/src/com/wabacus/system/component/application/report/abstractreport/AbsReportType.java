@@ -418,6 +418,11 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     public void loadReportData(boolean shouldInvokePostaction)
     {
         if(this.hasLoadedData) return;
+        
+        //$ByQXO 
+        if("true".equals(rrequest.getAttribute("no-response"))){
+            return;
+        }
         this.hasLoadedData=true;
         initLoadReportData();
         if(rbean.isSlaveReport()&&rrequest.getStringAttribute(rbean.getId()+"_PARENTREPORT_NODATA","").toLowerCase().equals("true"))
@@ -577,11 +582,6 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     
     public void displayOnPage(AbsComponentTag displayTag)
     {
-        //$ByQXO
-        if("true".equals(this.wresponse.getRRequest().getAttribute("no-response"))){
-            return ;
-        }
-        //ByQXO$
         if(!this.shouldDisplayMe())
         {//如果没有显示权限，则返回空
             wresponse.println("&nbsp;");

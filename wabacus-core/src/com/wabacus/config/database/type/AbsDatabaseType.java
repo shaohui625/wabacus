@@ -30,6 +30,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
@@ -45,6 +46,7 @@ import com.wabacus.system.component.application.report.configbean.editablereport
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
+import com.wabacus.system.dataset.IReportDataSet;
 import com.wabacus.system.dataset.ISqlDataSetBuilder;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.system.inputbox.option.SQLOptionDatasource;
@@ -354,11 +356,57 @@ public abstract class AbsDatabaseType
         {
             throw new WabacusConfigLoadingException("加载组件"+ccbean.getPath()+"的按钮"+buttonObj.getName()+"失败，按钮事件中不能用双引号，只能用单引用，如果有多级，可以加上转义字符\\");
         }
-        return Tools.formatStringBlank(clickevent.trim());        
+        return parseAndTrimScript(clickevent.trim());        
     }
     
     public void doPostLoadCrossListReportDynDatasetBean (CrossListReportDynDatasetBean crdBean){
         crdBean.doPostLoadCrossListReportDynDatasetBean(crdBean);
     }
+    
+    
+    
+    public void doPostLoadReportDataSetValueBean(ReportDataSetValueBean valuebean,String sqlValue){
+        sqlValue=parseAndTrimScript(sqlValue);
+        final ReportBean reportBean=valuebean.getReportBean();
+        if(sqlValue==null||sqlValue.trim().equals(""))
+        {
+            throw new WabacusConfigLoadingException("加载报表"+reportBean.getPath()+"的<sql/>下的<value/>配置失败，没有为<value/>标签配置查询数据的SQL语句或JAVA类");
+        }
+        sqlValue=sqlValue.trim();
+        while(sqlValue.endsWith(";"))
+        {
+            sqlValue=sqlValue.substring(0,sqlValue.length()-1).trim();
+        }
+        if(Tools.isDefineKey("class",sqlValue))
+        {
+            Object datasetObj=null;
+            try
+            {
+                datasetObj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(Tools.getRealKeyByDefine("class",sqlValue)).newInstance();
+            }catch(Exception e)
+            {
+                throw new WabacusConfigLoadingException("为报表"+reportBean.getPath()+"配置的数据集类"+sqlValue+"无法实例化",e);
+            }
+            if(!(datasetObj instanceof IReportDataSet))
+            {
+                throw new WabacusConfigLoadingException("为报表"+reportBean.getPath()+"配置的数据集类"+sqlValue+"没有实现"
+                        +IReportDataSet.class.getName()+"接口");
+            }
+            valuebean.setCustomizeDatasetObj((IReportDataSet)datasetObj);
+        }else
+        {
+            if(sqlValue.startsWith("{")&&sqlValue.endsWith("}")) sqlValue=sqlValue.substring(1,sqlValue.length()-1).trim();
+            valuebean.setValue(sqlValue);
+        }
+    }
+    
+//    protected String formatSqlString(String sqlValue)
+//    {
+//        sqlValue=Tools.formatStringBlank(sqlValue);
+//        return sqlValue;
+//    }
+    
     //ByQXO$
+
+
 }

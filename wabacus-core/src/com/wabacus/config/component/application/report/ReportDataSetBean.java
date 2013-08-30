@@ -23,7 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
+import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
@@ -198,39 +200,11 @@ public class ReportDataSetBean extends AbsConfigBean
     
     private void loadReportDatasetConfig(XmlElementBean eleValueBean,ReportDataSetValueBean valuebean)
     {
-        String sqlValue=eleValueBean.getContent();
-        sqlValue=Tools.formatStringBlank(sqlValue);
-        if(sqlValue==null||sqlValue.trim().equals(""))
-        {
-            throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的<sql/>下的<value/>配置失败，没有为<value/>标签配置查询数据的SQL语句或JAVA类");
-        }
-        sqlValue=sqlValue.trim();
-        while(sqlValue.endsWith(";"))
-        {
-            sqlValue=sqlValue.substring(0,sqlValue.length()-1).trim();
-        }
-        if(Tools.isDefineKey("class",sqlValue))
-        {
-            Object datasetObj=null;
-            try
-            {
-                datasetObj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(Tools.getRealKeyByDefine("class",sqlValue)).newInstance();
-            }catch(Exception e)
-            {
-                throw new WabacusConfigLoadingException("为报表"+this.getReportBean().getPath()+"配置的数据集类"+sqlValue+"无法实例化",e);
-            }
-            if(!(datasetObj instanceof IReportDataSet))
-            {
-                throw new WabacusConfigLoadingException("为报表"+this.getReportBean().getPath()+"配置的数据集类"+sqlValue+"没有实现"
-                        +IReportDataSet.class.getName()+"接口");
-            }
-            valuebean.setCustomizeDatasetObj((IReportDataSet)datasetObj);
-        }else
-        {
-            if(sqlValue.startsWith("{")&&sqlValue.endsWith("}")) sqlValue=sqlValue.substring(1,sqlValue.length()-1).trim();
-            valuebean.setValue(sqlValue);
-        }
+        final String sqlValue=eleValueBean.getContent();
         valuebean.setDatasource(eleValueBean.attributeValue("datasource"));
+        AbsDatabaseType dbType=Config.getInstance().getDbType(valuebean.getDatasource());
+        dbType.doPostLoadReportDataSetValueBean(valuebean,sqlValue);
+
         valuebean.setDependParents(eleValueBean.attributeValue("depends"));
         valuebean.setDependsConditionExpression(eleValueBean.attributeValue("dependscondition"));
         String dependstype=eleValueBean.attributeValue("dependstype");

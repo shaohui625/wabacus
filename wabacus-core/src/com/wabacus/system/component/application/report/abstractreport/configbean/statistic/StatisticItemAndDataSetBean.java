@@ -18,10 +18,16 @@
  */
 package com.wabacus.system.component.application.report.abstractreport.configbean.statistic;
 
+import java.lang.reflect.InvocationTargetException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.lang.StringUtils;
 
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
@@ -128,7 +134,11 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
         StringBuffer statisticColumnsBuf=new StringBuffer();
         for(StatisticItemBean statItemBeanTmp:lstStatitemBeansWithoutCondition)
         {
-            statisticColumnsBuf.append(statItemBeanTmp.getValue()).append(" as ").append(statItemBeanTmp.getProperty()).append(",");
+            String value=statItemBeanTmp.getValue();
+            if(StringUtils.isBlank(value)){
+                continue;
+            }
+            statisticColumnsBuf.append(value).append(" as ").append(statItemBeanTmp.getProperty()).append(",");
         }
         if(statisticColumnsBuf.length()>0&&statisticColumnsBuf.charAt(statisticColumnsBuf.length()-1)==',')
         {
@@ -186,27 +196,8 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
                 Object objTmp=datasetObj.getStatisticDataSet(rrequest,listReportTypeObj,datasetbean,alrbean.getSubdisplaybean(),sqlWithoutCondition,isStatiForOnePage);
                 if(objTmp!=null)
                 {
-                    if(!(objTmp instanceof ResultSet))
-                    {
-                        throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"数据失败，在加载数据的前置动作中，如果是统计数据的SQL语句，则只能返回SQL语句或ResultSet，不能返回加载好的List对象");
-                    }
-                    ResultSet rs=(ResultSet)objTmp;
-                    if(rs.next())
-                    {
-                        for(StatisticItemBean alrsibeanTmp:lstStatitemsWithoutCondition)
-                        {//循环每个统计项
-                            Object colVal=alrsibeanTmp.getDatatypeObj().getColumnValue(rs,alrsibeanTmp.getProperty(),dbtype);
-                            if(!isStatiForOnePage)
-                            {
-                                alrsibeanTmp.getSetMethod().invoke(statiDataObj,new Object[] { colVal });
-                            }else
-                            {
-                                alrsibeanTmp.getPageStatiSetMethod().invoke(statiDataObj,new Object[] { colVal });
-                            }
-                        }
-                        hasStatisticData=true;
-                    }
-                    rs.close();
+                    hasStatisticData=doLoadStatisticData(statiDataObj,lstStatitemsWithoutCondition,isStatiForOnePage,rbean,dbtype,
+                            objTmp);
                 }
             }
             if(lstStatitemsWithCondition!=null&&lstStatitemsWithCondition.size()>0)
@@ -230,25 +221,7 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
                     Object objTmp=datasetObj.getStatisticDataSet(rrequest,listReportTypeObj,datasetbean,alrbean.getSubdisplaybean(),sqlTmp,isStatiForOnePage);
                     if(objTmp!=null)
                     {
-                        if(!(objTmp instanceof ResultSet))
-                        {
-                            throw new WabacusRuntimeException("加载报表"+rbean.getPath()
-                                    +"数据失败，在加载数据的前置动作中，如果是统计数据的SQL语句，则只能返回SQL语句或ResultSet，不能返回加载好的List对象");
-                        }
-                        ResultSet rs=(ResultSet)objTmp;
-                        if(rs.next())
-                        {
-                            Object colVal=alrsibeanTmp.getDatatypeObj().getColumnValue(rs,alrsibeanTmp.getProperty(),dbtype);
-                            if(!isStatiForOnePage)
-                            {
-                                alrsibeanTmp.getSetMethod().invoke(statiDataObj,new Object[] { colVal });
-                            }else
-                            {
-                                alrsibeanTmp.getPageStatiSetMethod().invoke(statiDataObj,new Object[] { colVal });
-                            }
-                            hasStatisticData=true;
-                        }
-                        rs.close();
+                        hasStatisticData=doLoadStatisticData1(statiDataObj,alrsibeanTmp,isStatiForOnePage,rbean,dbtype,objTmp);
                     }
                 }
             }
@@ -261,6 +234,128 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
         }
         return hasStatisticData;
     }
+
+    //$ByQXO
+    protected boolean doLoadStatisticData(Object statiDataObj,List<StatisticItemBean> lstStatitemsWithoutCondition,boolean isStatiForOnePage,
+            ReportBean rbean,AbsDatabaseType dbtype,Object objTmp) throws IllegalAccessException,InvocationTargetException,
+            SQLException
+    {
+        if( objTmp instanceof Collection){
+            final Collection tmpList = ((Collection)objTmp);
+            if(tmpList.size() < 1){
+                return false;
+            }
+            objTmp = (Map)tmpList.iterator().next();
+        }
+        boolean hasStatisticData =false;
+        if(objTmp instanceof Map){
+            Map map  = (Map)objTmp;
+            int dataCount = 0;
+            for(StatisticItemBean alrsibeanTmp:lstStatitemsWithoutCondition)
+            {//循环每个统计项
+                Object colVal= map.get(alrsibeanTmp.getProperty());
+                
+                if( null == colVal){
+                    continue;
+                }
+                colVal = alrsibeanTmp.getDatatypeObj().convertValue(colVal);
+                if(!isStatiForOnePage)
+                {
+                    alrsibeanTmp.getSetMethod().invoke(statiDataObj,new Object[] { colVal });
+                }else
+                {
+                    alrsibeanTmp.getPageStatiSetMethod().invoke(statiDataObj,new Object[] { colVal });
+                }
+                dataCount ++;
+             
+            }                      
+            
+            hasStatisticData=dataCount>0;
+        }else if(!(objTmp instanceof ResultSet))
+        {
+            throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"数据失败，在加载数据的前置动作中，如果是统计数据的SQL语句，则只能返回SQL语句或ResultSet，不能返回加载好的List对象");
+        }else{
+            ResultSet rs=(ResultSet)objTmp;
+            if(rs.next())
+            {
+                for(StatisticItemBean alrsibeanTmp:lstStatitemsWithoutCondition)
+                {//循环每个统计项
+                    Object colVal=alrsibeanTmp.getDatatypeObj().getColumnValue(rs,alrsibeanTmp.getProperty(),dbtype);
+                    if(!isStatiForOnePage)
+                    {
+                        alrsibeanTmp.getSetMethod().invoke(statiDataObj,new Object[] { colVal });
+                    }else
+                    {
+                        alrsibeanTmp.getPageStatiSetMethod().invoke(statiDataObj,new Object[] { colVal });
+                    }
+                }
+                hasStatisticData=true;
+            }
+            rs.close();
+        }
+        return hasStatisticData;
+    }
+    
+    
+    
+    protected boolean doLoadStatisticData1(Object statiDataObj,StatisticItemBean alrsibeanTmp,boolean isStatiForOnePage,
+            ReportBean rbean,AbsDatabaseType dbtype,Object objTmp) throws IllegalAccessException,InvocationTargetException,
+            SQLException
+    {
+        if( objTmp instanceof Collection){
+            final Collection tmpList = ((Collection)objTmp);
+            if(tmpList.size() < 1){
+                return false;
+            }
+            objTmp = (Map)tmpList.iterator().next();
+        }
+        boolean hasStatisticData =false;
+        if(objTmp instanceof Map){
+            Map map  = (Map)objTmp;
+            int dataCount = 0;
+            Object colVal= map.get(alrsibeanTmp.getProperty());
+                
+                if( null != colVal){
+                
+                    BeanUtils.populate(statiDataObj,map);
+            
+//                colVal = alrsibeanTmp.getDatatypeObj().convertValue(colVal);
+//                if(!isStatiForOnePage)
+//                {
+//                    alrsibeanTmp.getSetMethod().invoke(statiDataObj,new Object[] { colVal });
+//                }else
+//                {
+//                    alrsibeanTmp.getPageStatiSetMethod().invoke(statiDataObj,new Object[] { colVal });
+//                }
+                dataCount ++;
+                }
+            
+            hasStatisticData=dataCount>0;
+        }else if(!(objTmp instanceof ResultSet))
+        {
+            throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"数据失败，在加载数据的前置动作中，如果是统计数据的SQL语句，则只能返回SQL语句或ResultSet，不能返回加载好的List对象");
+        }else{
+            ResultSet rs=(ResultSet)objTmp;
+            if(rs.next())
+            {
+             
+                    Object colVal=alrsibeanTmp.getDatatypeObj().getColumnValue(rs,alrsibeanTmp.getProperty(),dbtype);
+                    if(!isStatiForOnePage)
+                    {
+                        alrsibeanTmp.getSetMethod().invoke(statiDataObj,new Object[] { colVal });
+                    }else
+                    {
+                        alrsibeanTmp.getPageStatiSetMethod().invoke(statiDataObj,new Object[] { colVal });
+                    }
+                hasStatisticData=true;
+            }
+            rs.close();
+        }
+        return hasStatisticData;
+    }
+    
+    //ByQXO$
+    
     
     private String getRealStatisticItemConditionValues(ReportRequest rrequest,List<ConditionBean> lstConditionBeans)
     {

@@ -472,6 +472,9 @@ public class ReportDataSetValueBean extends AbsConfigBean
             return this.customizeDatasetObj;
         }else
         {
+            
+            datSetObj =  this.getISQLTypeBuilder(this.getReportBean().getSbean()).createAllResultSetISQLType();
+            /*
             if(this.isStoreProcedure())
             {
                 datSetObj=new GetDataSetByStoreProcedure();
@@ -483,6 +486,7 @@ public class ReportDataSetValueBean extends AbsConfigBean
             {
                 datSetObj=new GetAllDataSetBySQL();
             }
+            */
         }
         return datSetObj;
     }

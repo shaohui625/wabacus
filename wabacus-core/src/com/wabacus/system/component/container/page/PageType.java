@@ -91,6 +91,12 @@ public class PageType extends AbsContainerType
 
     public void displayOnPage(AbsComponentTag displayTag)
     {
+        //$ByQXO 
+        if("true".equals(rrequest.getAttribute("no-response"))){
+            return;
+        }
+        //ByQXO$
+        
         if(!rrequest.checkPermission(pagebean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY))
         {
             wresponse.println("&nbsp;");

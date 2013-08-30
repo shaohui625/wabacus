@@ -125,25 +125,25 @@ public class SQLOptionDatasource extends AbsOptionDatasource
         try
         {
             ReportBean rbean=this.ownerOptionBean.getOwnerInputboxObj().getOwner().getReportBean();
-            ISqlDataSet ImpISQLType=null;
+            ISqlDataSet isqlDataSet=null;
             //$ByQXO 数据库兼容性修改
             List<ReportDataSetBean> lstDatasetBeans=rbean.getSbean().getLstDatasetBeans();
             if(lstDatasetBeans != null && lstDatasetBeans.size()==1 ){
-                ImpISQLType = lstDatasetBeans.get(0).getDatasetValueBeanById(null).getISQLTypeBuilder(rbean.getSbean()).createAllResultSetISQLType();
+                isqlDataSet = lstDatasetBeans.get(0).getDatasetValueBeanById(null).getISQLTypeBuilder(rbean.getSbean()).createAllResultSetISQLType();
             }          
             
-            if( ImpISQLType == null){
+            if( isqlDataSet == null){
                 if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
                 {
-                    ImpISQLType=new GetAllDataSetByPreparedSQL();
+                    isqlDataSet=new GetAllDataSetByPreparedSQL();
                 }else
                 {
-                    ImpISQLType=new GetAllDataSetBySQL();
+                    isqlDataSet=new GetAllDataSetBySQL();
                 }
             }            
             //ByQXO$
             
-            Object objTmp=ImpISQLType.getDataSet(rrequest,rbean,this.ownerOptionBean,sql,this.lstConditions,this.getDatasource());
+            Object objTmp=isqlDataSet.getDataSet(rrequest,rbean,this.ownerOptionBean,sql,this.lstConditions,this.getDatasource());
             if(objTmp instanceof List)
             {
                 for(Object itemTmp:(List)objTmp)

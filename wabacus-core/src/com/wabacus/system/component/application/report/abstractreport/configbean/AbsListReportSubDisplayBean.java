@@ -199,10 +199,13 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
         ReportBean rbean=this.getOwner().getReportBean();
         buildSubDisplayPojoClass(rbean);
         initGetSetMethod(rbean);//初始化pojo的get/set方法，以便运行时可以直接使用
+        
+        //$ByQXO 
         if(rbean.getDbean().isColselect())
         {
-            rbean.getDbean().setColselect(!hasManyScolsInRow());
+           // rbean.getDbean().setColselect(!hasManyScolsInRow());
         }
+        //ByQXO$
         AbsListReportDisplayBean alrdbean=(AbsListReportDisplayBean)rbean.getDbean().getExtendConfigDataForReportType(AbsListReportType.KEY);
         if(this.lstSubDisplayRowBeans!=null)
         {
@@ -302,14 +305,14 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
                     cclass,
                     "public void format("+ReportRequest.class.getName()+"  rrequest,"+ReportBean.class.getName()+" rbean,"+String.class.getName()
                             +" type){"+fbean.getFormatContent()+" \n}");//type参数用于表示当前是在统计整个报表，还是在统计某个分组，统计整个报表时，type为空，统计某个分组时，这里传入相应<rowgroup/>的column属性
-            this.pojoclass=ConfigLoadManager.currentDynClassLoader.loadClass(classname,cclass.toBytecode());
+            this.pojoclass= ClassPoolAssistant.getInstance().generateClass(cclass);
+            pool.clearImportedPackages();
+            pool=null;
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("生成报表"+reportbean.getPath()+"的存放辅助显示信息的POJO类失败",e);
         }
-        cclass.detach();
-        pool.clearImportedPackages();
-        pool=null;
+  
     }
 
     private void getSColPropertiesAndTypes(ReportBean reportbean,List<String> lstProperties,List<IDataType> lstDataTypes,
@@ -586,8 +589,8 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
             }
             if(total_colspan!=colcount)
             {
-                throw new WabacusConfigLoadingException("加载报表"+alrdbean.getOwner().getReportBean().getPath()+"失败，配置的所有<scol/>的的colspan总数"
-                        +total_colspan+"与要显示的总列数"+colcount+"不相等");
+            //    throw new WabacusConfigLoadingException("加载报表"+alrdbean.getOwner().getReportBean().getPath()+"失败，配置的所有<scol/>的的colspan总数"
+              //          +total_colspan+"与要显示的总列数"+colcount+"不相等");
             }
         }
     }

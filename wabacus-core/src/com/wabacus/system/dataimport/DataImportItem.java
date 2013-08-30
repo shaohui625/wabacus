@@ -204,6 +204,9 @@ public class DataImportItem
                 errorBuf.append("如果希望准确了解是哪一条记录导致出错，请将wabacus.cfg.xml的dataimport-batchupdate-size参数配置为1");
             }
             log.error(errorBuf.toString(),e);
+            if(e instanceof WabacusDataImportException){
+                throw (WabacusDataImportException)e;
+            }
             throw new WabacusDataImportException("导入数据文件"+datafileObj.getAbsolutePath()+"失败");
         }finally
         {

@@ -108,7 +108,7 @@ public class FileUpDataImportThread extends AbsDataImportThread
         }catch(Exception e)
         {
             log.error("导入数据失败",e);
-            return "导入数据失败";
+            return "导入数据失败:"+e.getMessage();
         }finally
         {
             try

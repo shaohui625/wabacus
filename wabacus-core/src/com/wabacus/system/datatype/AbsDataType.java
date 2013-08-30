@@ -22,6 +22,7 @@ import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
 
+import org.apache.commons.beanutils.ConvertUtils;
 import org.dom4j.Element;
 
 import com.wabacus.exception.WabacusConfigLoadingException;
@@ -56,4 +57,13 @@ public abstract class AbsDataType implements IDataType
                     +"类型，无法创建此类型的成员变量",e);
         }
     }
+    
+    
+    public Object convertValue(Object from)
+    {
+         if(from == null){
+             return null;
+         }
+        return ConvertUtils.convert(from,this.getJavaTypeClass());
+    }   
 }

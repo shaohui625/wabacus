@@ -136,6 +136,12 @@ public class WabacusFacade
             rrequest.setWResponse(wresponse);
             wresponse.setRRequest(rrequest);
             rrequest.init(pageid);
+            
+            //$ByQXO 
+            if("true".equals(rrequest.getAttribute("no-response"))){
+                return;
+            }
+            //ByQXO$
             if(rrequest.getSlaveReportTypeObj()!=null)
             {
                 rrequest.getSlaveReportTypeObj().displayOnPage(null);

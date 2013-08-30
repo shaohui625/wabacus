@@ -1015,6 +1015,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                 {//在<values/>的<value/>的<column/>中配置了条件表达式
                     cvbTmp.setConditionExpression(null);
                     List<ConditionSelectItemBean> lstCcbeans=((ConditionValueSelectItemBean)cvbTmp).getLstColumnsBean();
+                    
                     for(ConditionSelectItemBean ccbeanTmp:lstCcbeans)
                     {
                         if(ccbeanTmp.getConditionExpression()==null||ccbeanTmp.getConditionExpression().getValue()==null

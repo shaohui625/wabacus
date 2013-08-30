@@ -1460,14 +1460,21 @@ public class Tools
             {
                 return "";
             }
-            DecimalFormat df=new DecimalFormat(pattern);
-            srcString=df.format(Double.parseDouble(srcString));
-            return srcString;
+           return formatDouble(Double.parseDouble(srcString),pattern);
         }catch(Exception e)
         {
             log.error("以"+pattern+"格式格式化"+srcString+"时，发生了异常：",e);
             return srcString;
         }
+    }
+    public static String formatDouble(Number number,String pattern)
+    {
+            if(number == null)
+            {
+                return "";
+            }
+            final DecimalFormat df=new DecimalFormat(pattern);
+            return df.format(number.doubleValue());
     }
 
     public static String formatLong(String srcString,String pattern)

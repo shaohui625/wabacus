@@ -18,6 +18,7 @@
  */
 package com.wabacus.system.assistant;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -33,6 +34,7 @@ import javassist.CtNewMethod;
 import javassist.Modifier;
 
 import com.wabacus.config.Config;
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
 
 
@@ -62,6 +64,18 @@ public class ClassPoolAssistant
         //ByQXO$
         
         return pool;
+    }
+    
+    private boolean pojoClassCache = Config.getInstance().getSystemConfigValue("pojoClassCache",true);
+    
+    public Class generateClass(CtClass cclass) throws IOException, CannotCompileException{
+        cclass.setModifiers(javassist.Modifier.FINAL | javassist.Modifier.PUBLIC );
+        if(!pojoClassCache){
+            cclass.writeFile(Config.homeAbsPath+"WEB-INF/classes");
+        }
+        final Class c = ConfigLoadManager.currentDynClassLoader.loadClass( cclass.getName(),cclass.toBytecode());
+        cclass.detach();    
+        return c;
     }
     
     public void addImportPackages(ClassPool pool,List<String> lstImports)

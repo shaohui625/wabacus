@@ -168,12 +168,12 @@ public class ComponentAssistant
         return "</div>";
     }
     
-    public Class buildPageInterceptorClass(PageBean pbean,List<String> lstImports,String preaction,String beforesaveaction,String aftersaveaction,String postaction)
+    
+      public Class buildPageInterceptorClass(PageBean pbean,List<String> lstImports,String preaction,String beforesaveaction,String aftersaveaction,String postaction)
     {
         try
         {
-            ClassPool pool=new ClassPool();
-            pool.appendSystemPath();
+            ClassPool pool=  ClassPoolAssistant.getInstance().createClassPool();
             pool.insertClassPath(new ClassClassPath(ComponentAssistant.class));
             String classname=Consts.BASE_PACKAGE_NAME+".Page_"+pbean.getId()+"_Interceptor";
             CtClass pt=pool.makeClass(classname);
@@ -206,8 +206,8 @@ public class ComponentAssistant
             CtMethod postMethod=CtNewMethod.make(sbuffer.toString(),pt);
             pt.addMethod(postMethod);
 
-            Class c=ConfigLoadManager.currentDynClassLoader.loadClass(classname,pt.toBytecode());
-            pt.detach();
+            
+            final Class c=  ClassPoolAssistant.getInstance().generateClass(pt);
             pool.clearImportedPackages();
             pool=null;
             return c;
