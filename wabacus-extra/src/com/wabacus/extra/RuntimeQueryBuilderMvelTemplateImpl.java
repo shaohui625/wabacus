@@ -8,8 +8,10 @@ import org.mvel2.templates.TemplateCompiler;
 import org.mvel2.templates.TemplateRuntime;
 
 import com.google.common.collect.Maps;
+import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
+import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.dataset.RuntimeQueryBuilder;
 import com.wabacus.system.datatype.IDataType;
@@ -17,13 +19,14 @@ import com.wabacus.system.datatype.IDataType;
 public class RuntimeQueryBuilderMvelTemplateImpl implements RuntimeQueryBuilder {
 
     public String parseRuntimeSqlAndCondition(final ReportRequest rrequest, final ReportBean rbean,
-            ReportDataSetValueBean svbean, String sql, List<String> lstConditionValues,
-            List<IDataType> lstConditionTypes) {
+            final ReportDataSetValueBean svbean, String sql, final List<String> lstConditionValues,
+           final  List<IDataType> lstConditionTypes) {
         if (sql.indexOf("@{") > 0) {
-            Map<String,Object> vars = Maps.newHashMap();
+            final Map<String,Object> vars = Maps.newHashMap();
             vars.put("lstConditionValues", lstConditionValues);
-            WabacusScriptExprContext exprContext = WabacusScriptEngineHelper.getScriptExprContextFactory()
-                    .createScriptExprContext(svbean.getDbType(), rrequest, rbean, svbean);
+            final AbsDatabaseType dbType = svbean == null ? Config.getInstance().getDbType(rbean.getSbean().getDatasource()) : svbean.getDbType();
+            final WabacusScriptExprContext exprContext = WabacusScriptEngineHelper.getScriptExprContextFactory()
+                    .createScriptExprContext(dbType, rrequest, rbean, svbean);
             // WabacusScriptEngineHelper.getScriptEngine().eval(expression, ctx, vars)
             CompiledTemplate compiled = TemplateCompiler.compileTemplate(sql);
             sql = (String) TemplateRuntime.execute(compiled, exprContext);

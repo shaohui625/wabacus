@@ -172,6 +172,18 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
         return collection;
     }
 
+    @Override
+    public List<Map<String, Object>> byQuery(final String query, Object... parameters) {
+        return asList(getJongo().getCollection(this.getTabname()).find(query, parameters));
+    }
+    
+    
+
+    @Override
+    public String toQueryStr() {
+         return toJson(this.getQueryConditionMap());
+    }
+
     public List asList(Find find) {
         // final Iterator iterator=find.as(getReportPojoClass()).iterator();
         final ResultHandler newMapper = getCurrentResultHandler();
@@ -363,7 +375,7 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
                     for (Iterator iter2 = eMap.entrySet().iterator(); iter2.hasNext();) {
                         Map.Entry<String, Object> entry = (Map.Entry<String, Object>) iter2.next();
                         final Object cv = filterValue(entry.getValue());
-                        if (entry.getKey() == null || cv == null ) {
+                        if (entry.getKey() == null || cv == null) {
                             continue;
                         }
                         ret.put(entry.getKey(), cv);
@@ -539,14 +551,13 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
         }
         fields.put("_id", 0);
         final Find find = getCollection(c).find(query).projection(toJson(fields));
-        
-     
-        int typePromptLimit =  typePromptBean.getResultcount() ;
-        if(typePromptLimit < 1){
-            typePromptLimit= getTypePromptLimit();
+
+        int typePromptLimit = typePromptBean.getResultcount();
+        if (typePromptLimit < 1) {
+            typePromptLimit = getTypePromptLimit();
         }
         find.limit(typePromptLimit);
-        
+
         final List asList = asList(find.as(HashMap.class).iterator());
         return asList;
     }

@@ -22,8 +22,9 @@ public abstract class AbstractNoSqlDatabaseType extends AbsDatabaseType {
 
     @Override
     public String constructSplitPageSql(ReportDataSetValueBean bean) {
-        final String sql = bean.getSqlWithoutOrderby();
-        return sql;
+       final String sql = bean.getSqlWithoutOrderby();
+       return sql;        
+      //  throw new NotImplementedException();
     }
 
     @Override

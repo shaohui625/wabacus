@@ -15,6 +15,7 @@ import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.extra.AbstractWabacusScriptExprContext;
+import com.wabacus.extra.WabacusScriptEngineHelper;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ListReportAssistant;
@@ -94,14 +95,24 @@ public class ExprGetAllResultSet implements ISqlDataSet {
         List<String> lstConditions = new ArrayList<String>();
         List<IDataType> lstConditionsTypes = new ArrayList<IDataType>();
         ReportBean rbean = reportObj.getReportBean();
-        String sqlTmp = svbean.getSqlWithoutOrderby();
-        sqlTmp = Tools.replaceAll(sqlTmp, "%orderby%", "");
-        sqlTmp = Tools.replaceAll(sqlTmp, Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,
-                svbean.getSql_kernel());
-        sqlTmp = ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest, rbean, svbean, sqlTmp,
-                lstConditions, lstConditionsTypes);
-        sqlTmp = ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest, rbean, svbean,
-                sqlTmp);
+        
+        
+        AbstractExprDatabaseType dbType = getDbType(rbean, svbean);
+        
+      AbstractWabacusScriptExprContext ctx = (AbstractWabacusScriptExprContext) WabacusScriptEngineHelper
+              .getScriptExprContextFactory().createScriptExprContext(dbType, rrequest, rbean, svbean);
+      String sqlTmp = ctx.toQueryStr();
+        
+//        String sqlTmp = svbean.getSqlWithoutOrderby();
+//        sqlTmp = Tools.replaceAll(sqlTmp, "%orderby%", "");
+//        sqlTmp = Tools.replaceAll(sqlTmp, Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,
+//                svbean.getSql_kernel());
+//        sqlTmp = ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest, rbean, svbean, sqlTmp,
+//                lstConditions, lstConditionsTypes);
+//        sqlTmp = ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest, rbean, svbean,
+//                sqlTmp);
+        
+        //sql = ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest, rbean, svbean, sql, lstConditions, lstConditionsTypes);
         CacheDataBean cdb = rrequest.getCdb(rbean.getId());
 
         if (svbean.isDependentDataSet()) {
@@ -132,8 +143,14 @@ public class ExprGetAllResultSet implements ISqlDataSet {
                 return obj;
             sql = (String) obj;
         }
-        return getDataSet(rrequest, rbean, svbean, null, sql);
-
+        
+        return ctx.byQuery(sql);
+     //   Map<String,Object> vars = Maps.newHashMap();
+     //   vars.put("queryStr", sql);
+        
+        //return asList(ctx,dbType.eval( "byQuery(queryStr)", vars, ctx));
+       // return getDataSet(rrequest, rbean, svbean, null, sql);
+       // return this.evalAsList(rrequest, rbean, svbean, "byQuery(queryStr)",vars);
     }
 
     public Object getDataSet(ReportRequest rrequest, ReportBean rbean, ReportDataSetValueBean datasetbean,
@@ -162,34 +179,16 @@ public class ExprGetAllResultSet implements ISqlDataSet {
 
     }
 
-    // public Object getResultSet(ReportRequest rrequest, AbsReportType reportObj, Object typeObj, String
-    // sql) {
-    // try {
-    // ReportBean rbean = reportObj.getReportBean();
-    // // sql=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,sql,null,null);
-    // // sql=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,sql);
-    // if (rbean.getInterceptor() != null && typeObj != null) {
-    // Object obj = rbean.getInterceptor().beforeLoadData(rrequest, rbean, typeObj, sql);
-    // if (!(obj instanceof String)) {
-    // return obj;
-    // }
-    // sql = (String) obj;
-    // }
-    //
-    //
-    // MongoExprContext ctx = eval(rrequest, rbean, sql);
-    // final Object result = ctx.getResult();
-    // return result;
-    // } catch (IllegalArgumentException ex) {
-    // throw ex;
-    // } catch (Exception e) {
-    // throw new WabacusRuntimeException("从数据库取数据失败，执行exor：" + sql + "抛出异常", e);
-    // }
-    // }
-
     public List evalAsList(ReportRequest rrequest, ReportBean rbean, ReportDataSetValueBean datasetbean,
             String sql) {
         AbstractWabacusScriptExprContext ctx = eval(rrequest, null, rbean, datasetbean, sql);
+        final Object result = ctx.getResult();
+        return asList(ctx, result);
+    }
+    
+    public List evalAsList(ReportRequest rrequest, ReportBean rbean, ReportDataSetValueBean datasetbean,
+            String sql,Map vars) {
+        AbstractWabacusScriptExprContext ctx = eval(rrequest, vars, rbean, datasetbean, sql);
         final Object result = ctx.getResult();
         return asList(ctx, result);
     }
@@ -206,8 +205,18 @@ public class ExprGetAllResultSet implements ISqlDataSet {
 
     public AbstractWabacusScriptExprContext eval(ReportRequest rrequest, Map vars, ReportBean rbean,
             ReportDataSetValueBean datasetbean, String sql) {
+        AbstractExprDatabaseType dbType = getDbType(rbean, datasetbean);
+        
+//        AbstractWabacusScriptExprContext ctx = (AbstractWabacusScriptExprContext) WabacusScriptEngineHelper
+//                .getScriptExprContextFactory().createScriptExprContext(dbType, rrequest, rbean, datasetbean);
+
+        
+        return dbType.eval(sql, vars,rrequest, rbean, datasetbean);
+    }
+
+    protected AbstractExprDatabaseType getDbType(ReportBean rbean, ReportDataSetValueBean datasetbean) {
         AbstractExprDatabaseType dbType = (AbstractExprDatabaseType) (datasetbean == null ? Config
                 .getInstance().getDbType(rbean.getSbean().getDatasource()) : datasetbean.getDbType());
-        return dbType.eval(sql, vars,rrequest, rbean, datasetbean);
+        return dbType;
     }
 }

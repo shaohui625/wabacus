@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
@@ -78,8 +79,16 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
         value = (String) TemplateRuntime.eval(value, sbean, vars);
         String sqlKernel = sbean.getSql_kernel();
         if (StringUtils.isBlank(sqlKernel)) {
-            sqlKernel = (String) vars.get("tabname");
+           // sqlKernel = sbean.getReportBean().getAttrs().get("pojoTabname");
         }
+        if (StringUtils.isBlank(sqlKernel)) {
+            sqlKernel = (String) vars.get("tabname");            
+        }
+
+        if (StringUtils.isNotBlank(sqlKernel)) {
+         //   sbean.setSqlWithoutOrderby("select * from "+sqlKernel+" where {#condition#}");
+        }
+        
         if (StringUtils.isNotBlank(value)) {
             String queryExpr = (String) vars.get("queryExpr");
             if (StringUtils.isNotBlank(sqlKernel)) {
@@ -108,8 +117,8 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
             String sqlCount = (String) vars.get("sqlCount");
             if (StringUtils.isBlank(sqlCount)) {
                 sqlCount = "this.count(getQueryConditionMap())";
-            }else{
-                LOG.info("custom count:{}",sqlCount);
+            } else {
+                LOG.info("custom count:{}", sqlCount);
             }
             sbean.setSqlCount(sqlCount);
         }
@@ -185,8 +194,8 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
         List<EditableReportParamBean> lstParamsBean = new ArrayList<EditableReportParamBean>();
         if (true) {// 没有指定要更新的字段，则将所有从数据库取数据的<col/>（不包括hidden="1"和="2"的<col/>）全部更新到表中
 
-        //    EditableReportSqlBean ersqlbean = (EditableReportSqlBean) rbean.getSbean()
-         //           .getExtendConfigDataForReportType(EditableReportSqlBean.class);
+            // EditableReportSqlBean ersqlbean = (EditableReportSqlBean) rbean.getSbean()
+            // .getExtendConfigDataForReportType(EditableReportSqlBean.class);
             // final EditableReportUpdateDataBean updatebean = ersqlbean.getUpdatebean();
 
             List<ColBean> lstColBeans = rbean.getDbean().getLstCols();
@@ -197,10 +206,11 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
                 if (paramBean != null) {
                     lstParamsBean.add(paramBean);
                     Map<String, String> attrs = cbean.getAttrs();
-                    if (true && ( "false".equals(attrs.get("editable")) || "false".equals(attrs.get("updatable"))) ) {
+                    if (true && ("false".equals(attrs.get("editable")) || "false".equals(attrs
+                            .get("updatable")))) {
                         EditableReportColBean ercbeanUpdateSrc = (EditableReportColBean) cbean
                                 .getExtendConfigDataForReportType(reportTypeKey);
-                        if(ercbeanUpdateSrc != null){
+                        if (ercbeanUpdateSrc != null) {
                             ercbeanUpdateSrc.setEditableWhenUpdate(0);
                         }
                     }
@@ -239,11 +249,11 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
                 if ("false".equals(attrs.get("editable")) || "false".equals(attrs.get("insertable"))) {
                     EditableReportColBean ercbeanUpdateSrc = (EditableReportColBean) cbean
                             .getExtendConfigDataForReportType(reportTypeKey);
-                    if(ercbeanUpdateSrc != null){
+                    if (ercbeanUpdateSrc != null) {
                         ercbeanUpdateSrc.setEditableWhenInsert(0);
                     }
                 }
-                
+
                 lstParamsBean.add(paramBean);
             }
         }
@@ -380,38 +390,34 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
         } catch (RuntimeException ex) {
             handleEx(ctx, ex);
             throw ex;
-        }catch(java.lang.AssertionError ex){
-        	   handleEx(ctx, ex);
-        	   throw ex;
+        } catch (java.lang.AssertionError ex) {
+            handleEx(ctx, ex);
+            throw ex;
         }
         return ctx;
     }
 
-	protected void handleEx(AbstractWabacusScriptExprContext ctx,
-			Throwable ex) {
-		LOG.error("脚本运行出错:" + ex.getMessage(), ex);
+    protected void handleEx(AbstractWabacusScriptExprContext ctx, Throwable ex) {
+        LOG.error("脚本运行出错:" + ex.getMessage(), ex);
 
-		final Throwable rootCause = SystemHelper.getRootCause(ex);
-		  final MessageCollector mc = ctx.getRrequest().getWResponse().getMessageCollector();
-			 
-	
-		if (rootCause instanceof RuntimeException) {
-			 final String message = SystemHelper.friendlyMessage(rootCause);
-		     if (rootCause instanceof AlterException) {
-		        mc.warn(message, message, rootCause,
-		                Consts.STATECODE_NONREFRESHPAGE);
-		    } else {
-		        mc.error(message, false);
-		    }
-		    throw (RuntimeException) rootCause;
-		}else if (rootCause instanceof java.lang.AssertionError){
-			 final String message = SystemHelper.friendlyMessage(rootCause);
-		      mc.warn(message, message, rootCause,
-		                Consts.STATECODE_NONREFRESHPAGE);
-		    throw (AssertionError) rootCause;
-		}
-		
-	}
+        final Throwable rootCause = SystemHelper.getRootCause(ex);
+        final MessageCollector mc = ctx.getRrequest().getWResponse().getMessageCollector();
+
+        if (rootCause instanceof RuntimeException) {
+            final String message = SystemHelper.friendlyMessage(rootCause);
+            if (rootCause instanceof AlterException) {
+                mc.warn(message, message, rootCause, Consts.STATECODE_NONREFRESHPAGE);
+            } else {
+                mc.error(message, false);
+            }
+            throw (RuntimeException) rootCause;
+        } else if (rootCause instanceof java.lang.AssertionError) {
+            final String message = SystemHelper.friendlyMessage(rootCause);
+            mc.warn(message, message, rootCause, Consts.STATECODE_NONREFRESHPAGE);
+            throw (AssertionError) rootCause;
+        }
+
+    }
 
     public AbstractWabacusScriptExprContext eval(String script, Map vars, ReportRequest rrequest,
             ReportBean rbean, ReportDataSetValueBean datasetbean) {
@@ -437,31 +443,30 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
 
     public Object getPromptDataList(ReportRequest rrequest, ReportBean rbean, SQLOptionDatasource typeObj,
             String typedata) {
-        
-        if(StringUtils.isBlank(typedata)){
+
+        if (StringUtils.isBlank(typedata)) {
             return null;
         }
-       // typedata = typedata.trim();
+        // typedata = typedata.trim();
         final SqlBean sbean = rbean.getSbean();
         final String sqlTemp = typeObj.getSql();//
         // sqlTemp = Tools.replaceAll(typeObj.getSql(),"#data#",typedata);
-        if(LOG.isDebugEnabled()){
+        if (LOG.isDebugEnabled()) {
             LOG.debug("expr：{} data:{}", sqlTemp, typedata);
         }
 
-        
-        final Map<String,Object> vars = Maps.newHashMap();
+        final Map<String, Object> vars = Maps.newHashMap();
         vars.put("typeObj", typeObj);
         vars.put("data", typedata);
 
-         final TypePromptBean typePromptBean = ((TextBox) typeObj.getOwnerOptionBean().getOwnerInputboxObj())
+        final TypePromptBean typePromptBean = ((TextBox) typeObj.getOwnerOptionBean().getOwnerInputboxObj())
                 .getTypePromptBean();
-         if(typePromptBean != null  &&  typePromptBean.getLstPColBeans().size() >0 ){
-             TypePromptColBean typePromptColBean = typePromptBean.getLstPColBeans().get(0);
-             String matchmode = typePromptColBean.getAttrs().get("matchmode");
-             vars.put("matchmode", matchmode);
-         }
-             
+        if (typePromptBean != null && typePromptBean.getLstPColBeans().size() > 0) {
+            TypePromptColBean typePromptColBean = typePromptBean.getLstPColBeans().get(0);
+            String matchmode = typePromptColBean.getAttrs().get("matchmode");
+            vars.put("matchmode", matchmode);
+        }
+
         List<ReportDataSetValueBean> lstDatasetValueBeans = rbean.getSbean()
                 .getLstDatasetValueBeansByValueid(null);// FIXME
         return eval(sqlTemp, vars, rrequest, rbean, lstDatasetValueBeans.get(0)).getResult();
@@ -473,14 +478,20 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
     }
 
     @Override
-    public String parseAndTrimScript(String content) {
-        return content == null ? StringUtils.EMPTY : content.trim();
+    public String parseAndTrimScript(final String content) {
+        return  formatSqlString(content);
     }
 
     @Override
     public String parseButtonsClickevent(IComponentConfigBean ccbean, AbsButtonType buttonObj,
             String clickevent) {
         return clickevent.trim();
+    }
+
+    private static final Pattern TRIM_SCRIPT_PATTERN = Pattern.compile("(^\\s+)|(\\s+$)",Pattern.MULTILINE);
+     protected static final  String formatSqlString(String sqlValue) {
+         sqlValue =  sqlValue == null ? StringUtils.EMPTY : TRIM_SCRIPT_PATTERN.matcher(sqlValue).replaceAll(StringUtils.EMPTY );//sqlValue.replaceAll("(^\\s+)|(\\s+$)",StringUtils.EMPTY );
+         return sqlValue;
     }
 
     // public String parseAndValidPromptSql(ReportBean rbean,
@@ -491,8 +502,8 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
     // }
     // return typeObj.parseAndValidPromptSql(rbean, sql);
     // }
-    
-    public void doPostLoadCrossListReportDynDatasetBean (CrossListReportDynDatasetBean crdBean){
-    	LOG.info("doPostLoadCrossListReportDynDatasetBean...");
+
+    public void doPostLoadCrossListReportDynDatasetBean(CrossListReportDynDatasetBean crdBean) {
+        LOG.info("doPostLoadCrossListReportDynDatasetBean...");
     }
 }
