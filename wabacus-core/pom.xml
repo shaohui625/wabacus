@@ -11,7 +11,7 @@
 	<artifactId>wabacus-core</artifactId>
 	<packaging>jar</packaging>
 	<name>wabacus-core</name>
-	<version>4.1.2-enhance-fix1-b15</version>
+	<version>4.1.2-enhance-fix1-b19</version>
 	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
 	<url>https://code.google.com/p/wabacus/</url>
 	<properties>
