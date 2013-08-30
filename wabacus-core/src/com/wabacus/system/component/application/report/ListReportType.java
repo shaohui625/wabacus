@@ -545,7 +545,7 @@ public class ListReportType extends AbsListReportType
                 trstylepropertyTmp=rowdataObj.getRowstyleproperty();
                 if(!rowdataObj.isShouldDisplayThisRow()) return resultBuf.toString();
             }
-            resultBuf.append("<tr "+getTrValueStyleproperty(trstylepropertyTmp,rbean.getGuid()+"_nodata_tr",0,null,false));
+            resultBuf.append("<tr "+getTrValueStyleproperty(trstylepropertyTmp,rbean.getGuid()+"_nodata_tr",0,null,false)).append("'>");
             resultBuf.append("<td class='"+getDataTdClassName()+"' bgcolor='#ffffff' colspan='").append(this.cacheDataBean.getTotalColCount())
                     .append("'>");
             if(this.isLazyDataLoad()&&rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
