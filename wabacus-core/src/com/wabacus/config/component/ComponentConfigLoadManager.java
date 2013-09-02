@@ -685,7 +685,8 @@ public class ComponentConfigLoadManager
         List<XmlElementBean> lstChildElements=eleContainer.getLstChildElements();
         if(lstChildElements==null||lstChildElements.size()==0)
         {
-            throw new WabacusConfigLoadingException("加载页面/容器"+ccbean.getPath()+"失败，内容为空");
+            //throw new WabacusConfigLoadingException("加载页面/容器"+ccbean.getPath()+"失败，内容为空");
+            return; //允许组件为空，以扩展可替换
         }
         for(XmlElementBean eleChildTmp:lstChildElements)
         {

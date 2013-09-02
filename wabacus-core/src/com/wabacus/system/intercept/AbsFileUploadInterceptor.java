@@ -18,6 +18,7 @@
  */
 package com.wabacus.system.intercept;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +26,12 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.lang.StringUtils;
 
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.system.ReportRequest;
+import com.wabacus.system.buttons.DataImportButton;
 
 public abstract class AbsFileUploadInterceptor
 {
@@ -47,12 +51,23 @@ public abstract class AbsFileUploadInterceptor
     
     public final static String SAVEVALUE_KEY="SAVEVALUE";
     
-    public boolean beforeDisplayFileUploadInterface(HttpServletRequest request,Map<String,String> mFormAndConfigValues,PrintWriter out)
+    public boolean beforeDisplayFileUploadInterface(HttpServletRequest request,Map<String,String> mFormAndConfigValues,Appendable out) throws IOException
     {
         return true;
     }
+    
+    /**
+     * 附加上传页面的链接参数
+     * @param request
+     * @return
+     */
+    public String createAppendLinkParams(DataImportButton btn,ReportRequest rrequest)
+    {
+        return StringUtils.EMPTY;
+    }
 
-    public boolean beforeFileUpload(HttpServletRequest request,FileItem fileitemObj,Map<String,String> mFormAndConfigValues,PrintWriter out)
+
+    public boolean beforeFileUpload(HttpServletRequest request,FileItem fileitemObj,Map<String,String> mFormAndConfigValues,Appendable out) throws IOException
     {
         return true;
     }

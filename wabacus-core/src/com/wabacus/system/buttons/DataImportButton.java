@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
@@ -50,12 +52,12 @@ public class DataImportButton extends WabacusButton
 
     public String showButton(ReportRequest rrequest,String dynclickevent)
     {
-        return super.showButton(rrequest,getDataImportEvent());
+        return super.showButton(rrequest,getDataImportEvent(rrequest));
     }
 
     public String showButton(ReportRequest rrequest,String dynclickevent,String button)
     {
-        return super.showButton(rrequest,getDataImportEvent(),button);
+        return super.showButton(rrequest,getDataImportEvent(rrequest),button);
     }
 
     public AbsFileUploadInterceptor getDataimportInterceptorObj()
@@ -78,14 +80,24 @@ public class DataImportButton extends WabacusButton
         return this.dataimportBean.getLstDataImportItems();
     }
     
-    private String getDataImportEvent()
+    private String getDataImportEvent(ReportRequest rrequest)
     {
         String token="?";
         if(Config.showreport_url.indexOf("?")>0) token="&";
         String serverurl=Config.showreport_url+token+"PAGEID="+ccbean.getPageBean().getId()+"&COMPONENTID="+ccbean.getId()
                 +"&ACTIONTYPE=ShowUploadFilePage&FILEUPLOADTYPE="+Consts_Private.FILEUPLOADTYPE_DATAIMPORTREPORT;
         serverurl+="&DATAIMPORT_BUTTONNAME="+this.getName();
-        return "wx_winpage('"+serverurl+"',"+this.dataimportBean.getDataimportpopupparams()+");";
+        
+        
+        AbsFileUploadInterceptor dataimportInterceptorObj=this.getDataimportInterceptorObj();
+        if(dataimportInterceptorObj != null){
+            final String paramsStr=dataimportInterceptorObj.createAppendLinkParams(this,rrequest);
+            if(StringUtils.isNotBlank(paramsStr)){
+                serverurl+='&'+ paramsStr;
+            }
+        }
+       
+       return "wx_winpage('"+serverurl+"',"+this.dataimportBean.getDataimportpopupparams()+");";
     }
 
     public void loadExtendConfig(XmlElementBean eleButtonBean)

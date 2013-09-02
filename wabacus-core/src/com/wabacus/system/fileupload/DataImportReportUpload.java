@@ -18,7 +18,7 @@
  */
 package com.wabacus.system.fileupload;
 
-import java.io.PrintWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -39,15 +39,15 @@ public class DataImportReportUpload extends AbsFileUpload
         super(request);
     }
 
-    public void showUploadForm(PrintWriter out)
+    public void showUploadForm(Appendable out) throws IOException
     {
         String pageid=getRequestString("PAGEID","");
         String comid=getRequestString("COMPONENTID","");
         String buttonname=getRequestString("DATAIMPORT_BUTTONNAME","");
         DataImportButton buttonObj=getDataImportButtonObj(pageid,comid,buttonname);
-        out.print("<input type='hidden' name='PAGEID' value='"+pageid+"'/>");
-        out.print("<input type='hidden' name='COMPONENTID' value='"+comid+"'/>");
-        out.print("<input type='hidden' name='DATAIMPORT_BUTTONNAME' value='"+buttonname+"'/>");
+        out.append("<input type='hidden' name='PAGEID' value='"+pageid+"'/>");
+        out.append("<input type='hidden' name='COMPONENTID' value='"+comid+"'/>");
+        out.append("<input type='hidden' name='DATAIMPORT_BUTTONNAME' value='"+buttonname+"'/>");
         boolean flag=true;
         if(buttonObj.getDataimportInterceptorObj()!=null)
         {
@@ -57,11 +57,11 @@ public class DataImportReportUpload extends AbsFileUpload
         }
         if(flag)
         {
-            out.print(showDataImportFileUpload(buttonObj.getLstDataImportFileNames()));
+            out.append(showDataImportFileUpload(buttonObj.getLstDataImportFileNames()));
         }
     }
 
-    public String doFileUpload(List lstFieldItems,PrintWriter out)
+    public String doFileUpload(List lstFieldItems,Appendable out) throws IOException
     {
         String pageid=mFormFieldValues.get("PAGEID");
         String comid=mFormFieldValues.get("COMPONENTID");
@@ -98,7 +98,7 @@ public class DataImportReportUpload extends AbsFileUpload
         return buttonObj;
     }
     
-    public void promptSuccess(PrintWriter out,boolean isArtDialog)
+    public void promptSuccess(Appendable out,boolean isArtDialog)  throws IOException
     {
         String message="";
         if(this.dataImportButtonObj.isDataImportAsyn())
@@ -111,19 +111,19 @@ public class DataImportReportUpload extends AbsFileUpload
         String parentRef=null;
         if(isArtDialog)
         {
-            out.println("artDialog.open.origin.wx_success('"+message+"');");
-            out.println("art.dialog.close();");
+            out.append("artDialog.open.origin.wx_success('"+message+"');\n");
+            out.append("art.dialog.close();\n");
             parentRef="artDialog.open.origin";
         }else
         {
-            out.println("parent.wx_success('"+message+"');");
-            out.println("parent.closePopupWin();");
+            out.append("parent.wx_success('"+message+"');\n");
+            out.append("parent.closePopupWin();");
             parentRef="parent";
         }
         IComponentConfigBean ccbean=this.dataImportButtonObj.getCcbean();
         if(!this.dataImportButtonObj.isDataImportAsyn())
         {
-            out.println(parentRef+".refreshComponentDisplay('"+ccbean.getPageBean().getId()+"','"+ccbean.getId()+"',true);");
+            out.append(parentRef+".refreshComponentDisplay('"+ccbean.getPageBean().getId()+"','"+ccbean.getId()+"',true);\n");
         }
     }
 }

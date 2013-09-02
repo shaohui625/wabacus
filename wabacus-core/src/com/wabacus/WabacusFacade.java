@@ -80,9 +80,6 @@ import com.wabacus.system.component.application.report.abstractreport.configbean
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
 import com.wabacus.system.component.application.report.chart.FusionChartsReportType;
 import com.wabacus.system.dataset.IReportDataSet;
-import com.wabacus.system.dataset.sqldataset.GetAllDataSetByPreparedSQL;
-import com.wabacus.system.dataset.sqldataset.GetAllDataSetBySQL;
-import com.wabacus.system.dataset.sqldataset.GetDataSetByStoreProcedure;
 import com.wabacus.system.fileupload.AbsFileUpload;
 import com.wabacus.system.fileupload.DataImportReportUpload;
 import com.wabacus.system.fileupload.DataImportTagUpload;
@@ -952,7 +949,7 @@ public class WabacusFacade
         return resultBuf.toString();
     }
 
-    public static void showUploadFilePage(HttpServletRequest request,PrintWriter out)
+    public static void showUploadFilePage(HttpServletRequest request,PrintWriter out) throws IOException
     {
         String contentType=request.getHeader("Content-type");
         String fileuploadtype=null;
@@ -971,15 +968,26 @@ public class WabacusFacade
             return;
         }
         importWebresources(out);
-        out.println("<form  action=\""+Config.showreport_url
-                +"\" style=\"margin:0px\" method=\"post\" onsubmit=\"return doFileUploadAction()\" enctype=\"multipart/form-data\" name=\"fileuploadform\">");
+        
+        final StringBuffer formContent=new  StringBuffer ();
+        fileUpload.showUploadForm(formContent);
+        
+        String uploadUrl = Config.showreport_url;
+        CharSequence appendUrlParams =(CharSequence) request.getAttribute("appendUrlParams");
+        if(appendUrlParams !=null){
+            uploadUrl += "?"+appendUrlParams;
+        }        
+        out.println("<form  action=\""+uploadUrl
+                +" \" style=\"margin:0px\" method=\"post\" onsubmit=\"return doFileUploadAction()\" enctype=\"multipart/form-data\" name=\"fileuploadform\">");
         out.println("<input type='hidden' name='FILEUPLOADTYPE' value='"+fileuploadtype+"'/>");
-        fileUpload.showUploadForm(out);
+    
+        out.append(formContent);
+        
         out.println("</form>");
         out.println("<div id=\"LOADING_IMG_ID\" class=\"cls-loading-img\"></div>");
     }
 
-    public static void uploadFile(HttpServletRequest request,HttpServletResponse response)
+    public static void uploadFile(HttpServletRequest request,HttpServletResponse response) throws IOException
     {
         PrintWriter out=null;
         try

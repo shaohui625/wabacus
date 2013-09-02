@@ -18,8 +18,14 @@
  */
 package com.wabacus.system.component.container.page;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
@@ -29,6 +35,7 @@ import com.wabacus.config.component.container.page.PageBean;
 import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.config.xml.XmlElementBean;
+import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ComponentAssistant;
 import com.wabacus.system.buttons.BackButton;
@@ -91,11 +98,29 @@ public class PageType extends AbsContainerType
 
     public void displayOnPage(AbsComponentTag displayTag)
     {
+        String jsp=this.pagebean.getAttrs().get("jsp");
+        if(StringUtils.isNotBlank(jsp)){
+            try
+            {
+                final HttpServletRequest hreq=rrequest.getRequest();
+                hreq.getRequestDispatcher(jsp).forward(hreq,this.wresponse.getResponse());
+            }catch(ServletException e)
+            {
+               throw new WabacusRuntimeException(e);
+            }catch(IOException e)
+            {
+                throw new WabacusRuntimeException(e);
+            }
+            return;
+        }
+
+        
         //$ByQXO 
         if("true".equals(rrequest.getAttribute("no-response"))){
             return;
         }
         //ByQXO$
+
         
         if(!rrequest.checkPermission(pagebean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY))
         {
@@ -187,6 +212,17 @@ public class PageType extends AbsContainerType
     {
         if(rrequest.isLoadedByAjax()||!rrequest.isDisplayOnPage()) return "";
         StringBuffer resultBuf=new StringBuffer();
+        
+//        resultBuf.append("<html><head>");
+//        
+//        String title =this.pagebean.getTitle(rrequest);
+//        if(title != null){
+//            resultBuf.append("<title>").append(title).append("</title>");
+//        }
+//        
+        
+     //   resultBuf.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset="+Config.encode+"\"/>");
+        
         if(this.lstCsses!=null)
         {
             for(String cssTmp:this.lstCsses)
@@ -196,8 +232,12 @@ public class PageType extends AbsContainerType
         }
         resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(Config.webroot).append(
                 "webresources/skin/colselected_tree.css\"/>");
-        resultBuf.append("<script language=\"javascript\" src=\"");
-        resultBuf.append(systemheadjs).append("\"></script>");
+
+        //resultBuf.append("<script language=\"javascript\" src=\"").append(systemheadjs).append("\"></script>");
+        
+
+      //  resultBuf.append("</head><body>");
+        
         return resultBuf.toString();
     }
     
@@ -206,6 +246,8 @@ public class PageType extends AbsContainerType
 //        if(!rrequest.isAccessFirstTime()) return "";//ajax加载的话，不显示静态资源，因为显示了也无效
         if(rrequest.isLoadedByAjax()||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
         StringBuffer resultBuf=new StringBuffer();
+        
+        resultBuf.append("<script language=\"javascript\" src=\"").append(systemheadjs).append("\"></script>");
         if(this.lstJavascripts!=null)
         {
             Collections.sort(this.lstJavascripts);
@@ -214,6 +256,7 @@ public class PageType extends AbsContainerType
                 resultBuf.append("<script type=\"text/javascript\"  src=\"").append(jsBeanTmp.getJsfileurl()).append("\"></script>");
             }
         }
+        
         if(lstDynCsses!=null)
         {
             for(String cssTmp:lstDynCsses)
@@ -251,6 +294,10 @@ public class PageType extends AbsContainerType
                 }
             }
         }
+        
+
+      //  resultBuf.append("</body></html>");
+        
         return resultBuf.toString();
     }
     

@@ -18,6 +18,7 @@
  */
 package com.wabacus.system.fileupload;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,7 @@ public class DataImportTagUpload extends AbsFileUpload
         super(request);
     }
 
-    public void showUploadForm(PrintWriter out)
+    public void showUploadForm(Appendable out) throws IOException
     {
         String ref=getRequestString("DATAIMPORT_REF","");
         String interceptor=getRequestString("INTERCEPTOR","");
@@ -79,9 +80,9 @@ public class DataImportTagUpload extends AbsFileUpload
         {
             throw new WabacusRuntimeException("显示数据导入标签<wx:dataimport/>的文件上传页面时，没有取到要导入的filename");
         }
-        out.print("<input type='hidden' name='DATAIMPORT_REF' value='"+ref+"'/>");
-        out.print("<input type='hidden' name='INTERCEPTOR' value='"+interceptor+"'/>");
-        out.print("<input type='hidden' name='ASYN' value='"+asyn+"'/>");
+        out.append("<input type='hidden' name='DATAIMPORT_REF' value='"+ref+"'/>");
+        out.append("<input type='hidden' name='INTERCEPTOR' value='"+interceptor+"'/>");
+        out.append("<input type='hidden' name='ASYN' value='"+asyn+"'/>");
         boolean flag=true;
         if(interceptor!=null&&!interceptor.trim().equals(""))
         {
@@ -92,11 +93,11 @@ public class DataImportTagUpload extends AbsFileUpload
         }
         if(flag)
         {
-            out.print(showDataImportFileUpload(lstDataImportFileNames));
+            out.append(showDataImportFileUpload(lstDataImportFileNames));
         }
     }
 
-    public String doFileUpload(List lstFieldItems,PrintWriter out)
+    public String doFileUpload(List lstFieldItems,Appendable out) throws IOException
     {
         String ref=mFormFieldValues.get("DATAIMPORT_REF");
         if(ref==null||ref.trim().equals(""))
@@ -124,7 +125,7 @@ public class DataImportTagUpload extends AbsFileUpload
         return uploadDataImportFiles(lstFieldItems,lstDataImports,"true".equalsIgnoreCase(asyn),out);
     }
     
-    public void promptSuccess(PrintWriter out,boolean isArtDialog)
+    public void promptSuccess(Appendable out,boolean isArtDialog) throws IOException
     {
         String asyn=mFormFieldValues.get("ASYN");
         String message="";
@@ -137,12 +138,12 @@ public class DataImportTagUpload extends AbsFileUpload
         }
         if(isArtDialog)
         {
-            out.println("artDialog.open.origin.wx_success('"+message+"');");
-            out.println("art.dialog.close();");
+            out.append("artDialog.open.origin.wx_success('"+message+"');\n");
+            out.append("art.dialog.close();");
         }else
         {
-            out.println("parent.wx_success('"+message+"');");
-            out.println("parent.closePopupWin();");
+            out.append("parent.wx_success('"+message+"');");
+            out.append("parent.closePopupWin();");
         }
     }
 }

@@ -18,7 +18,7 @@
  */
 package com.wabacus.system.fileupload;
 
-import java.io.PrintWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +40,7 @@ public class FileInputBoxUpload extends AbsFileUpload
         super(request);
     }
 
-    public void showUploadForm(PrintWriter out)
+    public void showUploadForm(Appendable out) throws IOException
     {
         String pageid=getRequestString("PAGEID","");
         String reportid=getRequestString("REPORTID","");
@@ -69,16 +69,16 @@ public class FileInputBoxUpload extends AbsFileUpload
         String parentWindowName;
         if(Config.getInstance().getSystemConfigValue("prompt-dialog-type","artdialog").equals("artdialog"))
         {
-            out.print("<script type=\"text/javascript\"  src=\""+Config.webroot+"webresources/component/artDialog/artDialog.js\"></script>");
-            out.print("<script type=\"text/javascript\"  src=\""+Config.webroot+"webresources/component/artDialog/plugins/iframeTools.js\"></script>");
+            out.append("<script type=\"text/javascript\"  src=\""+Config.webroot+"webresources/component/artDialog/artDialog.js\"></script>");
+            out.append("<script type=\"text/javascript\"  src=\""+Config.webroot+"webresources/component/artDialog/plugins/iframeTools.js\"></script>");
             parentWindowName="artDialog.open.origin";
         }else
         {
             parentWindowName="parent";
         }
-        out.print("<input type='hidden' name='INPUTBOXID' value='"+inputboxid+"'/>");
-        out.print("<input type='hidden' name='PAGEID' value='"+pageid+"'/>");
-        out.print("<input type='hidden' name='REPORTID' value='"+reportid+"'/>");
+        out.append("<input type='hidden' name='INPUTBOXID' value='"+inputboxid+"'/>");
+        out.append("<input type='hidden' name='PAGEID' value='"+pageid+"'/>");
+        out.append("<input type='hidden' name='REPORTID' value='"+reportid+"'/>");
         Map<String,String> mFormFieldValues=(Map<String,String>)request.getAttribute("WX_FILE_UPLOAD_FIELDVALUES");
         showDynParamHiddenFields(mFormFieldValues,fileboxObj.getMDynParamColumns(),out);
         showDynParamHiddenFields(mFormFieldValues,fileboxObj.getMDynParamConditions(),out);
@@ -89,30 +89,30 @@ public class FileInputBoxUpload extends AbsFileUpload
         }
         if(flag)
         {
-            out.print("<table border=0 cellspacing=1 cellpadding=2  style=\"margin:0px\" width=\"98%\" ID=\"Table1\" align=\"center\">");
-            out.print("<tr class=filetitle><td style='font-size:13px;'>文件上传</td></tr>");
-            out.print("<tr><td style='font-size:13px;'><input type=\"file\" contentEditable=\"false\" name=\"uploadfile\" id=\"file1\"></td></tr>");
+            out.append("<table border=0 cellspacing=1 cellpadding=2  style=\"margin:0px\" width=\"98%\" ID=\"Table1\" align=\"center\">");
+            out.append("<tr class=filetitle><td style='font-size:13px;'>文件上传</td></tr>");
+            out.append("<tr><td style='font-size:13px;'><input type=\"file\" contentEditable=\"false\" name=\"uploadfile\" id=\"file1\"></td></tr>");
             if(fileboxObj.getAllowTypes()!=null&&!fileboxObj.getAllowTypes().trim().equals(""))
             {
-                out.print("<tr class=filetitle><td style='font-size:13px;'>["+stardardFileSuffixString(fileboxObj.getAllowTypes())
+                out.append("<tr class=filetitle><td style='font-size:13px;'>["+stardardFileSuffixString(fileboxObj.getAllowTypes())
                         +"]</td></tr>");
             }
-            out.print("<tr><td style='font-size:13px;'><input type=\"submit\" class=\"cls-button\" name=\"submit\" value=\"上传\">");
+            out.append("<tr><td style='font-size:13px;'><input type=\"submit\" class=\"cls-button\" name=\"submit\" value=\"上传\">");
             if(fileboxObj.getDeletetype()==1)
             {
-                out.print("&nbsp;&nbsp;<input type=\"button\" value=\"删除\"");
-                out.print(" onclick=\""+parentWindowName+".setPopUpBoxValueToParent('','");
-                out.print(inputboxid+"','");
-                out.print(fileboxObj.getFillmode()+"','");
-                out.print(rbean.getGuid()+"','");
-                out.print(fileboxObj.getTypename());
-                out.print("');\"/>");
+                out.append("&nbsp;&nbsp;<input type=\"button\" value=\"删除\"");
+                out.append(" onclick=\""+parentWindowName+".setPopUpBoxValueToParent('','");
+                out.append(inputboxid+"','");
+                out.append(fileboxObj.getFillmode()+"','");
+                out.append(rbean.getGuid()+"','");
+                out.append(fileboxObj.getTypename());
+                out.append("');\"/>");
             }
-            out.print("</td></tr></table>");
+            out.append("</td></tr></table>");
         }
     }
 
-    private void showDynParamHiddenFields(Map<String,String> mFormFieldValues,Map<String,String> mDynParams,PrintWriter out)
+    private void showDynParamHiddenFields(Map<String,String> mFormFieldValues,Map<String,String> mDynParams,Appendable out) throws IOException
     {
         String oldvalue=null;
         if(mFormFieldValues!=null)
@@ -124,7 +124,7 @@ public class FileInputBoxUpload extends AbsFileUpload
         }
         if(oldvalue!=null&&!oldvalue.trim().equals(""))
         {
-            out.print("<input type='hidden' name='OLDVALUE' value='"+oldvalue.trim()+"'/>");
+            out.append("<input type='hidden' name='OLDVALUE' value='"+oldvalue.trim()+"'/>");
         }
         if(mDynParams==null||mDynParams.size()==0) return;
         String paramvalueTmp;
@@ -139,12 +139,12 @@ public class FileInputBoxUpload extends AbsFileUpload
             }
             if(paramvalueTmp!=null&&!paramvalueTmp.trim().equals(""))
             {
-                out.print("<input type='hidden' name='"+paramnameTmp+"' value='"+paramvalueTmp+"'/>");
+                out.append("<input type='hidden' name='"+paramnameTmp+"' value='"+paramvalueTmp+"'/>");
             }
         }
     }
 
-    public String doFileUpload(List lstFieldItems,PrintWriter out)
+    public String doFileUpload(List lstFieldItems,Appendable out) throws IOException
     {
         String pageid=mFormFieldValues.get("PAGEID");
         String reportid=mFormFieldValues.get("REPORTID");
@@ -175,7 +175,7 @@ public class FileInputBoxUpload extends AbsFileUpload
             throw new WabacusRuntimeException("报表"+rbean.getPath()+"下面不存在ID为"+boxid+"的文件上传输入框");
         }
         this.interceptorObj=fileboxObj.getInterceptor();
-        out.println(fileboxObj.createSelectOkFunction(inputboxid,false));
+        out.append(fileboxObj.createSelectOkFunction(inputboxid,false));
         String configAllowTypes=fileboxObj.getAllowTypes();
         if(configAllowTypes==null) configAllowTypes="";
         List<String> lstConfigAllowTypes=getFileSuffixList(configAllowTypes);
@@ -224,9 +224,9 @@ public class FileInputBoxUpload extends AbsFileUpload
                 }
             }
             savevalue=pathBuf.toString();
-            out.print("<script language='javascript'>");
-            out.print("selectOK('"+savevalue+"',null,null,false);");
-            out.print("</script>");
+            out.append("<script language='javascript'>");
+            out.append("selectOK('"+savevalue+"',null,null,false);");
+            out.append("</script>");
         }
         if(!existUploadFile)
         {
@@ -235,16 +235,16 @@ public class FileInputBoxUpload extends AbsFileUpload
         return null;
     }
     
-    public void promptSuccess(PrintWriter out,boolean isArtDialog)
+    public void promptSuccess(Appendable out,boolean isArtDialog) throws IOException
     {
         if(isArtDialog)
         {
-            out.println("artDialog.open.origin.wx_success('上传文件成功');");
-            out.println("art.dialog.close();");
+            out.append("artDialog.open.origin.wx_success('上传文件成功');");
+            out.append("art.dialog.close();");
         }else
         {
-            out.println("parent.wx_success('上传文件成功');");
-            out.println("parent.closePopupWin();");
+            out.append("parent.wx_success('上传文件成功');");
+            out.append("parent.closePopupWin();");
         }
     }
 }

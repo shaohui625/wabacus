@@ -18,7 +18,7 @@
  */
 package com.wabacus.system.fileupload;
 
-import java.io.PrintWriter;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ public class FileTagUpload extends AbsFileUpload
         super(request);
     }
 
-    public void showUploadForm(PrintWriter out)
+    public void showUploadForm(Appendable out) throws IOException
     {
         String savepath=urlDeocde(getRequestString("SAVEPATH",""));
         String uploadcount=getRequestString("UPLOADCOUNT","");
@@ -51,13 +51,13 @@ public class FileTagUpload extends AbsFileUpload
         String allowtypes=urlDeocde(getRequestString("ALLOWTYPES",""));
         String rooturl=urlDeocde(getRequestString("ROOTURL",""));
         String interceptor=urlDeocde(getRequestString("INTERCEPTOR",""));
-        out.print("<input type='hidden' name='SAVEPATH' value='"+savepath+"'/>");
-        out.print("<input type='hidden' name='UPLOADCOUNT' value='"+uploadcount+"'/>");
-        out.print("<input type='hidden' name='NEWFILENAME' value='"+newfilename+"'/>");
-        out.print("<input type='hidden' name='MAXSIZE' value='"+maxsize+"'/>");
-        out.print("<input type='hidden' name='ALLOWTYPES' value='"+allowtypes+"'/>");
-        out.print("<input type='hidden' name='ROOTURL' value='"+rooturl+"'/>");
-        out.print("<input type='hidden' name='INTERCEPTOR' value='"+interceptor+"'/>");
+        out.append("<input type='hidden' name='SAVEPATH' value='"+savepath+"'/>");
+        out.append("<input type='hidden' name='UPLOADCOUNT' value='"+uploadcount+"'/>");
+        out.append("<input type='hidden' name='NEWFILENAME' value='"+newfilename+"'/>");
+        out.append("<input type='hidden' name='MAXSIZE' value='"+maxsize+"'/>");
+        out.append("<input type='hidden' name='ALLOWTYPES' value='"+allowtypes+"'/>");
+        out.append("<input type='hidden' name='ROOTURL' value='"+rooturl+"'/>");
+        out.append("<input type='hidden' name='INTERCEPTOR' value='"+interceptor+"'/>");
         boolean flag=true;
         if(interceptor!=null&&!interceptor.trim().equals(""))
         {
@@ -69,18 +69,18 @@ public class FileTagUpload extends AbsFileUpload
         {
             int iuploadcount=Integer.parseInt(uploadcount.trim());
             if(iuploadcount<=0) iuploadcount=1;
-            out.print("<table border=0 cellspacing=1 cellpadding=2  style=\"margin:0px\" width=\"98%\" ID=\"Table1\" align=\"center\">");
-            out.print("<tr class=filetitle><td style='font-size:13px;'>文件上传</td></tr>");
+            out.append("<table border=0 cellspacing=1 cellpadding=2  style=\"margin:0px\" width=\"98%\" ID=\"Table1\" align=\"center\">");
+            out.append("<tr class=filetitle><td style='font-size:13px;'>文件上传</td></tr>");
             for(int i=0;i<iuploadcount;i++)
             {
-                out.print("<tr><td style='font-size:13px;'><input type=\"file\" contentEditable=\"false\" name=\"uploadfile"+i+"\"></td></tr>");
+                out.append("<tr><td style='font-size:13px;'><input type=\"file\" contentEditable=\"false\" name=\"uploadfile"+i+"\"></td></tr>");
             }
             if(allowtypes!=null&&!allowtypes.trim().equals(""))
             {
-                out.print("<tr class=filetitle><td style='font-size:13px;'>["+stardardFileSuffixString(allowtypes)+"]</td></tr>");
+                out.append("<tr class=filetitle><td style='font-size:13px;'>["+stardardFileSuffixString(allowtypes)+"]</td></tr>");
             }
-            out.print("<tr><td style='font-size:13px;'><input type=\"submit\" class=\"cls-button\" name=\"submit\" value=\"上传\">");
-            out.print("</td></tr></table>");
+            out.append("<tr><td style='font-size:13px;'><input type=\"submit\" class=\"cls-button\" name=\"submit\" value=\"上传\">");
+            out.append("</td></tr></table>");
         }
     }
 
@@ -97,7 +97,7 @@ public class FileTagUpload extends AbsFileUpload
         }
     }
 
-    public String doFileUpload(List lstFieldItems,PrintWriter out)
+    public String doFileUpload(List lstFieldItems,Appendable out) throws IOException
     {
         String savepath=mFormFieldValues.get("SAVEPATH");
         
@@ -166,28 +166,28 @@ public class FileTagUpload extends AbsFileUpload
                 rooturl=Tools.replaceAll(rooturl,"//","/").trim();
             }
             if(!rooturl.endsWith("/")) rooturl=rooturl+"/";
-            out.print("<table style=\"margin:0px;\">");
-            out.print("<tr><td style='font-size:13px;'>上传文件URL：</td></tr>");
+            out.append("<table style=\"margin:0px;\">");
+            out.append("<tr><td style='font-size:13px;'>上传文件URL：</td></tr>");
             for(String destfilenameTmp:lstDestFileNames)
             {
                 if(destfilenameTmp==null||destfilenameTmp.trim().equals("")) continue;
-                out.print("<tr><td style='font-size:13px;'>&nbsp;&nbsp;"+rooturl+destfilenameTmp+"</td></tr>");
+                out.append("<tr><td style='font-size:13px;'>&nbsp;&nbsp;"+rooturl+destfilenameTmp+"</td></tr>");
             }
-            out.print("</table>");
+            out.append("</table>");
         }
         return null;
     }
 
-    public void promptSuccess(PrintWriter out,boolean isArtDialog)
+    public void promptSuccess(Appendable out,boolean isArtDialog) throws IOException
     {
         if(isArtDialog)
         {
-            out.println("artDialog.open.origin.wx_success('上传文件成功');");
-            out.println("art.dialog.close();");
+            out.append("artDialog.open.origin.wx_success('上传文件成功');\n");
+            out.append("art.dialog.close();\n");
         }else
         {
-            out.println("parent.wx_success('上传文件成功');");
-            out.println("parent.closePopupWin();");
+            out.append("parent.wx_success('上传文件成功');\n");
+            out.append("parent.closePopupWin();\n");
         }
     }
 }

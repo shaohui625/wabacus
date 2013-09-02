@@ -19,6 +19,7 @@
 package com.wabacus.system.fileupload;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Date;
@@ -139,7 +140,7 @@ public abstract class AbsFileUpload
         return resultBuf.toString();
     }
 
-    protected String uploadDataImportFiles(List lstFieldItems,List<AbsDataImportConfigBean> lstDiBeans,boolean isAsyn,PrintWriter out)
+    protected String uploadDataImportFiles(List lstFieldItems,List<AbsDataImportConfigBean> lstDiBeans,boolean isAsyn,Appendable out) throws IOException
     {
         if(lstDiBeans==null||lstDiBeans.size()==0)
         {
@@ -379,9 +380,9 @@ public abstract class AbsFileUpload
         return null;
     }
     
-    public abstract void showUploadForm(PrintWriter out);
+    public abstract void showUploadForm(Appendable out) throws IOException;
 
-    public abstract String doFileUpload(List lstFieldItems,PrintWriter out);
+    public abstract String doFileUpload(List lstFieldItems,Appendable out)  throws IOException;
     
-    public abstract void promptSuccess(PrintWriter out,boolean isArtDialog);
+    public abstract void promptSuccess(Appendable out,boolean isArtDialog)  throws IOException;
 }
