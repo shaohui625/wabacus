@@ -21,6 +21,8 @@ package com.wabacus.system.component.container.panel;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -84,7 +86,10 @@ public class TabsPanel extends AbsPanelType
         if(childscount<=0) return;
         int currentSelectedTabItemIdx=-1;
         String selectedIndex=rrequest.getStringAttribute(this.containerConfigBean.getId()+"_selectedIndex");
-        if(selectedIndex!=null&&!selectedIndex.trim().equals(""))
+        if(StringUtils.isBlank(selectedIndex)){
+           selectedIndex =  this.tabspanelBean.getAttrs().get("activeTab");
+        }
+        if(NumberUtils.isNumber(selectedIndex))
         {
             try
             {
@@ -112,7 +117,7 @@ public class TabsPanel extends AbsPanelType
             if(rrequest.checkPermission(containerConfigBean.getId(),Consts.DATA_PART,String.valueOf(i),Consts.PERMISSION_TYPE_DISABLED))
             {
                 tdbeanTmp.setDisabled(true);
-            }else if(i==currentSelectedTabItemIdx)
+            }else if(i==currentSelectedTabItemIdx || childidTmp.equals(selectedIndex))
             {
                 currentSelectedTabItemDisplayBean=tdbeanTmp;
             }

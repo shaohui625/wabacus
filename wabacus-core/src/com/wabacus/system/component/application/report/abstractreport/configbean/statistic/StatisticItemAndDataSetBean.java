@@ -313,9 +313,9 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
         if(objTmp instanceof Map){
             Map map  = (Map)objTmp;
             int dataCount = 0;
-            Object colVal= map.get(alrsibeanTmp.getProperty());
+            //Object colVal= map.get(alrsibeanTmp.getProperty());
                 
-                if( null != colVal){
+                if( map.size()>0){
                 
                     BeanUtils.populate(statiDataObj,map);
             
@@ -328,7 +328,7 @@ public class StatisticItemAndDataSetBean implements Comparable<StatisticItemAndD
 //                    alrsibeanTmp.getPageStatiSetMethod().invoke(statiDataObj,new Object[] { colVal });
 //                }
                 dataCount ++;
-                }
+              }
             
             hasStatisticData=dataCount>0;
         }else if(!(objTmp instanceof ResultSet))

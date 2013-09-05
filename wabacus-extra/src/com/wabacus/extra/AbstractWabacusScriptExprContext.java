@@ -41,6 +41,7 @@ import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.mongodb.util.JsonUtils;
 import com.wabacus.config.Config;
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
@@ -526,6 +527,10 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
     public final void authorizeDataPartReadOnly(String fields, final boolean ok) {
         authorizeDataPart(fields, ok, "readonly");
     }
+    
+    public final void authorizeDataPartDisplay(String fields, final boolean ok) {
+        authorizeDataPart(fields, ok, "display");
+    }
 
     protected Class getTheReportPojoClass() {
         final Object reportPojoClassStr = this.getVars().get("pojoClass");
@@ -556,11 +561,12 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
             if(cls == null){
                 throw new NullArgumentException("cls");
             }
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            if (null == classLoader) {
-                classLoader = this.getClass().getClassLoader();
-            }
-            return classLoader.loadClass(cls);
+            return ConfigLoadManager.currentDynClassLoader.loadClass(cls);
+//            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+//            if (null == classLoader) {
+//                classLoader = this.getClass().getClassLoader();
+//            }
+//            return classLoader.loadClass(cls);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("class:"+cls+" cause by:"+e.getMessage(), e);
         }

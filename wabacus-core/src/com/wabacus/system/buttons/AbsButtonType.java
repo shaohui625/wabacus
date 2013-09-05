@@ -21,6 +21,7 @@ package com.wabacus.system.buttons;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -173,7 +174,7 @@ public abstract class AbsButtonType implements Cloneable,Comparable<AbsButtonTyp
     
     public void setClickEvent(Object clickevent)
     {
-        this.clickhandler=clickevent;
+        this.clickhandler=clickevent; //TODO 脚本预处理
     }
     
     public String getMenugroup()

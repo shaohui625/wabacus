@@ -7,7 +7,7 @@ package com.wabacus.extra;
  * @author qxo(qxodream@gmail.com)
  * @since 2013-6-30
  */
-public class WabacusScriptEngineHelper {
+public final class WabacusScriptEngineHelper {
 
     /**
      * @return 当前使用的脚本引擎

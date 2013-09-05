@@ -5,10 +5,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
+import org.mvel2.templates.CompiledTemplate;
+import org.mvel2.templates.TemplateCompiler;
 import org.mvel2.templates.TemplateRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,16 +82,16 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
         value = (String) TemplateRuntime.eval(value, sbean, vars);
         String sqlKernel = sbean.getSql_kernel();
         if (StringUtils.isBlank(sqlKernel)) {
-           // sqlKernel = sbean.getReportBean().getAttrs().get("pojoTabname");
+            // sqlKernel = sbean.getReportBean().getAttrs().get("pojoTabname");
         }
         if (StringUtils.isBlank(sqlKernel)) {
-            sqlKernel = (String) vars.get("tabname");            
+            sqlKernel = (String) vars.get("tabname");
         }
 
         if (StringUtils.isNotBlank(sqlKernel)) {
-         //   sbean.setSqlWithoutOrderby("select * from "+sqlKernel+" where {#condition#}");
+            // sbean.setSqlWithoutOrderby("select * from "+sqlKernel+" where {#condition#}");
         }
-        
+
         if (StringUtils.isNotBlank(value)) {
             String queryExpr = (String) vars.get("queryExpr");
             if (StringUtils.isNotBlank(sqlKernel)) {
@@ -373,7 +376,7 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
     public AbstractWabacusScriptExprContext eval(String script, Map vars,
             AbstractWabacusScriptExprContext ctx) {
         if (Config.show_sql) {
-            LOG.info("Execute query expr: {}", script);
+            LOG.info("Execute query expr:\n {}", script);
         }
 
         final Map extraVars = ctx.getExtraVars();
@@ -479,19 +482,54 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
 
     @Override
     public String parseAndTrimScript(final String content) {
-        return  formatSqlString(content);
+        return formatSqlString(content);
     }
 
     @Override
-    public String parseButtonsClickevent(IComponentConfigBean ccbean, AbsButtonType buttonObj,
+    public String parseButtonsClickevent(final IComponentConfigBean ccbean, final AbsButtonType buttonObj,
             String clickevent) {
+        if (clickevent.indexOf("@{") > 0) {
+            final Map<String, Object> vars = Maps.newHashMap();
+            final ButtonPostPaserContext ctx = new ButtonPostPaserContext(ccbean, buttonObj);
+            
+            CompiledTemplate compiled = TemplateCompiler.compileTemplate(clickevent);
+            Object eval = TemplateRuntime.execute(compiled, ctx,vars);
+            if (eval instanceof CharSequence) {
+                clickevent = eval.toString();
+            }
+        }
         return clickevent.trim();
     }
 
-    private static final Pattern TRIM_SCRIPT_PATTERN = Pattern.compile("(^\\s+)|(\\s+$)",Pattern.MULTILINE);
-     protected static final  String formatSqlString(String sqlValue) {
-         sqlValue =  sqlValue == null ? StringUtils.EMPTY : TRIM_SCRIPT_PATTERN.matcher(sqlValue).replaceAll(StringUtils.EMPTY );//sqlValue.replaceAll("(^\\s+)|(\\s+$)",StringUtils.EMPTY );
-         return sqlValue;
+    private static final Pattern TRIM_SCRIPT_PATTERN = Pattern
+            .compile("(^\\s+)|(\\s+$)", Pattern.MULTILINE);
+
+
+    private static final Pattern TRIM_SCRIPT_PATTERN1 = Pattern
+            .compile("^(\\s+)[^\\s]+", Pattern.MULTILINE);
+
+    
+    protected static final String formatSqlString(String sqlValue) {
+        
+        if( sqlValue == null){
+            return StringUtils.EMPTY;
+        }
+        sqlValue = sqlValue.trim();
+        final Matcher m = TRIM_SCRIPT_PATTERN1.matcher(sqlValue);
+        int min=0;
+        while(m.find()){ 
+            int size =  m.group(1).length() ;
+            if(min == 0 ||  min > size ){
+                min = size;
+            };
+        }
+        
+       Pattern  p = Pattern.compile("(^\\s{"+min+"})",Pattern.MULTILINE);
+       return  p.matcher(sqlValue).replaceAll(StringUtils.EMPTY);
+        
+//        sqlValue = sqlValue == null ? StringUtils.EMPTY : TRIM_SCRIPT_PATTERN.matcher(sqlValue).replaceAll(
+//                StringUtils.EMPTY);// sqlValue.replaceAll("(^\\s+)|(\\s+$)",StringUtils.EMPTY );
+//        return sqlValue;
     }
 
     // public String parseAndValidPromptSql(ReportBean rbean,
