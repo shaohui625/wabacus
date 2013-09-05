@@ -845,6 +845,7 @@ public class ConfigLoadManager
 
     private static void initSystemConfig(Map<String,String> mBuiltInSystemConfig,Map<String,String> mSystemConfig)
     {
+        log.info("propertyOverrideLoader:"+Config.getInstance().getPropertyOverrideLoader());
         Config.webroot_abspath=Config.getInstance().getSystemConfigValue("webroot-abspath",Config.homeAbsPath);
         Config.webroot_abspath=Tools.standardFilePath(Config.webroot_abspath);
 
