@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -610,11 +611,27 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
         int idxBracketEnd;
         int idxJingStart;//存放sql语句中第一个有效#号的下标
         int idxJingEnd;
-        while(true)
-        {
-            idxBracketStart=ReportDataSetValueBean.getValidIndex(sql,'{',idxBracketStart>0 ? idxBracketStart+1 : 0);
-            idxBracketEnd=ReportDataSetValueBean.getValidIndex(sql,'}',idxBracketStart>0 ? idxBracketStart : 0);
-            idxJingStart=ReportDataSetValueBean.getValidIndex(sql,'#',idxBracketStart>0 ? idxBracketStart : 0);
+        int count =0;
+        while(true){
+//            if(StringUtils.isBlank(sql)){
+//                return;
+//            }
+            count++;
+            if(count>100){
+               log.warn("ignore after count:"+count);
+                break;
+            }
+            idxBracketStart=ReportDataSetValueBean.getValidIndex(sql,'{',0);
+            if(idxBracketStart>0 && sql.charAt(idxBracketStart -1) == '@'){
+                //支持忽略sql中的如下表达式：@{addon.getFileterQueryScoreCondition()} 
+                idxBracketStart = ReportDataSetValueBean.getValidIndex(sql,'{',idxBracketStart+1);
+                idxBracketEnd=ReportDataSetValueBean.getValidIndex(sql,'}',idxBracketStart+1);
+                idxJingStart=ReportDataSetValueBean.getValidIndex(sql,'#',idxBracketStart+1);
+            }else{
+                idxBracketEnd=ReportDataSetValueBean.getValidIndex(sql,'}',0);
+                idxJingStart=ReportDataSetValueBean.getValidIndex(sql,'#',0);
+            }
+     
             if(idxJingStart<0)
             {
                 idxJingEnd=-1;
@@ -623,8 +640,6 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
                 idxJingEnd=ReportDataSetValueBean.getValidIndex(sql,'#',idxJingStart+1);
             }
             if(idxBracketStart<0&&idxBracketEnd<0&&idxJingStart<0&&idxJingEnd<0) break;
-                
-                
                 
             bean.validateCondition(sql,idxBracketStart,idxBracketEnd,idxJingStart,idxJingEnd);
             if(idxJingEnd>=0&&(idxJingEnd<idxBracketStart||idxBracketStart<0))
@@ -723,6 +738,9 @@ public abstract class AbstractJdbcDatabaseType extends AbsDatabaseType
                // System.out.println("XX");
              //  throw new WabacusConfigLoadingException("解析报表"+bean.getReportBean()+"的SQL语句："+value+"中的动态条件失败，无法解析其中用{}和##括住的动态条件");
             }
+        } //end while
+        if(count>5){
+            log.debug("count:"+count);
         }
         if(!sql.equals("")) sqlBuf.append(sql);
         if(lstConditionsInSqlBeans==null||lstConditionsInSqlBeans.size()==0
