@@ -22,6 +22,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
@@ -30,6 +32,7 @@ import com.wabacus.config.database.type.SQLSERVER2K5;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.SqlConverter;
 import com.wabacus.system.assistant.ListReportAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.component.application.report.CrossListReportType;
@@ -49,8 +52,10 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
         datasetid=datasetid==null?"":datasetid.trim();
         sqlKernel=rrequest.getStringAttribute(rbean.getId(),datasetid+"_DYN_SQL","");
         if("[NONE]".equals(sqlKernel)) return 0;
-        if(sqlKernel.equals("")) sqlKernel=svbean.getSql_kernel();
-        sqlKernel=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sqlKernel,lstConditions,lstConditionsTypes);
+        sqlKernel=getSqlKernel(rrequest,reportTypeObj,svbean,rbean,sqlKernel);
+        if(StringUtils.isBlank(sqlKernel)){
+            return 0;
+        }        
         String sqlCount=Tools.replaceAll(svbean.getSqlCount(),Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,sqlKernel);
         sqlCount=ListReportAssistant.getInstance().addColFilterConditionToSql(rrequest,rbean,svbean,sqlCount);
         int recordcount=0;
@@ -109,6 +114,17 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
         }
         return recordcount;
     }
+
+    protected String getSqlKernel(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean svbean,ReportBean rbean,String sqlKernel)
+    {
+        if(sqlKernel == null || sqlKernel.equals("")) sqlKernel=svbean.getSql_kernel();
+        sqlKernel=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sqlKernel,lstConditions,lstConditionsTypes);
+        SqlConverter sqlConverter = (SqlConverter)rrequest.getAttribute("sqlConverter");
+        if( sqlConverter != null){
+            sqlKernel = sqlConverter.toSql(rrequest,reportTypeObj,svbean,sqlKernel);
+        }        
+        return sqlKernel;
+    }
     
     public Object getDataSet(ReportRequest rrequest,AbsReportType reportTypeObj,ReportDataSetValueBean svbean,List lstReportData)
     {
@@ -119,11 +135,10 @@ public abstract class AbsGetPartDataSetBySQL extends AbsGetAllDataSetBySQL
             datasetid=datasetid==null?"":datasetid.trim();
             sqlKernel=rrequest.getStringAttribute(rbean.getId(),datasetid+"_DYN_SQL","");
             if("[NONE]".equals(sqlKernel)) return null;
-            if(sqlKernel.equals(""))
-            {
-                sqlKernel=svbean.getSql_kernel();
+            sqlKernel=getSqlKernel(rrequest,reportTypeObj,svbean,rbean,sqlKernel);
+            if(StringUtils.isBlank(sqlKernel)){
+                return null;
             }
-            sqlKernel=ReportAssistant.getInstance().parseRuntimeSqlAndCondition(rrequest,rbean,svbean,sqlKernel,lstConditions,lstConditionsTypes);
         }
         CacheDataBean cdb=rrequest.getCdb(rbean.getId());
         if(cdb.getPagecount()<=0) return null;

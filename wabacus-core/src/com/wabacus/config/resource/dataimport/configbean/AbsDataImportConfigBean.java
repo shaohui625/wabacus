@@ -211,9 +211,11 @@ public abstract class AbsDataImportConfigBean implements Cloneable
         if(filetype.equals(FILE_TYPE_EXCEL))
         {
             dicbean=new XlsDataImportBean();
-        }else
+        }else if(filetype.equals("csv"))
         {
-            throw new WabacusConfigLoadingException("加载数据导入资源项"+key+"失败，配置的数据文件类型"+filetype+"不支持");
+            dicbean=new CsvDataImportBean();
+        }else  {
+         //   throw new WabacusConfigLoadingException("加载数据导入资源项"+key+"失败，配置的数据文件类型"+filetype+"不支持");
         }
         dicbean.setReskey(key);
         return dicbean;

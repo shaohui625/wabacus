@@ -37,6 +37,7 @@ import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.SqlConverter;
 import com.wabacus.system.assistant.ListReportAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
@@ -93,6 +94,11 @@ public abstract class AbsGetAllDataSetBySQL implements ISqlDataSet
             if("[NONE]".equals(sqlKernel)) return null;
             if(sqlKernel.equals("")) sqlKernel=datasetbean.getSql_kernel();
             sql=Tools.replaceAll(datasetbean.getSqlWithoutOrderby(),Consts_Private.PLACEHOLDER_LISTREPORT_SQLKERNEL,sqlKernel);
+            SqlConverter sqlConverter = (SqlConverter)rrequest.getAttribute("sqlConverter");
+            if( sqlConverter != null){
+                sql = sqlConverter.toSql(rrequest,reportTypeObj,datasetbean,sql);
+            }        
+            
             ColBean cbeanClickOrderby=ListReportAssistant.getInstance().getClickOrderByCbean(rrequest,rbean);
             if(cbeanClickOrderby!=null&&cbeanClickOrderby.isMatchDataSet(datasetbean))
             {

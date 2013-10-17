@@ -49,6 +49,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.itextpdf.text.Document;
 import com.itextpdf.text.pdf.PdfCopy;
@@ -277,6 +278,8 @@ public class WabacusFacade
         WabacusResponse wresponse=new WabacusResponse(null);
         exportReportDataOnPlainExcel(pageid,rrequest,wresponse);
     }
+    
+    private static transient Boolean supportExcel2003 ;
 
     private static void exportReportDataOnPlainExcel(String pageid,ReportRequest rrequest,WabacusResponse wresponse)
     {
@@ -290,15 +293,21 @@ public class WabacusFacade
             {
                 throw new WabacusRuntimeException("导出页面"+pageid+"上的数据失败，plainexcel导出方式只能导出报表，不能导出其它应用");
             }
-            Workbook workbook=new HSSFWorkbook();
+            if( null == supportExcel2003){
+                supportExcel2003 = Config.getInstance().getSystemConfigValue("supportExcel2003",true);
+            }
+            Workbook workbook =  supportExcel2003  ? new HSSFWorkbook(): new XSSFWorkbook();
             AbsReportType reportTypeObjTmp;
             for(ReportBean rbTmp:rrequest.getLstAllReportBeans())
             {
                 reportTypeObjTmp=(AbsReportType)rrequest.getComponentTypeObj(rbTmp,null,false);
-                reportTypeObjTmp.displayOnPlainExcel(workbook);
+                Workbook workbook1 = reportTypeObjTmp.displayOnPlainExcel(workbook);
+                if( null != workbook1){
+                    workbook = workbook1;
+                }
             }
             String title=WabacusAssistant.getInstance().encodeAttachFilename(rrequest.getRequest(),getDataExportFilename(rrequest));
-            wresponse.getResponse().setHeader("Content-disposition","attachment;filename="+title+".xls");
+            wresponse.getResponse().setHeader("Content-disposition","attachment;filename="+title+ ( workbook instanceof HSSFWorkbook  ? ".xls":".xlsx"));
             BufferedOutputStream bos=new BufferedOutputStream(wresponse.getResponse().getOutputStream());
             workbook.write(bos);
             bos.close();

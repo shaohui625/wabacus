@@ -292,9 +292,9 @@ public class FusionChartsReportType extends AbsChartReportType
     protected void showReportOnPdfWithoutTpl()
     {}
 
-    public void showReportOnPlainExcel(Workbook workbook)
+    public Workbook showReportOnPlainExcel(Workbook workbook)
     {
-
+        return workbook;
     }
     
     public int afterColLoading(ColBean colbean,List<XmlElementBean> lstEleColBeans)

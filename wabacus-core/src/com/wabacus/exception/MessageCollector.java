@@ -24,6 +24,7 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.wabacus.system.ReportRequest;
 import com.wabacus.system.WabacusResponse;
 import com.wabacus.util.Consts;
 
@@ -67,8 +68,18 @@ public class MessageCollector
             lstLogErrors.add(errorInfo.trim());
             lstJsErrorMessages.add(errorInfo.trim());
         }
-        wresponse.setStatecode(Consts.STATECODE_FAILED);
-        if(isTerminate) throw new WabacusRuntimeException();
+        setStatecode(Consts.STATECODE_FAILED,isTerminate);
+    }
+    
+
+    
+    private final void setStatecode(final int statecode,final boolean isTerminate){
+        // statecode =wresponse.getRRequest().getIntAttribute("responsestatecode",statecode);
+        wresponse.setStatecode(statecode);
+        if(isTerminate){
+            wresponse.getRRequest().removeAttribute("responsestatecode");
+            throw new WabacusRuntimeException();
+        }
     }
 
     public void error(String alertErrorInfo,String logErrorInfo,boolean isTerminate)
@@ -81,8 +92,7 @@ public class MessageCollector
         {
             lstLogErrors.add(logErrorInfo);
         }
-        wresponse.setStatecode(Consts.STATECODE_FAILED);
-        if(isTerminate) throw new WabacusRuntimeException();
+        setStatecode(Consts.STATECODE_FAILED,isTerminate);
     }
 
     public void error(String alertErrorInfo,String logErrorInfo,Throwable t)
@@ -95,8 +105,7 @@ public class MessageCollector
         {
             lstLogErrors.add(logErrorInfo);
         }
-        wresponse.setStatecode(Consts.STATECODE_FAILED);
-        throw new WabacusRuntimeException(t);
+        setStatecode(Consts.STATECODE_FAILED,true);
     }
 
     public void warn(String alertWarninfo,boolean isTerminate)

@@ -37,8 +37,8 @@ public class HighChartsReportType extends AbsChartReportType
     protected void showReportOnPdfWithoutTpl()
     {}
 
-    public void showReportOnPlainExcel(Workbook workbook)
-    {}
+    public Workbook showReportOnPlainExcel(Workbook workbook)
+    { return workbook;}
 
     public String showReportData()
     {

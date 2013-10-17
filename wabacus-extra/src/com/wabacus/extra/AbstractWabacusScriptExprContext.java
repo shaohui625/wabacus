@@ -38,8 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import com.mongodb.util.JsonUtils;
+import com.wabacus.WabacusBeanFactory;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.application.report.AbsReportDataPojo;
@@ -51,7 +51,6 @@ import com.wabacus.config.database.datasource.AbsDataSource;
 import com.wabacus.exception.MessageCollector;
 import com.wabacus.extra.database.PojoMapper;
 import com.wabacus.extra.expr.AbstractQueryBuilder;
-import com.wabacus.extra.mongodb.JongoResultHandlerFactory;
 import com.wabacus.extra.mongodb.JsonMapperFactory;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.IConnection;
@@ -121,20 +120,18 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
     }
 
     public List asList(Object find) {
-        if( null == find){
+        if (null == find) {
             return ListUtils.EMPTY_LIST;
         }
         final List ret = new ArrayList(1);
         ret.add(find);
         return ret;
     }
-    
-    
-    
+
     public abstract String toQueryStr();
-    
-    public final  List<Map<String, Object>> byQuery(final String query){
-        return byQuery(query,ArrayUtils.EMPTY_OBJECT_ARRAY);
+
+    public final List<Map<String, Object>> byQuery(final String query) {
+        return byQuery(query, ArrayUtils.EMPTY_OBJECT_ARRAY);
     }
 
     public abstract List<Map<String, Object>> byQuery(final String query, Object... parameters);
@@ -406,13 +403,11 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
                 }
             }
 
-            String serialize = JSON.serialize(query);
+            String serialize = JsonHelper.toJson(query);
             return serialize;// getJsonMapper().writeValueAsString(query);
         } catch (RuntimeException e) {
             throw e;
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e.getMessage());
-        }
+        } 
     }
 
     public Map jsonToMap(String jsonStr) {
@@ -527,7 +522,7 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
     public final void authorizeDataPartReadOnly(String fields, final boolean ok) {
         authorizeDataPart(fields, ok, "readonly");
     }
-    
+
     public final void authorizeDataPartDisplay(String fields, final boolean ok) {
         authorizeDataPart(fields, ok, "display");
     }
@@ -558,51 +553,21 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
 
     protected Class loadClass(final String cls) {
         try {
-            if(cls == null){
+            if (cls == null) {
                 throw new NullArgumentException("cls");
             }
             return ConfigLoadManager.currentDynClassLoader.loadClass(cls);
-//            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-//            if (null == classLoader) {
-//                classLoader = this.getClass().getClassLoader();
-//            }
-//            return classLoader.loadClass(cls);
+            // ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            // if (null == classLoader) {
+            // classLoader = this.getClass().getClassLoader();
+            // }
+            // return classLoader.loadClass(cls);
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("class:"+cls+" cause by:"+e.getMessage(), e);
+            throw new IllegalArgumentException("class:" + cls + " cause by:" + e.getMessage(), e);
         }
     }
 
-    protected ResultHandler getCurrentResultHandler() {
 
-        ResultHandler newMapper = this.newMapper;
-
-        if (null == newMapper) {
-
-            final PojoMapper pojoMapper = getPojoMapper();
-            if (null != pojoMapper) {
-                newMapper = pojoMapper.getResultHandler();
-            }
-            if (null == newMapper) {
-                final Object object = this.getVars().get("ResultHandler");
-                if (object instanceof String) {
-                    try {
-                        newMapper = (ResultHandler) loadClass((String) object).newInstance();
-                    } catch (InstantiationException e) {
-                        throw new IllegalArgumentException(e.getMessage(), e);
-                    } catch (IllegalAccessException e) {
-                        throw new IllegalArgumentException(e.getMessage(), e);
-                    }
-                } else if (object != null) {
-                    newMapper = (ResultHandler) object;
-                }
-            }
-        }
-        if (null == newMapper) {
-            Class reportPojoClass = this.getReportPojoClass();
-            newMapper = JongoResultHandlerFactory.newMapper(reportPojoClass, this);
-        }
-        return newMapper;
-    }
 
     public final List distinct(String colKey) {
         return distinct(colKey, MapUtils.EMPTY_MAP, this.getTabname());
@@ -648,59 +613,8 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
 
     public abstract List distinct(String colKey, Map query, String c);
 
-    private ResultHandler newMapper = null;
 
-    public ResultHandler setJsonResultHandler(final ResultHandler newMapper) {
-        return this.newMapper = newMapper;
-    }
-
-    public ResultHandler setJsonResultHandler(final String jsonContentProp) {
-        return this.newMapper = createJsonResultHandler(jsonContentProp);
-    }
-
-    public ResultHandler createJsonResultHandler(final String jsonContentProp) {
-        return createJsonResultHandler(jsonContentProp, null, this.getTheReportPojoClass());
-    }
-
-    private static ObjectMapper jsonMapper = new ObjectMapper();
-
-    public ResultHandler createJsonResultHandler(final String jsonContentProp, String idProp,
-            final Class pojoCls) {
-        final String id = idProp == null ? "_id" : idProp;
-        final ResultHandler mapper = new ResultHandler() {
-
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.jongo.ResultHandler#map(com.mongodb.DBObject)
-             */
-            public Object map(DBObject result) {
-
-                try {
-                    // System.out.println("result:"+result.getClass());
-                    Object ret = createPojoClassInstance(pojoCls); // pojoCls.newInstance();
-
-                    final String content = JsonUtils.getCustomObjectSerializer().serialize(result);// result.toString();
-                                                                                                   // //fixme
-                    final Object obj = result.get(id);
-                    BeanUtils.setProperty(ret, id, obj);
-                    BeanUtils.setProperty(ret, jsonContentProp, content);
-                    return ret;
-
-                } catch (IllegalAccessException e) {
-                    throw new IllegalArgumentException(e.getMessage(), e);
-                } catch (InvocationTargetException e) {
-                    throw new IllegalArgumentException(e.getMessage(), e);
-
-                } catch (Exception e) {
-                    throw new IllegalArgumentException(e.getMessage(), e);
-                }
-
-            }
-
-        };
-        return mapper;
-    }
+      private static ObjectMapper jsonMapper = new ObjectMapper();
 
     public List asList(final Iterator iterator) {
         return IteratorUtils.toList(iterator);
@@ -1297,4 +1211,11 @@ public abstract class AbstractWabacusScriptExprContext implements WabacusScriptE
         }
     }
 
+    public final void setResponseStatecode(int bcode) {
+        rrequest.setResponseStatecode(bcode);
+    }
+
+    public final void forceRefreshPage() {
+        setResponseStatecode(Consts.STATECODE_REFRESHPAGE);
+    }
 }

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -393,6 +394,12 @@ public abstract class AbsCrossListReportColAndGroupBean extends AbsExtendConfigB
             lstChildren.add(createDynamicCrossStatiColBean(disbean,rrequest.getI18NStringValue(statisdBeanTmp.getLabel()),statisdBeanTmp
                     .getLabelstyleproperty(rrequest),statisdBeanTmp.getValuestyleproperty(rrequest),statisdBeanTmp.getStatiBean().getDatatypeObj(),colidx));
             dynselectedColsBuf.append(statisdBeanTmp.getStatiBean().getType()+"(");
+            
+            final String expr=statisdBeanTmp.getStatiBean().getAttrs().get("conditionExpr");
+            if(StringUtils.isNotBlank(expr)) {
+                // #condition# 
+                allColConditions =  expr.replaceAll("#condition#",allColConditions);
+            }
             if(!allColConditions.trim().equals(""))
             {
                 dynselectedColsBuf.append("case when ").append(allColConditions).append(" then ").append(statisdBeanTmp.getStatiBean().getColumn())

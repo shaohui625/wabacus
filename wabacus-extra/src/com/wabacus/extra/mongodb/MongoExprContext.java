@@ -1,5 +1,6 @@
 package com.wabacus.extra.mongodb;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -12,6 +13,7 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.BooleanUtils;
@@ -32,6 +34,7 @@ import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import com.mongodb.WriteResult;
 import com.mongodb.util.JSONSerializers;
+import com.mongodb.util.JsonUtils;
 import com.mongodb.util.ObjectSerializer;
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ConditionBean;
@@ -44,6 +47,7 @@ import com.wabacus.config.typeprompt.TypePromptColBean;
 import com.wabacus.extra.AbstractWabacusScriptExprContext;
 import com.wabacus.extra.LoginInfoFinder;
 import com.wabacus.extra.LoginInfoFinderImpl;
+import com.wabacus.extra.database.PojoMapper;
 import com.wabacus.extra.expr.AbstractQueryBuilder;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
@@ -176,12 +180,10 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
     public List<Map<String, Object>> byQuery(final String query, Object... parameters) {
         return asList(getJongo().getCollection(this.getTabname()).find(query, parameters));
     }
-    
-    
 
     @Override
     public String toQueryStr() {
-         return toJson(this.getQueryConditionMap());
+        return toJson(this.getQueryConditionMap());
     }
 
     public List asList(Find find) {
@@ -189,6 +191,90 @@ public class MongoExprContext extends AbstractWabacusScriptExprContext {
         final ResultHandler newMapper = getCurrentResultHandler();
         final Iterator iterator = find.map(newMapper).iterator();
         return IteratorUtils.toList(iterator);
+    }
+
+    public ResultHandler createJsonResultHandler(final String jsonContentProp) {
+        return createJsonResultHandler(jsonContentProp, null, this.getTheReportPojoClass());
+    }
+
+    public ResultHandler createJsonResultHandler(final String jsonContentProp, String idProp,
+            final Class pojoCls) {
+        final String id = idProp == null ? "_id" : idProp;
+        final ResultHandler mapper = new ResultHandler() {
+
+            /*
+             * (non-Javadoc)
+             * 
+             * @see org.jongo.ResultHandler#map(com.mongodb.DBObject)
+             */
+            public Object map(DBObject result) {
+
+                try {
+                    // System.out.println("result:"+result.getClass());
+                    Object ret = createPojoClassInstance(pojoCls); // pojoCls.newInstance();
+
+                    final String content = JsonUtils.getCustomObjectSerializer().serialize(result);// result.toString();
+                                                                                                   // //fixme
+                    final Object obj = result.get(id);
+                    BeanUtils.setProperty(ret, id, obj);
+                    BeanUtils.setProperty(ret, jsonContentProp, content);
+                    return ret;
+
+                } catch (IllegalAccessException e) {
+                    throw new IllegalArgumentException(e.getMessage(), e);
+                } catch (InvocationTargetException e) {
+                    throw new IllegalArgumentException(e.getMessage(), e);
+
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(e.getMessage(), e);
+                }
+
+            }
+
+        };
+        return mapper;
+    }
+
+    private ResultHandler newMapper = null;
+
+    public ResultHandler setJsonResultHandler(final ResultHandler newMapper) {
+        return this.newMapper = newMapper;
+    }
+
+    public ResultHandler setJsonResultHandler(final String jsonContentProp) {
+        return this.newMapper = createJsonResultHandler(jsonContentProp);
+    }
+
+    protected ResultHandler getCurrentResultHandler() {
+
+        ResultHandler newMapper = this.newMapper;
+
+        if (null == newMapper) {
+
+            final PojoMapper pojoMapper = getPojoMapper();
+            if (null != pojoMapper) {
+                newMapper = pojoMapper.getResultHandler();
+            }
+            if (null == newMapper) {
+                final Object object = this.getVars().get("ResultHandler");
+                if (object instanceof String) {
+                    try {
+                        newMapper = (ResultHandler) loadClass((String) object).newInstance();
+                    } catch (InstantiationException e) {
+                        throw new IllegalArgumentException(e.getMessage(), e);
+                    } catch (IllegalAccessException e) {
+                        throw new IllegalArgumentException(e.getMessage(), e);
+                    }
+                } else if (object != null) {
+                    newMapper = (ResultHandler) object;
+                }
+            }
+        }
+        if (null == newMapper) {
+            Class reportPojoClass = this.getReportPojoClass();
+            newMapper = JongoResultHandlerFactory.newMapper(reportPojoClass, this);
+        }
+        return newMapper;
     }
 
     @Override

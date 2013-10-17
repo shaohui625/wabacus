@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.wabacus.WabacusBeanFactory;
 import com.wabacus.config.Config;
 
 /**

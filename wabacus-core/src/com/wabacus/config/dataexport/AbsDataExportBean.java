@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.wabacus.config.AbstractConfigExtendable;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.xml.XmlElementBean;
@@ -31,7 +32,7 @@ import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.util.Tools;
 
-public abstract class AbsDataExportBean implements Cloneable
+public abstract class AbsDataExportBean extends AbstractConfigExtendable implements Cloneable
 {
     private String filename;//本<dataexport/>对应的导出的文件名
     
@@ -123,6 +124,9 @@ public abstract class AbsDataExportBean implements Cloneable
         {
             this.lstIncludeApplicationids=Tools.parseStringToList(dataexportinclude,";",false);
         }
+        //$ByQXO 支持属性扩展
+        this.setAttrs(eleDataExport.getMPropertiesClone());
+        //ByQXO$
     }
     
     public void doPostLoad()

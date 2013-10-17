@@ -23,7 +23,6 @@ import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +39,11 @@ import javassist.CtNewMethod;
 import javassist.Modifier;
 import javassist.NotFoundException;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
-import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
@@ -308,6 +307,7 @@ public class ReportAssistant
         List<AbsReportDataPojo> lstDataTmp=(List<AbsReportDataPojo>)((ArrayList<AbsReportDataPojo>)lstData).clone();
         for(AbsReportDataPojo dataObjTmp:lstDataTmp)
         {
+            dataObjTmp.saveToOldProps();
             dataObjTmp.format();
         }
         if(cdb.isLoadAllReportData())
@@ -929,10 +929,38 @@ public class ReportAssistant
                                     +" rbean){super(rrequest,rbean);\n}");
             if(lstColBeans!=null)
             {
+                final List<ColBean> pList = new ArrayList<ColBean>();
                 for(ColBean cbean:lstColBeans)
                 {
-                    buildFieldAndGetSetMethodForColBean(rbean,cbean,pool,cclass);
+                    ColBean pbc = buildFieldAndGetSetMethodForColBean(rbean,cbean,pool,cclass);
+                    if( null != pbc){
+                        pList.add(pbc);
+                    }
                 }
+                
+                //$ByQXO
+                if(pList.size()>0){
+                   final  StringBuilder sb = new StringBuilder(32).append("public void saveToOldProps() {").append('\n');          
+                    for(ColBean cbean:pList)
+                    {
+                        String property=cbean.getProperty();
+                        if(StringUtils.isEmpty(property)){
+                            continue;
+                        }
+                        if(isNeedOriginalColValue(rbean,cbean))
+                        {
+                            String propertyOld=property+"_old";
+                            
+                            sb.append(propertyOld).append(" = ").append(property).append(";\n");
+                        }                 
+                    }
+                    sb.append("}");
+                    log.info("saveToOldProps:\n"+sb);
+                    CtMethod saveToOldProps = CtNewMethod.make(sb.toString(),cclass);
+                    cclass.addMethod(saveToOldProps);
+                }
+                //ByQXO$
+                
             }
             if(!formatMethod.equals(""))
             {
@@ -948,15 +976,19 @@ public class ReportAssistant
         }
     }
 
-    public void buildFieldAndGetSetMethodForColBean(ReportBean rbean,ColBean cbean,ClassPool pool,CtClass cclass) throws CannotCompileException
+    public ColBean buildFieldAndGetSetMethodForColBean(ReportBean rbean,ColBean cbean,ClassPool pool,CtClass cclass) throws CannotCompileException
     {
-        if(cbean==null) return;
+        if(cbean==null) {
+            return null;
+        }
         String property=cbean.getProperty();
-        if(property==null||property.trim().equals("")) return;
+        if(property==null||property.trim().equals("")){
+            return null;
+        }
         if(cbean.isNonValueCol()|| 
                 cbean.isSequenceCol()||cbean.isControlCol())
         {
-            return;
+            return null;
         }
         CtField cfield=ClassPoolAssistant.getInstance().addField(cclass,property,cbean.getDatatypeObj().getCreatedClass(pool),Modifier.PRIVATE);
         CtMethod setMethod=ClassPoolAssistant.getInstance().addSetMethod(cclass,cfield,property);
@@ -967,8 +999,11 @@ public class ReportAssistant
             CtField cfieldOld=ClassPoolAssistant.getInstance().addField(cclass,propertyOld,cbean.getDatatypeObj().getCreatedClass(pool),
                     Modifier.PRIVATE);
             ClassPoolAssistant.getInstance().addGetMethod(cclass,cfieldOld,propertyOld);
-            setMethod.insertBefore("if($0."+propertyOld+"==null) $0."+propertyOld+"=$1;");
+            //setMethod.insertBefore("if($0."+propertyOld+"==null) $0."+propertyOld+"=$1;");
+         
+            return cbean;
         }
+        return null;
     }
     
     public void setMethodInfoToColBean(ReportBean rbean)

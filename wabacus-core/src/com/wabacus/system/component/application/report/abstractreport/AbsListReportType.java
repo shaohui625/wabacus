@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.ss.usermodel.Cell;
@@ -35,6 +35,7 @@ import org.apache.poi.ss.util.CellRangeAddress;
 
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
+import com.wabacus.WabacusBeanFactory;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadAssistant;
 import com.wabacus.config.ConfigLoadManager;
@@ -46,13 +47,12 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.FormatBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.CacheDataBean;
+import com.wabacus.system.ExportExcelCreator;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ComponentAssistant;
 import com.wabacus.system.assistant.EditableReportAssistant;
@@ -715,30 +715,42 @@ public abstract class AbsListReportType extends AbsReportType
         return strvalue;
     }
 
-    public void showReportOnPlainExcel(Workbook workbook)
+    public Workbook showReportOnPlainExcel(final Workbook workbook)
     {
-        if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return;
-        if(this.cacheDataBean.getTotalColCount()==0) return;
-        createNewSheet(workbook,10);
-        if(!this.cacheDataBean.shouldBatchDataExport())
-        {
-            showReportDataOnPlainExcel(workbook,0);
-        }else
-        {
-            int startNum=0;
-            for(int i=0;i<this.cacheDataBean.getPagecount();i++)
-            {
-                if(i!=0)
+        if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return workbook;
+        if(this.cacheDataBean.getTotalColCount()==0) return workbook;
+        
+        final String excelCreatorBeanId = pedebean != null ?  this.pedebean.getAttrs().get("excelCreator") : null;
+        ExportExcelCreator creator = StringUtils.isNotEmpty(excelCreatorBeanId) ?   (ExportExcelCreator)WabacusBeanFactory.getOrCreateBean(excelCreatorBeanId) : null;
+        if( null == creator ){
+            creator = new ExportExcelCreator(){
+                public Workbook makeExcel(AbsReportType report,Workbook workbook)
                 {
-                    this.cacheDataBean.setPageno(i+1);
-                    this.cacheDataBean.setRefreshNavigateInfoType(1);
-                    this.setHasLoadedDataFlag(false);
-                    loadReportData(true);
-                }
-                showReportDataOnPlainExcel(workbook,startNum);
-                startNum+=this.cacheDataBean.getPagesize();
-            }
+                    createNewSheet(workbook,10);
+                    if(!cacheDataBean.shouldBatchDataExport())
+                    {
+                        showReportDataOnPlainExcel(workbook,0);
+                    }else
+                    {
+                        int startNum=0;
+                        for(int i=0;i<cacheDataBean.getPagecount();i++)
+                        {
+                            if(i!=0)
+                            {
+                                cacheDataBean.setPageno(i+1);
+                                cacheDataBean.setRefreshNavigateInfoType(1);
+                                setHasLoadedDataFlag(false);
+                                loadReportData(true);
+                            }
+                            showReportDataOnPlainExcel(workbook,startNum);
+                            startNum+=cacheDataBean.getPagesize();
+                        }
+                    }
+                    return workbook;
+                }                
+            };
         }
+        return creator.makeExcel(this,workbook);     
     }
 
     protected void createNewSheet(Workbook workbook,int defaultcolumnwidth)

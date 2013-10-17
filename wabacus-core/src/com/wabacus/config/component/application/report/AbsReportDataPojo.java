@@ -42,6 +42,11 @@ public abstract class AbsReportDataPojo
     
     protected Map<String,Object> mDynamicColData;
 
+    public Map<String,Object> getmDynamicColData()
+    {
+        return mDynamicColData;
+    }
+
     protected String wx_rowdata_key;
 
     protected String wx_belongto_datasetid;//当前记录所属的<dataset/>的id，只有配置了多个<dataset/>时才会设置它的值
@@ -492,4 +497,8 @@ public abstract class AbsReportDataPojo
     
     public void format()
     {}
+    
+    public  void saveToOldProps(){
+        
+    }
 }

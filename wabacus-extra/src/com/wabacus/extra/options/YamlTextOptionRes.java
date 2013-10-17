@@ -2,7 +2,7 @@ package com.wabacus.extra.options;
 
 import org.yaml.snakeyaml.Yaml;
 
-import com.wabacus.extra.WabacusBeanFactory;
+import com.wabacus.WabacusBeanFactory;
 
 /**
  * 

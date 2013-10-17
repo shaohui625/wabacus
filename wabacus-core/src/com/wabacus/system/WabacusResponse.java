@@ -41,9 +41,9 @@ import com.wabacus.system.component.application.report.chart.FusionChartsReportT
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
-public class WabacusResponse
+public final class WabacusResponse
 {
-    private static Log log=LogFactory.getLog(WabacusResponse.class);
+    private static final Log log=LogFactory.getLog(WabacusResponse.class);
     
     private PrintWriter out;
 
@@ -282,21 +282,13 @@ public class WabacusResponse
     
     public String assembleResultsInfo(Throwable t)
     {
-        String load_error_mess=Config.getInstance().getResources().getString(rrequest,rrequest.getPagebean(),Consts.LOADERROR_MESS_KEY,false);
-        if(load_error_mess==null||load_error_mess.trim().equals(""))
-        {
-            load_error_mess="<strong>System is busy,Please try later</strong>";
-        }else
-        {
-            load_error_mess=load_error_mess.trim();
-            load_error_mess=rrequest.getI18NStringValue(load_error_mess);
-        }
+        //String load_error_mess=getLoadErrorMessage();
         if(rrequest.getPagebean()==null)
         {
             log.error("没有取到"+rrequest.getStringAttribute("PAGEID","")+"对应的页面配置");
             return "没有取到"+rrequest.getStringAttribute("PAGEID","")+"对应的页面配置";
         }
-        StringBuffer resultBuf=new StringBuffer();
+        final StringBuilder resultBuf=new StringBuilder();
         if(!rrequest.isLoadedByAjax()||(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&rrequest.getShowtype()!=Consts.DISPLAY_ON_PRINT))
         {
             resultBuf.append(addAlertMessage(false,"<br>"));
@@ -307,13 +299,13 @@ public class WabacusResponse
                 resultBuf.append(addErrorMessage(null,false,null));
             }else
             {
-                resultBuf.append(addErrorMessage(load_error_mess,false,null));
+                resultBuf.append(addErrorMessage(getLoadErrorMessage(),false,null));
             }
         }else
         {
-            String pageid=rrequest.getPagebean().getId();
+            final String pageid=rrequest.getPagebean().getId();
             resultBuf.append("<RESULTS_INFO-").append(pageid).append(">").append("{");
-            String confirmessage=this.messageCollector.getConfirmmessage();
+            final String confirmessage=this.messageCollector.getConfirmmessage();
             if(confirmessage!=null&&!confirmessage.trim().equals(""))
             {
                 resultBuf.append("confirmessage:\"").append(confirmessage).append("\"");
@@ -335,7 +327,17 @@ public class WabacusResponse
                         resultBuf.append("dynamicSlaveReportId:\"").append(dynamicSlaveReportId).append("\",");
                     }
                 }
-                resultBuf.append("statecode:").append(this.statecode).append(",");
+                
+                resultBuf.append("statecode:").append(this.getRRequest().getIntAttribute(Consts.RESPONSE_STATECODE_KEY,statecode)).append(",");
+                
+                final String errorMsgRetainSecond =  Config.getInstance().getSystemConfigValue("errorMsgRetainSecond","2");
+                resultBuf.append("errorMsgRetainSecond:\"").append(errorMsgRetainSecond).append("\",");
+                   
+                String wabacusRedirectUrl = (String) this.getRRequest().getAttribute("wabacusRedirectUrl");
+                if( null != wabacusRedirectUrl){
+                    resultBuf.append("redirectUrl:\"").append(wabacusRedirectUrl).append("\",");                    
+                }
+                
                 resultBuf.append(addAlertMessage(true,","));
                 resultBuf.append(addSuccessMessage(true,","));
                 resultBuf.append(addWarnMessage(true,","));
@@ -344,7 +346,7 @@ public class WabacusResponse
                     resultBuf.append(addErrorMessage(null,true,","));
                 }else
                 {
-                    resultBuf.append(addErrorMessage(load_error_mess,true,","));
+                    resultBuf.append(addErrorMessage(getLoadErrorMessage(),true,","));
                 }
                 List<String[]> lstOnloadMethods=getLstRealOnloadMethods();
                 if(lstOnloadMethods!=null&&lstOnloadMethods.size()>0)
@@ -403,6 +405,20 @@ public class WabacusResponse
             resultBuf.append(pageurlspan+"></span>");
         }
         return resultBuf.toString();
+    }
+
+    protected String getLoadErrorMessage()
+    {
+        String load_error_mess=Config.getInstance().getResources().getString(rrequest,rrequest.getPagebean(),Consts.LOADERROR_MESS_KEY,false);
+        if(load_error_mess==null||load_error_mess.trim().equals(""))
+        {
+            load_error_mess="<strong>System is busy,Please try later</strong>";
+        }else
+        {
+            load_error_mess=load_error_mess.trim();
+            load_error_mess=rrequest.getI18NStringValue(load_error_mess);
+        }
+        return load_error_mess;
     }
     
     private List<String[]> getLstRealOnloadMethods()

@@ -504,6 +504,10 @@ public class ColBean extends AbsConfigBean
         return false;
     }
     
+    public  boolean isNonDbCol(){
+        return isNonValueCol()||   isSequenceCol() || isControlCol();
+    }
+    
     public String getBorderStylePropertyOnColBean()
     {
         ReportBean rb=this.getReportBean();

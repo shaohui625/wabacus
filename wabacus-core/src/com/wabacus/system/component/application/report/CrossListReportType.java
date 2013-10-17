@@ -488,6 +488,7 @@ public class CrossListReportType extends UltraListReportType implements IGroupEx
             for(XmlElementBean eleStaticBeanTmp:lstEleChildren)
             {
                 statisBean=new CrossListReportStatiBean(colbean);
+                statisBean.setAttrs(eleStaticBeanTmp.getMPropertiesClone());
                 String id=eleStaticBeanTmp.attributeValue("id");
                 if(id==null||id.trim().equals(""))
                 {

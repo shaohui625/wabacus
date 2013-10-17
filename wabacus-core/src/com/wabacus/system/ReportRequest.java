@@ -648,25 +648,30 @@ public class ReportRequest
         }
         return value;
     }
-
+    //$ByQXO
+    public final int getIntAttribute(final String name)
+    {
+        return getIntAttribute(name,0);
+    }
     public int getIntAttribute(String name,int defaultvalue)
     {
-        String value=getStringAttribute(name);
-        if(value==null||value.trim().equals(""))
+        final Object v=attributes.get(name);
+        if( null == v ){
+            return defaultvalue;
+        }else if(v instanceof Number){
+            return ((Number)v).intValue();
+        }
+        String value= v instanceof String  ? ((String) v).trim() : v.toString();
+        try
+        {
+            return Integer.parseInt(value);
+        }catch(NumberFormatException e)
         {
             return defaultvalue;
-        }else
-        {
-            try
-            {
-                return Integer.parseInt(value.trim());
-            }catch(NumberFormatException e)
-            {
-                return defaultvalue;
-            }
         }
     }
-
+ //ByQXO$
+    
     public Object getAttribute(String reportid,String name)
     {
         CacheDataBean cdb=this.getCdb(reportid);
@@ -1751,5 +1756,10 @@ public class ReportRequest
     public Map<String,String> getMServerValidateDatas()
     {
         return mServerValidateDatas;
+    }
+    
+    
+    public void setResponseStatecode(final int statecode){
+        setAttribute(Consts.RESPONSE_STATECODE_KEY,statecode);
     }
 }

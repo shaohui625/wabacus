@@ -207,6 +207,7 @@ public class DataExportsConfigBean implements Cloneable
             {
                 throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的数据导出<dataexports/>失败，<dataexport/>配置的type属性"+type+"存在重复");
             }
+            
             childDataExportBean=createDataExportBean(type);
             childDataExportBean.loadConfig(eleChildTmp);
             mDataExportBeans.put(type,childDataExportBean);

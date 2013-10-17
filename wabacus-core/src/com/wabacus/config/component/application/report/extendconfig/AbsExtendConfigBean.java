@@ -18,10 +18,11 @@
  */
 package com.wabacus.config.component.application.report.extendconfig;
 
+import com.wabacus.config.AbstractConfigExtendable;
 import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 
-public class AbsExtendConfigBean implements Cloneable
+public class AbsExtendConfigBean extends AbstractConfigExtendable implements Cloneable
 {
     private AbsConfigBean owner;
 

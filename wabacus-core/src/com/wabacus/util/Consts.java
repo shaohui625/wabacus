@@ -342,6 +342,10 @@ public class Consts
      * 处理完请求后向客户端返回的状态码
      *************************************************************************************/
     public final static int STATECODE_NONREFRESHPAGE=0;
+   
+    public final static int STATECODE_REFRESHPAGE=-99; //强制刷新
+    
+    public final static String RESPONSE_STATECODE_KEY = "$responsestatecode";
     
     public final static int STATECODE_FAILED=-1;
     

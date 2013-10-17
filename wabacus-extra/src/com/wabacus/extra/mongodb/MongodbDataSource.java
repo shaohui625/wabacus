@@ -17,9 +17,9 @@ import com.mongodb.DB;
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 import com.mongodb.ServerAddress;
+import com.wabacus.WabacusBeanFactory;
 import com.wabacus.config.database.datasource.AbsDataSource;
 import com.wabacus.exception.WabacusConfigLoadingException;
-import com.wabacus.extra.WabacusBeanFactory;
 import com.wabacus.system.IConnection;
 import com.wabacus.util.DesEncryptTools;
 

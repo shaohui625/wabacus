@@ -415,10 +415,10 @@ public class DetailReportType extends AbsDetailReportType
         return colDisplayData.getValue();
     }
 
-    public void showReportOnPlainExcel(Workbook workbook)
+    public Workbook showReportOnPlainExcel(Workbook workbook)
     {
-        if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return;
-        if(mColPositions==null) return;
+        if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return workbook;
+        if(mColPositions==null) return workbook;
         createNewSheet(workbook,20);
         if(!this.cacheDataBean.shouldBatchDataExport())
         {
@@ -437,6 +437,7 @@ public class DetailReportType extends AbsDetailReportType
                 showReportDataOnPlainExcel(workbook);
             }
         }
+        return workbook;
     }
 
     private void showReportDataOnPlainExcel(Workbook workbook)

@@ -2307,7 +2307,7 @@ public class ComponentConfigLoadManager
         if(eleColBean==null) return null;
         ColBean cb=new ColBean(dbean);
         
-        //$ByQXO 支持行扩展
+        //$ByQXO 支持属性扩展
         cb.setAttrs(eleColBean.getMPropertiesClone());
         //ByQXO$
         

@@ -94,6 +94,9 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         }
     }
     
+    public CacheDataBean getCacheDataBean(){
+        return cacheDataBean;
+    }
     public ReportBean getReportBean()
     {
         return rbean;
@@ -804,12 +807,12 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     
     protected int excelRowIdx=0;
     
-    public void displayOnPlainExcel(Workbook workbook)
+    public Workbook displayOnPlainExcel(Workbook workbook)
     {
-        if(!rrequest.checkPermission(rbean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY)) return;
+        if(!rrequest.checkPermission(rbean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY)) return workbook;
         if(rrequest.checkPermission(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_PLAINEXCEL+"}",Consts.PERMISSION_TYPE_DISABLED)
                 ||!rrequest.checkPermission(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_PLAINEXCEL+"}",Consts.PERMISSION_TYPE_DISPLAY))
-            return;
+            return workbook;
         if(rbean.getDataExportsBean()!=null)
         {
             pedebean=(PlainExcelExportBean)rbean.getDataExportsBean().getDataExportBean(Consts.DISPLAY_ON_PLAINEXCEL);
@@ -821,7 +824,8 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         {
             this.sheetsize=Config.getInstance().getPlainexcelSheetsize();
         }
-        showReportOnPlainExcel(workbook);
+        return showReportOnPlainExcel(workbook);
+        
     }
     
     protected void createNewSheet(Workbook workbook,int defaultcolumnwidth)
@@ -831,11 +835,11 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         if(title==null||title.trim().equals("")) title="Sheet_"+(sheetIdx+100);
         sheetIdx++;
         excelSheet=workbook.createSheet(title);
-        excelSheet.setDefaultColumnWidth(defaultcolumnwidth);
+//        excelSheet.setDefaultColumnWidth(defaultcolumnwidth);
         excelRowIdx=0;
     }
     
-    public abstract void showReportOnPlainExcel(Workbook workbook);
+    public abstract Workbook showReportOnPlainExcel(Workbook workbook);
 
     protected PDFExportBean pdfbean;
     
