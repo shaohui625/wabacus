@@ -955,7 +955,7 @@ public class ReportAssistant
                         }                 
                     }
                     sb.append("}");
-                    log.info("saveToOldProps:\n"+sb);
+                    log.debug("saveToOldProps:\n"+sb);
                     CtMethod saveToOldProps = CtNewMethod.make(sb.toString(),cclass);
                     cclass.addMethod(saveToOldProps);
                 }
