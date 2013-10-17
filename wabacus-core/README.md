@@ -1,14 +1,18 @@
 wabacus-core
 ===========
-¿ò¼ÜÀ©Õ¹ĞÔĞŞ¸Äµã
-1. Ôö¼ÓAbstractJdbcDatabaseType,ËùÓĞ¹ØÏµÊı¾İÀà¿â(jdbc)µÄAbsDatabaseType¶¼¼Ì³ĞËü,ÒÔ±ãÀ©Õ¹Ô­À´AbsDatabaseTypeÖ§³Ö·Ç¹ØÏµÊı¾İ¿â
-2. Ôö¼ÓAbstractJdbcDataSource,ËùÓĞ¹ØÏµÊı¾İÀà¿â(jdbc)µÄÊı¾İÔ´(AbsDataSource)¶¼¼Ì³ĞËü,ÒÔ±ãÀ©Õ¹Ô­À´AbsDataSourceÖ§³Ö·ÇjdbcÊı¾İÔ´
+æ¡†æ¶æ‰©å±•æ€§ä¿®æ”¹ç‚¹
+1. å¢åŠ AbstractJdbcDatabaseType,æ‰€æœ‰å…³ç³»æ•°æ®ç±»åº“(jdbc)çš„AbsDatabaseTypeéƒ½ç»§æ‰¿å®ƒ,ä»¥ä¾¿æ‰©å±•åŸæ¥AbsDatabaseTypeæ”¯æŒéå…³ç³»æ•°æ®åº“
+2. å¢åŠ AbstractJdbcDataSource,æ‰€æœ‰å…³ç³»æ•°æ®ç±»åº“(jdbc)çš„æ•°æ®æº(AbsDataSource)éƒ½ç»§æ‰¿å®ƒ,ä»¥ä¾¿æ‰©å±•åŸæ¥AbsDataSourceæ”¯æŒéjdbcæ•°æ®æº
 3.
 
-¿ÉÀ©Õ¹ĞÔĞŞ¸ÄµãµÄÕıÔò±í´ïÊ½
+å¯æ‰©å±•æ€§ä¿®æ”¹ç‚¹çš„æ­£åˆ™è¡¨è¾¾å¼
 //[$]ByQXO.*//ByQXO[$]  ==> //$ByQXO   ... //ByQXO$
 
-ÆäÖĞÎ»ÖÃÎÄ¼şÍ·µÄ±íÊ¾ÎªĞÂÔöÎÄ¼şµÄ¸ñÊ½ÈçÏÂ:"//$ByQXO NEW       //ByQXO$"
+å…¶ä¸­ä½ç½®æ–‡ä»¶å¤´çš„è¡¨ç¤ºä¸ºæ–°å¢æ–‡ä»¶çš„æ ¼å¼å¦‚ä¸‹:"//$ByQXO NEW       //ByQXO$"
 
 
 
+ç³»ç»Ÿ
+
+
+mvn clean source:jar deploy  -DskipTests=true -Dgpg.skip=true -DaltDeploymentRepository=branchitech-maven::default::http://service.branchitech.com/artifactory/libs-releases-local

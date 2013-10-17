@@ -18,6 +18,6 @@
 			<module>wabacus-parent</module>
   	<module>wabacus-core</module>
   	<module>wabacus-extra</module>
-  	<module>wabacus-demo</module>
+  <!-- <module>wabacus-demo</module> -->	
   </modules>  
 </project>
