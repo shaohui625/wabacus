@@ -58,13 +58,8 @@ public class BigdecimalType extends AbsDataType
 
     public Object label2value(String label)
     {
-        try{
-        if(label==null||label.trim().equals("")) return null;// new BigDecimal("0");
+        if(label==null||label.trim().equals("")) return new BigDecimal("0");
         return new BigDecimal(label.trim());
-        }catch(java.lang.NumberFormatException ex){
-            ex.printStackTrace();
-              return null;// new BigDecimal("0");
-        }
     }
 
 }

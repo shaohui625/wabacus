@@ -23,17 +23,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.wabacus.config.AbstractConfigExtendable;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.wabacus.config.Config;
 import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.IComponentConfigBean;
+import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.other.RowSelectDataBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.WabacusAssistant;
+import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
+import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
+import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportBean;
+import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
-public abstract class AbsDataExportBean extends AbstractConfigExtendable implements Cloneable
+public abstract class AbsDataExportBean implements Cloneable
 {
+    private final static Log log=LogFactory.getLog(AbsDataExportBean.class);
+    
     private String filename;//本<dataexport/>对应的导出的文件名
     
     private Map<String,String> mDynFilename;
@@ -46,7 +57,13 @@ public abstract class AbsDataExportBean extends AbstractConfigExtendable impleme
 
     private Map<String,Integer> mReportRecordCounts;
     
+    private String rowselect;
+    
+    private RowSelectDataBean rowSelectDataBean;
+    
     protected IComponentConfigBean owner;
+    
+    private DataExportLocalStroageBean localStroageBean;
     
     public AbsDataExportBean(IComponentConfigBean owner,String type)
     {
@@ -79,6 +96,11 @@ public abstract class AbsDataExportBean extends AbstractConfigExtendable impleme
         this.lstIncludeApplicationids=lstIncludeApplicationids;
     }
 
+    public RowSelectDataBean getRowSelectDataBean()
+    {
+        return rowSelectDataBean;
+    }
+
     public Map<String,Integer> getMReportRecordCounts()
     {
         return mReportRecordCounts;
@@ -94,6 +116,11 @@ public abstract class AbsDataExportBean extends AbstractConfigExtendable impleme
         return owner;
     }
 
+    public DataExportLocalStroageBean getLocalStroageBean()
+    {
+        return localStroageBean;
+    }
+
     public void setOwner(IComponentConfigBean owner)
     {
         this.owner=owner;
@@ -106,7 +133,7 @@ public abstract class AbsDataExportBean extends AbstractConfigExtendable impleme
 
     public int getDataExportRecordcount(String reportid)
     {
-        if(this.mReportRecordCounts==null||this.mReportRecordCounts.get(reportid)==null||this.mReportRecordCounts.get(reportid)<0) return -1;
+        if(this.mReportRecordCounts==null) return -1;
         return this.mReportRecordCounts.get(reportid).intValue();
     }
     
@@ -124,9 +151,19 @@ public abstract class AbsDataExportBean extends AbstractConfigExtendable impleme
         {
             this.lstIncludeApplicationids=Tools.parseStringToList(dataexportinclude,";",false);
         }
-        //$ByQXO 支持属性扩展
-        this.setAttrs(eleDataExport.getMPropertiesClone());
-        //ByQXO$
+        this.rowselect=eleDataExport.attributeValue("rowselect");
+        String localstorage=eleDataExport.attributeValue("localstorage");
+        if("true".equalsIgnoreCase(localstorage))
+        {
+            this.localStroageBean=new DataExportLocalStroageBean();
+            this.localStroageBean.setDownload(!"false".equalsIgnoreCase(eleDataExport.attributeValue("download")));
+            this.localStroageBean.setAutodelete(!"false".equalsIgnoreCase(eleDataExport.attributeValue("autodelete")));
+            this.localStroageBean.setZip("true".equalsIgnoreCase(eleDataExport.attributeValue("zip")));
+            this.localStroageBean.setDirectorydateformat(eleDataExport.attributeValue("directorydateformat"));
+        }else
+        {
+            this.localStroageBean=null;
+        }
     }
     
     public void doPostLoad()
@@ -135,6 +172,32 @@ public abstract class AbsDataExportBean extends AbstractConfigExtendable impleme
         this.includeApplicationids=(String)objResult[0];
         this.lstIncludeApplicationids=(List<String>)objResult[1];
         this.mReportRecordCounts=(Map<String,Integer>)objResult[2];
+        if(!Tools.isEmpty(this.rowselect)&&this.getOwner() instanceof ReportBean)
+        {
+            AbsReportType reportTypeObj=Config.getInstance().getReportType(((ReportBean)this.getOwner()).getType());
+            if(reportTypeObj instanceof AbsListReportType)
+            {
+                this.rowSelectDataBean=new RowSelectDataBean();
+                this.rowSelectDataBean.setReportBean((ReportBean)this.owner);
+                this.rowSelectDataBean.setConfigColsExpression(this.rowselect);
+                AbsListReportBean alrbean=(AbsListReportBean)((ReportBean)this.getOwner()).getExtendConfigDataForReportType(AbsListReportType.KEY);
+                if(alrbean==null)
+                {//如果此报表不是继承其它报表，也就没有父报表的AbsListReportTabBean对象，则生成一个自己的
+                    alrbean=new AbsListReportBean(((ReportBean)this.getOwner()));
+                    ((ReportBean)this.getOwner()).setExtendConfigDataForReportType(AbsListReportType.KEY,alrbean);
+                }
+                if(Tools.isEmpty(alrbean.getRowSelectType())||alrbean.getRowSelectType().equals(Consts.ROWSELECT_NONE))
+                {
+                    alrbean.setRowSelectType(Consts.ROWSELECT_MULTIPLE);
+                }
+            }
+        }
+        if(this.rowSelectDataBean==null&&!Tools.isEmpty(this.rowselect))
+        {
+            log.warn("在"+this.owner.getPath()+"的<dataexport/>中配置rowselect无效，它不是列表报表类型");
+        }
+        this.rowselect=null;
+        if(this.localStroageBean!=null) this.localStroageBean.doPostLoad();
     }
     
     public AbsDataExportBean clone(IComponentConfigBean owner) 
@@ -150,6 +213,7 @@ public abstract class AbsDataExportBean extends AbstractConfigExtendable impleme
             if(mReportRecordCounts!=null)
             {
                 newBean.setMReportRecordCounts((Map<String,Integer>)((HashMap<String,Integer>)this.mReportRecordCounts).clone());
+//                        mReportRecordCountsNew.put(entryTmp.getKey(),entryTmp.getValue());
             }
             return newBean;
         }catch(CloneNotSupportedException e)

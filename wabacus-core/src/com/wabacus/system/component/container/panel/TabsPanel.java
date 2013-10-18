@@ -21,8 +21,6 @@ package com.wabacus.system.component.container.panel;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -86,10 +84,7 @@ public class TabsPanel extends AbsPanelType
         if(childscount<=0) return;
         int currentSelectedTabItemIdx=-1;
         String selectedIndex=rrequest.getStringAttribute(this.containerConfigBean.getId()+"_selectedIndex");
-        if(StringUtils.isBlank(selectedIndex)){
-           selectedIndex =  this.tabspanelBean.getAttrs().get("activeTab");
-        }
-        if(NumberUtils.isNumber(selectedIndex))
+        if(selectedIndex!=null&&!selectedIndex.trim().equals(""))
         {
             try
             {
@@ -112,12 +107,12 @@ public class TabsPanel extends AbsPanelType
             childidTmp=containerConfigBean.getLstChildrenIDs().get(i);
             if(!rrequest.checkPermission(containerConfigBean.getId(),Consts.DATA_PART,String.valueOf(i),Consts.PERMISSION_TYPE_DISPLAY))  continue;
             tdbeanTmp=new TabItemDisplayBean();
-            tdbeanTmp.setIndex(i);
+            tdbeanTmp.setIndex(i);//位置下标
             tdbeanTmp.setChildid(childidTmp);
             if(rrequest.checkPermission(containerConfigBean.getId(),Consts.DATA_PART,String.valueOf(i),Consts.PERMISSION_TYPE_DISABLED))
             {
                 tdbeanTmp.setDisabled(true);
-            }else if(i==currentSelectedTabItemIdx || childidTmp.equals(selectedIndex))
+            }else if(i==currentSelectedTabItemIdx)
             {
                 currentSelectedTabItemDisplayBean=tdbeanTmp;
             }
@@ -147,7 +142,7 @@ public class TabsPanel extends AbsPanelType
     public void displayOnPage(AbsComponentTag displayTag)
     {
         if(currentSelectedTabItemDisplayBean==null)
-        {//如果没有要显示的子标签
+        {
             wresponse.println("&nbsp;");
             return;
         }
@@ -167,7 +162,7 @@ public class TabsPanel extends AbsPanelType
             {
                 showChildTabItem(this.currentSelectedTabItemDisplayBean,true);
                 for(TabItemDisplayBean tidbeanTmp:lstDisplayedChildren)
-                {
+                {//所有显示了标题的，且不是禁用的，都显示出来，切换时只要在客户端切换即可
                     if(tidbeanTmp.isDisabled()) continue;
                     if(tidbeanTmp.getIndex()==this.currentSelectedTabItemDisplayBean.getIndex()) continue;
                     showChildTabItem(tidbeanTmp,false);
@@ -232,7 +227,6 @@ public class TabsPanel extends AbsPanelType
         resultBuf.append(">");
         String titlewidth=((TabsPanelBean)containerConfigBean).getTitlewidth();
         String titlestyle=((TabsPanelBean)containerConfigBean).getTitlestyle();
-
         TabItemDisplayBean tdbeanTmp;
         for(int i=0,len=lstDisplayedChildren.size();i<len;i++)
         {
@@ -253,7 +247,6 @@ public class TabsPanel extends AbsPanelType
             if(tdbeanTmp.getIndex()==currentSelectedTabItemDisplayBean.getIndex())
             {
                 resultBuf.append(" class=\""+titleclassname+"-selected\"");
-                
                 if(!this.tabspanelBean.isAsyn()) resultBuf.append(" onclick=\"try{"+getTabItemClickEvent(tdbeanTmp.getIndex())+"}catch(e){logErrorsAsJsFileLoad(e);}\"");
             }else
             {
@@ -273,13 +266,8 @@ public class TabsPanel extends AbsPanelType
         if(subtitle!=null&&!subtitle.trim().equals(""))
         {
             resultBuf.append("<tr><TD class=\"cls-subtitle\"");
-
 //            {//标题显示在右边
-
-
-
-
-
+//                resultBuf.append(" align=\"right\"");
             resultBuf.append(">").append(subtitle.trim()).append("</TD></tr>");
         }
         resultBuf.append("</table></td>");
@@ -302,7 +290,7 @@ public class TabsPanel extends AbsPanelType
             return super.showTopBottomTitlePart(isDisplayTopTitleBar);
         }
         String realtabtitle=getTabsTitleInTopAndBottomDisplayValue();
-        if(realtabtitle.trim().equals("")) return super.showTopBottomTitlePart(isDisplayTopTitleBar);//没有标题需要显示，则只考虑按钮的显示
+        if(realtabtitle.trim().equals("")) return super.showTopBottomTitlePart(isDisplayTopTitleBar);
         String buttonsOnTitle=getContainerTopBottomButtonsDisplayValue(isDisplayTopTitleBar);
         String buttonalign=null;
         if(!buttonsOnTitle.trim().equals(""))
@@ -325,7 +313,7 @@ public class TabsPanel extends AbsPanelType
         if(buttonsOnTitle.equals("")||titlealign.equalsIgnoreCase(buttonalign))
         {
             if(!this.tabspanelBean.isAsyn())
-            {
+            {//如果不是异步切换tabitem
                 resultBuf.append(" selectedItemIndex=\"").append(currentSelectedTabItemDisplayBean.getIndex()).append("\"");
             }
             resultBuf.append("><TBODY><TR>");
@@ -405,114 +393,50 @@ public class TabsPanel extends AbsPanelType
     }
     
 //    protected String showTopBottomTitlePart(boolean isDisplayTopTitleBar)
-
-
-
 //        {//如果当前容器的标题是显示在左右两侧，即不在上下显示标题，则只要考虑显示在上下的按钮
-
-
-
 //        {//如果当前是在显示容器顶部，但标题是显示在底部；或者当前是在显示容器底部，但标题是显示在容器顶部
-
-
-
 //        {//标题栏授权为不显示，则只显示上面的功能按钮
-
-
-
+//            return super.showTopBottomTitlePart(isDisplayTopTitleBar);
 //        if(realtabtitle.trim().equals("")) return super.showTopBottomTitlePart(isDisplayTopTitleBar);//没有标题需要显示，则只考虑按钮的显示
 //        String buttonsOnTitle=getContainerTopBottomButtonsDisplayValue(isDisplayTopTitleBar);//要显示在顶部或底部标题栏上的功能按钮
-
-
-//        {
-
-
-
-
-
-
-
-
-
-
+//        String titlealign=containerConfigBean.getTitlealign();
 //        {//标题显示在底部
-
-
 //        {//标题显示在顶部
-
-
 //        if(!this.tabspanelBean.isAsyn())
 //        {//如果不是异步切换tabitem
 //            resultBuf.append(" selectedItemIndex=\"").append(currentSelectedTabItemDisplayBean.getIndex()).append("\"");//记录当前选中的标签页下标
-
-
-
 //        {//没有按钮只显示标题部分
-
-
 //                resultBuf.append("<td width='50%'>&nbsp;</td>");
-
 //                resultBuf.append("<td width='50%'>&nbsp;</td>");
-
-
 //                resultBuf.append("<td>&nbsp;</td>");
-
-
+//            }else
 //            {//left
-
 //                resultBuf.append("<td>&nbsp;</td>");
-
-
 //        {//需要显示标题和功能按钮
-
-//            {
-
-
 //                    resultBuf.append("<td width=\"50%\" nowrap align=\"left\">").append(buttonsOnTitle).append("</td>");
-
 //                    resultBuf.append("<td width=\"50%\">&nbsp;</td>");
-
-
+//                {
 //                    resultBuf.append("<td width='50%'>&nbsp;</td>");
-
 //                    resultBuf.append("<td width=\"2px\">&nbsp;</td>");
 //                    resultBuf.append("<td align=\"left\" width=\"1%\" nowrap>"+buttonsOnTitle+"</td>");
 //                    resultBuf.append("<td width='50%'>&nbsp;</td>");
-
 //                {//right
 //                    resultBuf.append("<td width='50%'>&nbsp;</td>");
-
 //                    resultBuf.append("<td align=\"right\" nowrap>"+buttonsOnTitle+"</td>");
-
-
-
-
-
 //                    resultBuf.append("<td align=\"left\" nowrap>"+buttonsOnTitle+"</td>");
-
 //                }else if(buttonalign.equals("center"))
-
 //                    resultBuf.append("<td width='50%'>&nbsp;</td>");
 //                    resultBuf.append("<td align=\"left\" nowrap>"+buttonsOnTitle+"</td>");
-
-
 //                {//right
 //                    resultBuf.append("<td>&nbsp;</td>");
-
 //                    resultBuf.append("<td width=\"2px\">&nbsp;</td>");
 //                    resultBuf.append("<td align=\"left\" width=\"1%\" nowrap>"+buttonsOnTitle+"</td>");
-
-
 //            {//left
-
 //                if(buttonalign.equals("left")) resultBuf.append("<td width=\"2px\">&nbsp;</td>");
 //                resultBuf.append("<td align=\""+buttonalign+"\" nowrap>"+buttonsOnTitle+"</td>");
-
-
 //        resultBuf.append("</TR></TBODY></TABLE>");
 //        resultBuf.append("</TD></TR>");
-
-
+//        return resultBuf.toString();
     
     private String getTabsTitleInTopAndBottomDisplayValue()
     {
@@ -553,7 +477,7 @@ public class TabsPanel extends AbsPanelType
                     {
                         resultBuf.append("tabitem_position_type=\"first\"");
                     }else if(i==len-1)
-                    {//如果是最后一个标签页
+                    {
                         resultBuf.append("tabitem_position_type=\"last\"");
                     }else
                     {
@@ -597,7 +521,7 @@ public class TabsPanel extends AbsPanelType
                     }else
                     {
                         if(lstDisplayedChildren.get(i+1).getIndex()==currentSelectedTabItemDisplayBean.getIndex())
-                        {
+                        {//如果当前tabitem的下一个tabitem就是本次选中显示的tabitem
                             resultBuf.append(img_desel_sel);
                         }else
                         {
@@ -650,13 +574,8 @@ public class TabsPanel extends AbsPanelType
         {
             resultBuf.append("<td width=\"2px\">&nbsp;</td>");
             resultBuf.append("<td class='cls-subtitle' align='left' nowrap");
-
 //            {//标题显示在底部
-
-
-
 //                resultBuf.append(" valign='bottom'");
-
             resultBuf.append(">").append(subtitle.trim()).append("</td>");
         }
         return resultBuf.toString();

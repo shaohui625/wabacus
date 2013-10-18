@@ -25,12 +25,15 @@ import java.util.Map;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
-import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.WabacusAssistant;
-import com.wabacus.system.dataset.IReportDataSet;
+import com.wabacus.system.dataset.report.value.AbsReportDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.RelationalDBReportDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.SPReportDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.SQLReportDataSetValueProvider;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
@@ -107,18 +110,16 @@ public class ReportDataSetBean extends AbsConfigBean
 
     public String getDatasource()
     {
+        if(datasource==null||datasource.trim().equals(""))
+        {
+            datasource=((SqlBean)this.getParent()).getDatasource();
+        }
         return datasource;
     }
 
     public void setDatasource(String datasource)
     {
-        if(datasource!=null&&!datasource.trim().equals(""))
-        {
-            this.datasource=datasource;
-        }else
-        {
-            this.datasource=((SqlBean)this.getParent()).getDatasource();
-        }
+        this.datasource=datasource;
     }
 
     public String getDatasetstyleproperty(ReportRequest rrequest,boolean isStaticPart)
@@ -147,7 +148,29 @@ public class ReportDataSetBean extends AbsConfigBean
         return this.mValueBeans.get(valueid);
     }
     
-    public boolean isDependentDatasetValue(String valueid)
+    public ReportDataSetValueBean getDatasetValueBeanOfCbean(ColBean cbean)
+    {
+        if(this.mValueBeans==null||this.mValueBeans.size()==0) return null;
+        if(cbean.getLstDatasetValueids()==null||cbean.getLstDatasetValueids().size()==0)
+        {//如果没有为它配置datasetvalueid，则说明所有<dataset/>下面只有一个<value/>，直接返回即可
+            return this.mValueBeans.entrySet().iterator().next().getValue();
+        }
+        SqlBean sbean=(SqlBean)this.getParent();
+        if(sbean.isHorizontalDataset()
+                &&(cbean.getColumn().equals(sbean.getHdsTitleLabelCbean().getColumn())||cbean.getColumn().equals(
+                        sbean.getHdsTitleValueCbean().getColumn())))
+        {//如果是横向数据集，且当前<col/>就是查询标题行的各列数据或显示label，则返回true，因为所有<value/>都会查询这两列数据
+            throw new WabacusRuntimeException("报表"+cbean.getReportBean().getPath()+"是横向数据集，且"+cbean.getColumn()
+                    +"为显示标题行的列，所有<value/>都会加载它的数据，因此不能调用此方法获取它的数据集<value/>对象");
+        }
+        for(String valueidTmp:cbean.getLstDatasetValueids())
+        {
+            if(this.mValueBeans.containsKey(valueidTmp)) return this.mValueBeans.get(valueidTmp);
+        }
+        return null;
+    }
+    
+    boolean isDependentDatasetValue(String valueid)
     {
         if(valueid==null||valueid.trim().equals("")) valueid=Consts.DEFAULT_KEY;
         if(this.mValueBeans==null||this.mValueBeans.get(valueid)==null) return false;
@@ -189,28 +212,86 @@ public class ReportDataSetBean extends AbsConfigBean
                 lstExistDatasetids.add(valueidTmp);
             }
             ReportDataSetValueBean datasetValueBean=new ReportDataSetValueBean(this);
+            datasetValueBean.setElementBean(eleValueBeanTmp);
             datasetValueBean.setId(valueidTmp.trim());
-            loadReportDatasetConfig(eleValueBeanTmp,datasetValueBean);
+            datasetValueBean.setDatasource(eleValueBeanTmp.attributeValue("datasource"));
+            datasetValueBean.setDependParents(eleValueBeanTmp.attributeValue("depends"));
+            datasetValueBean.setDependsConditionExpression(eleValueBeanTmp.attributeValue("dependscondition"));
+            String dependstype=eleValueBeanTmp.attributeValue("dependstype");
+            if(dependstype!=null) datasetValueBean.setDependstype(dependstype.trim());
+            String seperator=eleValueBeanTmp.attributeValue("seperator");
+            if(seperator!=null) datasetValueBean.setSeperator(seperator);
+            AbsReportDataSetValueProvider dsvProviderObj=null;
+            String provider=eleValueBeanTmp.attributeValue("provider");
+            if(provider!=null&&Tools.isDefineKey("class",provider))
+            {
+                Object datasetValueTypeObj=null;
+                try
+                {
+                    datasetValueTypeObj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(Tools.getRealKeyByDefine("class",provider)).newInstance();
+                }catch(Exception e)
+                {
+                    throw new WabacusConfigLoadingException("配置<datasetvalue-provider/>的class："+provider+"类无法实例化",e);
+                }
+                if(!AbsReportDataSetValueProvider.class.isInstance(datasetValueTypeObj))
+                {
+                    throw new WabacusConfigLoadingException("配置<datasetvalue-provider/>的class："+provider+"没有继承"+AbsReportDataSetValueProvider.class.getName()+"类");
+                }
+                dsvProviderObj=(AbsReportDataSetValueProvider)datasetValueTypeObj;
+            }else
+            {
+                dsvProviderObj=Config.getInstance().getReportDatasetValueProvider(provider);
+                if(dsvProviderObj==null)
+                {
+                    if(provider==null||provider.trim().equals(""))
+                    {
+                        throw new WabacusConfigLoadingException("没有在wabacus.cfg.xml中指定全局默认报表数据集provider，必须为报表"+rbean.getPath()+"的数据集<value/>指定provider");
+                    }else
+                    {
+                        throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"的数据集<value/>指定的provider："+provider+"不存在");
+                    }
+                }
+                if(dsvProviderObj instanceof RelationalDBReportDataSetValueProvider)
+                {
+                    String sqlValue=eleValueBeanTmp.getContent();
+                    sqlValue=Tools.formatStringBlank(sqlValue);
+                    if(sqlValue==null||sqlValue.trim().equals(""))
+                    {
+                        throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"的<sql/>下的<value/>配置失败，没有为<value/>标签配置查询数据的SQL语句或JAVA类");
+                    }
+                    sqlValue=sqlValue.trim();
+                    while(sqlValue.endsWith(";"))
+                    {
+                        sqlValue=sqlValue.substring(0,sqlValue.length()-1).trim();
+                    }
+                    if(sqlValue.startsWith("{")&&sqlValue.endsWith("}")) sqlValue=sqlValue.substring(1,sqlValue.length()-1).trim();
+                    if(sqlValue.toLowerCase().indexOf("call ")==0||sqlValue.toLowerCase().indexOf("{call ")==0)
+                    {
+                        dsvProviderObj=new SPReportDataSetValueProvider();
+                    }else
+                    {
+                        dsvProviderObj=new SQLReportDataSetValueProvider();
+                    }
+                    ((RelationalDBReportDataSetValueProvider)dsvProviderObj).setValue(sqlValue);
+                }else
+                {
+                    try
+                    {
+                        dsvProviderObj=dsvProviderObj.getClass().newInstance();
+                    }catch(Exception e)
+                    {
+                        throw new WabacusConfigLoadingException("实例化"+dsvProviderObj.getClass().getName()+"失败",e);
+                    }
+                }
+            }
+            dsvProviderObj.setOwnerDataSetValueBean(datasetValueBean);
+            datasetValueBean.setProvider(dsvProviderObj);
+            dsvProviderObj.loadConfig(eleValueBeanTmp);
             this.lstValueBeans.add(datasetValueBean);
             this.mValueBeans.put(datasetValueBean.getId(),datasetValueBean);
         }
         this.lstEleValueBeans=null;
         return true;
-    }
-    
-    private void loadReportDatasetConfig(XmlElementBean eleValueBean,ReportDataSetValueBean valuebean)
-    {
-        final String sqlValue=eleValueBean.getContent();
-        valuebean.setDatasource(eleValueBean.attributeValue("datasource"));
-        AbsDatabaseType dbType=Config.getInstance().getDbType(valuebean.getDatasource());
-        dbType.doPostLoadReportDataSetValueBean(valuebean,sqlValue);
-
-        valuebean.setDependParents(eleValueBean.attributeValue("depends"));
-        valuebean.setDependsConditionExpression(eleValueBean.attributeValue("dependscondition"));
-        String dependstype=eleValueBean.attributeValue("dependstype");
-        if(dependstype!=null) valuebean.setDependstype(dependstype.trim());
-        String seperator=eleValueBean.attributeValue("seperator");
-        if(seperator!=null) valuebean.setSeperator(seperator);
     }
     
     public void afterSqlLoad()
@@ -250,7 +331,7 @@ public class ReportDataSetBean extends AbsConfigBean
     
     private boolean hasProcessedAllParentValues(ReportDataSetValueBean svbeanTmp,List<String> lstProcessedValueIds)
     {
-        if(svbeanTmp.getMDependParents()==null||svbeanTmp.getMDependParents().size()==0) return true;
+        if(svbeanTmp.getMDependParents()==null||svbeanTmp.getMDependParents().size()==0) return true;//如果没有父数据集
         if(lstProcessedValueIds==null||lstProcessedValueIds.size()==0) return false;
         List<String> lstParentValueids=svbeanTmp.getAllParentValueIds();
         for(String parentValueidTmp:lstParentValueids)

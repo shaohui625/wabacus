@@ -202,7 +202,7 @@ public class UpdateSqlActionBean extends AbsEditSqlActionBean
         {
             if(updatesql.indexOf(" ")<0&&updatesql.indexOf(",")<0&&updatesql.indexOf("=")<0) return false;
         }else
-        {
+        {//idxBracket1>0
             String tablename=updatesql.substring(0,idxBracket1).trim();
             if(tablename.indexOf(" ")>=0||tablename.indexOf(",")>=0||tablename.indexOf("=")>=0) return true;
             updatesql=updatesql.substring(idxBracket1+1);
@@ -220,7 +220,7 @@ public class UpdateSqlActionBean extends AbsEditSqlActionBean
                         idxRightBacket=i;
                         break;
                     }else if(idxleft<=0)
-                    {//左右括号没成对，多出了)
+                    {
                         return true;
                     }else
                     {

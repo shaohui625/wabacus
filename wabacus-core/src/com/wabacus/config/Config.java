@@ -19,7 +19,6 @@
 package com.wabacus.config;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,9 +33,8 @@ import com.wabacus.config.component.ComponentConfigLoadAssistant;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
-import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.database.datasource.AbsDataSource;
-import com.wabacus.config.database.type.AbsDatabaseType;
+import com.wabacus.config.other.JavascriptFileBean;
 import com.wabacus.config.resource.Resources;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.config.template.TemplateBean;
@@ -54,6 +52,8 @@ import com.wabacus.system.component.application.report.abstractreport.AbsReportT
 import com.wabacus.system.component.application.report.abstractreport.IReportType;
 import com.wabacus.system.component.container.AbsContainerType;
 import com.wabacus.system.dataimport.thread.TimingDataImportTask;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.AbsReportDataSetValueProvider;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.system.intercept.AbsPageInterceptor;
@@ -92,7 +92,7 @@ public class Config
 
     public static String showreport_onword_url;
     
-    public static String showreport_onpdf_url;
+    public static String showreport_onpdf_url;//显示报表到pdf上的URL
 
     public static String encode;
 
@@ -104,7 +104,7 @@ public class Config
     
     public static String i18n_filename;
 
-    public TemplateBean report_template_defaultbean;//默认的报表模板资源项
+    public TemplateBean report_template_defaultbean;
     
     public TemplateBean dataexport_template_defaultbean;
     
@@ -114,7 +114,7 @@ public class Config
 
     private List<Class> lstFormatClasses;
 
-    private Map<String,PageBean> mReportStructureInfo; 
+    private Map<String,PageBean> mReportStructureInfo; //存放加载的报表结构配置信息
 
     private Map<String,String> mSystemConfig;
 
@@ -136,6 +136,10 @@ public class Config
 
     private Map<String,IDataType> mDataTypes;//存放注册的所有数据类型
 
+    private Map<String,AbsReportDataSetValueProvider> mReportDatasetValueProviders;
+    
+    private Map<String,AbsCommonDataSetValueProvider> mCommonDatasetValueProviders;
+    
     //    private Map<String,Class> mClasses;//为那些用CommonDataBean存放中间数据的报表生成的子类字节码集合，只有当将生成的字节码配置成缓存在内存中，才会存在这里
 
     private Resources resources;
@@ -153,8 +157,6 @@ public class Config
     private Map<String,ComponentPermissionBean> mComponentsDefaultPermissions;
     
     private Map<String,Map<String,String>> mSkinConfigProperties;
-    
-    private int dataexport_batch_count=Integer.MIN_VALUE;
     
     private int dataexport_plainexcel_sheetsize=Integer.MIN_VALUE;
     
@@ -239,61 +241,17 @@ public class Config
             mAutoDetectedDataImportBeans.clear();
         }
         if(this.mDataSources!=null)
-        {
+        {//有老的数据源，则清空
             for(Entry<String,AbsDataSource> entryDsTmp:mDataSources.entrySet())
             {
                 entryDsTmp.getValue().closePool();
             }
             this.mDataSources=null;
         }
-        dataexport_batch_count=Integer.MIN_VALUE;
         dataexport_plainexcel_sheetsize=Integer.MIN_VALUE;
+        this.mReportDatasetValueProviders=null;
+        this.mCommonDatasetValueProviders=null;
     }
-    
-    //$ByQXO 全局配置功能
-    private PropertyOverrideLoader propertyOverrideLoader;
-    
-    
-    public PropertyOverrideLoader getPropertyOverrideLoader()
-    {
-        if( null == propertyOverrideLoader ){
-            
-            propertyOverrideLoader = PropertyOverrideLoaderDefault.createPropertyOverrideLoader("wabacusPropertyOverrideLoader",getSystemConfigValue("propertyOverrideLoader")); 
-        }
-        return propertyOverrideLoader;
-    }
-
-    private String getSystemConfigValue(String key)
-    {
-        if(mSystemConfig==null)
-        {
-            return "";
-        }
-        String temp=mSystemConfig.get(key);
-        if( null != propertyOverrideLoader){
-            temp= propertyOverrideLoader.getOverridePropertyValue("wabacus.system.",key, temp);
-        }
-        if(temp==null||temp.trim().equals("")) return "";
-        return temp;
-    }
-
-    
-    public Collection<String> getPageIds(){
-        if( null == mReportStructureInfo || mReportStructureInfo.size() < 1){
-            throw new IllegalArgumentException("wabacus未正确初始化！");
-        }
-        return mReportStructureInfo.keySet();
-    }
-    public AbsDatabaseType getDbType(String ds)
-    {
-        final AbsDatabaseType dbtype=Config.getInstance().getDataSource(ds).getDbType();
-        if(dbtype==null)
-        {
-            throw new WabacusConfigLoadingException("没有实现数据源"+ds+"对应数据库类型的相应实现类");
-        }
-        return dbtype;
-    }
-    //ByQXO$
     
     public Object getResourceObject(ReportRequest rrequest,PageBean pbean,String key,boolean ismust)
     {
@@ -478,6 +436,17 @@ public class Config
         }
     }
 
+    private String getSystemConfigValue(String key)
+    {
+        if(mSystemConfig==null)
+        {
+            return "";
+        }
+        String temp=mSystemConfig.get(key);
+        if(temp==null||temp.trim().equals("")) return "";
+        return temp;
+    }
+
     public PageBean getPageBean(String pageid)
     {
         if(mReportStructureInfo==null) return null;
@@ -561,7 +530,7 @@ public class Config
                 }
                 reportObj=(IReportType)obj;
                 if(mReporttypes==null) mReporttypes=new HashMap<String,IReportType>();
-                mReporttypes.put(typename,reportObj);//存放进去以便下次获取时可以从中直接取到
+                mReporttypes.put(typename,reportObj);
             }
         }
         if(reportObj==null)
@@ -598,7 +567,7 @@ public class Config
         }
         return datasource;
     }
-  
+
     public List<String> getUlstLocalCss(PageBean pbean)
     {
         if(this.mLocalCss==null) return null;
@@ -673,6 +642,70 @@ public class Config
         return mInputBoxTypes;
     }
 
+    public void setMReportDatasetValueProviders(Map<String,AbsReportDataSetValueProvider> mReportDatasetValueTypes)
+    {
+       this.mReportDatasetValueProviders=mReportDatasetValueTypes;
+    }
+    
+    Map<String,AbsReportDataSetValueProvider> getMReportDatasetValueProviders()
+    {
+        return mReportDatasetValueProviders;
+    }
+
+    public AbsReportDataSetValueProvider getReportDatasetValueProvider(String name)
+    {
+        if(this.mReportDatasetValueProviders==null) return null;
+        AbsReportDataSetValueProvider typeObj;
+        if(name==null||name.trim().equals(""))
+        {
+            typeObj=mReportDatasetValueProviders.get(Consts.DEFAULT_KEY);
+            if(typeObj==null)
+            {
+                throw new WabacusRuntimeException("没有配置默认报表数据集脚本类型，不能获取name属性为空的报表数据集脚本类型");
+            }
+        }else
+        {
+            typeObj=mReportDatasetValueProviders.get(name.trim());
+            if(typeObj==null)
+            {
+                throw new WabacusRuntimeException("没有获取到name属性为"+name+"的报表数据集脚本类型");
+            }
+        }
+        return typeObj;
+    }
+
+    public void setMCommonDatasetValueProviders(Map<String,AbsCommonDataSetValueProvider> commonDatasetValueTypes)
+    {
+        this.mCommonDatasetValueProviders=commonDatasetValueTypes;
+    }
+    
+    Map<String,AbsCommonDataSetValueProvider> getMCommonDatasetValueProviders()
+    {
+        return mCommonDatasetValueProviders;
+    }
+    
+    public AbsCommonDataSetValueProvider getCommonDatasetValueProvider(String name)
+    {
+        if(this.mCommonDatasetValueProviders==null) return null;
+        AbsCommonDataSetValueProvider typeObj;
+        if(name==null||name.trim().equals(""))
+        {
+            typeObj=mCommonDatasetValueProviders.get(Consts.DEFAULT_KEY);
+            if(typeObj==null)
+            {
+                throw new WabacusRuntimeException("没有配置默认报表数据集脚本类型，不能获取name属性为空的其它数据集脚本类型");
+            }
+        }else
+        {
+            typeObj=mCommonDatasetValueProviders.get(name.trim());
+            if(typeObj==null)
+            {
+                throw new WabacusRuntimeException("没有获取到name属性为"+name+"的其它数据集脚本类型");
+            }
+        }
+        return typeObj;
+    }
+    
     public IDataType getDataTypeByName(String name)
     {
         if(mDataTypes==null) return null;
@@ -805,15 +838,6 @@ public class Config
         }
         return print_template_defaultbean;
     }
-    
-    public int getDataexportBatchCount()
-    {
-        if(dataexport_batch_count==Integer.MIN_VALUE)
-        {
-            dataexport_batch_count=Config.getInstance().getSystemConfigValue("dataexport-batchselect-count",500);
-        }
-        return dataexport_batch_count;
-    }
 
     public int getPlainexcelSheetsize()
     {
@@ -832,7 +856,7 @@ public class Config
         String pageid=null;
         String componentid=null;
         if(idx<=0||componentGuid.endsWith(Consts_Private.GUID_SEPERATOR))
-        {
+        {//当前组件即为页面对象
             pageid=componentGuid;
         }else
         {

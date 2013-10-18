@@ -19,7 +19,6 @@
 package com.wabacus.config.print;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -67,7 +66,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
 
     protected List<String> lstIncludeApplicationIds;
 
-    protected String includeApplicationids;
+    protected String includeApplicationids;//运行时由lstApplicationIds生成
 
     protected Map<String,Integer> mReportidAndPagesize;
     
@@ -102,7 +101,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
     {
         String realjobname=null;
         if(jobname==null||jobname.trim().equals(""))
-        {//没有配置任务名
+        {
             realjobname=this.owner.getTitle(rrequest);
             if(realjobname==null||realjobname.trim().equals("")) realjobname=this.owner.getId();
         }else
@@ -232,9 +231,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
         {
             this.printPageInfo=Config.getInstance().getResourceString(null,this.owner.getPageBean(),"${print.pageinfo.default}",true);//如果没有配置<pageinfo/>，则用全局默认页面信息
         }
-        
-        
-        
+        //        width=width==null?"":width.trim();
         this.elePrintBean=elePrintBean;
     }
 
@@ -262,10 +259,7 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
         {
             AbsButtonType buttonObj=Config.getInstance().getResourceButton(null,this.owner,Consts.M_PRINT_DEFAULTBUTTONS.get(printButtonType),
                     PrintButton.class);
-            if(buttonObj.getName()==null||buttonObj.getName().trim().equals(""))
-            {
-                buttonObj.setName(PrintButton.class.getName()+"."+(int)(Math.random()*1000000));
-            }
+            buttonObj.setDefaultNameIfNoName();
             if(this.owner instanceof AbsContainerConfigBean)
             {
                 buttonObj.setPosition("top");
@@ -367,7 +361,6 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
                 ptelebeanTmp=new PrintTemplateElementBean(this.getPlaceholderIndex());
                 ptelebeanTmp.setType(PrintTemplateElementBean.ELEMENT_TYPE_APPLICATIONID);
                 ptelebeanTmp.setValueObj(this.owner.getId());//这里不直接将全局打印模板存在这里，是为了后面打印时会取到此报表<report/>的printwidth，如果直接存全局静态模板，则打印时不会取用此报表的printwidth
-                
                 //                ptelebeanTmp.setValueObj(Config.getInstance().getDefaultReportPrintTplBean());//用全局报表静态打印模板
                 pspagebeanTmp.addPrintElement(ptelebeanTmp);
                 this.lstPrintPageBeans.add(pspagebeanTmp);
@@ -418,8 +411,6 @@ public abstract class AbsPrintProviderConfigBean implements Cloneable
 
     public Object clone()
     {
-        
-        
         try
         {
             return super.clone();

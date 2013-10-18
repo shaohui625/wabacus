@@ -66,79 +66,25 @@ public class HorizontalPanel extends AbsPanelType
         wresponse.println(showContainerEndPart());
     }
 
-
-
-
-
-
 //        /**
-
+//         * 挑出本次要显示的所有子组件
 //         */
-
-
-
-
-//            cdbeanTmp=new ChildDisplayBean();
-
-
-
-
 //        {//如果只有一个要显示的元素，则只要在子组件本身的<table/>中控制宽度即可，不需在当前容器对应<td/>中指定宽度
-
-
-
-
-
-
-
-
-
-
+//            IComponentConfigBean childCcbeanTmp=lstChildrenDisplayBeans.get(0).getChildConfigBean();
 //
 //        /**
-
 //         */
 //        boolean isAllSetWidthInParentTd=true;//最后一子组件前面所有子组件是否都在其对应的本容器的<td/>中控制宽度，如果是的话，则最后一个组件将不能在其对应的父容器中的<td/>中指定宽度，它必须占据剩余空间
-
-
-
-
-
-
-
-
-
-
-
-
-
-//            if(childWidthArrTmp==null||childWidthArrTmp[0].equals("0"))
+//            }else
 //            {//没有配置width，或配置的width无效
 //                isAllSetWidthInParentTd=false;//最后一个子组件前面的子组件存在没有配置width的
-
-
-
-
 //            {//如果配置宽度大于等于100%，则不在<td/>中控制它的宽度，因为这样没有意义
-
-
-
-
-
+//                isAllSetWidthInParentTd=false;
 //            {//当前是最后一个子组件，且前面的子组件都是在其所属<td/>中控制宽度，则不管此子组件的width配置成什么值，其对应的此容器的<td/>都不能指定宽度（因为它必须占据剩余的所有空间）
 //                if(!childWidthArrTmp[1].equals("%")) cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);//如果此子组件配置的宽度不是百分比，则由报表自己控制宽度，如果为百分比，则就显示为100%
-
-
-
 //                {//配置的宽度是百分比，则宽度在对应此容器<td/>中控制
-
-
 //                {//如果配置的是像素，则只要子组件自己显示width
 //                    cdbeanTmp.setChildDisplayWidth(iwidthvalue+childWidthArrTmp[1]);
-
-
-
-
     
     private void initChildrenDisplay()
     {
@@ -232,7 +178,7 @@ public class HorizontalPanel extends AbsPanelType
      * 比如传入"30px" 得到30等。
      * @param size
      * @return
-     *
+     *//*
     private int getRealIntSizeByString(String size)
     {
         if(size==null||size.trim().equals("")) return 0;

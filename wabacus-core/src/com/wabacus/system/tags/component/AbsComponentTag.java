@@ -100,6 +100,7 @@ public abstract class AbsComponentTag extends BodyTagSupport
         out=pageContext.getOut();
         rrequest=(ReportRequest)request.getAttribute("WX_REPORTREQUEST");
         this.ownerComponentObj=(AbsReportType)request.getAttribute("WX_COMPONENT_OBJ");
+        rrequest.getWResponse().setJspout(this.out);
         if(isRootTag())
         {
             if(rrequest==null) throw new JspException("没有取到ReportRequest对象，无法显示报表");
@@ -112,7 +113,7 @@ public abstract class AbsComponentTag extends BodyTagSupport
         }catch(Exception e)
         {
             log.error("显示页面"+rrequest.getPagebean().getId()+"失败",e);
-            rrequest.getWResponse().getMessageCollector().error("显示页面失败","显示页面"+rrequest.getPagebean().getId()+"失败",e);
+            rrequest.getWResponse().getMessageCollector().error("显示页面失败",null,true);
             return SKIP_BODY;
         }
     }
@@ -126,13 +127,12 @@ public abstract class AbsComponentTag extends BodyTagSupport
         this.request=null;
         this.rrequest=null;
         this.includeChild=false;
-        
     }
     
     private void initDisplayComponentObj()
     {
         if(this.componentid==null||this.componentid.trim().equals("")||this.componentid.equals(this.ownerComponentObj.getConfigBean().getId()))
-        {
+        {//如果指定的是显示本组件的相应部分
             this.displayComponentObj=this.ownerComponentObj;
             return;
         }
@@ -168,14 +168,22 @@ public abstract class AbsComponentTag extends BodyTagSupport
     {
         try
         {
-            return doMyEndTag();
+            int flag= doMyEndTag();
+            rrequest.getWResponse().setJspout(null);
+            return flag;
         }catch(Exception e)
         {
-            rrequest.getWResponse().getMessageCollector().error("显示页面失败","显示页面"+rrequest.getPagebean().getId()+"失败",e);
+            log.error("显示页面"+rrequest.getPagebean().getId()+"失败",e);
+            rrequest.getWResponse().getMessageCollector().error("显示页面失败",null,true);
             return EVAL_PAGE;
         }
     }
 
+    protected void println(String content)
+    {
+        rrequest.getWResponse().println(content);
+    }
+    
     public boolean isDisplayByMySelf()
     {
         if(this.componentid==null||this.componentid.trim().equals("")||this.componentid.equals(this.ownerComponentObj.getConfigBean().getId()))

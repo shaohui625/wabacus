@@ -23,16 +23,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.inputbox.autocomplete.AutoCompleteBean;
-import com.wabacus.system.inputbox.autocomplete.IAutoCompleteDataSet;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
 
-public class AutoCompleteDataSet_autocompletedatapage1Report2 implements IAutoCompleteDataSet
+public class AutoCompleteDataSet_autocompletedatapage1Report2 extends AbsCommonDataSetValueProvider
 {
-
-    public Map<String,String> getAutoCompleteColumnsData(ReportRequest rrequest,AutoCompleteBean completebean,Map<String,String> mParams)
+    public Map<String,String> getAutoCompleteColumnsData(ReportRequest rrequest,Map<String,String> mParams)
     {
         if(mParams==null||!mParams.containsKey("deptno")) return null;
         String deptno=mParams.get("deptno");
@@ -69,6 +68,24 @@ public class AutoCompleteDataSet_autocompletedatapage1Report2 implements IAutoCo
             }
             //这里不用关闭conn
         }
+    }
+
+    public List<Map<String,String>> getDynamicColGroupDataSet(ReportRequest arg0)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public List<Map<String,String>> getLstSelectBoxOptions(ReportRequest arg0,Map<String,String> arg1)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public List<Map<String,String>> getLstTypePromptOptions(ReportRequest arg0,String arg1)
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

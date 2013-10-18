@@ -21,7 +21,6 @@ package com.wabacus.config.component.application.report.condition;
 import java.util.List;
 
 import com.wabacus.config.component.application.report.ConditionBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -101,7 +100,7 @@ public class ConditionInSqlBean implements Cloneable
             if(conditionname.equals("{#condition#}"))
             {
                 return ReportAssistant.getInstance().addDynamicConditionExpressionsToSql(rrequest,this.owner.getReportBean(),this.owner,sql,
-                        owner.getReportBean().getSbean().getLstConditions(),lstConditionValues,lstConditionTypes);
+                        owner.getProvider().getLstMyConditionBeans(rrequest),lstConditionValues,lstConditionTypes);
             }
             throw new WabacusRuntimeException("报表"+this.owner.getReportBean().getPath()+"中ConditionBeanInSqlBean的conditionname属性为空");
         }
@@ -117,7 +116,7 @@ public class ConditionInSqlBean implements Cloneable
                     lstConditionValues,lstConditionTypes));
         }else
         {
-            return ReportAssistant.getInstance().removeConditionPlaceHolderFromSql(this.owner.getReportBean(),sql,this.placeholder);
+            return ReportAssistant.getInstance().replaceSQLConditionPlaceHolderByRealValue(this.owner.getReportBean(),sql,this.placeholder,null);
         }
     }
 

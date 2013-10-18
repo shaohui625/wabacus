@@ -225,7 +225,7 @@
 				则只要不出现在＜insert/＞配置的插入数据的SQL语句中即可。
 			</userdata>
 		</item>
-		<item text="同时编辑/删除多页数据&lt;font color='red'&gt;New&lt;/font&gt;" id="editmultiplepagesdata">
+		<item text="同时编辑/删除多页数据" id="editmultiplepagesdata">
 			<userdata name="pageid">editmultiplepagesdatapage1</userdata>
 			<userdata name="configfilename">report_editablefunc1.xml</userdata>
 			<userdata name="desc">
@@ -313,7 +313,7 @@
 			</userdata>
 		</item>
 		
-		<item text="editablelist2/detail2列模板&lt;font color='red'&gt;New&lt;/font&gt;" id="editable2format">
+		<item text="editablelist2/detail2列模板" id="editable2format">
 			<userdata name="pageid">editable2formatpage1</userdata>
 			<userdata name="configfilename">report_editablefunc3.xml</userdata>
 			<userdata name="desc">
@@ -360,7 +360,7 @@
 				可以在确认提示信息中引用任意多个列的动态数据。
 			</userdata>
 		</item>
-		<item text="服务器端提示确认操作&lt;font color='red'&gt;New&lt;/font&gt;" id="confirmprompt">
+		<item text="服务器端提示确认操作" id="confirmprompt">
 			<userdata name="pageid">confirmpromptpage1</userdata>
 			<userdata name="configfilename">report_editablefunc3.xml</userdata>
 			<userdata name="desc">
@@ -489,7 +489,7 @@
 			</item>
 		</item>
 		
-		<item text="客户端/服务器端校验&lt;font color='red'&gt;New&lt;/font&gt;" id="editablevalidate">
+		<item text="客户端/服务器端校验" id="editablevalidate">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 			&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -768,7 +768,7 @@
 				</item>
 			</item>
 		</item>
-		<item text="常见输入框" id="inputbox">
+		<item text="常见输入框&lt;font color='red'&gt;New&lt;/font&gt;" id="inputbox">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -900,7 +900,7 @@
 					</userdata>
 				</item>
 			</item>
-			<item text="弹出输入框窗口" id="popup">
+			<item text="弹出输入框窗口&lt;font color='red'&gt;New&lt;/font&gt;" id="popup">
 				<userdata name="pageid">popuppage1</userdata>
 				<userdata name="configfilename">report_editablefunc2.xml</userdata>
 				<userdata name="desc">
@@ -913,7 +913,7 @@
 					另外，弹出窗口输入框的源输入框可以是普通文本框（默认），也可以多行文本框。
 				</userdata>
 			</item>
-			<item text="文件上传输入框" id="fileupload">
+			<item text="文件上传输入框&lt;font color='red'&gt;New&lt;/font&gt;" id="fileupload">
 				<userdata name="pageid">fileuploadpage1</userdata>
 				<userdata name="configfilename">report_editablefunc2.xml</userdata>
 				<userdata name="desc">
@@ -960,7 +960,7 @@
 				</userdata>
 			</item>
 		</item>
-		<item text="编辑特殊字段类型&lt;font color='red'&gt;New&lt;/font&gt;" id="columntype">
+		<item text="编辑特殊字段类型" id="columntype">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 			&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -1021,7 +1021,7 @@
 					3、目前暂不支持这种字段类型做为一个表的主键的同时，又做为另一个表的外键，这种情况添加操作不能成功。如果两个表有主外键关系，可以采用其它字段或uuid或sequence字段做为键，不能采用自动增长字段。
 				</userdata>
 			</item>
-			<item text="Increment字段&lt;font color='red'&gt;New&lt;/font&gt;" id="incrementid">
+			<item text="Increment字段" id="incrementid">
 				<userdata name="pageid">incrementidpage1</userdata>
 				<userdata name="configfilename">report_editablefunc3.xml</userdata>
 				<userdata name="desc">

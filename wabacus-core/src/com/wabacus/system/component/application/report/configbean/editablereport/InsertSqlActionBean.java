@@ -179,7 +179,6 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
         if(insertsql.equals("")) return true;
         insertsql=Tools.replaceCharacterInQuote(insertsql,'(',"$_LEFTBRACKET_$",true);
         insertsql=Tools.replaceCharacterInQuote(insertsql,')',"$_RIGHTBRACKET_$",true);
-        
         int idx=insertsql.indexOf("(");
         if(idx<=0) return false;
         insertsql=insertsql.substring(idx+1).trim();
@@ -188,7 +187,7 @@ public class InsertSqlActionBean extends AbsEditSqlActionBean
         for(int i=0;i<insertsql.length();i++)
         {
             if(insertsql.charAt(i)=='(')
-            {
+            {//又出现一个左括号
                 idxleft++;
             }else if(insertsql.charAt(i)==')')
             {

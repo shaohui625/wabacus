@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.ss.usermodel.Cell;
@@ -35,7 +34,6 @@ import org.apache.poi.ss.util.CellRangeAddress;
 
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
-import com.wabacus.WabacusBeanFactory;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadAssistant;
 import com.wabacus.config.ConfigLoadManager;
@@ -47,15 +45,17 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.FormatBean;
 import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.CacheDataBean;
-import com.wabacus.system.ExportExcelCreator;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ComponentAssistant;
 import com.wabacus.system.assistant.EditableReportAssistant;
+import com.wabacus.system.assistant.ListReportAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.assistant.StandardExcelAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
@@ -69,7 +69,6 @@ import com.wabacus.system.component.application.report.abstractreport.configbean
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportSubDisplayBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportSubDisplayColBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportSubDisplayRowBean;
-import com.wabacus.system.component.application.report.abstractreport.configbean.statistic.StatisticItemAndDataSetBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.statistic.StatisticItemBean;
 import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.system.component.application.report.configbean.UltraListReportColBean;
@@ -211,7 +210,7 @@ public abstract class AbsListReportType extends AbsReportType
             lstColIds=processDragCols(dragcols,lstColIds);
         }
         if(lstColIds!=null&&lstColIds.size()>0)
-        {
+        {//需要使用动态顺序
             List<ColBean> lstColBeansDyn=new ArrayList<ColBean>();
             ColBean cbTmp;
             StringBuffer dynColOrderBuf=new StringBuffer();
@@ -247,7 +246,7 @@ public abstract class AbsListReportType extends AbsReportType
         List<String> lstFromColids=new ArrayList<String>();
         UltraListReportDisplayBean ulrdbean=(UltraListReportDisplayBean)rbean.getDbean().getExtendConfigDataForReportType(UltraListReportType.KEY);
         if(dragcolsArr[0].indexOf("group_")==0)
-        {//被拖动的列是个分组列
+        {
             if(ulrdbean==null)
             {
                 log.warn("当前报表没有配置列分组，但传入的移动列ID为分组ID，移动报表列失败");
@@ -284,7 +283,7 @@ public abstract class AbsListReportType extends AbsReportType
         List<String> lstColIdsNew=new ArrayList<String>();
         for(String colidTmp:lstColIds)
         {
-            if(lstFromColids.contains(colidTmp)) continue;
+            if(lstFromColids.contains(colidTmp)) continue;//被移动的列稍后加进去
             if(targetColid.equals(colidTmp))
             {
                 if(dragdirect.equals("1"))
@@ -313,16 +312,24 @@ public abstract class AbsListReportType extends AbsReportType
         }
     }
 
+    public void loadLazyReportData(int startRownum,int endRownum)
+    {
+        this.lstReportData=ListReportAssistant.getInstance().loadLazyReportDataSet(rrequest,this,startRownum,endRownum);
+        if(this.lstReportData==null) this.lstReportData=new ArrayList<AbsReportDataPojo>();
+        super.doLoadReportDataPostAction();
+    }
+    
     protected void doLoadReportDataPostAction()
     {
         loadSubDisplayDataForWholeReport();
         super.doLoadReportDataPostAction();
+//        {//配置了冻结列标题
     }
 
     protected boolean isHiddenCol(ColBean cbean)
     {
-        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) return true;
-        int displaymodeTmp=cacheDataBean.getColDisplayModeAfterAuthorize(cbean);
+        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE))) return true;
+        int displaymodeTmp=cacheDataBean.getColDisplayModeAfterAuthorize(cbean,rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE);
         return displaymodeTmp<=0;
     }
     
@@ -330,15 +337,12 @@ public abstract class AbsListReportType extends AbsReportType
     {
         AbsListReportSubDisplayBean subdisplayBean=this.alrbean.getSubdisplaybean();
         if(subdisplayBean==null) return;
-        
-        
+        //                &&cacheDataBean.getFinalPageno()!=cacheDataBean.getPagecount()&&!alrdbean.getStatibean().isExistDisplayPerpageStatiRow())
         //        {//如果当前报表是分页显示，且不存在每页都显示的统计行，且当前不是显示最后一页
-        
-        
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&cacheDataBean.getPagesize()<0||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE
                 &&!this.cacheDataBean.isExportPrintPartData())
         {
-            if(subdisplayBean.isAllDisplayPerpageDataRows()) return;//如果所有统计行的显示类型都为page，即在分页报表中每页统计
+            if(subdisplayBean.isAllDisplayPerpageDataRows()) return;
         }
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&this.cacheDataBean.isExportPrintPartData()||rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE
                 &&cacheDataBean.getPagesize()>0)
@@ -346,27 +350,45 @@ public abstract class AbsListReportType extends AbsReportType
             if(cacheDataBean.getFinalPageno()!=cacheDataBean.getPagecount()&&subdisplayBean.isAllDisplayWholeReportDataRows()) return;
         }
         this.subDisplayDataObj=subdisplayBean.getPojoObject();
-        loadSubDisplayDataObj(subdisplayBean,this.subDisplayDataObj,"","");
+        loadSubDisplayDataObj(subdisplayBean,this.subDisplayDataObj,null,null);
     }
 
-    protected void loadSubDisplayDataObj(AbsListReportSubDisplayBean subdisplayBean,Object subdisplayDataObj,String groupbyClause,
-            String rowgroupcolumn)
+    protected void loadSubDisplayDataObj(AbsListReportSubDisplayBean subdisplayBean,Object subdisplayDataObj,
+            Map<String,String> mGroupColAndParentColValues,AbsListReportRowGroupSubDisplayRowBean srgbean)
     {
-        List<StatisticItemAndDataSetBean> lstItemAndDataseBeans=subdisplayBean.getLstStatitemAndDatasetBeans();
-        if(lstItemAndDataseBeans!=null&&lstItemAndDataseBeans.size()>0)
-        {
-            for(StatisticItemAndDataSetBean itemAndDatasetBeanTmp:lstItemAndDataseBeans)
-            {
-                itemAndDatasetBeanTmp.loadStatisticData(this,subdisplayDataObj,groupbyClause);
-            }
-        }
         try
         {
+            if(subdisplayBean.getLstStatitemBeans()!=null)
+            {
+                Map<String,Object> mStatitemValues=new HashMap<String,Object>();
+                for(ReportDataSetBean dsbeanTmp:rbean.getSbean().getLstDatasetBeans())
+                {
+                    for(ReportDataSetValueBean dsvbeanTmp:dsbeanTmp.getLstValueBeans())
+                    {
+                        Map<String,Object> mStatitemValuesLocal=dsvbeanTmp.getProvider().getStatisticDataSet(rrequest,srgbean,mGroupColAndParentColValues);//存放当前<value/>中加载出的统计数据
+                        if(mStatitemValuesLocal!=null) mStatitemValues.putAll(mStatitemValuesLocal);
+                    }
+                }
+                for(StatisticItemBean sItemBeanTmp:subdisplayBean.getLstStatitemBeans())
+                {
+                    if(sItemBeanTmp.getStatiscope()==StatisticItemBean.STATSTIC_SCOPE_ALL
+                            ||sItemBeanTmp.getStatiscope()==StatisticItemBean.STATSTIC_SCOPE_REPORT)
+                    {
+                        sItemBeanTmp.getSetMethod().invoke(subdisplayDataObj,new Object[] { mStatitemValues.get(sItemBeanTmp.getProperty()) });
+                    }
+                    if(sItemBeanTmp.getStatiscope()==StatisticItemBean.STATSTIC_SCOPE_ALL
+                            ||sItemBeanTmp.getStatiscope()==StatisticItemBean.STATSTIC_SCOPE_PAGE)
+                    {
+                        sItemBeanTmp.getPageStatiSetMethod().invoke(subdisplayDataObj,
+                                new Object[] { mStatitemValues.get("page_"+sItemBeanTmp.getProperty()) });
+                    }
+                }
+            }
             Method formatMethod=subdisplayBean.getPojoclass().getMethod("format",new Class[] { ReportRequest.class, ReportBean.class, String.class });
-            formatMethod.invoke(subdisplayDataObj,new Object[] { rrequest, rbean, rowgroupcolumn });
+            formatMethod.invoke(subdisplayDataObj,new Object[] { rrequest, rbean, srgbean==null?"":srgbean.getRowgroupcolumn() });
         }catch(Exception e)
         {
-            throw new WabacusConfigLoadingException("格式化报表"+rbean.getPath()+"的辅助显示数据时调用格式化方法失败",e);
+            throw new WabacusRuntimeException("设置报表"+rbean.getPath()+"的辅助显示数据失败",e);
         }
     }
 
@@ -376,7 +398,7 @@ public abstract class AbsListReportType extends AbsReportType
         resultBuf.append(super.showMetaDataDisplayStringStart());
         String rowselecttype=this.alrbean.getRowSelectType();
         if(rowselecttype!=null&&!rowselecttype.trim().equals(""))
-        {
+        {//行选中类型
             resultBuf.append(" rowselecttype=\"").append(rowselecttype).append("\"");
             resultBuf.append(" isSelectRowCrossPages=\"").append(this.alrbean.isSelectRowCrossPages()).append("\"");
             if(!rowselecttype.trim().equalsIgnoreCase(Consts.ROWSELECT_NONE))
@@ -399,27 +421,6 @@ public abstract class AbsListReportType extends AbsReportType
                 }
             }
         }
-        return resultBuf.toString();
-    }
-
-    protected String showReportDataWithVerticalScroll()
-    {
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append(showReportData(false));
-        resultBuf.append("<div style=\"width:").append(rbean.getWidth()).append(";");
-        if(Consts_Private.SCROLLSTYLE_NORMAL.equals(rbean.getScrollstyle()))
-        {
-            resultBuf.append("max-height:"+rbean.getScrollheight()+";overflow-x:hidden;overflow-y:auto;");
-            resultBuf.append("height:expression(this.scrollHeight>parseInt('").append(rbean.getScrollheight()).append("')?'").append(
-                    rbean.getScrollheight()).append("':'auto');\"");
-        }else if(Consts_Private.SCROLLSTYLE_IMAGE.equals(rbean.getScrollstyle()))
-        {
-            resultBuf.append("overflow-x:hidden;overflow-y:hidden;\"");
-            resultBuf.append("id=\"vscroll_"+rbean.getGuid()+"\"");
-        }
-        resultBuf.append(">");
-        resultBuf.append(showReportData(true));
-        resultBuf.append("</div>");
         return resultBuf.toString();
     }
 
@@ -447,18 +448,18 @@ public abstract class AbsListReportType extends AbsReportType
 
         }else if(scrolltype==AbsListReportBean.SCROLLTYPE_HORIZONTAL)
         {
-            resultBuf.append("<div style=\"width:").append(rbean.getScrollwidth()).append(";");
             if(Consts_Private.SCROLLSTYLE_NORMAL.equals(rbean.getScrollstyle()))
             {
+                resultBuf.append("<div><div onmouseover=\"this.style.height='100%'\" style=\"width:").append(rbean.getScrollwidth()).append(";");
                 resultBuf.append("overflow-x:auto;overflow-y:hidden;height:expression(this.scrollHeight+15);\"");
             }else if(Consts_Private.SCROLLSTYLE_IMAGE.equals(rbean.getScrollstyle()))
             {
+                resultBuf.append("<div  style=\"width:").append(rbean.getScrollwidth()).append(";");
                 resultBuf.append("overflow-x:hidden;overflow-y:hidden;\"");
                 resultBuf.append(" id=\"hscroll_"+rbean.getGuid()+"\"");
             }
             resultBuf.append(">");
         }
-        
         return resultBuf.toString();
     }
 
@@ -468,106 +469,58 @@ public abstract class AbsListReportType extends AbsReportType
         int scrolltype=this.alrbean.getScrollType();
         if(scrolltype==AbsListReportBean.SCROLLTYPE_ALL)
         {//显示普通纵横滚动条
-            return ComponentAssistant.getInstance().showComponentScrollEndPart(true,true);
-        }else if(scrolltype==AbsListReportBean.SCROLLTYPE_FIXED||scrolltype==AbsListReportBean.SCROLLTYPE_HORIZONTAL)
+            return ComponentAssistant.getInstance().showComponentScrollEndPart(rbean.getScrollstyle(),true,true);
+        }else if(scrolltype==AbsListReportBean.SCROLLTYPE_FIXED)
         {
             return "</div>";
+        }else if(scrolltype==AbsListReportBean.SCROLLTYPE_HORIZONTAL)
+        {
+            if(Consts_Private.SCROLLSTYLE_NORMAL.equals(rbean.getScrollstyle()))
+            {//如果是只显示横向普通滚动条，因为为了兼容IE9在外面套了一层<div>，所以这里要返回两个<div/>
+                return "</div></div>";
+            }else
+            {
+                return "</div>";
+            }
         }
         return "";
     }
 
-    public abstract String showReportData(boolean showtype);
+    protected StringBuilder dataPartStringBuffer;
+    
+    protected void checkAndPrintBufferData(int rowindex)
+    {
+        if(this.alrbean.getBatchouputcount()>0&&rowindex>0&&rowindex%this.alrbean.getBatchouputcount()==0)
+        {
+            this.wresponse.print(dataPartStringBuffer.toString());
+            dataPartStringBuffer.delete(0,dataPartStringBuffer.length());
+        }
+    }
+    
+    public abstract void showReportData(boolean showtype,StringBuilder resultBuf);
 
     protected String getDefaultNavigateKey()
     {
         return Consts.LISTREPORT_NAVIGATE_DEFAULT;
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    //        int pagesize=cdb.getPagesize();
     //        {//不分页或依赖其它报表的翻页导航栏
-    
-    
-    
     //        {//从数据库中没有取到数据，注意不能用recordcount==0判断，因为在可编辑列表报表中，recordcount为0时可能还要显示一页或多页的添加的行。
-    
+    //                .getString(rbean.getPageBean(),Consts.NAVIGATE_COUNT_INFO,true),rrequest);
+    //        navigate_count_info=Tools.replaceAll(navigate_count_info,"#totalpage#",String
     //        }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    //        String tablewidth=rbean.getDisplayWidth();
-    
-    
-    
-    
-    
-    
-    
-    
-    
     //        rtnStr.append("</td>");
-    
-    
-    
-    
-    
-    //                rtnStr.append("<td align='center' width='1%' nowrap>").append(buttonStr).append(
     //                        "</td>");
-    
-    
+    //        }
     //        rtnStr.append("<td>&nbsp;</td>");
-    
-    
-    
-    
-    
-    
     //            rtnStr.append("  <select name=\"SELEPAGENUM\"><option>1</option></select>");
-    
-    
-    
     //            {//当前为第一页
-    
-    
-    
-    //                                rrequest));
-    
+    //                rtnStr.append(navigate_prevpage_label
     //            {//当前为最后一页
-    
-    
-    
-    
     //            {//中间页
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    //                        rrequest)
     //        rtnStr.append("</td></tr></table>");
-    //        return rtnStr.toString();
-    
 
     public List<ColBean> getLstDisplayColBeans()
     {
@@ -577,22 +530,10 @@ public abstract class AbsListReportType extends AbsReportType
     }
 
     //    /**
-    
-    
-    
+    //     * 从拦截器中获取某一行的样式字符串信息
     //     */
-    
-    
-    
-    
-    
-    
     //            {//拦截器中返回了<tr/>的样式字符串
-    
-    
-    
-    
-    //    }
+    //            }
 
     protected String showSubRowDataForWholeReport(int position)
     {
@@ -630,12 +571,13 @@ public abstract class AbsListReportType extends AbsReportType
         resultBuf.append("<tr  class='cls-data-tr'>");
         ColDisplayData colDisplayData;
         String stativalue=null;
-        if(rbean.getDbean().isColselect()
+        if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&rbean.getDbean().isPageColselect()
+                ||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&rbean.getDbean().isDataexportColselect()
                 ||lstStatiColBeans.size()==1
                 ||(cacheDataBean.getAttributes().get("authroize_col_display")!=null&&String.valueOf(
                         cacheDataBean.getAttributes().get("authroize_col_display")).trim().equals("false"))
                 ||(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&alrbean.hasControllCol()))
-        {
+        {//如果提供了列选择功能，或者只有一个统计列，或者对列进行了授权，则所有统计项显示在一列中，这一列占据了整行
             resultBuf.append("<td class='cls-data-td-list' ");
             int colspan=cacheDataBean.getTotalColCount();
             if(colspan<=0) return "";
@@ -703,7 +645,7 @@ public abstract class AbsListReportType extends AbsReportType
         {
             rowidx=this.lstReportData.size()-1;
         }else if(rowidx==-2)
-        {//打印本页记录第一条记录此列的值
+        {
             int[] displayrowinfo=this.getDisplayRowInfo();
             if(displayrowinfo[1]<=0) return "";
             rowidx=displayrowinfo[0];
@@ -715,42 +657,13 @@ public abstract class AbsListReportType extends AbsReportType
         return strvalue;
     }
 
-    public Workbook showReportOnPlainExcel(final Workbook workbook)
+    public void showReportOnPlainExcel(Workbook workbook)
     {
-        if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return workbook;
-        if(this.cacheDataBean.getTotalColCount()==0) return workbook;
-        
-        final String excelCreatorBeanId = pedebean != null ?  this.pedebean.getAttrs().get("excelCreator") : null;
-        ExportExcelCreator creator = StringUtils.isNotEmpty(excelCreatorBeanId) ?   (ExportExcelCreator)WabacusBeanFactory.getOrCreateBean(excelCreatorBeanId) : null;
-        if( null == creator ){
-            creator = new ExportExcelCreator(){
-                public Workbook makeExcel(AbsReportType report,Workbook workbook)
-                {
-                    createNewSheet(workbook,10);
-                    if(!cacheDataBean.shouldBatchDataExport())
-                    {
-                        showReportDataOnPlainExcel(workbook,0);
-                    }else
-                    {
-                        int startNum=0;
-                        for(int i=0;i<cacheDataBean.getPagecount();i++)
-                        {
-                            if(i!=0)
-                            {
-                                cacheDataBean.setPageno(i+1);
-                                cacheDataBean.setRefreshNavigateInfoType(1);
-                                setHasLoadedDataFlag(false);
-                                loadReportData(true);
-                            }
-                            showReportDataOnPlainExcel(workbook,startNum);
-                            startNum+=cacheDataBean.getPagesize();
-                        }
-                    }
-                    return workbook;
-                }                
-            };
-        }
-        return creator.makeExcel(this,workbook);     
+        if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return;
+        if(this.cacheDataBean.getTotalColCount()==0) return;
+        createNewSheet(workbook,10);
+        showReportTitleOnPlainExcel(workbook);
+        (new ExportDataToPlainExcelFile(workbook)).exportReportDataToFile();
     }
 
     protected void createNewSheet(Workbook workbook,int defaultcolumnwidth)
@@ -760,20 +673,23 @@ public abstract class AbsListReportType extends AbsReportType
         int i=0;
         for(ColBean cbean:lstColBeans)
         {
-            if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
-            
+            if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean,false)<=0) continue;
+            //this.excelSheet.autoSizeColumn(i);
             if(cbean.getPlainexcelwidth()>1.0f)
             {
-                
                 this.excelSheet.setColumnWidth(i,(int)cbean.getPlainexcelwidth());
             }
             i++;
         }
-        showReportTitleOnPlainExcel(workbook);
     }
 
     protected void showReportTitleOnPlainExcel(Workbook workbook)
     {
+        SqlBean sbean=rbean.getSbean();
+        if(sbean.isHorizontalDataset()&&this.cacheDataBean.getColDisplayModeAfterAuthorize(sbean.getHdsTitleLabelCbean(),false)<=0)
+        {
+            return;
+        }
         String plainexceltitle=null;
         if(this.pedebean!=null) plainexceltitle=this.pedebean.getPlainexceltitle();
         if("none".equals(plainexceltitle)) return;
@@ -783,10 +699,17 @@ public abstract class AbsListReportType extends AbsReportType
         ColDisplayData colDisplayData;
         int cellidx=0;
         Cell cell;
+        if(sbean.isHorizontalDataset()&&isShouldDisplayHdsLabelCol())
+        {
+            cell=dataTitleRow.createCell(cellidx++);
+            cell.setCellType(Cell.CELL_TYPE_STRING);
+            cell.setCellValue(sbean.getHdsTitleLabelCbean().getLabel(rrequest));
+            cell.setCellStyle(StandardExcelAssistant.getInstance().setCellAlign(titleCellStyle,sbean.getHdsTitleLabelCbean().getLabelalign()));
+        }
         String labelTmp;
         for(ColBean cbean:lstColBeans)
         {
-            if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
+            if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean,false)<=0) continue;
             if("column".equals(plainexceltitle))
             {
                 labelTmp=cbean.getColumn();
@@ -801,68 +724,16 @@ public abstract class AbsListReportType extends AbsReportType
             cell.setCellValue(labelTmp);
             cell.setCellStyle(StandardExcelAssistant.getInstance().setCellAlign(titleCellStyle,cbean.getLabelalign()));
         }
-        
-        
-        
+        titleRowCount=1;
+        //        System.out.println(csTmp.getUserStyleName());
     }
-
-    private void showReportDataOnPlainExcel(Workbook workbook,int startNum)
-    {
-        boolean hasdata=true;//有数据
-        if(lstReportData==null|lstReportData.size()==0)
-        {
-            hasdata=false;
-            if(lstReportData==null) lstReportData=new ArrayList<AbsReportDataPojo>();
-            lstReportData.add(ReportAssistant.getInstance().getPojoClassInstance(rrequest,rbean,rbean.getPojoClassObj()));
-        }
-        List<ColBean> lstColBeans=this.getLstDisplayColBeans();
-        CellStyle dataCellStyle=StandardExcelAssistant.getInstance().getDataCellStyleForStandardExcel(workbook);
-        CellStyle dataCellStyleWithFormat=StandardExcelAssistant.getInstance().getDataCellStyleForStandardExcel(workbook);
-        if(hasdata) showSubRowDataInPlainExcelForWholeReport(workbook,dataCellStyle,AbsListReportSubDisplayBean.SUBROW_POSITION_TOP);
-        Cell cell;
-        AbsListReportColBean alrcbeanTmp;
-        Object objvalueTmp;
-        for(AbsReportDataPojo dataObjTmp:lstReportData)
-        {
-            if(sheetsize>0&&excelRowIdx>=sheetsize)
-            {
-                createNewSheet(workbook,10);
-            }
-            Row dataRow=excelSheet.createRow(excelRowIdx++);
-            int cellidx=0;
-            for(ColBean cbean:lstColBeans)
-            {
-                if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
-                alrcbeanTmp=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
-                cell=dataRow.createCell(cellidx++);
-                boolean flag=false;
-                if(cbean.isSequenceCol())
-                {
-                    if(hasdata)
-                        cell.setCellValue(startNum+alrcbeanTmp.getSequenceStartNum());
-                    else
-                        cell.setCellValue("");
-                }else if(!cbean.isControlCol())
-                {
-                    objvalueTmp=dataObjTmp.getColValue(cbean);
-                    flag=StandardExcelAssistant.getInstance().setCellValue(workbook,cbean.getValuealign(),cell,objvalueTmp,cbean.getDatatypeObj(),
-                            dataCellStyleWithFormat);
-                }
-                if(!flag) cell.setCellStyle(StandardExcelAssistant.getInstance().setCellAlign(dataCellStyle,cbean.getValuealign()));
-            }
-            startNum++;
-        }
-        if(hasdata) showSubRowDataInPlainExcelForWholeReport(workbook,dataCellStyle,AbsListReportSubDisplayBean.SUBROW_POSITION_BOTTOM);
-    }
-
+    
     protected void showSubRowDataInPlainExcelForWholeReport(Workbook workbook,CellStyle dataCellStyle,int position)
     {
         AbsListReportSubDisplayBean subDisplayBean=this.alrbean.getSubdisplaybean();
         if(subDisplayBean==null) return;
         List<AbsListReportSubDisplayRowBean> lstStatiDisplayRowBeans=subDisplayBean.getLstSubDisplayRowBeans();
         if(lstStatiDisplayRowBeans==null||lstStatiDisplayRowBeans.size()==0) return;
-        
-        
 
         List<AbsListReportSubDisplayColBean> lstStatiColBeans=null;
         for(AbsListReportSubDisplayRowBean sRowBeanTmp:lstStatiDisplayRowBeans)
@@ -883,7 +754,6 @@ public abstract class AbsListReportType extends AbsReportType
                 continue;
             lstStatiColBeans=sRowBeanTmp.getLstSubColBeans();
             if(lstStatiColBeans==null||lstStatiColBeans.size()==0) continue;
-            
             String stativalue;
             int startcolidx=0;
             int endcolidx=-1;
@@ -893,7 +763,7 @@ public abstract class AbsListReportType extends AbsReportType
                 stativalue=getSubColDisplayValue(this.subDisplayDataObj,scbean);
                 stativalue=Tools.replaceAll(stativalue,"&nbsp;"," ");
                 stativalue=stativalue.replaceAll("<.*?\\>","");//替换掉html标签
-                if(rbean.getDbean().isColselect()
+                if(rbean.getDbean().isDataexportColselect()
                         ||lstStatiColBeans.size()==1
                         ||(cacheDataBean.getAttributes().get("authroize_col_display")!=null&&String.valueOf(
                                 cacheDataBean.getAttributes().get("authroize_col_display")).trim().equals("false"))||alrbean.hasControllCol())
@@ -924,23 +794,7 @@ public abstract class AbsListReportType extends AbsReportType
         if(this.cacheDataBean.getTotalColCount()==0) return;
         createNewPdfPage();
         showDataHeaderOnPdf();
-        if(!this.cacheDataBean.shouldBatchDataExport())
-        {
-            showReportDataOnPdf();
-        }else
-        {
-            for(int i=0;i<this.cacheDataBean.getPagecount();i++)
-            {
-                if(i!=0)
-                {
-                    this.cacheDataBean.setPageno(i+1);
-                    this.cacheDataBean.setRefreshNavigateInfoType(1);
-                    this.setHasLoadedDataFlag(false);
-                    loadReportData(true);
-                }
-                showReportDataOnPdf();
-            }
-        }
+        (new ExportDataToPdfFile()).exportReportDataToFile();
     }
 
     private float[] colwidthArr;
@@ -957,7 +811,7 @@ public abstract class AbsListReportType extends AbsReportType
             List<ColBean> lstColBeans=this.getLstDisplayColBeans();
             for(ColBean cbean:lstColBeans)
             {
-                if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
+                if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean,false)<=0) continue;
                 if(cbean.getPdfwidth()>0.1f)
                 {
                     totalconfigwidth+=cbean.getPdfwidth();
@@ -986,7 +840,7 @@ public abstract class AbsListReportType extends AbsReportType
             int i=0;
             for(ColBean cbean:lstColBeans)
             {
-                if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
+                if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean,false)<=0) continue;
                 if(cbean.getPdfwidth()>0.1f)
                 {
                     colwidthArr[i]=cbean.getPdfwidth();
@@ -1008,66 +862,35 @@ public abstract class AbsListReportType extends AbsReportType
 
     protected void showDataHeaderOnPdf()
     {
+        SqlBean sbean=rbean.getSbean();
+        if(sbean.isHorizontalDataset()&&this.cacheDataBean.getColDisplayModeAfterAuthorize(sbean.getHdsTitleLabelCbean(),false)<=0)
+        {
+            return;
+        }
+        if(sbean.isHorizontalDataset()&&isShouldDisplayHdsLabelCol())
+        {
+            addDataHeaderCell(sbean.getHdsTitleLabelCbean(),sbean.getHdsTitleLabelCbean().getLabel(rrequest),1,1,getPdfCellAlign(sbean
+                    .getHdsTitleLabelCbean().getLabelalign(),Element.ALIGN_CENTER));
+        }
         List<ColBean> lstColBeans=this.getLstDisplayColBeans();
         ColDisplayData colDisplayData;
         String labelTmp;
         for(ColBean cbean:lstColBeans)
         {
-            if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
+            if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean,false)<=0) continue;
             labelTmp=cbean.getLabel(rrequest);
             colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,null,-1,null,labelTmp);
             addDataHeaderCell(cbean,colDisplayData.getValue(),1,1,getPdfCellAlign(cbean.getLabelalign(),Element.ALIGN_CENTER));
         }
     }
-
-    private void showReportDataOnPdf()
-    {
-        boolean hasData=true;
-        if(lstReportData==null|lstReportData.size()==0)
-        {
-            if(lstReportData==null) lstReportData=new ArrayList<AbsReportDataPojo>();
-            lstReportData.add(ReportAssistant.getInstance().getPojoClassInstance(rrequest,rbean,rbean.getPojoClassObj()));
-            hasData=false;
-        }
-        if(hasData) showSubRowDataOnPdfForWholeReport(AbsListReportSubDisplayBean.SUBROW_POSITION_TOP);
-        List<ColBean> lstColBeans=this.getLstDisplayColBeans();
-        ColDisplayData colDisplayData;
-        AbsListReportColBean alrcbeanTmp;
-        String valueTmp;
-        for(AbsReportDataPojo dataObjTmp:lstReportData)
-        {
-            if(this.pdfpagesize>0&&this.pdfrowindex!=0&&this.pdfrowindex%this.pdfpagesize==0)
-            {
-                this.createNewPdfPage();
-                if(this.isFullpagesplit) showDataHeaderOnPdf();
-            }
-            for(ColBean cbean:lstColBeans)
-            {
-                if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
-                valueTmp="";
-                if(cbean.isSequenceCol())
-                {
-                    alrcbeanTmp=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
-                    valueTmp=String.valueOf(this.pdfrowindex+alrcbeanTmp.getSequenceStartNum());
-                }else if(!cbean.isControlCol())
-                {
-                    colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,null,this.pdfrowindex,null,dataObjTmp.getColStringValue(cbean));
-                    valueTmp=colDisplayData.getValue();
-                }
-                addDataCell(cbean,valueTmp,1,1,getPdfCellAlign(cbean.getValuealign(),Element.ALIGN_CENTER));
-            }
-            this.pdfrowindex++;
-        }
-        if(hasData) showSubRowDataOnPdfForWholeReport(AbsListReportSubDisplayBean.SUBROW_POSITION_BOTTOM);
-    }
-
+    
     protected int getTotalColCount()
     {
         List<ColBean> lstColBeans=this.getLstDisplayColBeans();
         int cnt=0;
         for(ColBean cbean:lstColBeans)
         {
-            if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
+            if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean,rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)<=0) continue;
             if(cbean.isControlCol()) continue;
             cnt++;
         }
@@ -1080,8 +903,7 @@ public abstract class AbsListReportType extends AbsReportType
         if(subDisplayBean==null) return;
         List<AbsListReportSubDisplayRowBean> lstStatiDisplayRowBeans=subDisplayBean.getLstSubDisplayRowBeans();
         if(lstStatiDisplayRowBeans==null||lstStatiDisplayRowBeans.size()==0) return;
-        
-        
+        //        Object subdisplayDataObj=subDisplayBean.getPojoObject();
         List<AbsListReportSubDisplayColBean> lstStatiColBeans=null;
         for(AbsListReportSubDisplayRowBean sRowBeanTmp:lstStatiDisplayRowBeans)
         {
@@ -1093,7 +915,7 @@ public abstract class AbsListReportType extends AbsReportType
             {
                 if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&this.cacheDataBean.isExportPrintPartData()
                         ||rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&cacheDataBean.getPagesize()>0)
-                {//当前是打印或导出或在页面显示一页数据
+                {
                     if(cacheDataBean.getFinalPageno()!=cacheDataBean.getPagecount()) continue;
                 }
             }*/
@@ -1101,7 +923,6 @@ public abstract class AbsListReportType extends AbsReportType
                 continue;
             lstStatiColBeans=sRowBeanTmp.getLstSubColBeans();
             if(lstStatiColBeans==null||lstStatiColBeans.size()==0) continue;
-            
             String stativalue;
             int startcolidx=0;
             int endcolidx=-1;
@@ -1110,13 +931,13 @@ public abstract class AbsListReportType extends AbsReportType
                 stativalue=getSubColDisplayValue(this.subDisplayDataObj,scbean);
                 stativalue=Tools.replaceAll(stativalue,"&nbsp;"," ");
                 stativalue=stativalue.replaceAll("<.*?\\>","");
-                if(rbean.getDbean().isColselect()
+                if(rbean.getDbean().isDataexportColselect()
                         ||lstStatiColBeans.size()==1
                         ||(cacheDataBean.getAttributes().get("authroize_col_display")!=null&&String.valueOf(
                                 cacheDataBean.getAttributes().get("authroize_col_display")).trim().equals("false"))||alrbean.hasControllCol())
                 {
                     startcolidx=0;
-                    endcolidx=cacheDataBean.getTotalColCount();
+                    endcolidx=cacheDataBean.getTotalColCount();//取到当前参与显示的总列数
                     int deltaCount=0;
                     if(alrdbean.getRowGroupColsNum()>0&&alrdbean.getRowgrouptype()==2)
                     {
@@ -1130,10 +951,204 @@ public abstract class AbsListReportType extends AbsReportType
                 }
                 addDataCell(scbean,stativalue,1,endcolidx-startcolidx,Element.ALIGN_LEFT);
             }
-            
         }
     }
 
+    protected boolean isShouldDisplayHdsLabelCol()
+    {
+        if(!rbean.getSbean().isHorizontalDataset()) return false;
+        ColBean cbDataBeanTmp;
+        for(int i=0;i<this.lstReportData.size();i++)
+        {
+            cbDataBeanTmp=this.lstReportData.get(i).getHdsDataColBean();
+            if(cbDataBeanTmp!=null&&this.cacheDataBean.getColDisplayModeAfterAuthorize(cbDataBeanTmp,rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)>0
+                    &&!Tools.isEmpty(cbDataBeanTmp.getLabel(rrequest)))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private abstract class AbsExportDataToFile
+    {
+        protected List<ColBean> lstColBeans;
+
+        protected void exportReportDataToFile()
+        {
+            boolean isHorizontalDataset=rbean.getSbean().isHorizontalDataset();
+            boolean isShouldDisplayHdsLabelCol=isShouldDisplayHdsLabelCol();
+            this.lstColBeans=getLstDisplayColBeans();
+            int[] displayrowinfo=getDisplayRowInfo();
+            if(displayrowinfo[1]<=0)
+            {
+                exportOneRowDataToFile(ReportAssistant.getInstance().getPojoClassInstance(rrequest,rbean,rbean.getPojoClassObj()),
+                        isHorizontalDataset,isShouldDisplayHdsLabelCol);
+            }else
+            {
+                boolean isLazyLoadata=rbean.isLazyLoadReportData(rrequest);
+                int lazyloadataCount=rbean.getLazyLoadDataCount(rrequest);
+                int recordidx=-1, startRownum=0;
+                if(isLazyLoadata&&!cacheDataBean.isLoadAllReportData())
+                {
+                    startRownum=(cacheDataBean.getFinalPageno()-1)*cacheDataBean.getPagesize();
+                }
+                if(!isHorizontalDataset)
+                {
+                    exportSubRowDataToFileForWholeReport(AbsListReportSubDisplayBean.SUBROW_POSITION_TOP);
+                }
+                AbsReportDataPojo rowDataObjTmp;
+                for(int i=displayrowinfo[0];i<displayrowinfo[1];i++)
+                {
+                    if(isLazyLoadata&&i%lazyloadataCount==0)
+                    {
+                        loadLazyReportData(startRownum+i,startRownum+i+lazyloadataCount);
+                        if(lstReportData.size()==0) break;
+                        recordidx=-1;
+                    }
+                    recordidx=isLazyLoadata?(recordidx+1):i;
+                    if(recordidx>=lstReportData.size()) break;
+                    rowDataObjTmp=lstReportData.get(recordidx);
+                    exportOneRowDataToFile(rowDataObjTmp,isHorizontalDataset,isShouldDisplayHdsLabelCol);
+                }
+                if(!isHorizontalDataset)
+                {
+                    exportSubRowDataToFileForWholeReport(AbsListReportSubDisplayBean.SUBROW_POSITION_BOTTOM);
+                }
+            }
+        }
+
+        protected abstract void exportOneRowDataToFile(AbsReportDataPojo rowDataObj,boolean isHorizontalDataset,
+                boolean isShouldDisplayHdsLabelCol);
+
+        protected abstract void exportSubRowDataToFileForWholeReport(int position);
+    }
+    
+    private class ExportDataToPlainExcelFile extends AbsExportDataToFile
+    {
+        private Workbook workbook;
+
+        private CellStyle dataCellStyle;
+
+        private CellStyle dataCellStyleWithFormat;
+
+        public ExportDataToPlainExcelFile(Workbook workbook)
+        {
+            this.workbook=workbook;
+        }
+
+        protected void exportReportDataToFile()
+        {
+            dataCellStyle=StandardExcelAssistant.getInstance().getDataCellStyleForStandardExcel(workbook);//获取数据行的样式对象
+            dataCellStyleWithFormat=StandardExcelAssistant.getInstance().getDataCellStyleForStandardExcel(workbook);
+            super.exportReportDataToFile();
+        }
+
+        protected void exportOneRowDataToFile(AbsReportDataPojo rowDataObj,boolean isHorizontalDataset,boolean isShouldDisplayHdsLabelCol)
+        {
+            if(isHorizontalDataset&&rowDataObj.getHdsDataColBean()!=null
+                    &&cacheDataBean.getColDisplayModeAfterAuthorize(rowDataObj.getHdsDataColBean(),false)<=0)
+            {//横向数据集，当前数据行对应的配置<col/>被授权为不显示
+                return;
+            }
+            if(sheetsize>0&&(excelRowIdx-titleRowCount)>=sheetsize)
+            {
+                createNewSheet(workbook,10);
+                showReportTitleOnPlainExcel(workbook);
+            }
+            Row dataRow=excelSheet.createRow(excelRowIdx++);
+            Cell cell;
+            int cellidx=0;
+            if(isShouldDisplayHdsLabelCol)
+            {//是横向数据集且需要在左侧显示一列各配置<col/>的label
+                cell=dataRow.createCell(cellidx++);
+                cell.setCellValue(rowDataObj.getHdsDataColBean().getLabel(rrequest));
+                cell.setCellStyle(StandardExcelAssistant.getInstance().setCellAlign(dataCellStyle,rowDataObj.getHdsDataColBean().getValuealign()));
+            }
+            AbsListReportColBean alrcbeanTmp;
+            Object objvalueTmp;
+            ColBean cbeanOriginal;
+            for(ColBean cbean:lstColBeans)
+            {
+                if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean,false)<=0) continue;
+                cbeanOriginal=isHorizontalDataset&&rowDataObj.getHdsDataColBean()!=null&&!cbean.isSequenceCol()&&!cbean.isNonFromDbCol()
+                        &&!cbean.isNonValueCol()&&!cbean.isControlCol()?rowDataObj.getHdsDataColBean():cbean;
+                alrcbeanTmp=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(KEY);
+                cell=dataRow.createCell(cellidx++);
+                boolean flag=false;
+                if(cbean.isSequenceCol())
+                {
+                    cell.setCellValue(excelGlobalRowIdx+alrcbeanTmp.getSequenceStartNum());
+                }else if(!cbean.isControlCol())
+                {
+                    objvalueTmp=rowDataObj.getColValue(cbean);
+                    flag=StandardExcelAssistant.getInstance().setCellValue(workbook,cbeanOriginal.getValuealign(),cell,objvalueTmp,
+                            cbeanOriginal.getDatatypeObj(),dataCellStyleWithFormat);
+                }
+                if(!flag) cell.setCellStyle(StandardExcelAssistant.getInstance().setCellAlign(dataCellStyle,cbeanOriginal.getValuealign()));
+            }
+            excelGlobalRowIdx++;
+        }
+
+        protected void exportSubRowDataToFileForWholeReport(int position)
+        {
+            showSubRowDataInPlainExcelForWholeReport(workbook,dataCellStyle,position);
+        }
+
+    }
+    
+    private class ExportDataToPdfFile extends AbsExportDataToFile
+    {
+        protected void exportOneRowDataToFile(AbsReportDataPojo rowDataObj,boolean isHorizontalDataset,boolean isShouldDisplayHdsLabelCol)
+        {
+            if(isHorizontalDataset&&rowDataObj.getHdsDataColBean()!=null
+                    &&cacheDataBean.getColDisplayModeAfterAuthorize(rowDataObj.getHdsDataColBean(),false)<=0)
+            {//横向数据集，当前数据行对应的配置<col/>被授权为不显示
+                return;
+            }
+            if(pdfpagesize>0&&pdfrowindex!=0&&pdfrowindex%pdfpagesize==0)
+            {
+                createNewPdfPage();
+                if(isFullpagesplit) showDataHeaderOnPdf();
+            }
+            if(isShouldDisplayHdsLabelCol)
+            {//是横向数据集且需要在左侧显示一列各配置<col/>的label
+                addDataCell(rowDataObj.getHdsDataColBean(),rowDataObj.getHdsDataColBean().getLabel(rrequest),1,1,getPdfCellAlign(rowDataObj
+                        .getHdsDataColBean().getValuealign(),Element.ALIGN_CENTER));
+            }
+            ColBean cbeanOriginal;
+            AbsListReportColBean alrcbeanTmp;
+            ColDisplayData colDisplayData;
+            String valueTmp;
+            for(ColBean cbean:lstColBeans)
+            {
+                if(cacheDataBean.getColDisplayModeAfterAuthorize(cbean,false)<=0) continue;
+                cbeanOriginal=isHorizontalDataset&&rowDataObj.getHdsDataColBean()!=null&&!cbean.isSequenceCol()&&!cbean.isNonFromDbCol()
+                        &&!cbean.isNonValueCol()&&!cbean.isControlCol()?rowDataObj.getHdsDataColBean():cbean;
+                if(cbean.isSequenceCol())
+                {
+                    alrcbeanTmp=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
+                    valueTmp=String.valueOf(pdfrowindex+alrcbeanTmp.getSequenceStartNum());
+                }else if(!cbean.isControlCol())
+                {
+                    colDisplayData=ColDisplayData.getColDataFromInterceptor(AbsListReportType.this,cbean,null,pdfrowindex,null,rowDataObj.getColStringValue(cbean));
+                    valueTmp=colDisplayData.getValue();
+                }else
+                {
+                    valueTmp="";
+                }
+                addDataCell(cbean,valueTmp,1,1,getPdfCellAlign(cbeanOriginal.getValuealign(),Element.ALIGN_CENTER));
+            }
+            pdfrowindex++;
+        }
+
+        protected void exportSubRowDataToFileForWholeReport(int position)
+        {
+            showSubRowDataOnPdfForWholeReport(position);
+        }
+        
+    }
+    
     public int beforeReportLoading(ReportBean reportbean,List<XmlElementBean> lstEleReportBeans)
     {
         XmlElementBean eleReportBean=lstEleReportBeans.get(0);
@@ -1282,10 +1297,9 @@ public abstract class AbsListReportType extends AbsReportType
                         }
                     }
                     if(alrbean.getLoadStoreRoworderObject()==null&&Config.default_roworder_object==null)
-                    {
+                    {//没有配置局默认的处理行排序的对象
                         throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()
                                 +"失败，没有在wabacus.cfg.xml通过default-roworderclass配置项配置全局默认处理行排序的类，因此必须在其<report/>中配置roworderclass属性指定处理本报表行排序的类");
-
                     }
                 }
             }
@@ -1338,7 +1352,7 @@ public abstract class AbsListReportType extends AbsReportType
             throw new WabacusConfigLoadingException("报表"+reportbean.getPath()+"为数据自动列表报表，不允许<col/>标签的property属性为空");
         }
         String width=eleColBean.attributeValue("width");
-        String align=eleColBean.attributeValue("align");//兼容老报表的配置，默认为center
+        String align=eleColBean.attributeValue("align");
         String clickorderby=eleColBean.attributeValue("clickorderby");
         String filter=eleColBean.attributeValue("filter");
 
@@ -1405,7 +1419,7 @@ public abstract class AbsListReportType extends AbsReportType
                     align="left";
                 }else
                 {
-                    align="center";
+                    align="center";//默认为center
                 }
             }
             colbean.setValuestyleproperty(colbean.getValuestyleproperty(null,true)+" align='"+align+"' ",true);
@@ -1491,8 +1505,13 @@ public abstract class AbsListReportType extends AbsReportType
                 {
                     throw new WabacusConfigLoadingException("加载报表"+colbean.getReportBean().getPath()+"失败，不能为同一个报表同时配置普通分组和行分组功能");
                 }
-                alrdbean.setRowgroupDatasetId(colbean.getDatasetValueId());
-                colbean.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
+                List<String> lstBelongDsids=colbean.getLstDatasetValueids();
+                if(lstBelongDsids!=null&&lstBelongDsids.size()>1)
+                {
+                    throw new WabacusConfigLoadingException("加载报表"+colbean.getReportBean().getPath()+"的列"+colbean.getColumn()+"失败，参与行分组的列不能指定多个数据集ID");
+                }
+                alrdbean.setRowgroupDatasetId(lstBelongDsids==null||lstBelongDsids.size()==0?null:lstBelongDsids.get(0));
+                colbean.setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
                 alrdbean.addRowgroupCol(colbean);
                 alrdbean.setRowgrouptype(1);
             }
@@ -1515,8 +1534,13 @@ public abstract class AbsListReportType extends AbsReportType
                 {
                     throw new WabacusConfigLoadingException("加载报表"+colbean.getReportBean().getPath()+"失败，不能为同一个报表同时配置普通分组和行分组功能");
                 }
-                alrdbean.setRowgroupDatasetId(colbean.getDatasetValueId());
-                colbean.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);//参与树形分组的列永远显示
+                List<String> lstBelongDsids=colbean.getLstDatasetValueids();
+                if(lstBelongDsids!=null&&lstBelongDsids.size()>1)
+                {
+                    throw new WabacusConfigLoadingException("加载报表"+colbean.getReportBean().getPath()+"的列"+colbean.getColumn()+"失败，参与行分组的列不能指定多个数据集ID");
+                }
+                alrdbean.setRowgroupDatasetId(lstBelongDsids==null||lstBelongDsids.size()==0?null:lstBelongDsids.get(0));
+                colbean.setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
                 alrdbean.addRowgroupCol(colbean);
                 alrdbean.setRowgrouptype(2);
             }
@@ -1542,21 +1566,12 @@ public abstract class AbsListReportType extends AbsReportType
                 alrcbean.setRoworder_inputboxstyleproperty(inputboxstyleproperty.trim());
             }
         }
-        
+        //        if(colbean.getHidden().equals("0"))
         //        {//只有hidden为0的列才能参与折线标题列
         //            String curvelabelup=eleCol.attributeValue("curvelabelup");//折线标题列的上部标题
         //            String curvelabeldown=eleCol.attributeValue("curvelabeldown");//折线标题列的上部标题
         //            String curvelabel=eleCol.attributeValue("curvelabel");//是否参与了折线标题
         //            String curvecolor=eleCol.attributeValue("curvecolor");//是否参与了折线标题
-        
-        
-        
-        
-        
-        
-        
-        
-        
         return 1;
     }
 
@@ -1587,10 +1602,10 @@ public abstract class AbsListReportType extends AbsReportType
                 lstEleDisplayBeans,
                 new String[] { "treeborder", "treecloseable", "treexpandlayer", "treeasyn", "treexpandimg", "treeclosedimg", "treeleafimg",
                         "mouseoverbgcolor" });
-        String treeborder=mDisplayProperties.get("treeborder");
+        String treeborder=mDisplayProperties.get("treeborder");//树形行分组边框显示类型
         String treecloseable=mDisplayProperties.get("treecloseable");
         //        String treecheckbox=eleDisplay.attributeValue("treecheckbox");//是否需要为树形行分组树枝节点显示复选框
-        String treexpandlayer=mDisplayProperties.get("treexpandlayer");//树形分组初始展开层数
+        String treexpandlayer=mDisplayProperties.get("treexpandlayer");
         String treeasyn=mDisplayProperties.get("treeasyn");
         String treexpandimg=mDisplayProperties.get("treexpandimg");
         String treeclosedimg=mDisplayProperties.get("treeclosedimg");
@@ -1663,45 +1678,28 @@ public abstract class AbsListReportType extends AbsReportType
         if(treeleafimg!=null) alrdbean.setTreeleafimg(treeleafimg.trim());
 
         //        processRowSelectCol(disbean);//处理提供行选中的列，只有报表行选中类型为Consts.ROWSELECT_CHECKBOX或Consts.ROWSELECT_RADIOBOX类型时，才会有行选中的列
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        //            if(!treecheckbox.equals("true")&&!treecheckbox.equals("false"))
         //        boolean isAllAlwayOrNeverCol=true;//是否全部是hidden为1或3的<col/>（如果<col/>全部是1或3，则<group/>的hidden不可能出现0和2的情况，所以不用判断它）
         List<ColBean> lstColBeans=disbean.getLstCols();
         boolean bolContainsClickOrderby=false;
-        //        boolean bolContainsNonConditionFilter=false;
         if(lstColBeans!=null&&lstColBeans.size()>0)
         {
             AbsListReportColBean alcbeanTemp;
             for(ColBean cbeanTmp:lstColBeans)
             {
                 if(cbeanTmp==null) continue;
-                
-                
                 alcbeanTemp=(AbsListReportColBean)cbeanTmp.getExtendConfigDataForReportType(KEY);
                 if(alcbeanTemp==null) continue;
                 if(alcbeanTemp.isRequireClickOrderby())
                 {
                     bolContainsClickOrderby=true;
                 }
-                
-                
-                
-                
-                
+                //                if(alcbeanTemp.getFilterBean()!=null
             }
         }
         //        if(isAllAlwayOrNeverCol) bean.setColselected(false);//全部是hidden为1或3的<col/>，后面显示时将不为它提供列选择框
         alrdbean.setContainsClickOrderBy(bolContainsClickOrderby);
         //        bean.setContainsNonConditionFilter(bolContainsNonConditionFilter);//此报表包括与条件无关的列过滤功能
-        
         //        if(eleStatisticBean!=null) loadStatisticConfig(eleStatisticBean,disbean,alrdbean);//加载统计信息的配置
         return 1;
     }
@@ -1715,34 +1713,30 @@ public abstract class AbsListReportType extends AbsReportType
             alrbean=new AbsListReportBean(reportbean);
             reportbean.setExtendConfigDataForReportType(KEY,alrbean);
         }
+        String batchouputcount=eleReportBean.attributeValue("batchouputcount");
+        if(batchouputcount!=null)
+        {
+            if(batchouputcount.trim().equals(""))
+            {
+                alrbean.setBatchouputcount(null);
+            }else
+            {
+                try
+                {
+                    alrbean.setBatchouputcount(Integer.parseInt(batchouputcount.trim()));
+                }catch(NumberFormatException e)
+                {
+                    log.warn("报表"+reportbean.getPath()+"配置的batchoutputcount属性值："+batchouputcount.trim()+"不是有效数字");
+                    alrbean.setBatchouputcount(null);
+                }
+            }
+        }
+        
         XmlElementBean eleSubdisplayBean=eleReportBean.getChildElementByName("subdisplay");
         if(eleSubdisplayBean!=null) alrbean.setSubdisplaybean(loadSubDisplayConfig(eleSubdisplayBean,reportbean));
         return 1;
     }
 
-    
-    
-    
-    
-    //        for(XmlElementBean eleDisBeanTmp:lstEleDisplayBeans)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    //            }
-    
-    
-    
     private AbsListReportSubDisplayBean loadSubDisplayConfig(XmlElementBean eleSubDisplayBean,ReportBean reportbean)
     {
         AbsListReportSubDisplayBean subDisplayBean=new AbsListReportSubDisplayBean(reportbean);
@@ -1759,74 +1753,8 @@ public abstract class AbsListReportType extends AbsReportType
                 sRowBeanTmp=new AbsListReportSubDisplayRowBean();
                 String displaytype=eleRowTmp.attributeValue("displaytype");
                 String displayposition=eleRowTmp.attributeValue("displayposition");
-                if(displaytype!=null)
-                {
-                    boolean isDisplayPerpage=false, isDisplayReport=false;
-                    displaytype=displaytype.toLowerCase().trim();
-                    if(!displaytype.equals(""))
-                    {
-                        List<String> lstTmp=Tools.parseStringToList(displaytype,"|",false);
-                        for(String tmp:lstTmp)
-                        {
-                            tmp=tmp.trim();
-                            if(tmp.equals("")) continue;
-                            if(tmp.equals("page"))
-                            {
-                                isDisplayPerpage=true;
-                            }else if(tmp.equals("report"))
-                            {
-                                isDisplayReport=true;
-                            }else
-                            {
-                                throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计显示行<subrow/>失败，其displaytype属性配置不合法");
-                            }
-                        }
-                    }
-                    if(isDisplayPerpage&&isDisplayReport)
-                    {
-                        sRowBeanTmp.setDisplaytype(AbsListReportSubDisplayBean.SUBROW_DISPLAYTYPE_PAGEREPORT);
-                    }else if(isDisplayPerpage)
-                    {
-                        sRowBeanTmp.setDisplaytype(AbsListReportSubDisplayBean.SUBROW_DISPLAYTYPE_PAGE);
-                    }else
-                    {
-                        sRowBeanTmp.setDisplaytype(AbsListReportSubDisplayBean.SUBROW_DISPLAYTYPE_REPORT);
-                    }
-                }
-                if(displayposition!=null)
-                {
-                    boolean isTop=false, isBottom=false;
-                    displayposition=displayposition.toLowerCase().trim();
-                    if(!displayposition.equals(""))
-                    {
-                        List<String> lstTmp=Tools.parseStringToList(displayposition,"|",false);
-                        for(String tmp:lstTmp)
-                        {
-                            tmp=tmp.trim();
-                            if(tmp.equals("")) continue;
-                            if(tmp.equals("top"))
-                            {
-                                isTop=true;
-                            }else if(tmp.equals("bottom"))
-                            {
-                                isBottom=true;
-                            }else
-                            {
-                                throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计显示行<subrow/>失败，其displayposition属性配置不合法");
-                            }
-                        }
-                    }
-                    if(isTop&&isBottom)
-                    {
-                        sRowBeanTmp.setDisplayposition(AbsListReportSubDisplayBean.SUBROW_POSITION_BOTH);
-                    }else if(isTop)
-                    {
-                        sRowBeanTmp.setDisplayposition(AbsListReportSubDisplayBean.SUBROW_POSITION_TOP);
-                    }else
-                    {
-                        sRowBeanTmp.setDisplayposition(AbsListReportSubDisplayBean.SUBROW_POSITION_BOTTOM);
-                    }
-                }
+                if(displaytype!=null) sRowBeanTmp.setDisplaytype(reportbean,displaytype.trim());
+                if(displayposition!=null) sRowBeanTmp.setDisplayposition(reportbean,displayposition.trim());
                 List<XmlElementBean> lstEleColBeans=eleRowTmp.getLstChildElementsByName("subcol");
                 List<AbsListReportSubDisplayColBean> lstSubColBeans=new ArrayList<AbsListReportSubDisplayColBean>();
                 sRowBeanTmp.setLstSubColBeans(lstSubColBeans);
@@ -1848,11 +1776,13 @@ public abstract class AbsListReportType extends AbsReportType
         {
             throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"失败，不能在<subdisplay/>同时配置<rowgroup-subrow/>和<treerowgroup-subrow/>");
         }
+        AbsListReportRowGroupSubDisplayRowBean subRowbeanTmp;
         if(lstRowGroupStatistics!=null&&lstRowGroupStatistics.size()>0)
         {
             for(XmlElementBean objTmp:lstRowGroupStatistics)
             {
-                subDisplayBean.addRowGroupSubDisplayRowBean(loadRowGroupSubRowConfig(reportbean,objTmp));
+                subRowbeanTmp=loadRowGroupSubRowConfig(reportbean,objTmp);
+                if(subRowbeanTmp!=null) subDisplayBean.addRowGroupSubDisplayRowBean(subRowbeanTmp);
             }
             hasSubDisplayChild=subDisplayBean.getMRowGroupSubDisplayRowBeans()!=null&&subDisplayBean.getMRowGroupSubDisplayRowBeans().size()>0;
         }
@@ -1860,7 +1790,8 @@ public abstract class AbsListReportType extends AbsReportType
         {
             for(XmlElementBean objTmp:lstTreeRowGroupStatistics)
             {
-                subDisplayBean.addRowGroupSubDisplayRowBean(loadRowGroupSubRowConfig(reportbean,objTmp));
+                subRowbeanTmp=loadRowGroupSubRowConfig(reportbean,objTmp);
+                if(subRowbeanTmp!=null) subDisplayBean.addRowGroupSubDisplayRowBean(subRowbeanTmp);
             }
             hasSubDisplayChild=subDisplayBean.getMRowGroupSubDisplayRowBeans()!=null&&subDisplayBean.getMRowGroupSubDisplayRowBeans().size()>0;
         }
@@ -1872,12 +1803,9 @@ public abstract class AbsListReportType extends AbsReportType
             if(lstEleStatitemBeans!=null&&lstEleStatitemBeans.size()>0)
             {
                 List<StatisticItemBean> lstStatitemBeans=new ArrayList<StatisticItemBean>();
-                StatisticItemBean statitemBeanTmp;
                 for(XmlElementBean eleBeanTmp:lstEleStatitemBeans)
                 {
-                    statitemBeanTmp=new StatisticItemBean();
-                    loadStatitemConfig(reportbean,statitemBeanTmp,eleBeanTmp);
-                    lstStatitemBeans.add(statitemBeanTmp);
+                    lstStatitemBeans.add(loadStatitemConfig(reportbean,eleBeanTmp));
                 }
                 subDisplayBean.setLstStatitemBeans(lstStatitemBeans);
             }
@@ -1891,79 +1819,6 @@ public abstract class AbsListReportType extends AbsReportType
         return subDisplayBean;
     }
 
-    private void loadStatitemConfig(ReportBean reportbean,StatisticItemBean statitemBean,XmlElementBean eleStatitemBean)
-    {
-        String property=eleStatitemBean.attributeValue("property");
-        String value=eleStatitemBean.attributeValue("value");
-        String statiscope=eleStatitemBean.attributeValue("statiscope");
-        String dataset=eleStatitemBean.attributeValue("dataset");
-        if(property==null||property.trim().equals(""))
-        {
-            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项<statitems/>失败，property属性不能为空");
-        }
-        statitemBean.setProperty(property.trim());
-        if(value==null)
-        {
-         //   throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，必须配置<statitem/>的value属性");
-        }else{
-        value=value.trim();
-        int idxl=value.indexOf("(");
-        int idxr=value.lastIndexOf(")");
-        if(idxl<=0||idxr!=value.length()-1)
-        {
-            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，"+value+"不是有效的统计");
-        }
-        String statitype=value.substring(0,idxl).trim();
-        String column=value.substring(idxl+1,idxr).trim();
-        if(!Consts.lstStatisticsType.contains(statitype))
-        {
-            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，"+statitype+"不是有效的统计类型");
-        }
-        if(column.equals(""))
-        {
-            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，"+value+"中统计字段为空");
-        }
-        statitemBean.setValue(value);
-        }
-        statitemBean.setDatatypeObj(ConfigLoadAssistant.loadDataType(eleStatitemBean));
-        statitemBean.setLstConditions(ComponentConfigLoadManager.loadConditionsInOtherPlace(eleStatitemBean,reportbean));
-        if(statiscope!=null)
-        {
-            statiscope=statiscope.toLowerCase().trim();
-            boolean isStatPage=false, isStatReport=false;
-            if(!statiscope.equals(""))
-            {
-                List<String> lstTmp=Tools.parseStringToList(statiscope,"|",false);
-                for(String tmp:lstTmp)
-                {
-                    tmp=tmp.trim();
-                    if(tmp.equals("")) continue;
-                    if(tmp.equals("page"))
-                    {
-                        isStatPage=true;
-                    }else if(tmp.equals("report"))
-                    {
-                        isStatReport=true;
-                    }else
-                    {
-                        throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，其statiscope属性配置不合法");
-                    }
-                }
-            }
-            if(isStatPage&&isStatReport)
-            {
-                statitemBean.setStatiscope(StatisticItemBean.STATSTIC_SCOPE_ALL);
-            }else if(isStatPage)
-            {
-                statitemBean.setStatiscope(StatisticItemBean.STATSTIC_SCOPE_PAGE);
-            }else
-            {
-                statitemBean.setStatiscope(StatisticItemBean.STATSTIC_SCOPE_REPORT);
-            }
-        }
-        if(dataset!=null) statitemBean.setDatasetid(dataset.trim());
-    }
-
     private AbsListReportRowGroupSubDisplayRowBean loadRowGroupSubRowConfig(ReportBean reportbean,XmlElementBean eleRowGroupBean)
     {
         String column=eleRowGroupBean.attributeValue("column");
@@ -1975,7 +1830,6 @@ public abstract class AbsListReportType extends AbsReportType
         AbsListReportRowGroupSubDisplayRowBean srgbean=new AbsListReportRowGroupSubDisplayRowBean();
         srgbean.setRowgroupcolumn(column.trim());
         if(condition!=null) srgbean.setCondition(condition.trim());
-
         List<XmlElementBean> lstEleCols=eleRowGroupBean.getLstChildElementsByName("subcol");
         List<AbsListReportSubDisplayColBean> lstSubColBeans=new ArrayList<AbsListReportSubDisplayColBean>();
         srgbean.setLstSubColBeans(lstSubColBeans);
@@ -2014,35 +1868,96 @@ public abstract class AbsListReportType extends AbsReportType
         return subColBean;
     }
 
+    private StatisticItemBean loadStatitemConfig(ReportBean reportbean,XmlElementBean eleStatitemBean)
+    {
+        StatisticItemBean statitemBean=new StatisticItemBean();
+        String property=eleStatitemBean.attributeValue("property");
+        String value=eleStatitemBean.attributeValue("value");
+        String statiscope=eleStatitemBean.attributeValue("statiscope");
+        String dataset=eleStatitemBean.attributeValue("dataset");
+        if(property==null||property.trim().equals(""))
+        {
+            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项<statitems/>失败，property属性不能为空");
+        }
+        statitemBean.setProperty(property.trim());
+        if(value==null)
+        {
+            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，必须配置<statitem/>的value属性");
+        }
+        value=value.trim();
+        int idxl=value.indexOf("(");
+        int idxr=value.lastIndexOf(")");
+        if(idxl<=0||idxr!=value.length()-1)
+        {//不合要求
+            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，"+value+"不是有效的统计");
+        }
+        String statitype=value.substring(0,idxl).trim();
+        String column=value.substring(idxl+1,idxr).trim();
+        if(!Consts.lstStatisticsType.contains(statitype))
+        {
+            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，"+statitype+"不是有效的统计类型");
+        }
+        if(column.equals(""))
+        {
+            throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+property+"失败，"+value+"中统计字段为空");
+        }
+        statitemBean.setValue(value);
+        statitemBean.setDatatypeObj(ConfigLoadAssistant.loadDataType(eleStatitemBean));
+        statitemBean.setLstConditions(ComponentConfigLoadManager.loadConditionsInOtherPlace(eleStatitemBean,reportbean));
+        if(statiscope!=null) statitemBean.setStatiscope(reportbean,statiscope.trim());
+        if(dataset!=null) statitemBean.setDatasetid(dataset.trim());
+        return statitemBean;
+    }
+    
     public int doPostLoad(ReportBean reportbean)
     {
         super.doPostLoad(reportbean);
-        constructSqlForListType(reportbean.getSbean());
+        SqlBean sbean=reportbean.getSbean();
         AbsListReportBean alrbean=(AbsListReportBean)reportbean.getExtendConfigDataForReportType(KEY);
         if(alrbean==null) return 1;
-        processFixedColsAndRows(reportbean);
+        if(sbean==null||!sbean.isHorizontalDataset())
+        {
+            processFixedColsAndRows(reportbean);
+        }
         processReportScrollConfig(reportbean);
-        if(alrbean.getScrollType()==AbsListReportBean.SCROLLTYPE_VERTICAL||alrbean.getScrollType()==AbsListReportBean.SCROLLTYPE_FIXED)
+        if(alrbean.getScrollType()==AbsListReportBean.SCROLLTYPE_VERTICAL||alrbean.getScrollType()==AbsListReportBean.SCROLLTYPE_FIXED
+                ||(sbean!=null&&sbean.isHorizontalDataset()))
         {
             reportbean.setCellresize(0);
         }
         DisplayBean dbean=reportbean.getDbean();
-        if(dbean.getColselect()==null) dbean.setColselect(true);
+        if(sbean!=null&&sbean.isHorizontalDataset())
+        {
+            dbean.setPageColselect(false);
+            dbean.setDataexportColselect(false);
+            reportbean.setCelldrag(0);
+        }else
+        {
+            AbsListReportDisplayBean alrdbean=(AbsListReportDisplayBean)reportbean.getDbean().getExtendConfigDataForReportType(AbsListReportType.KEY);
+            if(alrdbean!=null&&alrdbean.getRowGroupColsNum()>0)
+            {
+                reportbean.setPageLazyloadataCount(-1);
+                reportbean.setDataexportLazyloadataCount(-1);
+                if(sbean!=null&&sbean.isMultiDataSetCols()&&Tools.isEmpty(alrdbean.getRowgroupDatasetId()))
+                {
+                    throw new WabacusConfigLoadingException("报表"+reportbean.getPath()+"配置了多个独立数据集，必须为其行分组列指定来自哪个数据集");
+                }
+            }
+        }
         processRowSelectCol(dbean);
         processRoworderCol(dbean);
         ((AbsListReportDisplayBean)dbean.getExtendConfigDataForReportType(KEY)).doPostLoad();
-        if(alrbean.getSubdisplaybean()!=null) alrbean.getSubdisplaybean().doPostLoad();
+        if(alrbean.getSubdisplaybean()!=null)
+        {
+            if(sbean!=null&&sbean.isHorizontalDataset())
+            {
+                throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"失败，横向数据集不能配置辅助显示行");
+            }
+            alrbean.getSubdisplaybean().doPostLoad();
+        }
         return 1;
     }
-    
-    //$ByQXO code move to  AbstractJdbcDatabaseType.constructSqlForListType
-    private void constructSqlForListType(SqlBean sqlbean)
-    {
-       Config.getInstance().getDbType(sqlbean.getDatasource()).constructSqlForListType(sqlbean);
-    }    
-    //addRowGroupColumnToOrderByClause move to  AbstractJdbcDatabaseType
-    //ByQXO$ 
-   
+
     protected void processFixedColsAndRows(ReportBean reportbean)
     {
         AbsListReportBean alrbean=(AbsListReportBean)reportbean.getExtendConfigDataForReportType(KEY);
@@ -2051,7 +1966,7 @@ public abstract class AbsListReportType extends AbsReportType
             int cnt=0;
             for(ColBean cbTmp:reportbean.getDbean().getLstCols())
             {
-                if(cbTmp.getDisplaytype()==Consts.COL_DISPLAYTYPE_HIDDEN) continue;
+                if(cbTmp.getDisplaytype(true)==Consts.COL_DISPLAYTYPE_HIDDEN) continue;
                 cnt++;
             }
             if(cnt<=alrbean.getFixedcols(null)) alrbean.setFixedcols(null,0);
@@ -2066,10 +1981,10 @@ public abstract class AbsListReportType extends AbsReportType
             int cnt=0;
             for(ColBean cbTmp:reportbean.getDbean().getLstCols())
             {
-                if(cbTmp.getDisplaytype()==Consts.COL_DISPLAYTYPE_HIDDEN) continue;
+                if(cbTmp.getDisplaytype(true)==Consts.COL_DISPLAYTYPE_HIDDEN) continue;
                 if(cbTmp.isRowSelectCol())
                 {
-                    if(!isChkRadioRowselectReport) continue;
+                    if(!isChkRadioRowselectReport) continue;//如果当前报表不是单选框或复选框选中方式的报表，则这两种行选中列会在稍后processRowSelectCol()方法中删除掉，所以这里不对它计数
                     throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"失败,在<report/>的fixedcols中配置的冻结列数包括了行选中列，这样不能正常选中行");
                 }
                 alrcbeanTmp=(AbsListReportColBean)cbTmp.getExtendConfigDataForReportType(KEY);
@@ -2104,7 +2019,7 @@ public abstract class AbsListReportType extends AbsReportType
         }else
         {
             if(scrolltype==AbsListReportBean.SCROLLTYPE_VERTICAL)
-            {//只显示垂直滚动条的数据自动列表报表必须以像素的形式配置宽度，否则不能保证标题列和数据列对齐
+            {
                 String[] htmlsizeArr=WabacusAssistant.getInstance().parseHtmlElementSizeValueAndType(reportbean.getWidth());
                 if(htmlsizeArr==null||htmlsizeArr[0].equals("")||htmlsizeArr[0].equals("0"))
                 {
@@ -2122,18 +2037,9 @@ public abstract class AbsListReportType extends AbsReportType
             if(Consts_Private.SCROLLSTYLE_IMAGE.equals(reportbean.getScrollstyle()))
             {
                 String scrolljs="/webresources/script/wabacus_scroll.js";
-                
-                
+                //                if(Config.encode.toLowerCase().trim().equals("utf-8"))
                 //                    scrolljs="/webresources/script/wabacus_scroll.js";
-                
-                
-                
-                
-                
-                
-                
                 //                    scrolljs="/webresources/script/"+encode.toLowerCase()+"/wabacus_scroll.js";
-                
                 scrolljs=Tools.replaceAll(Config.webroot+"/"+scrolljs,"//","/");
                 reportbean.getPageBean().addMyJavascriptFile(scrolljs,-1);
                 String css=Config.webroot+"/webresources/skin/"+Consts_Private.SKIN_PLACEHOLDER+"/wabacus_scroll.css";
@@ -2204,7 +2110,7 @@ public abstract class AbsListReportType extends AbsReportType
         cbRowSelect.setLabelstyleproperty(Tools.addPropertyValueToStylePropertyIfNotExist(cbRowSelect.getLabelstyleproperty(null,true),"valign","middle"),true);
         cbRowSelect.setValuestyleproperty(Tools.addPropertyValueToStylePropertyIfNotExist(cbRowSelect.getValuestyleproperty(null,true),"align","center"),true);
         cbRowSelect.setValuestyleproperty(Tools.addPropertyValueToStylePropertyIfNotExist(cbRowSelect.getValuestyleproperty(null,true),"valign","middle"),true);
-        cbRowSelect.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
+        cbRowSelect.setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
         return null;
     }
 
@@ -2227,7 +2133,7 @@ public abstract class AbsListReportType extends AbsReportType
         {
             cbNewRowSelect.setLabel("");
         }
-        cbNewRowSelect.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
+        cbNewRowSelect.setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
         cbNewRowSelect.setLabelstyleproperty("style=\"text-align:center;vertical-align:middle;\"",true);
         cbNewRowSelect.setValuestyleproperty("style=\"text-align:center;vertical-align:middle;\"",true);
         UltraListReportDisplayBean ulrdbean=(UltraListReportDisplayBean)reportbean.getDbean().getExtendConfigDataForReportType(
@@ -2236,14 +2142,14 @@ public abstract class AbsListReportType extends AbsReportType
         for(int i=0,len=lstCols.size();i<len;i++)
         {
             cbTmp=lstCols.get(i);
-            if(cbTmp.getDisplaytype().equals(Consts.COL_DISPLAYTYPE_HIDDEN))
+            if(cbTmp.getDisplaytype(true).equals(Consts.COL_DISPLAYTYPE_HIDDEN))
             {
                 if(i==len-1) lstCols.add(cbNewRowSelect);
                 continue;
             }
             AbsListReportColBean alrcbeanTmp=(AbsListReportColBean)cbTmp.getExtendConfigDataForReportType(KEY);
             if(alrcbeanTmp!=null&&(alrcbeanTmp.isRowgroup()||alrcbeanTmp.isFixedCol(rrequest)))
-            {
+            {//如果当前是行分组或树形分组列或者是冻结列
                 if(i==len-1) lstCols.add(cbNewRowSelect);
                 continue;
             }
@@ -2270,6 +2176,11 @@ public abstract class AbsListReportType extends AbsReportType
         AbsListReportBean alrbean=(AbsListReportBean)disbean.getReportBean().getExtendConfigDataForReportType(AbsListReportType.KEY);
         if(alrbean.getLstRoworderTypes()!=null&&alrbean.getLstRoworderTypes().size()>0)
         {
+            if(disbean.getReportBean().getSbean().isHorizontalDataset())
+            {
+                throw new WabacusConfigLoadingException("加载报表"+disbean.getReportBean().getPath()
+                        +"失败，横向数据集不能配置行排序功能");
+            }
             List<ColBean> lstRoworderValueCols=new ArrayList<ColBean>();
             AbsListReportColBean alrcbeanTmp=null;
             for(ColBean cbTmp:lstCols)
@@ -2293,7 +2204,7 @@ public abstract class AbsListReportType extends AbsReportType
             if(alrbean.getLstRoworderTypes()==null||!alrbean.getLstRoworderTypes().contains(rowordertypeTmp))
             {
                 for(int i=lstCols.size()-1;i>=0;i--)
-                {//删除掉所有这种行排序类型的列
+                {
                     if(lstCols.get(i).isRoworderCol(getRoworderColColumnByRoworderType(rowordertypeTmp)))
                     {
                         lstCols.remove(i);
@@ -2307,7 +2218,7 @@ public abstract class AbsListReportType extends AbsReportType
                     if(lstCols.get(i).isRoworderCol(getRoworderColColumnByRoworderType(rowordertypeTmp)))
                     {
                         isExistCol=true;
-                        lstCols.get(i).setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
+                        lstCols.get(i).setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
                     }
                 }
                 if(!isExistCol)
@@ -2327,7 +2238,7 @@ public abstract class AbsListReportType extends AbsReportType
                     {
                         cbNewRoworder.setLabel(Config.getInstance().getResourceString(null,disbean.getPageBean(),"${roworder.top.label}",false));
                     }
-                    cbNewRoworder.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
+                    cbNewRoworder.setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
                     cbNewRoworder.setLabelstyleproperty("style=\"text-align:center;vertical-align:middle;\"",true);
                     cbNewRoworder.setValuestyleproperty("style=\"text-align:center;vertical-align:middle;\"",true);
                     mCreatedRoworderCols.put(rowordertypeTmp,cbNewRoworder);
@@ -2336,7 +2247,7 @@ public abstract class AbsListReportType extends AbsReportType
         }
         List<ColBean> lstCreatedColBeans=new ArrayList<ColBean>();
         if(mCreatedRoworderCols.size()>0)
-        {
+        {//本次有动态生成列，则把它加入disbean中，且放在最后的位置
             for(String roworderTmp:alrbean.getLstRoworderTypes())
             {
                 if(!mCreatedRoworderCols.containsKey(roworderTmp)) continue;

@@ -37,11 +37,11 @@ public class Interceptorpage3Report1Interceptor extends AbsInterceptorDefaultAda
                 int iage=Integer.parseInt(age);
                 if(iage<10||iage>20)
                 {
-                    rrequest.getWResponse().getMessageCollector().alert("输入的年龄："+age+"起出范围，只能输入10到20之间的数字",true);
+                    rrequest.getWResponse().getMessageCollector().alert("输入的年龄："+age+"起出范围，只能输入10到20之间的数字",null,true);
                 }
             }catch(NumberFormatException nfe)
             {
-                rrequest.getWResponse().getMessageCollector().alert("输入的年龄："+age+"不是合法数字",true);
+                rrequest.getWResponse().getMessageCollector().alert("输入的年龄："+age+"不是合法数字",null,true);
             }
         }
         System.out.println(new Date()+":::执行完前置动作------------------");

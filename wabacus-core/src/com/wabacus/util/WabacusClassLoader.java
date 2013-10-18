@@ -47,7 +47,6 @@ public class WabacusClassLoader extends ClassLoader
         if(parent==null) throw new IllegalArgumentException("必须提供父装载器!");
     }
 
-    
     public synchronized Class loadClass(String name) throws ClassNotFoundException
     {
         return loadClass(name,false);
@@ -153,7 +152,6 @@ public class WabacusClassLoader extends ClassLoader
         if(contextClassLoader==null)  contextClassLoader=WabacusClassLoader.class.getClassLoader();
         try
         {
-            
             return contextClassLoader.loadClass(classname);
         }catch(ClassNotFoundException e)
         {

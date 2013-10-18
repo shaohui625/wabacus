@@ -35,6 +35,7 @@ import com.wabacus.config.component.application.report.extendconfig.AbsExtendCon
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.CrossListReportType;
 import com.wabacus.system.component.application.report.configbean.UltraListReportGroupBean;
 import com.wabacus.util.Consts;
@@ -47,8 +48,12 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
 
     private String verticallabel;
 
+    private Map<String,String> mDynVerticallableParts;
+    
     private String verticallabelstyleproperty;
 
+    private List<String> lstDynVerticallabelstylepropertyParts;
+    
     private boolean shouldShowStaticLabel;
     
     private int rowspan=1;//当本统计<col/>下面的统计的标题需要单独显示一行时，此<col/>即相当于一个<group/>，此时可以通过labelstyleproperty指定它的标题占据的行数
@@ -74,22 +79,34 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
 
     public void setVerticallabel(String verticallabel)
     {
-        this.verticallabel=verticallabel;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(verticallabel);
+        this.verticallabel=(String)objArr[0];
+        this.mDynVerticallableParts=(Map<String,String>)objArr[1];
     }
 
-    public String getVerticallabel()
+    public String getVerticallabel(ReportRequest rrequest)
     {
-        return verticallabel;
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.verticallabel,this.mDynVerticallableParts,"");
     }
 
-    public String getVerticallabelstyleproperty()
+    public String getVerticallabelstyleproperty(ReportRequest rrequest,boolean isStaticPart)
     {
-        return verticallabelstyleproperty;
+        if(isStaticPart) return this.verticallabelstyleproperty==null?"":this.verticallabelstyleproperty;
+        return WabacusAssistant.getInstance().getStylepropertyWithDynPart(rrequest,this.verticallabelstyleproperty,
+                this.lstDynVerticallabelstylepropertyParts,"");
     }
 
-    public void setVerticallabelstyleproperty(String verticallabelstyleproperty)
+    public void setVerticallabelstyleproperty(String verticallabelstyleproperty,boolean isStaticPart)
     {
-        this.verticallabelstyleproperty=verticallabelstyleproperty;
+        if(isStaticPart)
+        {
+            this.verticallabelstyleproperty=verticallabelstyleproperty;
+        }else
+        {
+            Object[] objArr=WabacusAssistant.getInstance().parseStylepropertyWithDynPart(verticallabelstyleproperty);
+            this.verticallabelstyleproperty=(String)objArr[0];
+            this.lstDynVerticallabelstylepropertyParts=(List<String>)objArr[1];
+        }
     }
 
     public void setLstStatisBeans(List<CrossListReportStatiBean> lstStatisBeans)
@@ -174,7 +191,7 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
             for(CrossListReportStatiBean cslsbeanTmp:this.lstStatisBeans)
             {
                 if(!rrequest.checkPermission(cbeanOwner.getReportBean().getId(),Consts.DATA_PART,cslsbeanTmp.getId(),Consts.PERMISSION_TYPE_DISPLAY))
-                {
+                {//在运行时被授权为不显示
                     mDynamicColGroupDisplayType.put(cslsbeanTmp.getId(),false);
                 }else
                 {
@@ -205,15 +222,15 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
         return shouldDisplay;
     }
     
-    public void getRuntimeColGroupBeans(CrossListReportType crossListReportType,List lstAllRuntimeChildren,List<ColBean> lstAllRuntimeColBeans,
+    public void getRuntimeColGroupBeans(CrossListReportType crossListReportType,List lstAllRuntimeDisplayChildren,List<ColBean> lstAllRuntimeColBeans,
             Map<String,Boolean> mDynamicColGroupDisplayType)
     {
         ColBean cbOwner=(ColBean)this.getOwner();
         if(this.isDynamicColGroup())
         {
             if(!mDynamicColGroupDisplayType.get(cbOwner.getColid())
-                    &&(!this.hasDisplayStatisBeansOfReport(mDynamicColGroupDisplayType)||this.lstDatasetConditions==null||this.lstDatasetConditions
-                            .size()==0))
+                    &&(!this.hasDisplayStatisBeansOfReport(mDynamicColGroupDisplayType)||this.titleDatasetProvider.getLstConditions()==null||this.titleDatasetProvider
+                            .getLstConditions().size()==0))
             {
                 crossListReportType.addDynamicSelectCols(this,"");
                 return;
@@ -221,12 +238,12 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
             List<Map<String,String>> lstDynamicColGroupLabelData=this.getDynColGroupLabelData(crossListReportType);
             if(lstDynamicColGroupLabelData==null)
             {
-                crossListReportType.addDynamicSelectCols(this,"");//方便决定是否要执行这条查询动态数据的SQL
+                crossListReportType.addDynamicSelectCols(this,"");
                 return;
             }
             List lstDynChildren=new ArrayList();
             StringBuffer allDynColConditonsBuf=new StringBuffer();
-            StringBuffer dynSelectedColsBuf=new StringBuffer();
+            StringBuffer dynSelectedColsBuf=new StringBuffer();//存放查询动态统计数据的字段列表
             StringBuffer conditionBuf;
             AbsReportDataPojo headDataObj=ReportAssistant.getInstance().getPojoClassInstance(crossListReportType.getReportRequest(),
                     crossListReportType.getReportBean(),this.dataHeaderPojoClass);
@@ -236,19 +253,19 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
                 getRuntimeColBeans(crossListReportType,mRowDataTmp,dynSelectedColsBuf,conditionBuf,allDynColConditonsBuf,lstDynChildren,headDataObj,
                         null,mDynamicColGroupDisplayType);
             }
-            afterGetRuntimeColGroups(crossListReportType,mDynamicColGroupDisplayType,allDynColConditonsBuf,dynSelectedColsBuf,lstAllRuntimeChildren,
+            afterGetRuntimeColGroups(crossListReportType,mDynamicColGroupDisplayType,allDynColConditonsBuf,dynSelectedColsBuf,lstAllRuntimeDisplayChildren,
                     lstAllRuntimeColBeans,lstDynChildren,headDataObj);
         }else
         {
             lstAllRuntimeColBeans.add(cbOwner);
-            if(cbOwner.getDisplaytype()!=Consts.COL_DISPLAYTYPE_HIDDEN)
+            if(cbOwner.getDisplaytype(crossListReportType.getReportRequest().getShowtype()==Consts.DISPLAY_ON_PAGE)!=Consts.COL_DISPLAYTYPE_HIDDEN)
             {
-                lstAllRuntimeChildren.add(cbOwner);
+                lstAllRuntimeDisplayChildren.add(cbOwner);
             }
         }
     }
 
-    protected void getRealLabelValueFromResultset(ResultSet rs,Map<String,String> mRowData) throws SQLException
+    public void getRealLabelValueFromResultset(ResultSet rs,Map<String,String> mRowData) throws SQLException
     {
         String column=this.getCbeanOwner().getColumn();
         String myLabelValue=rs.getString(column);
@@ -318,7 +335,7 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
             int colidx=crossListReportType.generateColGroupIdxId();
             if(this.isStatisticCrossColGroup())
             {//如果是统计数据，则用<statistic/>中配置的数据类型
-                CrossListReportStatiDisplayBean statisdBeanTmp=this.lstDisplayStatisBeans.get(0);
+                CrossListReportStatiDisplayBean statisdBeanTmp=this.lstDisplayStatisBeans.get(0);//不显示统计标题的情况下，只有一个统计项，且没有配置label
                 createStatisticColumn(dynselectedColsBuf,conditionBuf,statisdBeanTmp,colidx);
                 lstChildren.add(createDynamicCrossStatiColBean(disbean,getDynamicLabel(headDataObj,column,colLabelValue,colidx),statisdBeanTmp
                         .getLabelstyleproperty(rrequest),statisdBeanTmp.getValuestyleproperty(rrequest),statisdBeanTmp.getStatiBean().getDatatypeObj(),colidx));
@@ -337,19 +354,20 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
     {
         ColBean cbConfig=this.getCbeanOwner();
         ColBean cbResult=new ColBean(disbean,colidx);
-        
-        //$ByQXO 支持动态列的排序
-        cbConfig.cloneExtendConfig(cbResult);
-        cbResult.setAttrs(cbConfig.getAttrs());
-        //ByQXO$
-        
         cbResult.setLabel(label);
-        cbResult.setDatasetValueId(this.getDatasetBean().getDatasetbean().getId());
+        String belongDsid=this.getDatasetBean().getId();
+        List<String> lstDsids=null;
+        if(belongDsid!=null&&!belongDsid.trim().equals(""))
+        {
+            lstDsids=new ArrayList<String>();
+            lstDsids.add(belongDsid);
+        }
+        cbResult.setLstDatasetValueids(lstDsids);
         cbResult.setLabelstyleproperty(cbConfig.getLabelstyleproperty(rrequest,false),true);
         cbResult.setValuestyleproperty(cbConfig.getValuestyleproperty(rrequest,false),true);
         cbResult.setDatatypeObj(cbConfig.getDatatypeObj());
-        cbResult.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
-        cbResult.setProperty("[DYN_COL_DATA]");//用这个标识当前列是存放动态统计数据的列，稍后存数据和取数据时都需要用到此标识进行判断，这种列数据是存放在POJO的一Map成员变量中
+        cbResult.setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
+        cbResult.setProperty("[DYN_COL_DATA]");
         cbResult.setColumn(colcolumn);
         CrossListReportColBean crcbeanTmp=new CrossListReportColBean(cbResult);
         crcbeanTmp.setBelongToRootOwner(this.getRootCrossColGroupBean());
@@ -387,7 +405,7 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
                 throw new WabacusConfigLoadingException("加载报表"+this.getOwner().getReportBean().getPath()
                         +"的列"+this.getLabel(null)+"配置失败，此列不是从数据库取数据的列，不能将其配置为动态列");
             }
-            colbean.setDisplaytype(Consts.COL_DISPLAYTYPE_ALWAYS);
+            colbean.setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
             if(this.lstStatisBeans!=null&&this.lstStatisBeans.size()>0)
             {
                 this.setDynColGroupSpecificBean(new CrossStatisticColGroupBean());
@@ -408,9 +426,8 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
         {
             if(this.realvalue==null||this.realvalue.trim().equals(""))
             {
-                log
-                        .warn("报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel(null)
-                                +"为普通动态列，没有配置realvalue属性指定查询本动态列数据的字段名，将使用column属性指定的字段名");
+                log.warn("报表"+this.getOwner().getReportBean().getPath()+"的列"+this.getLabel(null)
+                        +"为普通动态列，没有配置realvalue属性指定查询本动态列数据的字段名，将使用column属性指定的字段名");
                 this.realvalue=this.getColumn();
             }else if(this.realvalue.indexOf(".")>0)
             {
@@ -425,7 +442,7 @@ public class CrossListReportColBean extends AbsCrossListReportColAndGroupBean
         String column=((ColBean)this.getOwner()).getColumn();
         if(statibean.getLstStatitems()==null||statibean.getLstStatitems().size()==0//没有配置statitems，则默认就统计最里层的<col/>
                 ||statibean.getLstStatitems().contains(column))
-        {
+        {//此统计需要针对此分组进行横向统计（这里必须用，不能用lstStatitems，因为lstStatitems会边处理边删除，所以如果用lstStatitems，则在这里判断lstStatitems==null||lstStatitems.size()==0不准确）
             if(statibean.getLstStatitems()==null||statibean.getLstStatitems().size()==0)
             {//没有配置statitems，则只统计最里层的<col/>，所以取label、labelstyleproperty、valuestyleproperty等时只取第一个，即使配置了多个
                 column=null;

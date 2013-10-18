@@ -21,6 +21,7 @@ package com.wabacusdemo;
 import java.util.ArrayList;
 
 import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.intercept.AbsInterceptorDefaultAdapter;
 import com.wabacus.system.intercept.ReportDataBean;
@@ -30,7 +31,8 @@ public class Interceptor_customizedchartpage1_report1 extends AbsInterceptorDefa
     public Object beforeLoadData(ReportRequest rrequest,ReportBean rbean,Object typeObj,String sql)
     {
         //因为完全由开发人员自己提供图表数据，所以不需执行在<sql/>中配置的脚本加载报表的数据，这里返回一个空list即可
-        return new ArrayList();
+        if(typeObj instanceof ReportDataSetValueBean) return new ArrayList();//当前是在加载报表数据，则直接返回空list，因为完全由开发人员提供图表数据
+        return sql;
     }
 
     public void beforeDisplayReportData(ReportRequest rrequest,ReportBean rbean,ReportDataBean reportDataBean)

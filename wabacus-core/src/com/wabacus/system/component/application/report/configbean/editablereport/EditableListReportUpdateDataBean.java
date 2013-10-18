@@ -67,9 +67,9 @@ public class EditableListReportUpdateDataBean extends EditableReportUpdateDataBe
         this.realUpdateBean.doPostLoadFinally();
     }
     
-    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
+    public String getPopupPageUrlAndParams(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
     {
-        return this.realUpdateBean.assembleAccessPageUrl(rrequest,reportTypeObj,dataObj);
+        return this.realUpdateBean.getPopupPageUrlAndParams(rrequest,reportTypeObj,dataObj);
     }
     
     public Object clone(IEditableReportEditGroupOwnerBean newowner)

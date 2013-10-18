@@ -96,7 +96,7 @@ public class EditableListFormReportType extends EditableListReportType2
         EditableReportColBean ercbeanTmp;
         for(ColBean cbean:lstColBeans)
         {
-            if(this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
+            if(this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean,true)<=0) continue;
             if(cbean.isSequenceCol()||cbean.isControlCol()) continue;
             ercbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(EditableListReportType2.KEY);
             if(ercbeanTmp!=null&&ercbeanTmp.isEditableForInsert())

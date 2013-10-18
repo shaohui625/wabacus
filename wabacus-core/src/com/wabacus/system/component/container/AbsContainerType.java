@@ -24,6 +24,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
@@ -45,6 +48,8 @@ import com.wabacus.util.Consts;
 
 public abstract class AbsContainerType extends AbsComponentType
 {
+    private static Log log=LogFactory.getLog(AbsContainerType.class);
+    
     protected AbsContainerConfigBean containerConfigBean;
     
     protected Map<String,IComponentType> mChildren;
@@ -126,7 +131,6 @@ public abstract class AbsContainerType extends AbsComponentType
             }else if(childTypeObjTmp instanceof HtmlTemplateApp||childTypeObjTmp instanceof JspTemplateApp)
             {
                 mChildren.put(childIDTmp,childTypeObjTmp);
-                
             }
         }
         if(this.containerConfigBean.getLstOnloadMethods()!=null&&this.containerConfigBean.getLstOnloadMethods().size()>0)
@@ -144,7 +148,7 @@ public abstract class AbsContainerType extends AbsComponentType
             return false;
         if(rrequest.getRefreshComponentBean()==this.containerConfigBean) return true;
         if(((AbsContainerConfigBean)rrequest.getRefreshComponentBean()).isExistChildId(this.containerConfigBean.getId(),true,true))
-        {
+        {//当前容器属于本次要刷新的容器的一部分
             return true;
         }
         return false;
@@ -186,7 +190,7 @@ public abstract class AbsContainerType extends AbsComponentType
     
     protected String showContainerStartPart()
     {
-        StringBuffer resultBuf=new StringBuffer();
+        StringBuilder resultBuf=new StringBuilder();
         if((containerConfigBean instanceof PageBean)||this.getParentContainerType()!=null)
         {//如果当前是在显示顶层<page/>，或者本次不是单独刷新此容器，而是刷新其某层父容器，则要完整地更新此容器
             String containerwidth=null;
@@ -206,11 +210,15 @@ public abstract class AbsContainerType extends AbsComponentType
                 resultBuf.append("<table  cellspacing='0' cellpadding='0' width=\""+containerwidth+"\" style=\"MARGIN:0;\">");
                 resultBuf.append("<tr><td height=\""+containerConfigBean.getTop()+"\"></td></tr></table>");
             }
+            if(this.getParentContainerType()!=null)
+            {//是子容器，不是<page/>（如果是<page/>，则自己显示了<outerheader/>）
+                resultBuf.append(getRealHeaderFooterDisplayValue(containerConfigBean.getOuterHeaderTplBean(),"outerheader"));
+            }
             resultBuf.append("<table  cellspacing='0' cellpadding='0' width=\""+containerwidth+"\" id=\""+containerConfigBean.getGuid()+"\"><tr><td>");
         }
         if(!(containerConfigBean instanceof PageBean))
         {//<page/>的<span/>在PageType类中生成
-            resultBuf.append("<span id=\"WX_CONTENT_"+containerConfigBean.getGuid()+"\">");//后面的操作需要刷新当前容器时，从这里开始刷新，这样不需用到父容器来获取它的宽度
+            resultBuf.append("<span id=\"WX_CONTENT_"+containerConfigBean.getGuid()+"\">");
         }
         resultBuf.append(this.showHeader());
         resultBuf.append("<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"margin:0;\">");
@@ -219,7 +227,7 @@ public abstract class AbsContainerType extends AbsComponentType
             String leftrighttitle=showLeftRightTitlePart();
             resultBuf.append(showTopBottomButtonsWhenTitleInLeftRight(leftrighttitle,true));
             resultBuf.append("<tr>");
-            if(containerConfigBean.isTitleInLeft()) resultBuf.append(leftrighttitle);
+            if(containerConfigBean.isTitleInLeft()) resultBuf.append(leftrighttitle);//显示左侧标题
         }else
         {
             resultBuf.append(showTopBottomTitlePart(true));
@@ -308,13 +316,8 @@ public abstract class AbsContainerType extends AbsComponentType
         if(titlealign==null||titlealign.trim().equals("")) titlealign="top";
         resultBuf.append(" valign=\"").append(titlealign).append("\">");
         resultBuf.append("<table cellpadding=\"0\" width=\"100%\" cellspacing=\"0\" class=\"cls-title-table\"");
-        
         //        {//标题显示在底部
-        
-        
         //        {//标题显示在顶部
-        
-        
         resultBuf.append(">");
         resultBuf.append("<tr><TD class=\"cls-title\">").append(
                 containerConfigBean.getTitle(rrequest)).append("</TD></tr>");
@@ -322,13 +325,8 @@ public abstract class AbsContainerType extends AbsComponentType
         if(subtitle!=null&&!subtitle.trim().equals(""))
         {
             resultBuf.append("<tr><TD class=\"cls-subtitle\" ");
-
 //            {//标题显示在右边
-
-
-
-
-
+//            }else
             resultBuf.append(">").append(subtitle.trim()).append("</TD></tr>");
         }
         resultBuf.append("</table></td>");
@@ -341,7 +339,7 @@ public abstract class AbsContainerType extends AbsComponentType
         if((isDisplayTopTitleBar&&this.containerConfigBean.isTitleInTop())||(!isDisplayTopTitleBar&&this.containerConfigBean.isTitleInBottom()))
         {
             if(rrequest.checkPermission(containerConfigBean.getId(),Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY))
-            {//授权为显示标题栏（则要显示标题和副标题）
+            {
                 realtitle=this.getDisplayRealTitleAndSubTitle();
             }
         }
@@ -385,10 +383,10 @@ public abstract class AbsContainerType extends AbsComponentType
     protected String showContainerScrollEndTag()
     {
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
-        if((!this.containerConfigBean.isScrollX())&&!this.containerConfigBean.isScrollY()) return "";
+        if((!this.containerConfigBean.isScrollX())&&!this.containerConfigBean.isScrollY()) return "";//不需显示滚动条
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("</table>");
-        resultBuf.append(ComponentAssistant.getInstance().showComponentScrollEndPart(this.containerConfigBean.isScrollX(),
+        resultBuf.append(ComponentAssistant.getInstance().showComponentScrollEndPart(containerConfigBean.getScrollstyle(),this.containerConfigBean.isScrollX(),
                 this.containerConfigBean.isScrollY()));
         resultBuf.append("</td></tr>");
         return resultBuf.toString();
@@ -480,12 +478,15 @@ public abstract class AbsContainerType extends AbsComponentType
         }
         resultBuf.append("</table>");
         resultBuf.append(this.showFooter());
-
         resultBuf.append(this.showMetaData());
         if(!(containerConfigBean instanceof PageBean)) resultBuf.append("</span>");
         if((containerConfigBean instanceof PageBean)||this.getParentContainerType()!=null)
         {//如果当前是在显示顶层<page/>，或者本次不是单独刷新此容器，而是刷新其某层父容器
             resultBuf.append("</td></tr></table>");
+            if(this.getParentContainerType()!=null)
+            {//是子容器，不是<page/>（如果是<page/>，则自己显示了<outerheader/>）
+                resultBuf.append(getRealHeaderFooterDisplayValue(containerConfigBean.getOuterFooterTplBean(),"outerfooter"));
+            }
             if(containerConfigBean.getBottom()!=null&&!containerConfigBean.getBottom().trim().equals(""))
             {
                 String containerwidth=null;
@@ -554,7 +555,7 @@ public abstract class AbsContainerType extends AbsComponentType
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL
                 &&(rrequest.checkPermission(comCfgBean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_RICHEXCEL+"}",Consts.PERMISSION_TYPE_DISABLED)||!rrequest
                         .checkPermission(comCfgBean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_RICHEXCEL+"}",Consts.PERMISSION_TYPE_DISPLAY)))
-        {
+        {//如果当前是导出richexcel，但没有这个权限，则返回空
             return;
         }
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
@@ -565,7 +566,7 @@ public abstract class AbsContainerType extends AbsComponentType
         }
         if(templateObj instanceof TemplateBean)
         {
-            wresponse.println(((TemplateBean)templateObj).getDisplayValue(this.rrequest,this));
+            ((TemplateBean)templateObj).printDisplayValue(this.rrequest,this);
         }else if(templateObj!=null&&!templateObj.toString().trim().equals(""))
         {
             WabacusAssistant.getInstance().includeDynTpl(rrequest,this,templateObj.toString().trim());
@@ -574,9 +575,11 @@ public abstract class AbsContainerType extends AbsComponentType
             List<String> lstApplicationids=this.containerConfigBean.getLstAllChildApplicationIds(true);
             AbsApplicationType appTypeObjTmp;
             WordRichExcelExportBean debeanTmp;
+            boolean hasExportChild=false;
             for(String appidTmp:lstApplicationids)
             {
-                if(!rrequest.getLstApplicationIds().contains(appidTmp)) continue;//没有在URL中指定要导出此应用
+                if(!rrequest.getLstApplicationIds().contains(appidTmp)) continue;
+                hasExportChild=true;
                 appTypeObjTmp=(AbsApplicationType)rrequest.getComponentTypeObj(appidTmp,null,true);
                 Object tplObjTmp=null;
                 if(appTypeObjTmp.getConfigBean().getDataExportsBean()!=null)
@@ -585,6 +588,10 @@ public abstract class AbsContainerType extends AbsComponentType
                     if(debeanTmp!=null) tplObjTmp=debeanTmp.getDataExportTplObj();
                 }
                 appTypeObjTmp.displayOnExportDataFile(tplObjTmp,true);
+            }
+            if(!hasExportChild)
+            {
+                log.warn("没有导出容器"+this.comCfgBean.getPath()+"中任何子应用");
             }
         }
     }

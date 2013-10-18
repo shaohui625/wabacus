@@ -53,6 +53,8 @@ public class EditableListReportInsertUpdateBean implements Cloneable
 
     private String popupparams;
 
+    private String beforepopup;
+    
     private AbsEditableReportEditDataBean owner;
 
     public EditableListReportInsertUpdateBean(AbsEditableReportEditDataBean owner)
@@ -120,6 +122,16 @@ public class EditableListReportInsertUpdateBean implements Cloneable
         this.popupparams=popupparams;
     }
 
+    public String getBeforepopup()
+    {
+        return beforepopup;
+    }
+
+    public void setBeforepopup(String beforepopup)
+    {
+        this.beforepopup=beforepopup;
+    }
+
     public AbsEditableReportEditDataBean getOwner()
     {
         return owner;
@@ -140,23 +152,25 @@ public class EditableListReportInsertUpdateBean implements Cloneable
         return this.owner instanceof EditableListReportUpdateDataBean;
     }
     
-    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
+    public String getPopupPageUrlAndParams(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
     {
+        StringBuilder resultBuf=new StringBuilder();
         ReportBean rbean=this.getOwner().getOwner().getReportBean();
         boolean isBelongtoInsert=isBelongtoInsert();
-        String realpageurl=null;
+        String pageurl=null;
         if(this.pageurl!=null&&!this.pageurl.trim().equals(""))
         {
-            realpageurl=this.pageurl;
+            pageurl=this.pageurl;
         }else
         {
-            realpageurl=Config.showreport_onpage_url+"&PAGEID="+this.pageid;
-            realpageurl=realpageurl+"&WX_REFEREDREPORTID="+this.reportid;
-            realpageurl=realpageurl+"&"+this.reportid+"_ACCESSMODE="+(isBelongtoInsert?Consts.ADD_MODE:Consts.UPDATE_MODE);
+            pageurl=Config.showreport_onpage_url+"&PAGEID="+this.pageid;
+            pageurl=pageurl+"&WX_REFEREDREPORTID="+this.reportid;
+            pageurl=pageurl+"&"+this.reportid+"_ACCESSMODE="+(isBelongtoInsert?Consts.ADD_MODE:Consts.UPDATE_MODE);
         }
-        realpageurl=realpageurl+"&WX_SRCPAGEID="+rbean.getPageBean().getId();
-        realpageurl=realpageurl+"&WX_SRCREPORTID="+rbean.getId();
-        realpageurl=realpageurl+"&WX_EDITTYPE="+(isBelongtoInsert?"add":"update");
+        pageurl=pageurl+"&WX_SRCPAGEID="+rbean.getPageBean().getId();
+        pageurl=pageurl+"&WX_SRCREPORTID="+rbean.getId();
+        pageurl=pageurl+"&WX_EDITTYPE="+(isBelongtoInsert?"add":"update");
+        resultBuf.append("{pageurl:\"").append(pageurl).append("\"");
         StringBuffer urlParamsBuf=new StringBuffer();
         if(this.lstUrlParams!=null&&this.lstUrlParams.size()>0)
         {
@@ -183,11 +197,17 @@ public class EditableListReportInsertUpdateBean implements Cloneable
                     paramvalueTmp=WabacusAssistant.getInstance().getRequestContextStringValue(rrequest,paramvalueTmp,null);
                 }
                 if(paramvalueTmp==null||paramvalueTmp.trim().equals("")) continue;
-                urlParamsBuf.append("&").append(paramnameTmp).append("=").append(paramvalueTmp);
+                urlParamsBuf.append(paramnameTmp).append(":\"").append(paramvalueTmp).append("\",");
+            }
+            if(urlParamsBuf.length()>0)
+            {
+                if(urlParamsBuf.charAt(urlParamsBuf.length()-1)==',') urlParamsBuf.deleteCharAt(urlParamsBuf.length()-1);
+                resultBuf.append(",params:{").append(urlParamsBuf.toString()).append("}");
             }
         }
-        realpageurl=realpageurl+urlParamsBuf.toString();
-        return realpageurl;
+        if(!Tools.isEmpty(this.beforepopup)) resultBuf.append(",beforePopupMethod:").append(this.beforepopup);
+        resultBuf.append("}");
+        return Tools.jsParamEncode(resultBuf.toString());
     }
     
     public void doPostLoadFinally()

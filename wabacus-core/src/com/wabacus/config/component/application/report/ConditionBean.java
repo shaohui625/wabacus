@@ -68,7 +68,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
     
     private Map<String,String> mDynLableParts;
 
-    private String labelposition=LABELPOSITION_INNER;
+    private String labelposition=LABELPOSITION_INNER;//显示查询条件label的位置类型
 
     private String defaultvalue=null;
     
@@ -78,22 +78,18 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
 
     private String tip="";
 
-    private boolean hidden;//是否在前台显示
+    private boolean hidden;
 
-    
     private boolean constant;
 
     private boolean br;
 
     private int left=3;
     
-    private int right=0;
+    private int right=0;//距离右边元素的位置
 
     //    private String relatetab="";//当在同一页面横向以tab形式显示多个报表时，如果某个条件输入框的值要在点击其它tab切换到其它报表时
 
-    
-    
-    
     private String splitlike="0";
     
     private String source;
@@ -316,6 +312,12 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if(this.isConstant()) return false;
         if(Tools.isDefineKey("request",this.source)||Tools.isDefineKey("session",this.source)) return false;
         return true;
+    }
+    
+    public boolean isConditionValueFromSession()
+    {
+        if(this.isConstant()) return false;
+        return Tools.isDefineKey("session",this.source);
     }
     
     public int getLeft()
@@ -561,17 +563,13 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if((LABELPOSITION_INNER.equals(this.labelposition)&&conditionvalue.equals(this.getLabel(rrequest)))
                 ||conditionvalue.equals("(ALL_DATA)"))
         {
-            
             conditionvalue="";
         }
         if(conditionvalue.equals("")&&this.defaultvalue!=null)
         {
             conditionvalue=ReportAssistant.getInstance().getColAndConditionDefaultValue(rrequest,this.defaultvalue);
         }
-
-
-
-
+//        {
         rrequest.getAttributes().put(conditionname,conditionvalue);
         rrequest.addParamToUrl(conditionname,conditionvalue,true);
         return conditionvalue;
@@ -611,7 +609,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         {
             String conditionvalueTmp;
             for(int i=0;i<this.iterator;i++)
-            {//依次循环此查询条件每一套输入框
+            {
                 conditionvalueTmp=getDynamicConditionvalueForSql(rrequest,i);
                 if(conditionvalueTmp.equals("")) continue;
                 conditionValueBuf.append(getRuntimeConditionExpressionForSP(rrequest,i));
@@ -670,7 +668,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if(!this.isExistConditionExpression(true)) return null;//如果当前查询条件没有在<condition/>中的任意层级子标签中配置条件表达式，则说明它可能是直接通过#name#的形式在sql语句中指定条件，所以不在这里为它构造条件表达式
         if(this.isConstant()) return conditionExpression.getValue();
         if(this.iterator<2)
-        {
+        {//只需为此查询条件显示一套输入框
             String conditionvalue=getDynamicConditionvalueForSql(rrequest,-1);
             if(conditionvalue.equals("")) return "";
             ConditionExpressionBean cexpressionbean=getConditionRuntimeExpressionBean(rrequest,-1);
@@ -720,10 +718,8 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
             if(andExpressionBuf.length()==0&&orExpressionBuf.length()==0) return "";
             if(lstConditions!=null&&lstConditionsTypes!=null)
             {
-                
                 if(lstAndConditions.size()>0) lstConditions.addAll(lstAndConditions);
                 if(lstAndConditionsType.size()>0) lstConditionsTypes.addAll(lstAndConditionsType);
-                
                 if(lstOrConditions.size()>0) lstConditions.addAll(lstOrConditions);
                 if(lstOrConditionsType.size()>0) lstConditionsTypes.addAll(lstOrConditionsType);
             }
@@ -733,7 +729,6 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
             {
                 conditionexpression="("+andExpressionBuf.toString()+")";
             }
-            
             if(!orExpressionBuf.toString().trim().equals(""))
             {
                 if(conditionexpression.equals(""))
@@ -754,7 +749,6 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         if((this.innerlogic==null||this.innerlogic.trim().equals(""))&&(this.cinnerlogicbean==null||this.cinnerlogicbean.isEmpty())) return "and";
         if(this.innerlogic!=null&&!this.innerlogic.trim().equals("")) return this.innerlogic;//配置了<condition/>的innerlogic属性
         if(this.cinnerlogicbean.getLstSelectItemBeans().size()==1) return this.cinnerlogicbean.getLstSelectItemBeans().get(0).getId();//在<innerlogic/>中只配置了一个<logic/>
-        
         String innerlogicTmp=rrequest.getStringAttribute(this.cinnerlogicbean.getSelectedInputboxId(iteratorindex),"");
         if(innerlogicTmp.equals("")) return this.cinnerlogicbean.getLstSelectItemBeans().get(0).getId();
         return innerlogicTmp;
@@ -837,7 +831,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
     {
         if(!this.isConditionWithInputbox()) return "";
         ReportBean rbean=this.getReportBean();
-        if(!rrequest.checkPermission(rbean.getId(),Consts.SEARCH_PART,name,Consts.PERMISSION_TYPE_DISPLAY)) return "";
+        if(!rrequest.checkPermission(rbean.getId(),Consts.SEARCH_PART,name,Consts.PERMISSION_TYPE_DISPLAY)) return "";//此查询条件没有显示权限
         if(this.iterator<=1&&iteratorindex>=0)
         {
             throw new WabacusRuntimeException("报表"+rbean.getPath()+"的查询条件"+this.name+"的iterator属性为"+this.iterator
@@ -863,7 +857,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                 resultBuf.append(" iteratorindex=\"").append(iteratorindex).append("\"");
             }
         }else
-        {//用户自己显示输入框
+        {
             if(this.iterator>1)
             {
                 throw new WabacusRuntimeException("显示报表"+this.getReportBean().getPath()+"的查询条件"+this.name+"失败，此查询条件的iterator大于1，不能为它提供条件输入框");
@@ -879,7 +873,7 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         }
         if(this.cvaluesbean!=null&&!this.cvaluesbean.isEmpty()&&this.cvaluesbean.getLstSelectItemBeans().size()>1)
         {
-            resultBuf.append(" valueid=\"").append(this.cvaluesbean.getSelectedInputboxId(iteratorindex)).append("\"");
+            resultBuf.append(" valueid=\"").append(this.cvaluesbean.getSelectedInputboxId(iteratorindex)).append("\"");//条件表达式选择框id
             resultBuf.append(" valueinputboxtype=\"").append(cvaluesbean.getInputbox()==null?"":cvaluesbean.getInputbox()).append("\"");
         }
         resultBuf.append(">");
@@ -960,18 +954,9 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
         SqlBean sbean=(SqlBean)this.getParent();
         validateConfig(sbean);
         processInnerlogic();
-        if(sbean.getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT) processConditionExpression();
-
-
-
-
-
+        if(sbean.isSelectPreparedStatement()) processConditionExpression();
+//            {
 //                {//只要有一个数据集采用preparedstatement方式执行，则解析此条件的参数化形式（在运行时是采用参数化形式还是普通形式由使用它的数据集决定）
-
-
-
-//            }
-
         if(this.isConditionWithInputbox()&&this.iterator>1)
         {
             if(this.conditionExpression!=null)
@@ -980,18 +965,8 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                         +"的查询条件失败，只为它配置了一个条件表达式，不能将iterator属性配置为大于1的数");
             }
         }
-
-
-
-
-
-
-
-
+//            for(String belongtoIdTmp:this.lstBelongto)
 //                            +"的查询条件配置的belongto错误，没有找到其所属的<value/>的id："+belongtoIdTmp);
-
-
-
         if(this.inputbox!=null) this.inputbox.doPostLoad(this);
     }
 
@@ -1015,7 +990,6 @@ public class ConditionBean extends AbsConfigBean implements IInputBoxOwnerBean
                 {//在<values/>的<value/>的<column/>中配置了条件表达式
                     cvbTmp.setConditionExpression(null);
                     List<ConditionSelectItemBean> lstCcbeans=((ConditionValueSelectItemBean)cvbTmp).getLstColumnsBean();
-                    
                     for(ConditionSelectItemBean ccbeanTmp:lstCcbeans)
                     {
                         if(ccbeanTmp.getConditionExpression()==null||ccbeanTmp.getConditionExpression().getValue()==null

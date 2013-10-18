@@ -88,17 +88,7 @@ public class XlsDataImportBean extends AbsDataImportConfigBean
                 }
             }
         }
-
-
-
-
-
-
-
-
-
-
-
+//            }
         try
         {
             String colnamerowindex=eleDataImport.attributeValue("colnamerowindex");

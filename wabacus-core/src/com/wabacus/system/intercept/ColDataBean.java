@@ -19,6 +19,7 @@
 package com.wabacus.system.intercept;
 
 import com.wabacus.config.component.application.report.AbsReportDataPojo;
+import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 
 public class ColDataBean
@@ -101,6 +102,14 @@ public class ColDataBean
     public boolean setColData(String property,Object valObj)
     {
         if(rowDataObj==null) return false;
+        if(displayColBean instanceof ColBean)
+        {
+            if(property==null) property="";
+            if(property.equals(((ColBean)this.displayColBean).getProperty()))
+            {
+                this.value=valObj==null?null:valObj.toString();
+            }
+        }
         return rowDataObj.setColValue(property,valObj);
     }
     

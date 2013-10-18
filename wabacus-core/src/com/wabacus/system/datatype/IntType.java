@@ -62,20 +62,14 @@ public class IntType extends AbsNumberType
         }
     }
 
-    
-    
-    
-    
 
     public Class getJavaTypeClass()
     {
-        
         return Integer.class;
     }
 
     public Object label2value(String label)
     {
-        
         if(label==null||label.trim().equals("")) return null;
         if(this.numberformat!=null&&!this.numberformat.trim().equals(""))
         {

@@ -26,6 +26,10 @@ public class EditableReportBean extends AbsExtendConfigBean
 {
     private Boolean checkdirtydata;
 
+    private String configSaveDatatype;//在<report/>中配置的保存数据类型
+    
+    private String savedatatype;
+    
     public EditableReportBean(AbsConfigBean owner)
     {
         super(owner);
@@ -43,5 +47,25 @@ public class EditableReportBean extends AbsExtendConfigBean
     public void setCheckdirtydata(Boolean checkdirtydata)
     {
         this.checkdirtydata=checkdirtydata;
+    }
+
+    public String getConfigSavedatatype()
+    {
+        return this.configSaveDatatype;
+    }
+    
+    public String getSavedatatype()
+    {
+        if(savedatatype==null||savedatatype.trim().equals(""))
+        {
+            savedatatype=Config.getInstance().getSystemConfigValue("default-savedatatype","realchanged");
+        }
+        return savedatatype;
+    }
+
+    public void setSavedatatype(String savedatatype)
+    {
+        this.configSaveDatatype=savedatatype;
+        this.savedatatype=savedatatype;
     }
 }

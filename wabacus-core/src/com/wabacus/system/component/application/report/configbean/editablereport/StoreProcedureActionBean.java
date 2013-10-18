@@ -135,7 +135,7 @@ public class StoreProcedureActionBean extends AbsEditSqlActionBean
             }
             int outputindex=-1;
             if(this.returnValueParamname!=null&&!this.returnValueParamname.trim().equals(""))
-            {
+            {//有返回值
                 outputindex=this.lstParams==null?1:this.lstParams.size()+1;
                 cstmt.registerOutParameter(outputindex,java.sql.Types.VARCHAR);
             }

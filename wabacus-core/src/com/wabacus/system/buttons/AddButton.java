@@ -52,7 +52,6 @@ public class AddButton extends AbsEditableReportButton
         {
             return "changeReportAccessMode('"+ccbean.getGuid()+"','"+Consts.ADD_MODE+"')";
         }
-        
         return "";
     }
 }

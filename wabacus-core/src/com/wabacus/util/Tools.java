@@ -20,7 +20,6 @@ package com.wabacus.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -28,6 +27,7 @@ import java.net.URLDecoder;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -86,16 +86,24 @@ public class Tools
     public static String getStrDatetime(String dateformat,Date date)
     {
         if(date==null) date=new java.util.Date();
-        
-        
-        
-        
-        
         SimpleDateFormat format=new SimpleDateFormat(dateformat);
         String strDate=format.format(date);
         return strDate;
     }
 
+    public static String removeNonNumberFromDatetime(String datestr)
+    {
+        if(Tools.isEmpty(datestr)) return datestr;
+        StringBuilder resultBuf=new StringBuilder();
+        char c;
+        for(int i=0,len=datestr.length();i<len;i++)
+        {
+            c=datestr.charAt(i);
+            if(c>='0'&&c<='9') resultBuf.append(c);
+        }
+        return resultBuf.toString();
+    }
+    
     public static byte[] getBytesArrayFromInputStream(InputStream is)
     {
         try
@@ -253,10 +261,7 @@ public class Tools
             return definekey;
         }
         realkey=realkey.substring(1,realkey.length()-1).trim();
-        
-        
-        
-        
+        //        if (realkey.equals(""))
         return realkey;
     }
 
@@ -279,7 +284,7 @@ public class Tools
         {
             return src;
         }
-        StringBuffer result=new StringBuffer();
+        StringBuilder result=new StringBuilder();
         char character;
         for(int i=0;i<src.length();i++)
         {
@@ -298,7 +303,6 @@ public class Tools
                 result.append("&#039;");
             }else if(character=='\\')
             {
-                
                 result.append(character);
             }else
             {
@@ -314,7 +318,7 @@ public class Tools
         {
             return src;
         }
-        StringBuffer result=new StringBuffer();
+        StringBuilder result=new StringBuilder();
         char character;
         for(int i=0;i<src.length();i++)
         {
@@ -333,7 +337,6 @@ public class Tools
                 result.append("&#039;");
             }else if(character=='\\')
             {
-                //result.append("&#092;");
                 result.append(character);
             }else
             {
@@ -590,10 +593,6 @@ public class Tools
         xmlvalue=xmlvalue.trim();
         startTag=startTag.trim();
         endTag=endTag.trim();
-        
-        
-        
-        
         int lenxml=xmlvalue.length();
         int lenstart=startTag.length();
         int lenend=endTag.length();
@@ -616,7 +615,7 @@ public class Tools
     {
         if(str==null||str.trim().equals("")) return str;
         String strOld=str;
-        str=replaceCharacterInQuote(str,'(',"WX_QUOTE_LEFT",true);
+        str=replaceCharacterInQuote(str,'(',"WX_QUOTE_LEFT",true);//替换掉引号中的左括号
         str=replaceCharacterInQuote(str,')',"WX_QUOTE_RIGHT",true);
         boolean flag=false;
         int countleft=0,i=0;
@@ -768,39 +767,6 @@ public class Tools
         }
     }
 
-    public static void delete(File f,String suffix,boolean inherit) throws IOException
-    {
-        if(f.exists())
-        {
-            if(f.isFile())
-            {
-                if(suffix!=null&&!suffix.trim().equals(""))
-                {
-                    String temp=suffix.toLowerCase().trim();
-                    String filename=f.getName().toLowerCase();
-                    if(filename.endsWith(temp))
-                    {
-                        f.delete();
-                    }
-                }else
-                {
-                    f.delete();
-                }
-            }else if(f.isDirectory())
-            {
-                File[] files=f.listFiles();
-                for(int i=0;i<files.length;i++)
-                {
-                    if(files[i].isFile()||inherit) delete(files[i],suffix,inherit);
-                }
-                if(f.listFiles().length==0)
-                {
-                    f.delete();
-                }
-            }
-        }
-    }
-
     public static String getPropertyValueByName(String propname,String src,
             boolean includeValueInStyle)
     {
@@ -899,7 +865,7 @@ public class Tools
                 {
                     propValTmp=propVal2Tmp;
                 }else
-                {
+                {//追加
                     if(propNameTmp.equalsIgnoreCase("style"))
                     {
                         propValTmp=mergeHtmlTagStyleValue(propValTmp,propVal2Tmp);
@@ -943,7 +909,7 @@ public class Tools
             propNameTmp=attrEntryTmp.getKey().trim();
             propValTmp=attrEntryTmp.getValue();
             if(mAttributes2.containsKey(propNameTmp))
-            {//style2中有此属性名和值，则覆盖掉
+            {
                 String propVal2Tmp=mAttributes2.get(propNameTmp);
                 propValTmp=propVal2Tmp==null?"":propVal2Tmp.trim();
                 mAttributes2.remove(propNameTmp);
@@ -1044,7 +1010,7 @@ public class Tools
             c=propString.charAt(i);
             resultBuf.append(c);
             if(quote!=null)
-            {
+            {//当前是在引号中
                 if(quote.equals("\"")&&c=='\"'||quote.equals("'")&&c=='\'') quote=null;
             }else
             {
@@ -1068,7 +1034,6 @@ public class Tools
                         {
                             quotetype='\'';
                         }
-                        
                         break;
                     }
                     if(j==len)
@@ -1141,22 +1106,6 @@ public class Tools
         return resultBuf.toString();
     }
     
-    public static String standardFilePath(String filePath)
-    {
-        if(filePath==null||filePath.trim().equals("")) return filePath;
-        filePath=filePath.trim();
-        if(File.separator.equals("\\"))
-        {
-            filePath=replaceAll(filePath,"/","\\");
-            filePath=replaceAll(filePath,"\\\\","\\");
-        }else if(File.separator.equals("/"))
-        {
-            filePath=replaceAll(filePath,"\\","/");
-            filePath=replaceAll(filePath,"//","/");
-        }
-        return filePath;
-    }
-
     public static String copyMapData(Map mSrc,Map mDest,boolean unique)
     {
         if(mSrc!=null&&mSrc.size()>0&&mDest!=null)
@@ -1268,7 +1217,7 @@ public class Tools
         {
             String strTmp=lstDate.get(0);
             if(strTmp.indexOf(":")>0)
-            {
+            {//只有时间
                 time=strTmp;
             }else
             {
@@ -1302,7 +1251,7 @@ public class Tools
                 resultBuf.append("yyyy");
                 hasYear=true;
             }else if(str.length()==2||str.length()==1)
-            {//可能是01或1
+            {
                 resultBuf.append("MM");
                 hasMonth=true;
             }else
@@ -1353,7 +1302,7 @@ public class Tools
         if(time!=null&&!time.trim().equals(""))
         {
             if(date!=null&&!date.trim().equals(""))
-            {
+            {//有日期部分
                 resultBuf.append(" ");
             }
             List<String> lstTime=Tools.parseStringToList(time,":");
@@ -1386,28 +1335,7 @@ public class Tools
         }
         return resultBuf.toString();
     }
-    
-    
-    private static Map<String,String> mEncodedFilePaths=new HashMap<String,String>();
-    
-    private static Map<String,String> mDecodedFilePaths=new HashMap<String,String>();
-    
-    public static String encodeFilePath(String filepath)
-    {
-        if(filepath==null||filepath.trim().equals("")) return "";
-        if(mEncodedFilePaths.containsKey(filepath.toLowerCase().trim())) return mEncodedFilePaths.get(filepath.toLowerCase().trim());
-        String filecode=(int)(Math.random()*10000)+"_"+(int)(Math.random()*10000);
-        mEncodedFilePaths.put(filepath.toLowerCase().trim(),filecode);
-        mDecodedFilePaths.put(filecode,filepath);
-        return filecode;
-    }
-    
-    public static String decodeFilePath(String filecode)
-    {
-        if(filecode==null||filecode.trim().equals("")) return "";
-        return mDecodedFilePaths.get(filecode);
-    }
-    
+        
     public static String getRandomString(int length)
     {
         if(length<=0) return "";
@@ -1417,12 +1345,6 @@ public class Tools
             resultBuf.append((int)(Math.random()*10));
         }
         return resultBuf.toString();
-    }
-    
-    public static boolean isEmpty(String string,boolean ignoreWhiteSpace)
-    {
-        if(string==null) return true;
-        return ignoreWhiteSpace?string.trim().equals(""):string.equals("");
     }
     
     public static String substring(String str,Integer start,Integer length)
@@ -1460,21 +1382,14 @@ public class Tools
             {
                 return "";
             }
-           return formatDouble(Double.parseDouble(srcString),pattern);
+            DecimalFormat df=new DecimalFormat(pattern);
+            srcString=df.format(Double.parseDouble(srcString));
+            return srcString;
         }catch(Exception e)
         {
             log.error("以"+pattern+"格式格式化"+srcString+"时，发生了异常：",e);
             return srcString;
         }
-    }
-    public static String formatDouble(Number number,String pattern)
-    {
-            if(number == null)
-            {
-                return "";
-            }
-            final DecimalFormat df=new DecimalFormat(pattern);
-            return df.format(number.doubleValue());
     }
 
     public static String formatLong(String srcString,String pattern)
@@ -1494,4 +1409,20 @@ public class Tools
             return srcString;
         }
     }
+    
+    public static boolean isEmpty(String str)
+    {
+        return str==null||str.trim().equals("");
+    }
+    
+    public static boolean isEmpty(String string,boolean ignoreWhiteSpace)
+    {
+        if(string==null) return true;
+        return ignoreWhiteSpace?string.trim().equals(""):string.equals("");
+    }
+    
+    public static boolean isEmpty(Collection c)
+    {
+        return c==null||c.size()==0;
+    }    
 }

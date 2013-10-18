@@ -62,10 +62,6 @@ public class FloatType extends AbsNumberType
         }
     }
 
-    
-    
-    
-    
 
     public Class getJavaTypeClass()
     {

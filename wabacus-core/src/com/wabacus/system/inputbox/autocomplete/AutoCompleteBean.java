@@ -18,31 +18,18 @@
  */
 package com.wabacus.system.inputbox.autocomplete;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.wabacus.config.ConfigLoadManager;
-import com.wabacus.config.component.ComponentConfigLoadAssistant;
-import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.application.report.ColBean;
-import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.SqlBean;
-import com.wabacus.config.component.application.report.condition.ConditionExpressionBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
-import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
-import com.wabacus.system.dataset.ISqlDataSet;
-import com.wabacus.system.dataset.sqldataset.GetAllDataSetByPreparedSQL;
-import com.wabacus.system.dataset.sqldataset.GetAllDataSetBySQL;
-import com.wabacus.system.dataset.sqldataset.GetDataSetByStoreProcedure;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
+import com.wabacus.system.dataset.common.SQLCommonDataSetValueProvider;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.util.Tools;
@@ -57,7 +44,7 @@ public class AutoCompleteBean implements Cloneable
 
     private AbsInputBox owner;
 
-    private IAutoCompleteDataSet datasetObj;
+    private AbsCommonDataSetValueProvider datasetProvider;
 
     private List<String> lstAutoCompleteColumns;
 
@@ -67,8 +54,6 @@ public class AutoCompleteBean implements Cloneable
 
     private List<String> lstColPropertiesInColvalueConditions;
     
-    private List<ConditionBean> lstConditionBeans;
-
     private String multiple;//如果匹配了多条记录的处理办法，可取值为first/last/none，分别表示取第一条、最后一条、不取任何记录
 
     public AutoCompleteBean(AbsInputBox owner)
@@ -86,14 +71,14 @@ public class AutoCompleteBean implements Cloneable
         this.owner=owner;
     }
 
+    public AbsCommonDataSetValueProvider getDatasetProvider()
+    {
+        return datasetProvider;
+    }
+
     public List<String> getLstColPropertiesInColvalueConditions()
     {
         return lstColPropertiesInColvalueConditions;
-    }
-
-    public IAutoCompleteDataSet getDatasetObj()
-    {
-        return datasetObj;
     }
 
     public List<ColBean> getLstAutoCompleteColBeans()
@@ -101,14 +86,22 @@ public class AutoCompleteBean implements Cloneable
         return lstAutoCompleteColBeans;
     }
 
-    public List<ConditionBean> getLstConditionBeans()
-    {
-        return lstConditionBeans;
-    }
-
     public String getMultiple()
     {
         return multiple;
+    }
+    
+    public String getColvalueConditionExpressionForSql(Map<String,String> mParams)
+    {
+        String realColConditionExpression=colvalueCondition;
+        String colValTmp;
+        for(String colpropertyTmp:lstColPropertiesInColvalueConditions)
+        {
+            colValTmp=mParams.get(colpropertyTmp);
+            if(colValTmp==null) colValTmp="";
+            realColConditionExpression=Tools.replaceAll(realColConditionExpression,"#"+colpropertyTmp+"#",colValTmp);
+        }
+        return realColConditionExpression;
     }
 
     public void loadConfig(XmlElementBean eleAutocompleteBean)
@@ -121,53 +114,6 @@ public class AutoCompleteBean implements Cloneable
                     +"的自动填充配置失败，没有指定要填充的列columns属性");
         }
         this.lstAutoCompleteColumns=Tools.parseStringToList(columns,";",false);
-        String dataset=eleAutocompleteBean.attributeValue("dataset");
-        if(dataset==null||dataset.trim().equals(""))
-        {
-            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"上的输入框"+this.owner.getOwner().getInputBoxId()
-                    +"的自动填充配置失败，没有配置dataset属性指定数据集");
-        }
-        dataset=dataset.trim();
-        if(dataset.startsWith("{")&&dataset.endsWith("}")) dataset=dataset.substring(1,dataset.length()-1).trim();
-        if(Tools.isDefineKey("class",dataset))
-        {
-            Object obj;
-            try
-            {
-                obj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(Tools.getRealKeyByDefine("class",dataset)).newInstance();
-            }catch(Exception e)
-            {
-                throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"上的输入框"+this.owner.getOwner().getInputBoxId()+"的自动填充配置失败，配置的数据集"
-                        +dataset+"类无法实例化",e);
-            }
-            if(!(obj instanceof IAutoCompleteDataSet))
-            {
-                throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"上的输入框"+this.owner.getOwner().getInputBoxId()+"的自动填充配置失败，配置的数据集"
-                        +dataset+"类没有实现接口"+IAutoCompleteDataSet.class.getName());
-            }
-            this.datasetObj=(IAutoCompleteDataSet)obj;
-        }else if(dataset.toLowerCase().startsWith("call "))
-        {
-            this.datasetObj=new SPDataSet();
-            String spname=dataset.substring("call ".length()).trim();
-            if(spname.equals(""))
-            {
-                throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"上的输入框"+this.owner.getOwner().getInputBoxId()+"的自动填充配置失败，配置的数据集"
-                        +dataset+"是存储过程，但没有指定存储过程名");
-            }
-            if(spname.indexOf("(")>0) spname=spname.substring(0,spname.indexOf("("));
-            spname="{call "+spname+"(?)}";
-            ((SPDataSet)this.datasetObj).setSp(spname);
-        }else
-        {
-            this.datasetObj=new SqlDataSet();
-            if(dataset.indexOf("{#condition#}")<0)
-            {
-                throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"上的输入框"+this.owner.getOwner().getInputBoxId()+"的自动填充配置失败，配置的数据集"
-                        +dataset+"是SQL语句，必须指定{#condition#}占位符");
-            }
-            ((SqlDataSet)this.datasetObj).setSql(dataset.trim());
-        }
         String colvaluecondition=eleAutocompleteBean.attributeValue("colvaluecondition");
         if(colvaluecondition!=null) this.colvalueCondition=colvaluecondition.trim();
         String multiple=eleAutocompleteBean.attributeValue("multiple");
@@ -179,31 +125,27 @@ public class AutoCompleteBean implements Cloneable
                     +multiple+"无效，只能配置为first/last/none");
         }
         this.multiple=multiple;
-        this.lstConditionBeans=ComponentConfigLoadManager.loadConditionsInOtherPlace(eleAutocompleteBean,rbean);
+        String dataset=eleAutocompleteBean.attributeValue("dataset");
+        if(dataset==null||dataset.trim().equals(""))
+        {
+            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"上的输入框"+this.owner.getOwner().getInputBoxId()
+                    +"的自动填充配置失败，没有配置dataset属性指定数据集");
+        }
+        dataset=dataset.trim();
+        AbsCommonDataSetValueProvider dsProvider=AbsCommonDataSetValueProvider.createCommonDataSetValueProviderObj(rbean,dataset);
+        if(dsProvider==null)
+        {
+            throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的自动填充的dataset："+eleAutocompleteBean.attributeValue("dataset")+"不合法");
+        }
+        this.datasetProvider=dsProvider;
+        dsProvider.setOwnerAutoCompleteBean(this);
+        dsProvider.loadConfig(eleAutocompleteBean);
     }
 
     public void doPostLoad()
     {
-        if(this.datasetObj instanceof SqlDataSet&&this.lstConditionBeans!=null)
-        {
-            ReportBean rbean=this.owner.getOwner().getReportBean();
-            boolean isPreparedStmt=false;
-            if(rbean.getSbean().getStatementType()==SqlBean.STMTYPE_PREPAREDSTATEMENT)
-            {
-                isPreparedStmt=true;
-            }
-            ((SqlDataSet)this.datasetObj).setPreparedStmt(isPreparedStmt);
-            for(ConditionBean cbTmp:this.lstConditionBeans)
-            {
-                if(isPreparedStmt) cbTmp.getConditionExpression().parseConditionExpression();
-                if(cbTmp.isConditionValueFromUrl())
-                {
-                    rbean.addParamNameFromURL(cbTmp.getName());
-                }
-            }
-        }
         processAutoCompleteCols();
-        if(this.datasetObj instanceof SqlDataSet)
+        if(this.datasetProvider instanceof SQLCommonDataSetValueProvider)
         {
             processColvalueConditionForSqlDataset();
         }else
@@ -290,7 +232,7 @@ public class AutoCompleteBean implements Cloneable
                 propertyTmp=expressTmp.substring(0,idx);
                 cbTmp=dbean.getColBeanByColProperty(propertyTmp.trim());
                 if(cbTmp!=null)
-                {
+                {//如果是个有效的列property
                     if(cbTmp.isControlCol()||cbTmp.getProperty()==null||cbTmp.getProperty().trim().equals(""))
                     {
                         throw new WabacusConfigLoadingException("加载报表"+dbean.getReportBean().getPath()+"的列"+cbOwner.getColumn()
@@ -335,164 +277,15 @@ public class AutoCompleteBean implements Cloneable
         }
     }
     
-    private class SqlDataSet implements IAutoCompleteDataSet
-    {
-        private String sql;
-        
-        private boolean isPreparedStmt=false;
-
-        public String getSql()
-        {
-            return sql;
-        }
-
-        public void setSql(String sql)
-        {
-            this.sql=sql;
-        }
-
-        public void setPreparedStmt(boolean isPreparedStmt)
-        {
-            this.isPreparedStmt=isPreparedStmt;
-        }
-
-        public Map<String,String> getAutoCompleteColumnsData(ReportRequest rrequest,AutoCompleteBean autoCompleteBean,Map<String,String> mParams)
-        {
-            if(mParams==null||mParams.size()==0) return null;
-            String realColConditionExpression=colvalueCondition;
-            String colValTmp;
-            for(String colpropertyTmp:lstColPropertiesInColvalueConditions)
-            {
-                colValTmp=mParams.get(colpropertyTmp);
-                if(colValTmp==null) colValTmp="";
-                realColConditionExpression=Tools.replaceAll(realColConditionExpression,"#"+colpropertyTmp+"#",colValTmp);
-            }
-            if(realColConditionExpression==null||realColConditionExpression.trim().equals("")) return null;
-            ISqlDataSet sqlDataSet=null;
-            if(this.isPreparedStmt)
-            {
-                sqlDataSet=new GetAllDataSetByPreparedSQL();
-            }else
-            {
-                sqlDataSet=new GetAllDataSetBySQL();
-            }
-            String sqlTmp=Tools.replaceAll(sql,"{#condition#}","{@condition@} and "+realColConditionExpression);//保留{#condition#}，因为后面还有可能拼凑<condition/>中配置的条件
-            sqlTmp=Tools.replaceAll(sqlTmp,"{@condition@}","{#condition#}");
-            Object objTmp=sqlDataSet.getDataSet(rrequest,owner.getOwner().getReportBean(),autoCompleteBean,sqlTmp,lstConditionBeans,null);
-            if(objTmp==null||rrequest.getWResponse().getMessageCollector().hasErrors()||rrequest.getWResponse().getMessageCollector().hasWarnings())
-            {
-                return null;
-            }
-            if(objTmp instanceof Map) return (Map<String,String>)objTmp;//用户直接在拦截器加载数据前置动作中返回了自己构造的填充列的值
-            return getMColDataValuesByResultSet((ResultSet)objTmp);
-        }
-    }
-
-    private class SPDataSet implements IAutoCompleteDataSet
-    {
-        private String sp;
-
-        public String getSp()
-        {
-            return sp;
-        }
-
-        public void setSp(String sp)
-        {
-            this.sp=sp;
-        }
-
-        public Map<String,String> getAutoCompleteColumnsData(ReportRequest rrequest,AutoCompleteBean autoCompleteBean,Map<String,String> mParams)
-        {
-            StringBuffer paramsBuf=new StringBuffer();
-            String colValTmp;
-            for(String colpropertyTmp:lstColPropertiesInColvalueConditions)
-            {
-                colValTmp=mParams.get(colpropertyTmp);
-                if(colValTmp==null) colValTmp="";
-                paramsBuf.append("["+colpropertyTmp+"="+colValTmp+"]");
-            }
-            if(lstConditionBeans!=null)
-            {
-                String conValTmp;
-                for(ConditionBean cbTmp:lstConditionBeans)
-                {
-                    conValTmp=cbTmp.getConditionValue(rrequest,-1);
-                    if(conValTmp==null) conValTmp="";
-                    paramsBuf.append("["+cbTmp.getName()+"="+conValTmp+"]");
-                }
-            }
-            ConditionBean conbeanTmp=new ConditionBean(null);
-            conbeanTmp.setConstant(true);
-            conbeanTmp.setHidden(true);
-            ConditionExpressionBean cebean=new ConditionExpressionBean();
-            cebean.setValue(paramsBuf.toString());
-            conbeanTmp.setConditionExpression(cebean);
-            List<ConditionBean> lstConditionsTmp=new ArrayList<ConditionBean>();
-            lstConditionsTmp.add(conbeanTmp);
-            Object objTmp=new GetDataSetByStoreProcedure().getDataSet(rrequest,owner.getOwner().getReportBean(),autoCompleteBean,sp,lstConditionsTmp,null);
-            if(objTmp==null||rrequest.getWResponse().getMessageCollector().hasErrors()||rrequest.getWResponse().getMessageCollector().hasWarnings())
-            {
-                return null;
-            }
-            if(objTmp instanceof Map) return (Map<String,String>)objTmp;
-            return getMColDataValuesByResultSet((ResultSet)objTmp);
-        }
-    }
-
-    private Map<String,String> getMColDataValuesByResultSet(ResultSet rs)
-    {
-        String colValTmp;
-        Map<String,String> mResults=new HashMap<String,String>();
-        try
-        {
-            while(rs.next())
-            {
-                if(mResults.size()>0)
-                {
-                    if(MULTIPLE_FIRST.equals(this.multiple)) return mResults;
-                    if(MULTIPLE_NONE.equals(this.multiple)) return null;
-                }
-                for(ColBean cbTmp:lstAutoCompleteColBeans)
-                {
-                    colValTmp=rs.getString(cbTmp.getColumn());
-                    if(colValTmp==null) colValTmp="";
-                    mResults.put(cbTmp.getProperty(),colValTmp);
-                }
-            }
-        }catch(SQLException e)
-        {
-            throw new WabacusRuntimeException("获取报表"+this.owner.getOwner().getReportBean().getPath()+"的自动填充数据失败",e);
-        }finally
-        {
-            try
-            {
-                if(rs!=null) rs.close();
-            }catch(SQLException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        return mResults;
-    }
-    
-    protected Object clone() throws CloneNotSupportedException
-    {
-        return super.clone();
-    }
-
     public AutoCompleteBean clone(AbsInputBox newowner)
     {
         AutoCompleteBean newBean=null;
         try
         {
-            newBean=(AutoCompleteBean)clone();
+            newBean=(AutoCompleteBean)super.clone();
             newBean.setOwner(newowner);
             if(lstAutoCompleteColumns!=null) newBean.lstAutoCompleteColumns=(List<String>)((ArrayList<String>)lstAutoCompleteColumns).clone();
-            if(lstConditionBeans!=null)
-            {
-                newBean.lstConditionBeans=ComponentConfigLoadAssistant.getInstance().cloneLstConditionBeans(null,lstConditionBeans);
-            }
+            if(datasetProvider!=null) newBean.datasetProvider=datasetProvider.clone(newBean);
         }catch(CloneNotSupportedException e)
         {
             throw new WabacusConfigLoadingException("clone输入框对象失败",e);

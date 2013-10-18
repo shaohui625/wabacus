@@ -20,9 +20,6 @@ package com.wabacus.system.buttons;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
@@ -52,12 +49,12 @@ public class DataImportButton extends WabacusButton
 
     public String showButton(ReportRequest rrequest,String dynclickevent)
     {
-        return super.showButton(rrequest,getDataImportEvent(rrequest));
+        return super.showButton(rrequest,getDataImportEvent());
     }
 
     public String showButton(ReportRequest rrequest,String dynclickevent,String button)
     {
-        return super.showButton(rrequest,getDataImportEvent(rrequest),button);
+        return super.showButton(rrequest,getDataImportEvent(),button);
     }
 
     public AbsFileUploadInterceptor getDataimportInterceptorObj()
@@ -80,24 +77,14 @@ public class DataImportButton extends WabacusButton
         return this.dataimportBean.getLstDataImportItems();
     }
     
-    private String getDataImportEvent(ReportRequest rrequest)
+    private String getDataImportEvent()
     {
         String token="?";
         if(Config.showreport_url.indexOf("?")>0) token="&";
         String serverurl=Config.showreport_url+token+"PAGEID="+ccbean.getPageBean().getId()+"&COMPONENTID="+ccbean.getId()
                 +"&ACTIONTYPE=ShowUploadFilePage&FILEUPLOADTYPE="+Consts_Private.FILEUPLOADTYPE_DATAIMPORTREPORT;
         serverurl+="&DATAIMPORT_BUTTONNAME="+this.getName();
-        
-        
-        AbsFileUploadInterceptor dataimportInterceptorObj=this.getDataimportInterceptorObj();
-        if(dataimportInterceptorObj != null){
-            final String paramsStr=dataimportInterceptorObj.createAppendLinkParams(this,rrequest);
-            if(StringUtils.isNotBlank(paramsStr)){
-                serverurl+='&'+ paramsStr;
-            }
-        }
-       
-       return "wx_winpage('"+serverurl+"',"+this.dataimportBean.getDataimportpopupparams()+");";
+        return "wx_winpage('"+serverurl+"',"+this.dataimportBean.getDataimportpopupparams()+");";
     }
 
     public void loadExtendConfig(XmlElementBean eleButtonBean)
@@ -120,8 +107,6 @@ public class DataImportButton extends WabacusButton
         this.dataimportBean=new DataImportBean();
         List<AbsDataImportConfigBean> lstDataImports=new ArrayList<AbsDataImportConfigBean>();
         List<String> lst=Tools.parseStringToList(ref,";");
-        
-        Map<String,String> mPropertiesClone=eleDataImportBean.getMPropertiesClone();
         for(String strTmp:lst)
         {
             if(strTmp.equals("")) continue;
@@ -134,9 +119,7 @@ public class DataImportButton extends WabacusButton
             {
                 throw new WabacusConfigLoadingException("加载组件"+this.ccbean.getPath()+"失败，配置的数据导出项"+strTmp+"对应的资源项不是数据导出项资源类型");
             }
-            AbsDataImportConfigBean cb=(AbsDataImportConfigBean) ( (AbsDataImportConfigBean)obj).clone();
-            cb.mergeAttrs(mPropertiesClone);
-            lstDataImports.add(cb);
+            lstDataImports.add((AbsDataImportConfigBean)obj);
         }
         this.dataimportBean.setLstDataImportItems(lstDataImports);
         popupparams=WabacusAssistant.getInstance().addDefaultPopupParams(popupparams,popupinitsize,"300","160",null);

@@ -21,10 +21,11 @@ package com.wabacus.config.database.type;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.dataset.report.value.SQLReportDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.sqlconvertor.AbsConvertSQLevel;
+import com.wabacus.system.dataset.report.value.sqlconvertor.CompleteConvertSQLevel;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
 import com.wabacus.system.datatype.BooleanType;
@@ -39,25 +40,23 @@ import com.wabacus.system.datatype.LongType;
 import com.wabacus.system.datatype.ShortType;
 import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
-import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
-//$ByQXO
-public class SQLSERVER2K5 extends AbstractJdbcDatabaseType
-{//ByQXO$
+public class SQLSERVER2K5 extends AbsDatabaseType
+{
     private static Log log=LogFactory.getLog(SQLSERVER2K5.class);
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj)
     {
-        String sql=svbean.getSqlWithoutOrderby();
-        String orderby=svbean.getOrderby();
-        if(orderby==null||orderby.trim().equals("")||sql==null||sql.indexOf("%orderby%")<=0)
+        String sql=convertSqlObj.getConvertedSql();
+        String orderby=convertSqlObj.getOrderby();
+        if(orderby==null||orderby.trim().equals("")||sql==null||sql.indexOf(SQLReportDataSetValueProvider.orderbyPlaceHolder)<=0)
         {
-            throw new WabacusConfigLoadingException("配置的SQL语句："+svbean.getValue()+"没有order by子句，无法在sqlserver2005数据库中进行分页");
+            throw new WabacusConfigLoadingException("配置的SQL语句："+convertSqlObj.getOriginalSql()+"没有order by子句，无法在sqlserver2005数据库中进行分页");
         }
-        sql=Tools.replaceAll(sql,"%orderby%","");
+        sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder,"");
         boolean hasFilterCondition=false;
-        if(sql.indexOf(Consts_Private.PLACEHODER_FILTERCONDITION)>0)
+        if(sql.indexOf(SQLReportDataSetValueProvider.filterConditionPlaceHolder)>0)
         {
             hasFilterCondition=true;
         }
@@ -65,19 +64,19 @@ public class SQLSERVER2K5 extends AbstractJdbcDatabaseType
         sql="select * from (select row_number() over(order by "+orderby+") as ROWID,* from ("+sql+") as jd_temp_tbl1";
         if(hasFilterCondition)
         {
-            sql=sql+"  "+Consts_Private.PLACEHODER_FILTERCONDITION;
+            sql=sql+" where "+SQLReportDataSetValueProvider.filterConditionPlaceHolder;
         }
-        sql=sql+") as jd_temp_tbl2 where ROWID > %START% AND ROWID<= %END%";
+        sql=sql+") as jd_temp_tbl2 where ROWID > "+SQLReportDataSetValueProvider.startRowNumPlaceHolder+" AND ROWID<= "+SQLReportDataSetValueProvider.endRowNumPlaceHolder;
         return sql;
     }
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj,String dynorderby)
     {
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
-        String sql=svbean.getSqlWithoutOrderby();
-        sql=Tools.replaceAll(sql,"%orderby%","");
+        dynorderby=convertSqlObj.mixDynorderbyAndConfigOrderbyCols(dynorderby);
+        String sql=convertSqlObj.getConvertedSql();
+        sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder,"");
         boolean hasFilterCondition=false;
-        if(sql.indexOf(Consts_Private.PLACEHODER_FILTERCONDITION)>0)
+        if(sql.indexOf(SQLReportDataSetValueProvider.filterConditionPlaceHolder)>0)
         {
             hasFilterCondition=true;
         }
@@ -85,19 +84,19 @@ public class SQLSERVER2K5 extends AbstractJdbcDatabaseType
         sql="select * from (select row_number() over(order by "+dynorderby+") as ROWID,* from ("+sql+") as jd_temp_tbl1";
         if(hasFilterCondition)
         {
-            sql=sql+"  "+Consts_Private.PLACEHODER_FILTERCONDITION;
+            sql=sql+" where "+SQLReportDataSetValueProvider.filterConditionPlaceHolder;
         }
-        sql=sql+") as jd_temp_tbl2 where ROWID > %START% AND ROWID<= %END%";
+        sql=sql+") as jd_temp_tbl2 where ROWID > "+SQLReportDataSetValueProvider.startRowNumPlaceHolder+" AND ROWID<= "+SQLReportDataSetValueProvider.endRowNumPlaceHolder;
         return sql;
     }
 
     private String removeOuterWrap(String sql)
     {
-        int idxprex=sql.indexOf(ReportDataSetValueBean.sqlprex);
-        int idxpostsuffix=sql.indexOf(ReportDataSetValueBean.sqlsuffix);
+        int idxprex=sql.indexOf(CompleteConvertSQLevel.sqlprex);
+        int idxpostsuffix=sql.indexOf(CompleteConvertSQLevel.sqlsuffix);
         if(idxprex==0&&idxpostsuffix>0)
         {
-            sql=sql.substring(ReportDataSetValueBean.sqlprex.length(),idxpostsuffix);
+            sql=sql.substring(CompleteConvertSQLevel.sqlprex.length(),idxpostsuffix);
         }
         return sql;
     }

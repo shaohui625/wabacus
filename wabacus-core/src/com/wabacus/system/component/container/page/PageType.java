@@ -18,24 +18,17 @@
  */
 package com.wabacus.system.component.container.page;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.lang.StringUtils;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
-import com.wabacus.config.component.other.JavascriptFileBean;
+import com.wabacus.config.other.JavascriptFileBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.config.xml.XmlElementBean;
-import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ComponentAssistant;
 import com.wabacus.system.buttons.BackButton;
@@ -52,9 +45,9 @@ public class PageType extends AbsContainerType
     private List<String> lstCsses=null;
 
     private List<String> lstDynCsses=null;
-    
+
     private List<JavascriptFileBean> lstJavascripts=null;
-    
+
     private PageBean pagebean;
 
     public PageType(AbsContainerType parentContainerType,IComponentConfigBean comCfgBean,ReportRequest rrequest)
@@ -69,7 +62,7 @@ public class PageType extends AbsContainerType
         rrequest.addParamToUrl("JS","rrequest{JS}",false);
         super.initUrl(applicationConfigBean,rrequest);
     }
-    
+
     public List<ReportBean> initDisplayOnPage()
     {
         this.lstCsses=ComponentAssistant.getInstance().initDisplayCss(rrequest);
@@ -98,30 +91,6 @@ public class PageType extends AbsContainerType
 
     public void displayOnPage(AbsComponentTag displayTag)
     {
-        String jsp=this.pagebean.getAttrs().get("jsp");
-        if(StringUtils.isNotBlank(jsp)){
-            try
-            {
-                final HttpServletRequest hreq=rrequest.getRequest();
-                hreq.getRequestDispatcher(jsp).forward(hreq,this.wresponse.getResponse());
-            }catch(ServletException e)
-            {
-               throw new WabacusRuntimeException(e);
-            }catch(IOException e)
-            {
-                throw new WabacusRuntimeException(e);
-            }
-            return;
-        }
-
-        
-        //$ByQXO 
-        if("true".equals(rrequest.getAttribute("no-response"))){
-            return;
-        }
-        //ByQXO$
-
-        
         if(!rrequest.checkPermission(pagebean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY))
         {
             wresponse.println("&nbsp;");
@@ -169,7 +138,7 @@ public class PageType extends AbsContainerType
         wresponse.println("</span>");
         wresponse.println(showEndWebResources());
     }
-    
+
     private String showBackButtonInPage()
     {
         StringBuffer resultBuf=new StringBuffer();
@@ -177,7 +146,7 @@ public class PageType extends AbsContainerType
         if(rrequest.getLstAncestorUrls()!=null&&rrequest.getLstAncestorUrls().size()>0&&clickevent.equals(""))
         {
             if(this.pagebean.getButtonsBean()!=null&&this.pagebean.getButtonsBean().getcertainTypeButton(BackButton.class)!=null)
-            {
+            {//如果此页面配置了“返回”按钮，则不在这里自动显示（因为稍后显示按钮时会显示“返回”按钮）
                 return "";
             }
             BackButton buttonObj=(BackButton)Config.getInstance().getResourceButton(rrequest,rrequest.getPagebean(),Consts.BACK_BUTTON_DEFAULT,
@@ -192,120 +161,112 @@ public class PageType extends AbsContainerType
     private static String systemheadjs="";
     static
     {
-
-
-//            systemheadjs="/webresources/script/wabacus_systemhead.js";
-
-//        {
-
-
-
-
-
-//            systemheadjs="/webresources/script/"+encode.toLowerCase()+"/wabacus_systemhead.js";
-
+        //            systemheadjs="/webresources/script/wabacus_systemhead.js";
+        //            }
+        //            systemheadjs="/webresources/script/"+encode.toLowerCase()+"/wabacus_systemhead.js";
         systemheadjs=Config.webroot+"/webresources/script/wabacus_systemhead.js";
         systemheadjs=Tools.replaceAll(systemheadjs,"//","/");
     }
-    
-    private String showStartWebResources()
+
+    private boolean hasDisplayOuterHeader,hasDisplayOuterFooter,hasDisplayStartWebResources, hasDisplayEndWebResources;
+
+    public String showOuterHeader()
     {
-        if(rrequest.isLoadedByAjax()||!rrequest.isDisplayOnPage()) return "";
-        StringBuffer resultBuf=new StringBuffer();
-        
-//        resultBuf.append("<html><head>");
-//        
-//        String title =this.pagebean.getTitle(rrequest);
-//        if(title != null){
-//            resultBuf.append("<title>").append(title).append("</title>");
-//        }
-//        
-        
-     //   resultBuf.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset="+Config.encode+"\"/>");
-        
-        if(this.lstCsses!=null)
-        {
-            for(String cssTmp:this.lstCsses)
-            {
-                resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(cssTmp).append("\"/>");
-            }
-        }
-        resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(Config.webroot).append(
-                "webresources/skin/colselected_tree.css\"/>");
-
-        //resultBuf.append("<script language=\"javascript\" src=\"").append(systemheadjs).append("\"></script>");
-        
-
-      //  resultBuf.append("</head><body>");
-        
-        return resultBuf.toString();
+        if(rrequest.isLoadedByAjax()||hasDisplayOuterHeader) return "";
+        hasDisplayOuterHeader=true;
+        return getRealHeaderFooterDisplayValue(pagebean.getOuterHeaderTplBean(),"outerheader");
     }
     
+    public String showOuterFooter()
+    {
+        if(rrequest.isLoadedByAjax()||hasDisplayOuterFooter) return "";
+        hasDisplayOuterFooter=true;
+        return getRealHeaderFooterDisplayValue(pagebean.getOuterFooterTplBean(),"outerfooter");
+    }
+    
+    public String showStartWebResources()
+    {
+        if(rrequest.isLoadedByAjax()||hasDisplayStartWebResources) return "";
+        hasDisplayStartWebResources=true;
+        StringBuilder resultBuf=new StringBuilder();
+        if(rrequest.isDisplayOnPage())
+        {
+            if(this.lstCsses!=null)
+            {
+                for(String cssTmp:this.lstCsses)
+                {
+                    resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(cssTmp).append("\"/>");
+                }
+            }
+            resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(Config.webroot).append(
+                    "webresources/skin/colselected_tree.css\"/>");
+            resultBuf.append("<script language=\"javascript\" src=\"");
+            resultBuf.append(systemheadjs).append("\"></script>");
+        }
+        return resultBuf.toString();
+    }
+
     public String showEndWebResources()
     {
-//        if(!rrequest.isAccessFirstTime()) return "";//ajax加载的话，不显示静态资源，因为显示了也无效
-        if(rrequest.isLoadedByAjax()||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
-        StringBuffer resultBuf=new StringBuffer();
-        
-        resultBuf.append("<script language=\"javascript\" src=\"").append(systemheadjs).append("\"></script>");
-        if(this.lstJavascripts!=null)
+        if(rrequest.isLoadedByAjax()||hasDisplayEndWebResources) return "";
+        hasDisplayEndWebResources=true;
+        StringBuilder resultBuf=new StringBuilder();
+        if(rrequest.isDisplayOnPage())
         {
-            Collections.sort(this.lstJavascripts);
-            for(JavascriptFileBean jsBeanTmp:this.lstJavascripts)
+            if(this.lstJavascripts!=null)
             {
-                resultBuf.append("<script type=\"text/javascript\"  src=\"").append(jsBeanTmp.getJsfileurl()).append("\"></script>");
-            }
-        }
-        
-        if(lstDynCsses!=null)
-        {
-            for(String cssTmp:lstDynCsses)
-            {
-                resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(cssTmp).append("\"/>");
-            }
-        }
-        if(!rrequest.isLoadedByAjax())
-        {
-            String confirmessage=rrequest.getWResponse().getMessageCollector().getConfirmmessage();
-            if(confirmessage!=null&&!confirmessage.trim().equals(""))
-            {
-                resultBuf.append("<script type=\"text/javascript\">");
-                resultBuf.append("WX_serverconfirm_key='").append(rrequest.getWResponse().getMessageCollector().getConfirmkey()).append("';");
-                resultBuf.append("WX_serverconfirm_url='").append(rrequest.getWResponse().getMessageCollector().getConfirmurl()).append("';");
-                resultBuf.append("wx_confirm('"+confirmessage+"',null,null,null,okServerConfirm,cancelServerConfirm);");
-                resultBuf.append("</script>");
-            }else
-            {
-                String onloadMethods=rrequest.getWResponse().invokeOnloadMethodsFirstTime();
-                if(onloadMethods!=null&&!onloadMethods.trim().equals(""))
+                Collections.sort(this.lstJavascripts);
+                for(JavascriptFileBean jsBeanTmp:this.lstJavascripts)
                 {
-                    resultBuf.append("<script type=\"text/javascript\">").append(onloadMethods).append("</script>");
+                    resultBuf.append("<script type=\"text/javascript\"  src=\"").append(jsBeanTmp.getJsfileurl()).append("\"></script>");
                 }
-                if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&rrequest.getLstReportWithDefaultSelectedRows()!=null
-                        &&rrequest.getLstReportWithDefaultSelectedRows().size()>0)
+            }
+            if(lstDynCsses!=null)
+            {
+                for(String cssTmp:lstDynCsses)
+                {
+                    resultBuf.append("<LINK rel=\"stylesheet\" type=\"text/css\" href=\"").append(cssTmp).append("\"/>");
+                }
+            }
+            if(!rrequest.isLoadedByAjax())
+            {
+                String confirmessage=rrequest.getWResponse().getMessageCollector().getConfirmmessage();
+                if(confirmessage!=null&&!confirmessage.trim().equals(""))
                 {
                     resultBuf.append("<script type=\"text/javascript\">");
-                    for(String reportidTmp:rrequest.getLstReportWithDefaultSelectedRows())
-                    {
-                        resultBuf.append("selectDefaultSelectedDataRows(getReportMetadataObj(getComponentGuidById(");
-                        resultBuf.append("'"+this.pagebean.getId()+"','"+reportidTmp+"')));");
-                    }
+                    resultBuf.append("WX_serverconfirm_key='").append(rrequest.getWResponse().getMessageCollector().getConfirmkey()).append("';");
+                    resultBuf.append("WX_serverconfirm_url='").append(rrequest.getWResponse().getMessageCollector().getConfirmurl()).append("';");
+                    resultBuf.append("wx_confirm('"+confirmessage+"',null,null,null,okServerConfirm,cancelServerConfirm);");
                     resultBuf.append("</script>");
+                }else
+                {
+                    String onloadMethods=rrequest.getWResponse().invokeOnloadMethodsFirstTime();
+                    if(onloadMethods!=null&&!onloadMethods.trim().equals(""))
+                    {
+                        resultBuf.append("<script type=\"text/javascript\">").append(onloadMethods).append("</script>");
+                    }
+                    if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&rrequest.getLstReportWithDefaultSelectedRows()!=null
+                            &&rrequest.getLstReportWithDefaultSelectedRows().size()>0)
+                    {
+                        resultBuf.append("<script type=\"text/javascript\">");
+                        for(String reportidTmp:rrequest.getLstReportWithDefaultSelectedRows())
+                        {
+                            resultBuf.append("selectDefaultSelectedDataRows(getReportMetadataObj(getComponentGuidById(");
+                            resultBuf.append("'"+this.pagebean.getId()+"','"+reportidTmp+"')));");
+                        }
+                        resultBuf.append("</script>");
+                    }
                 }
             }
         }
-        
-
-      //  resultBuf.append("</body></html>");
-        
         return resultBuf.toString();
     }
-    
+
     public String getRealParenttitle()
     {
         return null;//因为<page/>是顶层容器，没有父容器
     }
-    
+
     public void addDynCsses(List<String> lstCsses)
     {
         if(lstCsses==null||lstCsses.size()==0) return;
@@ -316,19 +277,19 @@ public class PageType extends AbsContainerType
             this.lstDynCsses.add(Tools.replaceAll(cssTmp,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin()));
         }
     }
-    
+
     public void addDynJsFileBeans(List<JavascriptFileBean> lstJsFileBeans)
     {
         if(lstJsFileBeans==null||lstJsFileBeans.size()==0) return;
         if(this.lstJavascripts==null) this.lstJavascripts=new UniqueArrayList<JavascriptFileBean>();
         this.lstJavascripts.addAll(lstJsFileBeans);
     }
-    
+
     public AbsContainerConfigBean loadConfig(XmlElementBean eleContainer,AbsContainerConfigBean parent,String tagname)
     {
         return null;
     }
-    
+
     protected String getComponentTypeName()
     {
         return "container.page";

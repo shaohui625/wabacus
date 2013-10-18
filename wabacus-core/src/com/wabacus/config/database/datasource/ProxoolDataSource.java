@@ -47,9 +47,8 @@ import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.util.DesEncryptTools;
 import com.wabacus.util.Tools;
 
-//$ByQXO 
-public class ProxoolDataSource extends AbstractJdbcDataSource
-{ //ByQXO$
+public class ProxoolDataSource extends AbsDataSource
+{
     private static Log log=LogFactory.getLog(ProxoolDataSource.class);
 
     private String alias;
@@ -111,11 +110,7 @@ public class ProxoolDataSource extends AbstractJdbcDataSource
         {
             eleChild=(Element)lstEleProperties.get(i);
             name=eleChild.attributeValue("name");
-            
-            //$ByQXO 全局配置优先
-            value= getOverridePropertyValue(name,eleChild.getText());
-            //ByQXO$
-            
+            value=eleChild.getText();
             name=name==null?"":name.trim();
             value=value==null?"":value.trim();
             if(name.equals("alias"))

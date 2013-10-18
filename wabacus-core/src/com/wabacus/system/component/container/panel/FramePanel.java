@@ -56,6 +56,7 @@ public class FramePanel extends AbsPanelType
                 wresponse.println("<table  cellspacing=\"0\" cellpadding=\"0\" width=\""+containerwidth+"\" style=\"MARGIN:0;\">");
                 wresponse.println("<tr><td height=\""+containerConfigBean.getTop()+"\"></td></tr></table>");
             }
+            wresponse.println(getRealHeaderFooterDisplayValue(containerConfigBean.getOuterHeaderTplBean(),"outerheader"));
             wresponse.println("<table  cellspacing=\"0\" cellpadding=\"0\" width=\""+containerwidth+"\" id=\""+containerConfigBean.getGuid()+"\"><tr><td>");
         }
         wresponse.println("<span id=\"WX_CONTENT_"+containerConfigBean.getGuid()+"\">");
@@ -96,7 +97,7 @@ public class FramePanel extends AbsPanelType
             }
             wresponse.println("<tr>");
             if(containerConfigBean.getMargin_left()!=null&&!containerConfigBean.getMargin_left().trim().equals(""))
-            {
+            {//如果有左边间隔
                 wresponse.println("<td width=\""+containerConfigBean.getMargin_left()+"\"><span style=\"margin-left:"+containerConfigBean.getMargin_left()+"\"></span></td>");
             }
             wresponse.println("<td>");
@@ -129,12 +130,12 @@ public class FramePanel extends AbsPanelType
         wresponse.println("</FIELDSET>");
         showButtonsOnTopBottomTitle(false);
         wresponse.println(this.showFooter());
-//        wresponse.println(this.showContextMenu());
         wresponse.println(this.showMetaData());
         wresponse.println("</span>");
         if(this.getParentContainerType()!=null)
         {
             wresponse.println("</td></tr></table>");
+            wresponse.println(getRealHeaderFooterDisplayValue(containerConfigBean.getOuterFooterTplBean(),"outerfooter"));
             if(containerConfigBean.getBottom()!=null&&!containerConfigBean.getBottom().trim().equals(""))
             {
                 wresponse.println("<table  cellspacing=\"0\" cellpadding=\"0\" width=\""+containerwidth+"\" style=\"MARGIN:0;\">");
@@ -163,7 +164,7 @@ public class FramePanel extends AbsPanelType
         if(fpanelbean.getLstChildrenIDs().size()>1)
         {
             List<String> lstChildrenIds=new ArrayList<String>();
-            lstChildrenIds.add(fpanelbean.getLstChildrenIDs().get(0));
+            lstChildrenIds.add(fpanelbean.getLstChildrenIDs().get(0));//只保留配置的第一个子元素
             for(int i=1;i<fpanelbean.getLstChildrenIDs().size();i++)
             {
                 fpanelbean.getMChildren().remove(fpanelbean.getLstChildrenIDs().get(i));

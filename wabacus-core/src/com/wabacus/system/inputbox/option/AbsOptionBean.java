@@ -18,18 +18,12 @@
  */
 package com.wabacus.system.inputbox.option;
 
-import com.wabacus.config.Config;
-import com.wabacus.config.ConfigLoadManager;
-import com.wabacus.config.component.ComponentConfigLoadManager;
-import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.xml.XmlElementBean;
-import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
 import com.wabacus.system.inputbox.AbsInputBox;
-import com.wabacus.util.Tools;
 
 public abstract class AbsOptionBean implements Cloneable
 {
-    protected AbsOptionDatasource optionDatasourceObj;
+    protected AbsCommonDataSetValueProvider datasetProvider;
 
     protected AbsInputBox ownerInputboxObj;
     
@@ -42,70 +36,20 @@ public abstract class AbsOptionBean implements Cloneable
     {
         return ownerInputboxObj;
     }
-
-    public AbsOptionDatasource getOptionDatasourceObj()
-    {
-        return optionDatasourceObj;
-    }
-
-    public void setOptionDatasourceObj(AbsOptionDatasource optionDatasourceObj)
-    {
-        this.optionDatasourceObj=optionDatasourceObj;
-    }
     
-    public void loadOptionDynDatasourceObj(XmlElementBean eleOptionBean,String source)
+    public AbsCommonDataSetValueProvider getDatasetProvider()
     {
-        ReportBean rbean=this.ownerInputboxObj.getOwner().getReportBean();
-        AbsOptionDatasource optionDatasourceObjTmp=null;
-        if(Tools.isDefineKey("@",source))
-        {
-            SQLOptionDatasource sqldatasource=new SQLOptionDatasource();
-            String datasource=eleOptionBean.attributeValue("datasource");
-            if(datasource!=null) sqldatasource.setDatasource(datasource.trim());
-            String sql=Tools.getRealKeyByDefine("@",source).trim();
-            sqldatasource.setSql(sql);
-            sqldatasource.setLstConditions(ComponentConfigLoadManager.loadConditionsInOtherPlace(eleOptionBean,rbean));
-            optionDatasourceObjTmp=sqldatasource;
-        }else if(Tools.isDefineKey("#",source))
-        {
-            SQLOptionDatasource sqldatasource=new SQLOptionDatasource();
-            String datasource=eleOptionBean.attributeValue("datasource");
-            if(datasource!=null) sqldatasource.setDatasource(datasource.trim());
-            String sql=Tools.getRealKeyByDefine("#",source).trim();
-            if( sql.toLowerCase().indexOf("@") ==-1){
-                sql = new StringBuilder("@{").append(sql).append("}").toString();
-            }
-            sqldatasource.setSql(sql);
-            sqldatasource.setLstConditions(ComponentConfigLoadManager.loadConditionsInOtherPlace(eleOptionBean,rbean));
-            optionDatasourceObjTmp=sqldatasource;
-        }else if(Tools.isDefineKey("class",source))
-        {
-            String classname=Tools.getRealKeyByDefine("class",source);
-            if(classname.trim().equals(""))
-            {
-                throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的选项的source"+"指定的JAVA类为空");
-            }
-            Object optionDsObj=null;
-            try
-            {
-                optionDsObj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(classname).newInstance();
-            }catch(Exception e)
-            {
-                throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的选项的source"+"指定的JAVA类"+classname+"无法实例化",e);
-            }
-            if(!(optionDsObj instanceof AbsOptionDatasource))
-            {
-                throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的选项的source"+"指定的JAVA类没有继承"+AbsOptionDatasource.class.getName()+"类");
-            }
-            optionDatasourceObjTmp=((AbsOptionDatasource)optionDsObj);
-        }
-        if(optionDatasourceObjTmp!=null) optionDatasourceObjTmp.setOwnerOptionBean(this);
-        this.setOptionDatasourceObj(optionDatasourceObjTmp);
+        return datasetProvider;
     }
-    
+
+    public void setDatasetProvider(AbsCommonDataSetValueProvider datasetProvider)
+    {
+        this.datasetProvider=datasetProvider;
+    }
+
     public void doPostLoad()
     {
-        if(this.optionDatasourceObj!=null) this.optionDatasourceObj.doPostLoad();
+        if(this.datasetProvider!=null) this.datasetProvider.doPostLoad();
     }
     
     public AbsOptionBean clone(AbsInputBox newOwnerInputboxObj) 
@@ -115,9 +59,9 @@ public abstract class AbsOptionBean implements Cloneable
         {
             newOptionBean=(AbsOptionBean)super.clone();
             newOptionBean.ownerInputboxObj=newOwnerInputboxObj;
-            if(optionDatasourceObj!=null)
+            if(datasetProvider!=null)
             {
-                newOptionBean.optionDatasourceObj=this.optionDatasourceObj.clone(newOptionBean);
+                newOptionBean.datasetProvider=this.datasetProvider.clone(newOptionBean);
             }
         }catch(CloneNotSupportedException e)
         {

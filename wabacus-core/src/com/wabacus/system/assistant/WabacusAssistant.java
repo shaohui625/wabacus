@@ -48,7 +48,6 @@ import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.IConnection;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.AbsComponentType;
 import com.wabacus.util.Consts_Private;
@@ -163,11 +162,11 @@ public class WabacusAssistant
         }else if(Tools.isDefineKey("relative",configpath))
         {
             configpath=Tools.getRealKeyByDefine("relative",configpath);
-            configpath=Tools.standardFilePath(webroot_abspath+"\\"+configpath+"\\");
+            configpath=FilePathAssistant.getInstance().standardFilePath(webroot_abspath+"\\"+configpath+"\\");
         }else
         {
             if(Tools.isDefineKey("absolute",configpath)) configpath=Tools.getRealKeyByDefine("absolute",configpath);
-            configpath=Tools.standardFilePath(configpath+"\\");
+            configpath=FilePathAssistant.getInstance().standardFilePath(configpath+"\\");
         }
         return configpath;
     }
@@ -193,7 +192,7 @@ public class WabacusAssistant
         }else
         {
             abspath=rootpath+"\\"+fileRelativePath;
-            abspath=Tools.standardFilePath(abspath);
+            abspath=FilePathAssistant.getInstance().standardFilePath(abspath);
         }
         return abspath;
     }
@@ -221,7 +220,6 @@ public class WabacusAssistant
         while(relativepath.startsWith("/"))
             relativepath=relativepath.substring(1);
         rootpath=rootpath+relativepath;
-
         return new File(rootpath);
     }
     
@@ -256,11 +254,7 @@ public class WabacusAssistant
                         +displayvalue.substring(endidxTmp);
             }
         }
-        
-        
-        
-        
-        
+        //        lstImgObjs=RegexTools.getMatchObjectArray(displayvalue,"&lt;img[^&gt;]*&gt;",false);
         return displayvalue;
     }
     
@@ -284,7 +278,7 @@ public class WabacusAssistant
             String tmp;
             char c=imgstr.charAt(0);
             if(c=='\\')
-            {//=后面是\号，则如果后面跟上'或"，则此\号为转义符，后面也要以\"或\'结尾
+            {
                 if(imgstr.length()==1)
                 {
                     return null;
@@ -380,7 +374,7 @@ public class WabacusAssistant
                 strDynValue=strEnd.substring(0,idx+1);
                 strEnd=strEnd.substring(idx+1).trim();
                 placeHolderTmp="[PLACE_HOLDER_"+typenameTmp+"_"+placeholderIdxTmp+"]";
-                mDynParts.put(placeHolderTmp,strDynValue);
+                mDynParts.put(placeHolderTmp,strDynValue);//存放到mDynParamsAndPlaceHolder中，以便后面解析时使用
                 configvalue=strStart+placeHolderTmp+strEnd;
                 idx=configvalue.indexOf(typenameTmp+"{");
                 placeholderIdxTmp++;
@@ -406,6 +400,13 @@ public class WabacusAssistant
         return obj.toString().trim();
     }
     
+    public String getRequestContextStringValue(HttpServletRequest request,String key,String defaultvalue)
+    {
+        Object obj=getRequestContextValue(request,key);
+        if(obj==null||obj.toString().trim().equals("")) return defaultvalue;
+        return obj.toString().trim();
+    }
+    
     public Object getRequestContextValue(ReportRequest rrequest,String key)
     {
         if(key==null||key.trim().equals("")) return null;
@@ -413,6 +414,15 @@ public class WabacusAssistant
         if(Tools.isDefineKey("rrequest",key)) return getValueFromReportRequest(rrequest,key);
         if(Tools.isDefineKey("request",key)) return getValueFromRequest(rrequest.getRequest(),key);
         if(Tools.isDefineKey("session",key)) return getValueFromSession(rrequest.getRequest().getSession(),key);
+        return null;
+    }
+    
+    public Object getRequestContextValue(HttpServletRequest request,String key)
+    {
+        if(key==null||key.trim().equals("")) return null;
+        if(Tools.isDefineKey("url",key)) return getValueFromUrl(request,key);
+        if(Tools.isDefineKey("request",key)) return getValueFromRequest(request,key);
+        if(Tools.isDefineKey("session",key)) return getValueFromSession(request.getSession(),key);
         return null;
     }
     
@@ -570,6 +580,20 @@ public class WabacusAssistant
         return value;
     }
     
+    public String getStringValueWithDynPart(HttpServletRequest request,String value,Map<String,String> mDynParts,String defaultvalue)
+    {
+        if(mDynParts!=null&&mDynParts.size()>0)
+        {
+            for(Entry<String,String> entryTmp:mDynParts.entrySet())
+            {
+                value=Tools.replaceAll(value,entryTmp.getKey(),request==null?entryTmp.getValue():getRequestContextStringValue(request,entryTmp
+                        .getValue(),""));
+            }
+        }
+        if(value==null||value.equals("")) value=defaultvalue;
+        return value;
+    }
+    
     public Object[] parseStylepropertyWithDynPart(String styleproperty)
     {
         Object[] objArr=parseStringWithDynPart(styleproperty);
@@ -591,17 +615,29 @@ public class WabacusAssistant
         if(lstDynStylepropertyParts!=null&&lstDynStylepropertyParts.size()>0)
         {
             for(String dynValTmp:lstDynStylepropertyParts)
-            {
+            {//依次替换掉value中所有占位符为真正的值
                 if(rrequest==null)
                 {
                     styleproperty+=" "+dynValTmp;
                 }else
-                {//否则取到真正值
+                {
                     styleproperty=Tools.mergeHtmlTagPropertyString(styleproperty,getRequestContextStringValue(rrequest,dynValTmp,""),1);
                 }
             }
         }
         return styleproperty.trim().equals("")?defaultvalue:styleproperty.trim();
+    }
+    
+    public String parseAndGetRealValue(HttpServletRequest request,String originValue,String defaultvalue)
+    {
+        Object[] objArr=parseStringWithDynPart(originValue);
+        return getStringValueWithDynPart(request,(String)objArr[0],(Map<String,String>)objArr[1],defaultvalue);
+    }
+    
+    public String parseAndGetRealValue(ReportRequest rrequest,String originValue,String defaultvalue)
+    {
+        Object[] objArr=parseStringWithDynPart(originValue);
+        return getStringValueWithDynPart(rrequest,(String)objArr[0],(Map<String,String>)objArr[1],defaultvalue);
     }
     
     public String getSpacingDisplayString(int spacenum)
@@ -718,7 +754,7 @@ public class WabacusAssistant
         {
             filepath=Tools.getRealKeyByDefine("relative",filepath).trim();
             filepath=Config.webroot_abspath+"\\"+filepath;
-            filepath=Tools.standardFilePath(filepath);
+            filepath=FilePathAssistant.getInstance().standardFilePath(filepath);
             istream=new FileInputStream(filepath);
         }else
         {
@@ -737,6 +773,10 @@ public class WabacusAssistant
         {
             return;
         }
+        if(rrequest.isExportToLocalFile())
+        {
+            throw new WabacusRuntimeException("当前是以在服务器端落地的方式导出组件"+comObj.getConfigBean().getPath()+"的数据，不能为它指定导出动态模板");
+        }
         rrequest.getRequest().setAttribute("WX_COMPONENT_OBJ",comObj);
         try
         {
@@ -747,24 +787,6 @@ public class WabacusAssistant
             throw new WabacusRuntimeException("通过模板"+dyntplpath+"显示组件"+comObj.getConfigBean().getPath()+"失败",e);
         }
     }
-    
-    //$ByQXO
-    public void release(IConnection conn){
-
-        try
-        {
-            if(conn!=null)
-            {
-                conn.close();
-            }
-
-        }catch(Exception e)
-        {
-            log.error("关闭数据库连接失败",e);
-        }
-
-    }
-    //ByQXO$
     
     public void release(Connection conn,Statement stmt)
     {

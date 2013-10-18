@@ -28,7 +28,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.exception.WabacusRuntimeWarningException;
+import com.wabacus.exception.WabacusRuntimeTerminateException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.util.Consts;
@@ -158,7 +158,7 @@ public class ServerValidateBean
                 paramsBuf.append(",isSuccess:false");
                 paramsBuf.append(",serverDataObj:{");
                 if(rrequest.getMServerValidateDatas()!=null&&rrequest.getMServerValidateDatas().size()>0)
-                {
+                {//要传到前台回调函数中的数据
                     for(Entry<String,String> entryTmp:rrequest.getMServerValidateDatas().entrySet())
                     {
                         paramsBuf.append(entryTmp.getKey()+":\""+entryTmp.getValue()+"\",");
@@ -168,13 +168,13 @@ public class ServerValidateBean
                 paramsBuf.append("}}");
                 rrequest.getWResponse().addOnloadMethod(this.servervalidateCallback,paramsBuf.toString(),true,Consts.STATECODE_FAILED);
             }
+            rrequest.getWResponse().setStatecode(Consts.STATECODE_FAILED);
             if(errormsgBuf.toString().trim().equals(""))
             {
-                rrequest.getWResponse().setStatecode(Consts.STATECODE_FAILED);
-                throw new WabacusRuntimeWarningException();
+                rrequest.getWResponse().terminateResponse();
             }else
             {
-                rrequest.getWResponse().getMessageCollector().warn(errormsgBuf.toString(),true,Consts.STATECODE_FAILED);
+                rrequest.getWResponse().getMessageCollector().warn(errormsgBuf.toString(),null,true);
             }
         }
         return bolResult;

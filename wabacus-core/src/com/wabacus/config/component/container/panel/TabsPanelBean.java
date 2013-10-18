@@ -185,7 +185,7 @@ public class TabsPanelBean extends AbsContainerConfigBean
                     this.setAsyn(false);
                 }
             }else if(childComponentTmp instanceof AbsContainerConfigBean)
-            {
+            {//如果直接子组件是一个容器
                 if(hasChildRelateWithOuterReport((AbsContainerConfigBean)childComponentTmp,(AbsContainerConfigBean)childComponentTmp))
                 {
                     this.setAsyn(false);
@@ -230,7 +230,7 @@ public class TabsPanelBean extends AbsContainerConfigBean
             {
                 ReportBean rbTmp=(ReportBean)childComponentTmp;
                 if(rbTmp.isSlaveReport()&&rootContainerBean.getChildComponentBean(rbTmp.getDependParentId(),true)==null)
-                {//如果当前子报表依赖于rootContainerBean所在tabpanel容器其它标签页或其外面容器的报表
+                {
                     return true;
                 }
                 if(rbTmp.getMDependChilds()!=null)
@@ -279,7 +279,7 @@ public class TabsPanelBean extends AbsContainerConfigBean
         AbsContainerConfigBean parentConfigBean=childConfigBean1.getParentContainer();
         while(!parentConfigBean.getId().equals(this.id))
         {
-            if(parentConfigBean.getChildComponentBean(childConfigBean2.getId(),true)!=null) return true;
+            if(parentConfigBean.getChildComponentBean(childConfigBean2.getId(),true)!=null) return true;//它们的公共父容器在tabpanel的一个标签页中
             parentConfigBean=parentConfigBean.getParentContainer();
         }
         return false;

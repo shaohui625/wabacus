@@ -41,6 +41,8 @@ public class FileUploadTag extends BodyTagSupport
     
     private String allowtypes;
     
+    private String disallowtypes;
+    
     private String uploadcount="1";
     
     private String newfilename;
@@ -53,7 +55,9 @@ public class FileUploadTag extends BodyTagSupport
     
     private String popupparams;
     
-    private String interceptor;
+    private String beforepopup=null;
+    
+    private String interceptor;//拦截器类
     
     public void setMaxsize(String maxsize)
     {
@@ -63,6 +67,11 @@ public class FileUploadTag extends BodyTagSupport
     public void setAllowtypes(String allowtypes)
     {
         this.allowtypes=allowtypes;
+    }
+
+    public void setDisallowtypes(String disallowtypes)
+    {
+        this.disallowtypes=disallowtypes;
     }
 
     public void setUploadcount(String uploadcount)
@@ -90,14 +99,14 @@ public class FileUploadTag extends BodyTagSupport
         this.initsize=initsize;
     }
 
-    public String getPopupparams()
-    {
-        return popupparams;
-    }
-
     public void setPopupparams(String popupparams)
     {
         this.popupparams=popupparams;
+    }
+
+    public void setBeforepopup(String beforepopup)
+    {
+        this.beforepopup=beforepopup;
     }
 
     public String getInterceptor()
@@ -123,8 +132,8 @@ public class FileUploadTag extends BodyTagSupport
         JspWriter out=pageContext.getOut();
         try
         {
-            out.println(TagAssistant.getInstance().getFileUploadDisplayValue(maxsize,allowtypes,uploadcount,newfilename,savepath,rooturl,popupparams,
-                    this.initsize,this.interceptor,label,(HttpServletRequest)pageContext.getRequest()));
+            out.println(TagAssistant.getInstance().getFileUploadDisplayValue(maxsize,allowtypes,disallowtypes,uploadcount,newfilename,savepath,rooturl,popupparams,
+                    this.initsize,this.interceptor,label,this.beforepopup,(HttpServletRequest)pageContext.getRequest()));
         }catch(IOException e)
         {
             log.error("显示文件上传标签失败",e);

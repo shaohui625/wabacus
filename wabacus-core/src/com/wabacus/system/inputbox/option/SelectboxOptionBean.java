@@ -75,7 +75,7 @@ public class SelectboxOptionBean extends AbsOptionBean
     public List<Map<String,String>> getLstRuntimeOptions(ReportRequest rrequest,Map<String,String> mParentInputboxValues)
     {
         List<Map<String,String>> lstResults=null;
-        if(this.optionDatasourceObj==null)
+        if(this.datasetProvider==null)
         {//没有指定动态获取选项数据的数据源对象，则说明此<option/>就是一个常量选项的配置
             String name_temp=rrequest.getI18NStringValue(this.label);
             String value_temp=this.value;
@@ -101,7 +101,7 @@ public class SelectboxOptionBean extends AbsOptionBean
             lstResults.add(mOptionTmp);
         }else
         {
-            lstResults=this.optionDatasourceObj.getLstSelectBoxOptions(rrequest,mParentInputboxValues);
+            lstResults=this.datasetProvider.getLstSelectBoxOptions(rrequest,mParentInputboxValues);
         }
         return lstResults;
     }
@@ -111,8 +111,6 @@ public class SelectboxOptionBean extends AbsOptionBean
         if(this.type==null||this.type.length==0)
         {
             return true;
-            
-            
         }
         if(this.type.length==1&&(this.type[0].equals("%true-true%"))||this.type[0].equals("%false-false%")) return false;
         if(parentValue==null) return false;

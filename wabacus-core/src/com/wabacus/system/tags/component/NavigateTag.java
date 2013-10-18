@@ -93,11 +93,8 @@ public class NavigateTag extends AbsComponentTag
             label=label==null?"":label.trim();
         }
         label=label==null?"":label.trim();
-        TagAssistant.getInstance().printlnTag(
-                out,
-                rrequest,
-                TagAssistant.getInstance()
-                        .getNavigateDisplayInfo((AbsReportType)this.displayComponentObj,type,minlength,initcount,maxcount,top,label));
+        println(TagAssistant.getInstance()
+                .getNavigateDisplayInfo((AbsReportType)this.displayComponentObj,type,minlength,initcount,maxcount,top,label));
         return EVAL_PAGE;
     }
 }

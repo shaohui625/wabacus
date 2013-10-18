@@ -59,10 +59,8 @@ public class OnloadMethodBean implements Comparable<OnloadMethodBean>,Cloneable
 
     static
     {
-
         mOnloadTypeInvokeOrder.put(Consts_Private.ONlOAD_CURVETITLE,2);
         mOnloadTypeInvokeOrder.put(Consts_Private.ONlOAD_IMGSCROLL,2);
-
         mOnloadTypeInvokeOrder.put(Consts_Private.ONLOAD_CONFIG,4);
         mOnloadTypeInvokeOrder.put(Consts_Private.ONLOAD_REFRESHSLAVE,5);
     }

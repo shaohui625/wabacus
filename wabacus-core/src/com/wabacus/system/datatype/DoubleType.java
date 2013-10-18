@@ -62,10 +62,6 @@ public class DoubleType extends AbsNumberType
         }
     }
 
-    
-    
-    
-    
 
     public Class getJavaTypeClass()
     {

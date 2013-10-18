@@ -249,7 +249,6 @@ public class XmlAssistant
             eleProps=(Attribute)itAttributes.next();
             mProps.put(eleProps.getName(),eleProps.getValue());
         }
-
         List<XmlElementBean> lstChildren=null;
         List lstChildElements=element.elements();
         if(lstChildElements!=null&&lstChildElements.size()>0)

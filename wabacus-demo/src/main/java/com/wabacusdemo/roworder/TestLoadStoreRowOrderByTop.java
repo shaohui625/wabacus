@@ -77,11 +77,12 @@ public class TestLoadStoreRowOrderByTop implements IListReportRoworderPersistenc
             rs.close();
             minorderline=minorderline-1;
             stmt.executeUpdate("update tbl_detailinfo set orderline="+minorderline+" where no='"+no+"'");
-            rrequest.getWResponse().getMessageCollector().success("置顶成功",false);
+            rrequest.getWResponse().getMessageCollector().success("置顶成功");
         }catch(SQLException e)
         {
             e.printStackTrace();
-            rrequest.getWResponse().getMessageCollector().warn("置顶失败",true,Consts.STATECODE_FAILED);
+            rrequest.getWResponse().setStatecode(Consts.STATECODE_FAILED);
+            rrequest.getWResponse().getMessageCollector().warn("置顶失败",null,true);
         }finally
         {
             WabacusAssistant.getInstance().release(conn,stmt);

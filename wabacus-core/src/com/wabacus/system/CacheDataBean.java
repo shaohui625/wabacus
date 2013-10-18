@@ -24,19 +24,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.ReportDataSetValueBean;
+import com.wabacus.config.dataexport.AbsDataExportBean;
 import com.wabacus.exception.WabacusRuntimeException;
+import com.wabacus.system.assistant.EditableReportAssistant;
 import com.wabacus.system.assistant.ListReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportDisplayBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
+import com.wabacus.system.component.application.report.configbean.ListReportColPositionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportDeleteDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportInsertDataBean;
 import com.wabacus.util.Consts;
+import com.wabacus.util.Tools;
 
 public class CacheDataBean
 {
@@ -58,17 +63,15 @@ public class CacheDataBean
     
     private int printPagesize;
     
-    private int printPagecount;
+    private int printPagecount;//本报表打印的总页数
     
     private int printRecordcount;
     
     private int configDataexportRecordcount;
     
-    private boolean shouldBatchDataExport;
-    
     private boolean isLoadAllReportData;
     
-    private int refreshNavigateInfoType;//标识本次访问刷新页码的类型，－1：需要从数据库重新取记录数来更新recordcount和pagecount等分页信息；0：根据recordcount重新计算pagecount、pageno等信息；1：不需更新翻页信息
+    private int refreshNavigateInfoType;
 
     private AbsListReportFilterBean filteredBean;
 
@@ -78,18 +81,19 @@ public class CacheDataBean
     
     private List<String> lstDynDisplayColids;
     
-    private ListReportColPositionInfoBean colPositionBean;
+    private ListReportColPositionBean colPositionBean;
+    
+    private Map<String,ColBean> mHdsColBeans;//对于横向数据集，用于存放所有动态生成的colbean，以生成列所在标题列的value（也就是各<col/>的column值）为key
     
     /** ************************************* */
 
     //    private Map<String, String> mSearchValue = null;//用于缓存用户通过页面输入的查询条件，以便显示输入框时，能将用户刚才的输入显示出来
-    
     //    private Map<String, String> mHiddenSearchValue = null;//存放隐藏条件的值
     private Map attributes=new HashMap();
 
     private ReportBean reportBean;
 
-    private Map<String,List<Map<String,String>>> mEditedData;
+    private Map<String,List<Map<String,String>>> mEditedData;//存放所有增、删、改数据列表，每种操作类型的数据对应一个List，List中每个Map存放一条修改的记录。
     
     private Map<String,List<Map<String,String>>> mParamValuesForEditedData;
     
@@ -182,18 +186,6 @@ public class CacheDataBean
         return this.mRecordcountOfDatasets.get(datasetid).intValue();
     }
     
-    public void setStartEndRownumOfDataset(String datasetid,int[] rownumArr)
-    {
-        if(datasetid==null||datasetid.trim().equals("")) return;
-        this.attributes.put("start_end_rownum_"+datasetid,rownumArr);
-    }
-    
-    public int[] getStartEndRownumOfDataset(String datasetid)
-    {
-        if(datasetid==null||datasetid.trim().equals("")) return null;
-        return (int[])this.attributes.get("start_end_rownum_"+datasetid);
-    }
-    
     public void setDynpageno(int dynpageno)
     {
         this.dynpageno=dynpageno;
@@ -249,9 +241,9 @@ public class CacheDataBean
         {
             return rrequest.getCdb(this.reportBean.getNavigate_reportid()).getFinalPageno();
         }
-        if(this.pagecount<=0) return 1;//没有查询到记录
+        if(this.pagecount<=0) return 1;
         int realpageno=this.pageno;
-        if(this.dynpageno>0) realpageno=this.dynpageno;
+        if(this.dynpageno>0) realpageno=this.dynpageno;//传入了动态要显示的页码
         if(realpageno>this.pagecount) realpageno=this.pagecount;
         return realpageno<=0?1:realpageno;
     }
@@ -261,19 +253,8 @@ public class CacheDataBean
         return pagesize;
     }
 
-
-
-
-
-
-
-
-
 //        {//如果显示多于一页，且当前是显示最后一页（最后一页显示记录数可能小于pagesize）（如果myRecordcount%pagesize==0说明最后一页也是显示pagesize条记录）
-
-
-
-
+//        }
     
     public void setPagesize(int pagesize)
     {
@@ -322,8 +303,36 @@ public class CacheDataBean
     public void setLstDynOrderColBeans(List<ColBean> lstDynColBeans)
     {
         this.lstDynOrderColBeans=lstDynColBeans;
+        if(lstDynColBeans==null||lstDynColBeans.size()==0)
+        {
+            this.mHdsColBeans=null;
+        }else
+        {
+            if(this.mHdsColBeans==null)
+            {
+                this.mHdsColBeans=new HashMap<String,ColBean>();
+            }else
+            {
+                this.mHdsColBeans.clear();
+            }
+            for(ColBean cbTmp:this.lstDynOrderColBeans)
+            {
+                this.mHdsColBeans.put(cbTmp.getColumn(),cbTmp);
+            }
+        }
     }
 
+    public Map<String,ColBean> getMHdsColBeans()
+    {
+        return mHdsColBeans;
+    }
+
+    public ColBean getHdsColBeanByColumn(String column)
+    {
+        if(this.mHdsColBeans==null) return null;
+        return this.mHdsColBeans.get(column);
+    }
+    
     public ColBean getDynamicColBeanByColumn(String dyncolumn)
     {
         if(this.lstDynOrderColBeans==null||dyncolumn==null) return null;
@@ -397,21 +406,55 @@ public class CacheDataBean
         this.printRecordcount=printRecordcount;
     }
 
-    public int getConfigDataexportRecordcount()
-    {
-        return configDataexportRecordcount;
-    }
-
     public void setConfigDataexportRecordcount(int configDataexportRecordcount)
     {
         this.configDataexportRecordcount=configDataexportRecordcount;
     }
 
-    public boolean shouldBatchDataExport()
+    public void setStartRownumOfDsbean(ReportDataSetBean dsbean,int startrownum)
     {
-        return shouldBatchDataExport;
+       this.attributes.put(dsbean.getId()+"_START_ROWNUM",startrownum);
     }
-
+    
+    public void setEndRownumOfDsbean(ReportDataSetBean dsbean,int endrownum)
+    {
+        this.attributes.put(dsbean.getId()+"_END_ROWNUM",endrownum);
+    }
+    
+    public void setStartRownumOfDsvbean(ReportDataSetValueBean dsvbean,int startrownum)
+    {
+        if(this.isLoadAllReportData) return;
+        this.attributes.put(dsvbean.getGuid()+"_START_ROWNUM",startrownum);
+    }
+    
+    public void setEndRownumOfDsvbean(ReportDataSetValueBean dsvbean,int endrownum)
+    {
+        if(this.isLoadAllReportData) return;
+        this.attributes.put(dsvbean.getGuid()+"_END_ROWNUM",endrownum);
+    }
+    
+    public Integer getStartRownumOfDsbean(ReportDataSetBean dsbean)
+    {
+        return (Integer)this.attributes.get(dsbean.getId()+"_START_ROWNUM");
+    }
+    
+    public Integer getEndRownumOfDsbean(ReportDataSetBean dsbean)
+    {
+        return (Integer)this.attributes.get(dsbean.getId()+"_END_ROWNUM");
+    }
+    
+    public Integer getStartRownumOfDsvbean(ReportDataSetValueBean dsvbean)
+    {
+        if(this.isLoadAllReportData) return null;
+        return (Integer)this.attributes.get(dsvbean.getGuid()+"_START_ROWNUM");
+    }
+    
+    public Integer getEndRownumOfDsvbean(ReportDataSetValueBean dsvbean)
+    {
+        if(this.isLoadAllReportData) return null;
+        return (Integer)this.attributes.get(dsvbean.getGuid()+"_END_ROWNUM");
+    }
+    
     public ReportBean getReportBean()
     {
         return reportBean;
@@ -451,24 +494,17 @@ public class CacheDataBean
     
     private void initColPosition()
     {
-        colPositionBean=new ListReportColPositionInfoBean();
         AbsListReportDisplayBean alrdbean=(AbsListReportDisplayBean)reportBean.getDbean()
                 .getExtendConfigDataForReportType(AbsListReportDisplayBean.class);
         if(alrdbean==null)
         {
             throw new WabacusRuntimeException("报表"+reportBean.getPath()+"不是数据自动列表报表，不能获取其列位置信息");
         }
-        AbsListReportBean alrbean=(AbsListReportBean)reportBean.getExtendConfigDataForReportType(AbsListReportType.KEY);
         if((this.lstDynDisplayColids==null||this.lstDynDisplayColids.size()==0)
                 &&(lstDynOrderColBeans==null||lstDynOrderColBeans.size()==0)
-                &&(attributes.get("authroize_col_display")==null||!String.valueOf(attributes.get("authroize_col_display")).trim().equals("false"))//此报表没有将某列授权为不显示
-                &&(alrbean==null||rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE||!(Consts.ROWSELECT_CHECKBOX.equalsIgnoreCase(alrbean
-                        .getRowSelectType())||Consts.ROWSELECT_RADIOBOX.equalsIgnoreCase(alrbean.getRowSelectType())||Consts.ROWSELECT_MULTIPLE_CHECKBOX.equalsIgnoreCase(alrbean
-                                .getRowSelectType())||Consts.ROWSELECT_SINGLE_RADIOBOX.equalsIgnoreCase(alrbean.getRowSelectType()))))
+                &&(attributes.get("authroize_col_display")==null||!String.valueOf(attributes.get("authroize_col_display")).trim().equals("false")))
         {
-            colPositionBean.setFirstColid(alrdbean.getDefaultFirstColid());
-            colPositionBean.setLastColid(alrdbean.getDefaultLastColId());
-            colPositionBean.setTotalColCount(alrdbean.getDefaultColumnCount());
+            this.colPositionBean=rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE?alrdbean.getDefaultPageColPositionBean():alrdbean.getDefaultDataExportColPositionBean();
         }else
         {
             List<ColBean> lstCols=this.lstDynOrderColBeans;
@@ -476,24 +512,25 @@ public class CacheDataBean
             {
                 lstCols=reportBean.getDbean().getLstCols();
             }
-            String[] strs=ListReportAssistant.getInstance().calColPosition(rrequest,alrdbean,lstCols,this.lstDynDisplayColids);
-            colPositionBean.setFirstColid(strs[0]);
-            colPositionBean.setLastColid(strs[1]);
-            colPositionBean.setTotalColCount(Integer.parseInt(strs[2]));
+            this.colPositionBean=ListReportAssistant.getInstance().calColPosition(rrequest,alrdbean,lstCols,this.lstDynDisplayColids,rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE);
         }
     }
+    private List<Map<String,String>> lstRowSelectData;
     
+    public List<Map<String,String>> getLstRowSelectData()
+    {
+        return lstRowSelectData;
+    }
+
     public void initLoadReportDataType()
     {
-        if(this.reportBean.isChartReportType())
+        if(this.reportBean.isChartReportType()||this.reportBean.getSbean().isHorizontalDataset())
         {
             this.isLoadAllReportData=true;
-            this.shouldBatchDataExport=false;
         }else if(this.reportBean.isDetailReportType()&&this.pagesize==0)
         {
             this.maxrecordcount=1;
             this.isLoadAllReportData=true;
-            this.shouldBatchDataExport=false;
         }else if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
         {
             this.isLoadAllReportData=this.pagesize<=0;
@@ -504,48 +541,28 @@ public class CacheDataBean
                 this.isLoadAllReportData=true;
             }else
             {
-                this.isLoadAllReportData=this.printPagesize!=0;
+                this.isLoadAllReportData=this.printPagesize!=0;//不是打印当前页，则说明打印所有页
             }
-        }else if(rrequest.getShowtype()==Consts.DISPLAY_ON_PDF&&rrequest.isReportInPdfTemplate(this.reportBean.getId()))
+        }else
         {
-            this.shouldBatchDataExport=false;
-            if(this.configDataexportRecordcount==0)
+            AbsDataExportBean dataExportBean=reportBean.getDataExportsBean()!=null?reportBean.getDataExportsBean().getDataExportBean(
+                    rrequest.getShowtype()):null;
+            if(dataExportBean!=null&&dataExportBean.getRowSelectDataBean()!=null)
+            {
+                lstRowSelectData=EditableReportAssistant.getInstance().parseSaveDataStringToList(
+                        rrequest.getStringAttribute(this.getReportBean().getGuid()+"_allselectedatas"));
+            }
+            if(!Tools.isEmpty(lstRowSelectData))
+            {
+                this.isLoadAllReportData=true;
+                this.maxrecordcount=-1;
+            }else if(this.configDataexportRecordcount==0)
             {
                 this.isLoadAllReportData=this.pagesize<=0;
             }else
             {
                 this.isLoadAllReportData=true;
                 if(this.configDataexportRecordcount>0) this.maxrecordcount=this.configDataexportRecordcount;
-            }
-        }else
-        {
-            if(this.configDataexportRecordcount==0)
-            {
-                this.isLoadAllReportData=this.pagesize<=0;
-                this.shouldBatchDataExport=false;
-            }else
-            {//导出所有记录
-                int batchexportcount=Integer.MIN_VALUE;
-                if(reportBean.getDataExportsBean()!=null) batchexportcount=reportBean.getDataExportsBean().getBatchselectcount();
-                if(batchexportcount==Integer.MIN_VALUE) batchexportcount=Config.getInstance().getDataexportBatchCount();
-                this.pageno=1;
-                if(batchexportcount<=0)
-                {
-                    this.shouldBatchDataExport=false;
-                    this.isLoadAllReportData=true;
-                    if(this.configDataexportRecordcount>0) this.maxrecordcount=this.configDataexportRecordcount;
-                }else if(this.configDataexportRecordcount>0&&this.configDataexportRecordcount<=batchexportcount)
-                {
-                    this.pagesize=this.configDataexportRecordcount;
-                    this.shouldBatchDataExport=false;
-                    this.isLoadAllReportData=false;
-                }else
-                {
-                    if(this.configDataexportRecordcount>0) this.maxrecordcount=this.configDataexportRecordcount;
-                    this.pagesize=batchexportcount;
-                    this.shouldBatchDataExport=true;
-                    this.isLoadAllReportData=false;
-                }
             }
         }
     }
@@ -557,13 +574,20 @@ public class CacheDataBean
     
     private Map<String,Integer> mColBeansDisplayModes=new HashMap<String,Integer>();
 
-    public int getColDisplayModeAfterAuthorize(ColBean cbean)
+    public int getColDisplayModeAfterAuthorize(ColBean cbean,boolean isForPage)
     {
-        Integer displaymode=mColBeansDisplayModes.get(cbean.getColid());
+        Integer displaymode=mColBeansDisplayModes.get(cbean.getColid()+"_"+isForPage);
         if(displaymode==null)
         {
-            displaymode=cbean.getDisplaymode(rrequest,lstDynDisplayColids);
-            mColBeansDisplayModes.put(cbean.getColid(),displaymode);
+            if(isForPage||rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&reportBean.getDbean().isAllColDisplaytypesEquals()
+                    ||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE)
+            {
+                displaymode=cbean.getDisplaymode(rrequest,lstDynDisplayColids,isForPage);
+            }else
+            {
+                displaymode=cbean.getDisplaymode(rrequest,null,isForPage);
+            }
+            mColBeansDisplayModes.put(cbean.getColid()+"_"+isForPage,displaymode);
         }
         return displaymode.intValue();
     }
@@ -637,7 +661,7 @@ public class CacheDataBean
     public void setRowLabelstyleproperty(String labelstyleproperty)
     {
         if(this.lstDynRowLabelStyleproperties==null) this.lstDynRowLabelStyleproperties=new ArrayList<String>();
-        if(this.lstDynRowLabelStyleproperties.size()>0) this.lstDynRowLabelStyleproperties.clear();
+        if(this.lstDynRowLabelStyleproperties.size()>0) this.lstDynRowLabelStyleproperties.clear();//一个报表只有一个rowlabelstyleproperty，所以之前设置过的话则清空掉
         this.lstDynRowLabelStyleproperties.add(labelstyleproperty);
     }
     
@@ -681,44 +705,5 @@ public class CacheDataBean
     {
         if(this.mDynColValueStyleproperties==null) return null;
         return this.mDynColValueStyleproperties.get(key);
-    }
-    
-    private class ListReportColPositionInfoBean
-    {
-        private String firstColid;
-        
-        private String lastColid;
-        
-        private int totalColCount;
-
-        public String getFirstColid()
-        {
-            return firstColid;
-        }
-
-        public void setFirstColid(String firstColid)
-        {
-            this.firstColid=firstColid;
-        }
-
-        public String getLastColid()
-        {
-            return lastColid;
-        }
-
-        public void setLastColid(String lastColid)
-        {
-            this.lastColid=lastColid;
-        }
-
-        public int getTotalColCount()
-        {
-            return totalColCount;
-        }
-
-        public void setTotalColCount(int totalColCount)
-        {
-            this.totalColCount=totalColCount;
-        }        
     }
 }

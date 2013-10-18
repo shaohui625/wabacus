@@ -31,7 +31,7 @@ import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
-import com.wabacus.exception.WabacusRuntimeWarningException;
+import com.wabacus.exception.WabacusRuntimeTerminateException;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
@@ -48,6 +48,7 @@ import com.wabacus.system.intercept.AbsPageInterceptor;
 import com.wabacus.system.intercept.IInterceptor;
 import com.wabacus.system.serveraction.IServerAction;
 import com.wabacus.util.Consts;
+import com.wabacus.util.Logger;
 
 public class ServerSQLActionButton extends WabacusButton implements IServerAction,IEditableReportEditGroupOwnerBean
 {
@@ -108,7 +109,7 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
         ReportBean rbean=(ReportBean)this.ccbean;
         CacheDataBean cdb=rrequest.getCdb(this.ccbean.getId());
         cdb.setLstEditedData(this.editDataBean,lstData);
-        cdb.getAttributes().put("WX_UPDATE_CUSTOMIZEDATAS",mCustomizedData);
+        cdb.getAttributes().put("WX_UPDATE_CUSTOMIZEDATAS",mCustomizedData);//对于用户自定义的数据，都会存放在一个Map中，键为参数名；值为参数值
         cdb.setLstEditedParamValues(this.editDataBean,EditableReportAssistant.getInstance().getExternalValues(this.editDataBean,lstData,rbean,
                 rrequest));
         rrequest.setTransactionObj(new DefaultTransactionType());
@@ -145,7 +146,7 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
                 {
                     AbsPageInterceptor pageInterceptorObjTmp;
                     for(int i=lstPageInterceptors.size()-1;i>=0;i--)
-                    {//这个调用顺序与调用doStartSave()方法相反
+                    {
                         pageInterceptorObjTmp=lstPageInterceptors.get(i);
                         pageInterceptorObjTmp.doEndSave(rrequest,lstSaveReportBeans);
                     }
@@ -153,10 +154,10 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
                 if(rrequest.getTransactionWrapper()!=null) rrequest.getTransactionWrapper().commitTransaction(rrequest,lstAllEditActionGroupBeans);
                 if(this.successprompt!=null&&!this.successprompt.trim().equals(""))
                 {
-                    rrequest.getWResponse().getMessageCollector().success(rrequest.getI18NStringValue(this.successprompt),false);
+                    rrequest.getWResponse().getMessageCollector().success(rrequest.getI18NStringValue(this.successprompt));
                 }
             }
-        }catch(WabacusRuntimeWarningException wrwe)
+        }catch(WabacusRuntimeTerminateException wrwe)
         {
             if(rrequest.getTransactionWrapper()!=null)
             {
@@ -169,7 +170,7 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
                     exception=wrwe;
                 }
             }
-            throw new WabacusRuntimeWarningException();
+            throw new WabacusRuntimeTerminateException();
         }catch(Exception e)
         {
             exception=e;
@@ -180,8 +181,8 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
         }
         if(exception!=null)
         {
-            rrequest.getWResponse().getMessageCollector().error(rrequest.getI18NStringValue(this.failedprompt),
-                    "执行报表"+ccbean.getPath()+"下的按钮"+this.name+"配置的脚本失败",exception);
+            Logger.error("执行报表"+ccbean.getPath()+"下的按钮"+this.name+"配置的脚本失败",exception,this.getClass());
+            rrequest.getWResponse().getMessageCollector().error(rrequest.getI18NStringValue(this.failedprompt),null,true);
             return "-1";
         }else
         {
@@ -217,7 +218,7 @@ public class ServerSQLActionButton extends WabacusButton implements IServerActio
             this.conditions=this.conditions==null?"":this.conditions.trim();
             if(this.conditions.equals(""))
             {
-                this.conditions="{name:'SELECTEDROW',value:true}";
+                this.conditions="{name:'SELECTEDROW',value:true}";//对于数据自动列表报表，默认取选中行的记录
             }else
             {
                 if((!this.conditions.startsWith("{")||!this.conditions.endsWith("}"))

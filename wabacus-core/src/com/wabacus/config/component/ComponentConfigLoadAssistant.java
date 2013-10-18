@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.IApplicationConfigBean;
 import com.wabacus.config.component.application.report.AbsConfigBean;
@@ -30,7 +33,7 @@ import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
-import com.wabacus.config.component.other.ButtonsBean;
+import com.wabacus.config.other.ButtonsBean;
 import com.wabacus.config.template.TemplateBean;
 import com.wabacus.config.template.TemplateParser;
 import com.wabacus.exception.WabacusConfigLoadingException;
@@ -40,6 +43,8 @@ import com.wabacus.util.Tools;
 
 public class ComponentConfigLoadAssistant
 {
+    private final static Log log=LogFactory.getLog(ComponentConfigLoadAssistant.class);
+    
     private final static ComponentConfigLoadAssistant instance=new ComponentConfigLoadAssistant();
 
     private ComponentConfigLoadAssistant()
@@ -62,10 +67,7 @@ public class ComponentConfigLoadAssistant
         if((lstButtons==null||lstButtons.size()==0)&&defaultkey!=null&&!defaultkey.trim().equals(""))
         {
             AbsButtonType buttonObj=Config.getInstance().getResourceButton(null,reportbean,defaultkey,buttonType);
-            if(buttonObj.getName()==null||buttonObj.getName().trim().equals(""))
-            {
-                buttonObj.setName(buttonType.getName()+"_"+(int)(Math.random()*10000));
-            }
+            buttonObj.setDefaultNameIfNoName();
             ComponentConfigLoadManager.addButtonToPositions(reportbean,buttonObj);
         }
     }
@@ -127,7 +129,6 @@ public class ComponentConfigLoadAssistant
         if(Tools.isDefineKey("$",template)) return true;
         if(Tools.isDefineKey("absolute",template)) return true;
         if(Tools.isDefineKey("relative",template)) return true;
-        
         return false;
     }
     
@@ -155,14 +156,13 @@ public class ComponentConfigLoadAssistant
         if(ccbeanOwner instanceof AbsContainerConfigBean)
         {
             if(lstConfigApplicationids==null||lstConfigApplicationids.size()==0)
-            {
+            {//如果没有配置include属性，则取其下包括的所有子应用ID
                 lstConfigApplicationids=((AbsContainerConfigBean)ccbeanOwner).getLstAllChildApplicationIds(true);
             }
         }else if(lstConfigApplicationids==null||lstConfigApplicationids.size()==0)
         {
             lstConfigApplicationids=new ArrayList<String>();
             lstConfigApplicationids.add(ccbeanOwner.getId());
-            
         }
         StringBuffer appidsBuf=new StringBuffer();
         List<String> lstAppids=new ArrayList<String>();
@@ -182,7 +182,7 @@ public class ComponentConfigLoadAssistant
                 if(!pagesize.equals("")) ipagesize=Integer.parseInt(pagesize);
             }
             ReportBean rbean=ccbeanOwner.getPageBean().getReportChild(appidTmp,true);
-            if(rbean!=null) mReportidsAndPagesize.put(appidTmp,ipagesize);//当前应用是报表
+            if(rbean!=null) mReportidsAndPagesize.put(appidTmp,ipagesize);
             if(ccbeanOwner.getPageBean().getApplicationChild(appidTmp,true)==null)
             {
                 throw new WabacusConfigLoadingException("加载组件"+ccbeanOwner.getPath()+"上的打印配置失败，其include属性配置的应用ID"+appidTmp+"不存在");
@@ -190,12 +190,8 @@ public class ComponentConfigLoadAssistant
             lstAppids.add(appidTmp);
             appidsBuf.append(appidTmp+";");
         }
-
 //        {//如果是报表，且没有在include中指定其id，则加上
-
-
 //            mReportidsAndPagesize.put(ccbeanOwner.getId(),Integer.MIN_VALUE);//用默认值
-
         return new Object[] { appidsBuf.toString(), lstAppids, mReportidsAndPagesize };
     }
     

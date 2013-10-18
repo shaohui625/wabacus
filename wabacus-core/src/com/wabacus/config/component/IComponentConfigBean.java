@@ -19,17 +19,17 @@
 package com.wabacus.config.component;
 
 import java.util.List;
-import java.util.Map;
 
 import com.wabacus.config.OnloadMethodBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
-import com.wabacus.config.component.other.ButtonsBean;
 import com.wabacus.config.dataexport.DataExportsConfigBean;
 import com.wabacus.config.dataexport.PDFExportBean;
+import com.wabacus.config.other.ButtonsBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.config.template.TemplateBean;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.assistant.ComponentAssistant;
 import com.wabacus.system.component.IComponentType;
 import com.wabacus.system.component.container.AbsContainerType;
 
@@ -111,6 +111,10 @@ public interface IComponentConfigBean
     
     public void setShowContextMenu(boolean showContextMenu);
     
+    public TemplateBean getOuterHeaderTplBean();
+
+    public void setOuterHeaderTplBean(TemplateBean outerHeaderTplBean);
+    
     public TemplateBean getHeaderTplBean();
 
     public void setHeaderTplBean(TemplateBean headerTplBean);
@@ -118,6 +122,10 @@ public interface IComponentConfigBean
     public TemplateBean getFooterTplBean();
 
     public void setFooterTplBean(TemplateBean footerTplBean);
+    
+    public TemplateBean getOuterFooterTplBean();
+
+    public void setOuterFooterTplBean(TemplateBean outerFooterTplBean);
     
     public AbsContainerConfigBean getParentContainer();
     
@@ -154,12 +162,4 @@ public interface IComponentConfigBean
     public void doPostLoad();
     
     public void doPostLoadFinally();
-    
-    //$ByQXO　所有属性列表Map,以便扩展类中使用
-    public Map<String,String> getAttrs();
-    
-    public void setAttrs(Map<String,String> attrs);
-    
-    public void mergeAttrs(Map<String,String> overrideAttrs);
-    //ByQXO$
 }

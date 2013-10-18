@@ -116,7 +116,7 @@ public abstract class AbsComponentType implements IComponentType
                 resultBuf.append("<td align='"+buttonalign+"'>");
                 resultBuf.append(buttonsOnTitle);
             }else
-            {
+            {//本次同时显示两者，但对齐方式一致
                 resultBuf.append("<td align='"+titlealign+"'>");
                 if("left".equals(this.comCfgBean.getButtonsBean().getTitleposition()))
                 {
@@ -159,7 +159,7 @@ public abstract class AbsComponentType implements IComponentType
         {
             String title=comCfgBean.getTitle(rrequest);
             if(title!=null&&!title.trim().equals(""))
-            {//需要显示title
+            {
                 //resultBuf.append("<span class=\"cls-title\">").append(Tools.htmlEncode(title.trim())).append("</span>");
                 resultBuf.append("<span class=\"cls-title\">").append(title.trim()).append("</span>");
             }
@@ -208,7 +208,7 @@ public abstract class AbsComponentType implements IComponentType
         return resultBuf.toString();
     }
     
-    private String getRealHeaderFooterDisplayValue(TemplateBean headerFooterTpl,String type)
+    public String getRealHeaderFooterDisplayValue(TemplateBean headerFooterTpl,String type)
     {
         if(headerFooterTpl==null) return "";
         if(headerFooterTpl.getLstTagChildren()!=null&&headerFooterTpl.getLstTagChildren().size()>0)
@@ -223,9 +223,9 @@ public abstract class AbsComponentType implements IComponentType
             if(obj==null) return "";
             if(!(obj instanceof TemplateBean)) return obj.toString();
             if("footer".equals(type))
-            {
+            {//当前是在显示footer
                 ComponentAssistant.getInstance().validComponentFooterTpl(this.comCfgBean,(TemplateBean)obj);
-            }else
+            }else if("header".equals(type))
             {
                 ComponentAssistant.getInstance().validComponentHeaderTpl(this.comCfgBean,(TemplateBean)obj);
             }

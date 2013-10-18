@@ -52,7 +52,6 @@ public class ComponentPermissionBean extends AbsPermissionBean
         if(!AuthorizationAssistant.getInstance().isExistPermissiontype(permissiontype)) return Consts.CHKPERMISSION_UNSUPPORTEDTYPE;
         if(!AuthorizationAssistant.getInstance().isExistValueOfPermissiontype(permissiontype,permissionvalue))
             return Consts.CHKPERMISSION_UNSUPPORTEDVALUE;
-        
         if(parttype==null||parttype.trim().equals(""))
         {
             permissiontype=permissiontype.trim();
@@ -60,7 +59,7 @@ public class ComponentPermissionBean extends AbsPermissionBean
             String myPermissionvalue=this.getPermission(permissiontype);
             if(myPermissionvalue==null||myPermissionvalue.trim().equals("")) return Consts.CHKPERMISSION_EMPTY;
             if(myPermissionvalue.toLowerCase().trim().equals(permissionvalue))
-            {
+            {//显式授的权限值即为要判断的permissionvalue
                 return Consts.CHKPERMISSION_YES;
             }else
             {

@@ -93,11 +93,12 @@ public class TestLoadStoreRowOrderByDrag implements IListReportRoworderPersisten
                 }
             }
             stmt.executeUpdate("update tbl_detailinfo set orderline="+iorderline+" where no='"+srcNo+"'");
-            rrequest.getWResponse().getMessageCollector().success("排序记录行数据成功",false);
+            rrequest.getWResponse().getMessageCollector().success("排序记录行数据成功");
         }catch(SQLException e)
         {
             e.printStackTrace();
-            rrequest.getWResponse().getMessageCollector().warn("排序报表记录行失败",true,Consts.STATECODE_FAILED);
+            rrequest.getWResponse().setStatecode(Consts.STATECODE_FAILED);
+            rrequest.getWResponse().getMessageCollector().warn("排序报表记录行失败",null,true);
         }finally
         {
             WabacusAssistant.getInstance().release(conn,stmt);

@@ -28,7 +28,7 @@ import org.dom4j.Element;
 
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.FormatBean;
-import com.wabacus.config.component.other.JavascriptFileBean;
+import com.wabacus.config.other.JavascriptFileBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.datatype.IDataType;
@@ -201,7 +201,7 @@ public class ConfigLoadAssistant
                 }
                 importTmp=importTmp.substring(0,idx).trim();
             }
-            if(importTmp.equals("")||lstImports.contains(importTmp)) continue;
+            if(importTmp.equals("")||lstImports.contains(importTmp)) continue;//重复的不加进来，不重复的都加进来。
             lstImports.add(importTmp);
         }
         return lstImports;

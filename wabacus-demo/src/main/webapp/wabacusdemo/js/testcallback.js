@@ -80,3 +80,18 @@ function testConfigLinkedChart2(paramsObj)
 {
 	alert('显示的图表ID：'+paramsObj.chartid+'；图形对象：'+paramsObj.chartObj+'；自定义参数：[param1='+paramsObj.customizeData.param1+';param2='+paramsObj.customizeData.param2+']');
 }
+var popup_flag=-1;
+function popupcallbackmethod(url)
+{
+	alert('      测试弹出回调函数\n\r弹出URL：'+url);
+	popup_flag++;
+	if(popup_flag%2==0)
+	{
+		alert('本次阻止弹出!!!');
+		return null;
+	}else
+	{
+		alert('本次执行弹出...');
+		return url;
+	}
+}

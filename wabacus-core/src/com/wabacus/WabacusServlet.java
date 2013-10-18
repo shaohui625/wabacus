@@ -37,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 import com.wabacus.config.Config;
 import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.database.datasource.AbsDataSource;
+import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.dataimport.thread.FileUpDataImportThread;
 import com.wabacus.system.task.TimingThread;
@@ -54,14 +55,13 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
     {
         closeAllDatasources();
         Config.homeAbsPath=event.getServletContext().getRealPath("/");
-        Config.homeAbsPath=Tools.standardFilePath(Config.homeAbsPath+"\\");
+        Config.homeAbsPath=FilePathAssistant.getInstance().standardFilePath(Config.homeAbsPath+"\\");
         /*try
         {
             Config.webroot=event.getServletContext().getContextPath();
             if(!Config.webroot.endsWith("/")) Config.webroot+="/";
         }catch(NoSuchMethodError e)
         {
-            
             Config.webroot=null;
         }*/
         Config.webroot=null;
@@ -83,21 +83,10 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
-
 //        closeAllDatasources();//关闭所有的连接池
 //        Config.homeAbsPath=context.getRealPath("/");
-
 //        Config.configpath=config.getInitParameter("configpath");//配置文件存放的物理路径
-
-
-
-
-
-
-
-
-//        }
-
+//            Config.configpath=Config.homeAbsPath;
     }
 
     public static void loadReportConfigFiles()
@@ -139,7 +128,7 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
                     out.println(resultStr);
                 }
             }else if(action.equalsIgnoreCase("ServerValidateOnBlur"))
-            {
+            {//某个输入框onblur后进行服务器端校验
                 String resultStr=WabacusFacade.doServerValidateOnBlur(request,response);
                 if(resultStr!=null&&!resultStr.trim().equals(""))
                 {
@@ -202,39 +191,22 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
                 out.println(sbuffer.toString().trim());
             }else
             {
-                String type=Tools.getRequestValue(request,Consts.DISPLAYTYPE_PARAMNAME,String.valueOf(Consts.DISPLAY_ON_PAGE));
-                int itype=Consts.DISPLAY_ON_PAGE;
-                try
-                {
-                    itype=Integer.parseInt(type);
-                }catch(NumberFormatException e)
-                {
-                    log.error("传入的显示类型"+type+"不合法",e);
-                }
+                int itype=Integer.parseInt(Tools.getRequestValue(request,Consts.DISPLAYTYPE_PARAMNAME,String.valueOf(Consts.DISPLAY_ON_PAGE)));
                 if(itype==Consts.DISPLAY_ON_PRINT)
                 {
                     WabacusFacade.printComponents(request,response);
                 }else if(itype==Consts.DISPLAY_ON_PLAINEXCEL)
                 {//下载纯数据
-                    response.reset();
-                    response.setContentType("application/vnd.ms-excel;charset="+Config.encode);
                     WabacusFacade.exportReportDataOnPlainExcel(request,response);
                 }else if(itype==Consts.DISPLAY_ON_RICHEXCEL)
                 {
-                    response.reset();
-                    response.setContentType("application/vnd.ms-excel;charset="+Config.encode);
                     WabacusFacade.exportReportDataOnWordRichexcel(request,response,Consts.DISPLAY_ON_RICHEXCEL);
                 }else if(itype==Consts.DISPLAY_ON_WORD)
                 {
-                    response.reset();
-                    response.setContentType("application/vnd.ms-word;charset="+Config.encode);
                     WabacusFacade.exportReportDataOnWordRichexcel(request,response,Consts.DISPLAY_ON_WORD);
                 }else if(itype==Consts.DISPLAY_ON_PDF)
                 {
-                    response.reset();
-                    response.setContentType("application/pdf;charset="+Config.encode);
                     WabacusFacade.exportReportDataOnPDF(request,response,Consts.DISPLAY_ON_PDF);
-                    
                 }else
                 { 
                     WabacusFacade.displayReport(request,response);
@@ -245,7 +217,6 @@ public class WabacusServlet extends HttpServlet implements ServletContextListene
 
     public void destroy()
     {
-        
     }
 
     public void contextDestroyed(ServletContextEvent event)

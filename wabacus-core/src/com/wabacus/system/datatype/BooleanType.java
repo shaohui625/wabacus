@@ -50,10 +50,6 @@ public class BooleanType extends AbsDataType
         pstmt.setBoolean(iindex,(Boolean)label2value(value));
     }
 
-    
-    
-    
-    
 
     public Class getJavaTypeClass()
     {

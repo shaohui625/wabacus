@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
+import com.wabacus.util.Tools;
 
 public class TimingThread extends Thread
 {
@@ -34,16 +35,12 @@ public class TimingThread extends Thread
 
     private boolean RUNNING_FLAG=true;
 
+    private List<String> lstTasksIds;
+    
     private List<ITask> lstTasks;
 
-    private long intervalMilSeconds;
+    private long intervalMilSeconds=Long.MIN_VALUE;
     
-    private TimingThread()
-    {
-        intervalMilSeconds=Config.getInstance().getSystemConfigValue("timing-thread-interval",15)*1000L;
-        if(intervalMilSeconds<=0) intervalMilSeconds=15*1000L;
-    }
-
     public static TimingThread getInstance()
     {
         return instance;
@@ -51,17 +48,11 @@ public class TimingThread extends Thread
 
     public boolean addTask(ITask taskObj)
     {
-        if(lstTasks==null)
-        {
-            lstTasks=new ArrayList<ITask>();
-        }else
-        {
-            for(ITask taskTmp:lstTasks)
-            {
-                if(taskTmp.getTaskId().equals(taskObj.getTaskId())) return false;
-            }
-            lstTasks.add(taskObj);
-        }
+        if(lstTasks==null) lstTasks=new ArrayList<ITask>();
+        if(lstTasksIds==null) lstTasksIds=new ArrayList<String>();
+        if(lstTasksIds.contains(taskObj.getTaskId())) return false;
+        lstTasks.add(taskObj);
+        lstTasksIds.add(taskObj.getTaskId());
         return true;
     }
 
@@ -75,15 +66,23 @@ public class TimingThread extends Thread
             if(taskTmp.getTaskId().equals(taskObj.getTaskId()))
             {
                 this.lstTasks.remove(i);
+                if(this.lstTasksIds!=null) this.lstTasksIds.remove(taskTmp.getTaskId());
                 return true;
             }
         }
         return false;
     }
+    
+    public boolean isExistTask(String taskId)
+    {
+        if(Tools.isEmpty(this.lstTasksIds)) return false;
+        return this.lstTasksIds.contains(taskId);
+    }
 
     public void reset()
     {
         this.lstTasks=null;
+        this.lstTasksIds=null;
         this.intervalMilSeconds=Long.MIN_VALUE;
     }
 
@@ -107,6 +106,11 @@ public class TimingThread extends Thread
                 {
                     log.error("执行任务："+taskObjTmp.getTaskId()+"时失败",e);
                 }
+            }
+            if(this.intervalMilSeconds==Long.MIN_VALUE)
+            {
+                intervalMilSeconds=Config.getInstance().getSystemConfigValue("timing-thread-interval",15)*1000L;
+                if(intervalMilSeconds<=0) intervalMilSeconds=15*1000L;
             }
             if(this.intervalMilSeconds>0)
             {

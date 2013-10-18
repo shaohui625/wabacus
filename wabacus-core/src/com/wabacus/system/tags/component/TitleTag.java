@@ -65,8 +65,7 @@ public class TitleTag extends AbsComponentTag
     public int doMyEndTag() throws JspException,IOException
     {
         if(this.displayComponentObj==null) return EVAL_PAGE;
-        TagAssistant.getInstance().printlnTag(out,rrequest,
-                TagAssistant.getInstance().getTitleDisplayValue((AbsReportType)this.displayComponentObj,type,top));
+        println(TagAssistant.getInstance().getTitleDisplayValue((AbsReportType)this.displayComponentObj,type,top));
         return EVAL_PAGE;
     }
 }

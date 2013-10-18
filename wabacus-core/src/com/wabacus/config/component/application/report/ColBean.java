@@ -19,6 +19,7 @@
 package com.wabacus.config.component.application.report;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -39,17 +40,19 @@ public class ColBean extends AbsConfigBean
 
     private String column;
 
-    private String datasetValueId;
+    private List<String> lstDatasetValueids;
     
     private String label;
     
     private Map<String,String> mDynLableParts;
 
-    private String displaytype=Consts.COL_DISPLAYTYPE_INITIAL;
+    private String[] displaytypes=new String[]{Consts.COL_DISPLAYTYPE_INITIAL,Consts.COL_DISPLAYTYPE_INITIAL};
     
     private String tagcontent;
     
-    private boolean isI18n;
+    private Map<String,String> mDynTagcontentParts;
+    
+    private boolean isI18n;//是否支持国际化
 
     private IDataType datatypeObj;
  
@@ -61,7 +64,7 @@ public class ColBean extends AbsConfigBean
     
     private List<String> lstDynValuestylepropertyParts;
     
-    private String labelalign;//配置的列标题对齐方式，不用配置，而是从labelstyleproperty中解析出来，以便数据导出或打印时使用
+    private String labelalign;
     
     private String valuealign;
     
@@ -69,7 +72,7 @@ public class ColBean extends AbsConfigBean
     
     private float pdfwidth;
     
-    private String printwidth;
+    private String printwidth;//打印时的宽度
     
     private String printlabelstyleproperty;
     
@@ -84,10 +87,6 @@ public class ColBean extends AbsConfigBean
     private Method getMethod=null;
 
     public final static String NON_LABEL="{non-label}";
-
-
-
-
 
 //    private Map<String,String> mFormatParamsColProperties;//存放当前列的所有格式化方法参数中用到的其它<col/>的定义property(即@{}格式)和真正property
     
@@ -111,16 +110,6 @@ public class ColBean extends AbsConfigBean
     public void setColid(String colid)
     {
         this.colid=colid;
-    }
-
-    public String getDatasetValueId()
-    {
-        return datasetValueId;
-    }
-
-    public void setDatasetValueId(String datasetid)
-    {
-        this.datasetValueId=datasetid;
     }
 
     public float getPlainexcelwidth()
@@ -252,27 +241,41 @@ public class ColBean extends AbsConfigBean
         this.mDynLableParts=(Map<String,String>)objArr[1];
     }
 
-    public String getDisplaytype()
+    public String getDisplaytype(boolean isPageDisplaytype)
     {
-        return displaytype;
+        return isPageDisplaytype?displaytypes[0]:displaytypes[1];
     }
 
-    public void setDisplaytype(String displaytype)
+    public String getDisplaytype(ReportRequest rrequest)
     {
-        displaytype=displaytype==null?"":displaytype.toLowerCase().trim();
-        if(displaytype.equals(""))
+        return rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE?displaytypes[0]:displaytypes[1];
+    }
+    
+    public void setDisplaytype(String[] displaytypes)
+    {
+        if(displaytypes==null||displaytypes.length==0)
         {
-            this.displaytype=Consts.COL_DISPLAYTYPE_INITIAL;
+            this.displaytypes=new String[] { Consts.COL_DISPLAYTYPE_INITIAL, Consts.COL_DISPLAYTYPE_INITIAL };
+        }else if(displaytypes.length==1)
+        {
+            this.displaytypes=new String[] { displaytypes[0], displaytypes[0] };
         }else
         {
-            if(!displaytype.equals(Consts.COL_DISPLAYTYPE_ALWAYS)&&!displaytype.equals(Consts.COL_DISPLAYTYPE_INITIAL)
-                    &&!displaytype.equals(Consts.COL_DISPLAYTYPE_HIDDEN)&&!displaytype.equals(Consts.COL_DISPLAYTYPE_OPTIONAL))
-            {
-                throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的列"+this.column+"失败，配置的displaytype属性"+displaytype
-                        +"不支持");
-            }
-            this.displaytype=displaytype;
+            this.displaytypes=new String[] { displaytypes[0], displaytypes[1] };
         }
+        if(Tools.isEmpty(this.displaytypes[0])) this.displaytypes[0]=Consts.COL_DISPLAYTYPE_INITIAL;
+        if(Tools.isEmpty(this.displaytypes[1])) this.displaytypes[1]=Consts.COL_DISPLAYTYPE_INITIAL;
+        if(!Consts.lstAllColDisplayTypes.contains(this.displaytypes[0]))
+        {
+            throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的列"+this.column+"失败，配置的displaytype属性"+this.displaytypes[0]
+                    +"不支持");
+        }
+        if(!Consts.lstAllColDisplayTypes.contains(this.displaytypes[1]))
+        {
+            throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"的列"+this.column+"失败，配置的displaytype属性"+this.displaytypes[1]
+                    +"不支持");
+        }
+        if(!this.displaytypes[0].equals(this.displaytypes[1])) ((DisplayBean)this.getParent()).setAllColDisplaytypesEquals(false);//只要有一个列在页面和导出文件中显示模式不同，则整个报表都不同
     }
 
     public String getProperty()
@@ -288,6 +291,16 @@ public class ColBean extends AbsConfigBean
     public String getLabel(ReportRequest rrequest)
     {
         return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.label,this.mDynLableParts,"");
+    }
+
+    public void setLstDatasetValueids(List<String> lstDatasetValueids)
+    {
+        this.lstDatasetValueids=lstDatasetValueids;
+    }
+
+    public List<String> getLstDatasetValueids()
+    {
+        return lstDatasetValueids;
     }
 
     public IDataType getDatatypeObj()
@@ -358,16 +371,18 @@ public class ColBean extends AbsConfigBean
         }
     }
 
-    public String getTagcontent()
+    public String getTagcontent(ReportRequest rrequest)
     {
-        return tagcontent;
+        return WabacusAssistant.getInstance().getStringValueWithDynPart(rrequest,this.tagcontent,this.mDynTagcontentParts,"");
     }
 
     public void setTagcontent(String tagcontent)
     {
-        this.tagcontent=tagcontent;
+        Object[] objArr=WabacusAssistant.getInstance().parseStringWithDynPart(tagcontent);
+        this.tagcontent=(String)objArr[0];
+        this.mDynTagcontentParts=(Map<String,String>)objArr[1];
     }
-
+    
     public String getLabelalign()
     {
         return labelalign;
@@ -391,8 +406,15 @@ public class ColBean extends AbsConfigBean
     public boolean isMatchDataSet(ReportDataSetValueBean dsvbean)
     {
         if(this.isControlCol()||this.isSequenceCol()||this.isNonFromDbCol()||this.isNonValueCol()) return false;
-        if((this.datasetValueId==null||this.datasetValueId.trim().equals(""))&&!dsvbean.getReportBean().getSbean().isMultiDataSetCols()) return true;//没有配置datasetid属性的，且本报表没有提供横向多数据集
-        return dsvbean.getId().equals(this.datasetValueId);
+        if(this.lstDatasetValueids==null||this.lstDatasetValueids.size()==0)
+        {//如果没有指定datasetid，则匹配所有数据集（这个时候不可能在一个<dataset/>中配置有多个<value/>，否则在doPostLoad()方法中就会报错）
+            return true;
+        }
+        SqlBean sbean=(SqlBean)dsvbean.getParent().getParent();
+        if(sbean.isHorizontalDataset()
+                &&(this.column.equals(sbean.getHdsTitleLabelCbean().getColumn())||this.column.equals(sbean.getHdsTitleValueCbean().getColumn())))
+            return true;//如果是横向数据集，且当前<col/>就是查询标题行的各列数据或显示label，则返回true，因为所有<value/>都会查询这两列数据
+        return this.lstDatasetValueids.contains(dsvbean.getId());
     }
     
     public boolean checkDisplayPermission(ReportRequest rrequest)
@@ -415,20 +437,26 @@ public class ColBean extends AbsConfigBean
         return false;
     }
     
-    public int getDisplaymode(ReportRequest rrequest,List<String> lstDisplayColIds)
+    public int getDisplaymode(ReportRequest rrequest,List<String> lstDisplayColIds,boolean isForPage)
     {
+        DisplayBean dbean=(DisplayBean)this.getParent();
         if(rrequest!=null)
         {
-            if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&this.isControlCol()) return 0;
             if(!checkDisplayPermission(rrequest)) return -1;
+            if(!isForPage)
+            {
+                if(this.isControlCol()) return -1;
+                if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&!dbean.isAllColDisplaytypesEquals()) lstDisplayColIds=null;
+            }
         }
-        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(displaytype)) return 0;
-        if(Consts.COL_DISPLAYTYPE_ALWAYS.equals(displaytype)) return 2;
-        DisplayBean dbean=(DisplayBean)this.getParent();
-        if(!dbean.isColselect()) return 1;
+        String displaymode=isForPage?displaytypes[0]:displaytypes[1];
+        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(displaymode)) return 0;
+        if(Consts.COL_DISPLAYTYPE_ALWAYS.equals(displaymode)) return 2;
+        if(isForPage&&!dbean.isPageColselect()) return 1;
+        if(!isForPage&&!dbean.isDataexportColselect()&&(!dbean.isAllColDisplaytypesEquals()||!dbean.isPageColselect())) return 1;
         if(lstDisplayColIds==null||lstDisplayColIds.size()==0)
         {
-            if(Consts.COL_DISPLAYTYPE_INITIAL.equals(displaytype)) return 1;
+            if(Consts.COL_DISPLAYTYPE_INITIAL.equals(displaymode)) return 1;
         }else if(lstDisplayColIds.contains(colid))
         {
             return 1;
@@ -504,10 +532,6 @@ public class ColBean extends AbsConfigBean
         return false;
     }
     
-    public  boolean isNonDbCol(){
-        return isNonValueCol()||   isSequenceCol() || isControlCol();
-    }
-    
     public String getBorderStylePropertyOnColBean()
     {
         ReportBean rb=this.getReportBean();
@@ -524,7 +548,7 @@ public class ColBean extends AbsConfigBean
                 borderstyle="border-color:"+bordercolor+";";
             }
            if(Consts_Private.REPORT_BORDER_HORIZONTAL0.equals(border)||Consts_Private.REPORT_BORDER_HORIZONTAL1.equals(border))
-           {
+           {//只显示横向border
                borderstyle=borderstyle+"border-left:none;border-right:none;";
            }else if(Consts_Private.REPORT_BORDER_VERTICAL.equals(border))
            {
@@ -548,7 +572,7 @@ public class ColBean extends AbsConfigBean
             throw new WabacusConfigLoadingException("报表"+this.getReportBean().getPath()+"的column属性为"+this.getColumn()+"的<col/>通过updatecol为"
                     +ercbean.getUpdatecolDest()+"引用的列不存在");
         }
-        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbTemp.getDisplaytype()))
+        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbTemp.getDisplaytype(true)))
         {
             throw new WabacusConfigLoadingException("报表"+this.getReportBean().getPath()+"的column属性为"+this.getColumn()+"的<col/>通过updatecol为"
                     +ercbean.getUpdatecolDest()+"引用的列不是displaytype为hidden的列");
@@ -577,13 +601,6 @@ public class ColBean extends AbsConfigBean
         return cbTemp;
     }
     
-    public AbsConfigBean clone(AbsConfigBean parent)
-    {
-        ColBean cbNew=(ColBean)super.clone(parent);
-        cloneExtendConfig(cbNew);
-        return cbNew;
-    }
-
     public void doPostLoad()
     {
         /*if(formatproperty!=null&&!formatproperty.trim().equals(""))
@@ -603,14 +620,41 @@ public class ColBean extends AbsConfigBean
             }
             if(mFormatParamsColProperties.size()==0) mFormatParamsColProperties=null;
         }*/
+        if(this.lstDatasetValueids!=null)
+        {
+            for(int i=this.lstDatasetValueids.size()-1;i>=0;i--)
+            {
+                if("".equals(this.lstDatasetValueids.get(i)))
+                {
+                    this.lstDatasetValueids.remove(i);
+                }
+            }
+            if(this.lstDatasetValueids.size()==0) this.lstDatasetValueids=null;
+        }
         if(this.isControlCol()||this.isSequenceCol()||this.isNonValueCol()) return;
-        if(!this.isNonFromDbCol()&&this.getReportBean().getSbean().isMultiDataSetCols()&&(this.datasetValueId==null||this.datasetValueId.trim().equals("")))
+        SqlBean sbean=this.getReportBean().getSbean();
+        if(!this.isNonFromDbCol()&&this.getReportBean().getSbean()!=null
+                &&this.getReportBean().getSbean().isMultiDataSetCols()
+                &&(this.lstDatasetValueids==null||this.lstDatasetValueids.size()==0)
+                &&(!sbean.isHorizontalDataset()||(!sbean.getHdsTitleLabelColumn().equals(this.column)&&!sbean.getHdsTitleValueColumn().equals(
+                        this.column))))
         {
             throw new WabacusConfigLoadingException("加载报表"+this.getReportBean().getPath()+"上的列"+this.column
-                    +"失败，此报表配置了多个横向数据集查询各列数据，因此必须在column中指定数据集ID");
+                    +"失败，此报表配置了横向多数据集查询各列数据，因此必须在column中指定数据集ID");
         }
         EditableReportColBean ecolbean=(EditableReportColBean)this.getExtendConfigDataForReportType(EditableReportColBean.class);
         if(ecolbean!=null) ecolbean.doPostLoad();
+    }
+    
+    public AbsConfigBean clone(AbsConfigBean parent)
+    {
+        ColBean cbNew=(ColBean)super.clone(parent);
+        cloneExtendConfig(cbNew);
+        if(lstDatasetValueids!=null)
+        {
+            cbNew.lstDatasetValueids=(List<String>)((ArrayList<String>)this.lstDatasetValueids).clone();
+        }
+        return cbNew;
     }
     
     public int hashCode()

@@ -18,7 +18,7 @@
  */
 package com.wabacus.system.assistant;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,9 +35,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
+import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
+import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.commoninterface.IListReportRoworderPersistence;
@@ -47,14 +48,13 @@ import com.wabacus.system.component.application.report.abstractreport.configbean
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportColBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportDisplayBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
+import com.wabacus.system.component.application.report.configbean.ListReportColPositionBean;
 import com.wabacus.system.component.application.report.configbean.UltraListReportGroupBean;
 import com.wabacus.system.component.application.report.configbean.crosslist.AbsCrossListReportColAndGroupBean;
 import com.wabacus.system.component.application.report.configbean.crosslist.CrossListReportColBean;
 import com.wabacus.system.component.application.report.configbean.crosslist.CrossListReportGroupBean;
-import com.wabacus.system.datatype.AbsDateTimeType;
-import com.wabacus.system.datatype.VarcharType;
+import com.wabacus.system.dataset.report.VerticalReportDataSet;
 import com.wabacus.util.Consts;
-import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
 public class ListReportAssistant
@@ -71,19 +71,34 @@ public class ListReportAssistant
         return instance;
     }
     
-    public  String[] calColPosition(ReportRequest rrequest,AbsListReportDisplayBean alrdbean,
-            List<ColBean> lstColBeans,List<String> lstDisplayColids)
+    public List<AbsReportDataPojo> loadLazyReportDataSet(ReportRequest rrequest,AbsListReportType reportObj,int startRownum,int endRownum)
+    {
+        if(startRownum<0||endRownum<=startRownum) return null;
+        SqlBean sbean=reportObj.getReportBean().getSbean();
+        if(sbean==null||sbean.getLstDatasetBeans()==null||sbean.getLstDatasetBeans().size()==0) return null;
+        VerticalReportDataSet vdataSetObj=new VerticalReportDataSet(reportObj);
+        List<AbsReportDataPojo> lstData=vdataSetObj.loadLazyReportDatas(startRownum,endRownum);
+        if(lstData!=null&&lstData.size()>0)
+        {
+            List<AbsReportDataPojo> lstDataTmp=(List<AbsReportDataPojo>)((ArrayList<AbsReportDataPojo>)lstData).clone();
+            for(AbsReportDataPojo dataObjTmp:lstDataTmp)
+            {
+                dataObjTmp.format();
+            }
+        }
+        return lstData;
+    }
+    
+    public ListReportColPositionBean calColPosition(ReportRequest rrequest,AbsListReportDisplayBean alrdbean,List<ColBean> lstColBeans,
+            List<String> lstDisplayColids,boolean isForPage)
     {
         String firstDisplayColid=null;
         String lastDisplayColid=null;
         int totalDisplayColCount=0;
         for(ColBean cbTmp:lstColBeans)
         {
-            if(cbTmp.getDisplaymode(rrequest,lstDisplayColids)<=0) continue;
-            if(firstDisplayColid==null)
-            {
-                firstDisplayColid=cbTmp.getColid();
-            }
+            if(cbTmp.getDisplaymode(rrequest,lstDisplayColids,isForPage)<=0) continue;
+            if(firstDisplayColid==null) firstDisplayColid=cbTmp.getColid();
             lastDisplayColid=cbTmp.getColid();
             totalDisplayColCount++;
         }
@@ -91,8 +106,11 @@ public class ListReportAssistant
         {
             totalDisplayColCount=totalDisplayColCount-alrdbean.getRowGroupColsNum()+1;
         }
-        return new String[] { firstDisplayColid, lastDisplayColid,
-                String.valueOf(totalDisplayColCount) };
+        ListReportColPositionBean colPositionBean=new ListReportColPositionBean();
+        colPositionBean.setFirstColid(firstDisplayColid);
+        colPositionBean.setLastColid(lastDisplayColid);
+        colPositionBean.setTotalColCount(totalDisplayColCount);
+        return colPositionBean;
     }
     
     public String getColLabelWithOrderBy(ColBean cbean,ReportRequest rrequest,String dynlabel)
@@ -131,13 +149,6 @@ public class ListReportAssistant
         return resultBuf.toString();
     }
     
-    public ColBean getClickOrderByCbean(ReportRequest rrequest,ReportBean rbean)
-    {
-        String[] orderbys=(String[])rrequest.getAttribute(rbean.getId(),"ORDERBYARRAY");
-        if(orderbys==null||orderbys.length!=2) return null;
-        return rbean.getDbean().getColBeanByColColumn(orderbys[0]);
-    }
-    
     public String createColumnFilter(ReportRequest rrequest,AbsListReportColBean alrcbean)
     {
         ReportBean rbean=alrcbean.getOwner().getReportBean();
@@ -155,7 +166,7 @@ public class ListReportAssistant
         if(filterbean.isConditionRelate())
         {
             paramsBuf.append(filterbean.getConditionname()).append("\"");
-            paramsBuf.append(",multiply:\"false\"");
+            paramsBuf.append(",multiply:\"false\"");//只允许单选
             String filtervalue=rrequest.getStringAttribute(filterbean.getConditionname(),"");
             if(!filtervalue.equals(""))
             {
@@ -197,59 +208,14 @@ public class ListReportAssistant
                 +");}catch(e){logErrorsAsJsFileLoad(e);}\" onmouseout=\"try{drag_enabled=true;}catch(e){}\"><font width=\"3\">&nbsp;</font></span>";
     }
     
-    public String addColFilterConditionToSql(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean datasetbean,String sql)
-    {
-        String where=getFilterConditionExpression(rrequest,rbean,datasetbean);
-        if(where==null) where="";
-        sql=Tools.replaceAll(sql,Consts_Private.PLACEHODER_FILTERCONDITION,where);
-        return sql;
-    }
-
-    public String getFilterConditionExpression(ReportRequest rrequest,ReportBean rbean,ReportDataSetValueBean datasetbean)
-    {
-        AbsListReportFilterBean filterBean=rrequest.getCdb(rbean.getId()).getFilteredBean();
-        if(filterBean==null) return null;
-        ColBean cbTmp=(ColBean)filterBean.getOwner();
-        if(!cbTmp.isMatchDataSet(datasetbean)) return null;
-        String filterval=rrequest.getStringAttribute(filterBean.getId(),"");
-        if(filterval.equals("")) return null;
-        if(cbTmp.getDatatypeObj()==null||cbTmp.getDatatypeObj() instanceof VarcharType||cbTmp.getDatatypeObj() instanceof AbsDateTimeType)
-        {
-            filterval=Tools.replaceAll(filterval,";;","','");
-            if(!filterval.startsWith("'")) filterval="'"+filterval;
-            if(filterval.endsWith("','")) filterval=filterval.substring(0,filterval.length()-3);
-            if(!filterval.endsWith("'")) filterval=filterval+"'";
-            if(filterval.equals("'")) filterval="";
-        }else
-        {
-            filterval=Tools.replaceAll(filterval,";;",",");
-            if(filterval.endsWith(",")) filterval=filterval.substring(0,filterval.length()-1);
-        }
-        String where=null;
-        String column=null;
-        if(filterBean.getFilterColumnExpression()!=null&&!filterBean.getFilterColumnExpression().trim().equals(""))
-        {
-            column=filterBean.getFilterColumnExpression();
-        }else
-        {
-            column=cbTmp.getColumn();
-        }
-        if(!filterval.trim().equals(""))
-        {
-            where=" where "+column+" in ("+filterval+") ";
-        }
-        return where;
-    }
-    
     public void storeRoworder(ReportRequest rrequest,ReportBean rbean)
     {
         String rowordertype=rrequest.getStringAttribute(rbean.getId()+"_ROWORDERTYPE","");
         if(rowordertype.equals("")||!Consts.lstAllRoworderTypes.contains(rowordertype)) return;
-        
         String roworderparams=rrequest.getStringAttribute(rbean.getId()+"_ROWORDERPARAMS","");
         if(roworderparams.equals("")) return;
         AbsListReportBean alrbean=(AbsListReportBean)rbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
-        IListReportRoworderPersistence lsObj=alrbean.getLoadStoreRoworderObject();//获取到读写行排序顺序值的类对象
+        IListReportRoworderPersistence lsObj=alrbean.getLoadStoreRoworderObject();
         if(lsObj==null) lsObj=Config.default_roworder_object;
         List<Map<String,String>> lstColValusInAllRows=EditableReportAssistant.getInstance().parseSaveDataStringToList(roworderparams);
         if(lstColValusInAllRows.size()==0) return;
@@ -264,7 +230,7 @@ public class ListReportAssistant
             lsObj.storeRoworderByTop(rrequest,rbean,mColValuesInRow);
         }else
         {
-            String direct=rrequest.getStringAttribute(rbean.getId()+"_ROWORDERDIRECT","");
+            String direct=rrequest.getStringAttribute(rbean.getId()+"_ROWORDERDIRECT","");//移动方向
             String destrowParams=rrequest.getStringAttribute(rbean.getId()+"_DESTROWPARAMS","");
             Map<String,String> mColValuesInDestRow=null;
             if(!destrowParams.trim().equals(""))
@@ -287,10 +253,6 @@ public class ListReportAssistant
         CtField cfield=new CtField(pool.get("java.util.Map"),"mDynamicColData",cclass);
         cfield.setModifiers(Modifier.PRIVATE);
         cclass.addField(cfield);
-        
-        
-        
-        
 
         StringBuffer methodBuf=new StringBuffer();
         methodBuf.append("public Object getDynamicColData(String colname)");

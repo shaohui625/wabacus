@@ -24,101 +24,58 @@ import java.util.List;
 import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
-import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.component.application.report.chart.FusionChartsReportType;
-import com.wabacus.system.component.application.report.chart.configbean.FusionChartsReportColBean;
 import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.system.intercept.RowDataBean;
 import com.wabacus.util.Consts;
+import com.wabacus.util.Tools;
 
 public class VerticalDatasetType extends AbsDatasetType
 {
-    public VerticalDatasetType(FusionChartsReportType reportTypeObj,List<ColBean> lstDisplayedColBeans)
+    public VerticalDatasetType(FusionChartsReportType reportTypeObj)
     {
-        super(reportTypeObj,lstDisplayedColBeans);
+        super(reportTypeObj);
+        List<ColBean> lstColBeans=rbean.getDbean().getLstCols();
+        this.lstDisplayedColBeans=new ArrayList<ColBean>();
+        if(lstColBeans!=null)
+        {
+            for(ColBean cbTmp:lstColBeans)
+            {
+                if(reportTypeObj.getFcrbean().isXyPlotChart())
+                {
+                    if("x".equals(cbTmp.getProperty())||"y".equals(cbTmp.getProperty())||"z".equals(cbTmp.getProperty()))
+                    {
+                        this.lstDisplayedColBeans.add(cbTmp);
+                        continue;
+                    }
+                }
+                if(cbTmp.isControlCol()||reportTypeObj.isHiddenCol(cbTmp)) continue;
+                this.lstDisplayedColBeans.add(cbTmp);
+            }
+        }
+        if(this.lstDisplayedColBeans.size()==0) this.lstDisplayedColBeans=null;
     }
 
-    public void displayCategoriesPart(StringBuffer resultBuf)
+    protected String getColKey(ColBean cbean)
     {
-        RowDataBean rowInterceptorObjTmp;
-        ColDisplayData colDisplayDataTmp;
-        FusionChartsReportColBean fcrcbeanTmp;
-        String stylepropertyTmp=this.reportTypeObj.getRowLabelstyleproperty();
-        if(rbean.getInterceptor()!=null)
-        {
-            rowInterceptorObjTmp=new RowDataBean(reportTypeObj,stylepropertyTmp,lstDisplayedColBeans,null,-1,lstDisplayedColBeans.size());
-            rbean.getInterceptor().beforeDisplayReportDataPerRow(rrequest,rbean,rowInterceptorObjTmp);
-            stylepropertyTmp=rowInterceptorObjTmp.getRowstyleproperty();
-            if(!rowInterceptorObjTmp.isShouldDisplayThisRow()) return;
-        }
-        resultBuf.append("<categories ").append(stylepropertyTmp==null?"":stylepropertyTmp.trim()).append(">");
-        for(ColBean cbTmp:lstDisplayedColBeans)
-        {
-            if(cbTmp.isNonFromDbCol())
-            {//不是从数据库获取的数据，则直接显示在<col></col>中配置的内容
-                fcrcbeanTmp=(FusionChartsReportColBean)cbTmp.getExtendConfigDataForReportType(FusionChartsReportType.KEY);
-                if(fcrcbeanTmp!=null) resultBuf.append(fcrcbeanTmp.getNonfromdb_colvalue(rrequest));
-            }else if(!ColBean.NON_LABEL.equals(cbTmp.getLabel(null)))
-            {//需要显示label，即<category/>
-                colDisplayDataTmp=ColDisplayData.getColDataFromInterceptor(reportTypeObj,cbTmp,null,-1,this.reportTypeObj.getColLabelStyleproperty(cbTmp,null),cbTmp
-                        .getLabel(rrequest));
-                resultBuf.append("<category label='").append(colDisplayDataTmp.getValue()).append("' ");
-                resultBuf.append(colDisplayDataTmp.getStyleproperty()).append("/>");
-            }
-        }
-        resultBuf.append("</categories>");
+        return cbean.getProperty();
     }
 
-    public void displaySingleSeriesDataPart(StringBuffer resultBuf)
+    protected boolean shouldDisplayThisRowData(AbsReportDataPojo rowDataObj)
     {
-        AbsReportDataPojo dataObj=lstReportData.get(0);
-        if(rbean.getInterceptor()!=null)
-        {
-            RowDataBean rowInterceptorObjTmp=new RowDataBean(reportTypeObj,null,lstDisplayedColBeans,dataObj,0,lstDisplayedColBeans.size());
-            rbean.getInterceptor().beforeDisplayReportDataPerRow(rrequest,rbean,rowInterceptorObjTmp);
-            if(!rowInterceptorObjTmp.isShouldDisplayThisRow()) return;
-        }
-        ColDisplayData colDisplayDataTmp;
-        FusionChartsReportColBean fcrcbeanTmp;
-        for(ColBean cbTmp:lstDisplayedColBeans)
-        {
-            if(cbTmp.isNonValueCol())
-            {
-                throw new WabacusRuntimeException("报表"+this.rbean.getPath()+"是单序列数据图表，不能配置column为{non-value}的列");
-            }
-            if(cbTmp.isNonFromDbCol())
-            {//不是从数据库获取的数据，则直接显示在<col></col>中配置的内容
-                fcrcbeanTmp=(FusionChartsReportColBean)cbTmp.getExtendConfigDataForReportType(FusionChartsReportType.KEY);
-                if(fcrcbeanTmp!=null) resultBuf.append(fcrcbeanTmp.getNonfromdb_colvalue(rrequest));
-            }else
-            {
-                colDisplayDataTmp=ColDisplayData.getColDataFromInterceptor(reportTypeObj,cbTmp,dataObj,0,dataObj.getColValuestyleproperty(cbTmp
-                        .getProperty()),dataObj.getColStringValue(cbTmp));
-                resultBuf.append("<set label='").append(cbTmp.getLabel(rrequest)).append("' ");
-                resultBuf.append(" value='").append(colDisplayDataTmp.getValue()).append("'");
-                resultBuf.append(colDisplayDataTmp.getStyleproperty()).append("/>");
-            }
-        }
+        return rowDataObj!=null;
     }
     
-    public void displaySingleLayerDatasetDataPart(StringBuffer resultBuf)
-    {
-        for(int i=0;i<lstReportData.size();i++)
-        {
-            resultBuf.append(showRowData(lstReportData.get(i),i));
-        }
-    }
-
     public void displayDualLayerDatasetDataPart(StringBuffer resultBuf)
     {
         List<String> lstDatasetIdsInGroupTmp=new ArrayList<String>();
         List lstProcessedData=new ArrayList();//存放已经处理过的POJO对象，因为一行记录只会来自一个<dataset/>，所以某条记录是来自某个<dataset/>，则不可能再来自其它<dataset/>
         String currentDatasetidTmp;
-        for(List<ReportDataSetBean> lstDatasetBeansTmp:this.reportTypeObj.getAcrbean().getLstDatasetGroupBeans())
+        for(List<ReportDataSetBean> lstDatasetBeansTmp:rbean.getSbean().getLstDatasetGroupBeans())
         {
             lstDatasetIdsInGroupTmp.clear();//清空用于存放本<dataset/>分组中包含的datasetid，以便判断某条记录所在的<dataset/>的id是否属于此组数据集
             for(ReportDataSetBean dsbeanTmp:lstDatasetBeansTmp)
-            {
+            {//记录下本数据集组中所有数据集<dataset/>的id
                 lstDatasetIdsInGroupTmp.add(dsbeanTmp.getId()+";");
             }
             StringBuffer datasetGroupBuf=new StringBuffer();
@@ -140,41 +97,12 @@ public class VerticalDatasetType extends AbsDatasetType
         }
     }
     
-    private String showRowData(AbsReportDataPojo dataObj,int rowindex)
-    {
-        String stylepropertyTmp=dataObj.getRowValuestyleproperty();
-        if(rbean.getInterceptor()!=null)
-        {
-            RowDataBean rowInterceptorObjTmp=new RowDataBean(reportTypeObj,stylepropertyTmp,lstDisplayedColBeans,dataObj,rowindex,
-                    lstDisplayedColBeans.size());
-            rbean.getInterceptor().beforeDisplayReportDataPerRow(rrequest,rbean,rowInterceptorObjTmp);
-            if(!rowInterceptorObjTmp.isShouldDisplayThisRow()) return "";
-            stylepropertyTmp=rowInterceptorObjTmp.getRowstyleproperty();
-        }
-        if(stylepropertyTmp==null) stylepropertyTmp="";
-        StringBuffer resultBuf=new StringBuffer();
-        resultBuf.append("<dataset ").append(stylepropertyTmp).append(">");
-        ColDisplayData colDisplayDataTmp;
-        for(ColBean cbTmp:lstDisplayedColBeans)
-        {
-            if(!cbTmp.isNonFromDbCol()&&!cbTmp.isNonValueCol())
-            {//{non-fromdb}的列不在这里处理，而是在<categories/>中显示
-                colDisplayDataTmp=ColDisplayData.getColDataFromInterceptor(reportTypeObj,cbTmp,dataObj,rowindex,dataObj
-                        .getColValuestyleproperty(cbTmp.getProperty()),dataObj.getColStringValue(cbTmp));
-                resultBuf.append("<set value='").append(colDisplayDataTmp.getValue()).append("' ");
-                resultBuf.append(colDisplayDataTmp.getStyleproperty()).append("/>");
-            }
-        }
-        resultBuf.append("</dataset>");
-        return resultBuf.toString();
-    }
-    
     public void displayXyPlotChartDataPart(StringBuffer resultBuf)
     {
         int rowindex=0;
         String prevDatasetidTmp=null, currentDatasetidTmp=null, stylepropertyTmp;
-        boolean isMultiDatasetRows=rbean.getSbean().isMultiDatasetRows();
-        StringBuffer dataBufTmp=new StringBuffer();
+        boolean isMultiDatasetRows=rbean.getSbean().isMultiDatasetRows(false);
+        StringBuffer dataBufTmp=new StringBuffer(),setBufTmp;
         for(AbsReportDataPojo dataObjTmp:this.lstReportData)
         {
             if(isMultiDatasetRows)
@@ -182,7 +110,7 @@ public class VerticalDatasetType extends AbsDatasetType
                 currentDatasetidTmp=dataObjTmp.getWx_belongto_datasetid();
                 currentDatasetidTmp=currentDatasetidTmp==null?Consts.DEFAULT_KEY:currentDatasetidTmp.trim();
                 if(!currentDatasetidTmp.equals(prevDatasetidTmp))
-                {
+                {//当前数据集显示完，则在图表中做为一个指标的<dataset/>
                     if(dataBufTmp.length()>0)
                     {
                         resultBuf.append("<dataset ").append(
@@ -203,18 +131,27 @@ public class VerticalDatasetType extends AbsDatasetType
                 stylepropertyTmp=rowInterceptorObjTmp.getRowstyleproperty();
             }
             if(stylepropertyTmp==null) stylepropertyTmp="";
-            dataBufTmp.append("<set ").append(stylepropertyTmp);
             ColDisplayData colDisplayDataTmp;
+            setBufTmp=new StringBuffer();
             for(ColBean cbTmp:lstDisplayedColBeans)
             {
                 if("x".equals(cbTmp.getProperty())||"y".equals(cbTmp.getProperty())||"z".equals(cbTmp.getProperty()))
                 {
                     colDisplayDataTmp=ColDisplayData.getColDataFromInterceptor(reportTypeObj,cbTmp,dataObjTmp,rowindex,dataObjTmp
                             .getColValuestyleproperty(cbTmp.getProperty()),dataObjTmp.getColStringValue(cbTmp));
-                    dataBufTmp.append(cbTmp.getProperty()+"='").append(colDisplayDataTmp.getValue()).append("' ");
+                    if(Tools.isEmpty(colDisplayDataTmp.getValue()))
+                    {
+                        setBufTmp=new StringBuffer();
+                        break;
+                    }
+                    setBufTmp.append(cbTmp.getProperty()+"='").append(colDisplayDataTmp.getValue()).append("' ");
                 }
             }
-            dataBufTmp.append("/>");
+            if(setBufTmp.length()>0)
+            {
+                dataBufTmp.append("<set ").append(stylepropertyTmp).append(" ");
+                dataBufTmp.append(setBufTmp.toString()).append("/>");
+            }
         }
         if(dataBufTmp.length()>0)
         {

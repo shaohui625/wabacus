@@ -26,9 +26,6 @@ import com.wabacus.config.component.application.report.AbsReportDataPojo;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
-import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
@@ -62,7 +59,7 @@ public abstract class AbsDetailReportType extends AbsReportType
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
         boolean isShowScrollX=rbean.getScrollwidth()!=null&&!rbean.getScrollwidth().trim().equals("");
         boolean isShowScrollY=rbean.getScrollheight()!=null&&!rbean.getScrollheight().trim().equals("");
-        return ComponentAssistant.getInstance().showComponentScrollEndPart(isShowScrollX,isShowScrollY);
+        return ComponentAssistant.getInstance().showComponentScrollEndPart(rbean.getScrollstyle(),isShowScrollX,isShowScrollY);
     }
 
     protected String showColLabel(ColBean cbean,AbsReportDataPojo rowDataObj)
@@ -89,6 +86,11 @@ public abstract class AbsDetailReportType extends AbsReportType
     protected  String getDefaultNavigateKey()
     {
         return Consts.DETAILREPORT_NAVIGATE_DEFAULT;
+    }
+
+    public boolean isSupportHorizontalDataset(ReportBean reportbean)
+    {
+        return false;
     }
 
     public int afterReportLoading(ReportBean reportbean,List<XmlElementBean> lstEleReportBeans)
@@ -119,7 +121,6 @@ public abstract class AbsDetailReportType extends AbsReportType
     public int doPostLoad(ReportBean reportbean)
     {
         super.doPostLoad(reportbean);
-        constructSqlForDetailType(reportbean.getSbean());
         DisplayBean dbean=reportbean.getDbean();
         List<ColBean> lstColBeans=dbean.getLstCols();
         if(Consts_Private.REPORT_BORDER_VERTICAL.equals(reportbean.getBorder())||Consts_Private.REPORT_BORDER_HORIZONTAL2.equals(reportbean.getBorder()))
@@ -131,7 +132,6 @@ public abstract class AbsDetailReportType extends AbsReportType
         {
             for(ColBean cbean:lstColBeans)
             {
-                if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) continue;
                 String borderstyle=cbean.getBorderStylePropertyOnColBean();
                 if(borderstyle!=null&&!borderstyle.trim().equals(""))
                 {
@@ -140,28 +140,12 @@ public abstract class AbsDetailReportType extends AbsReportType
                 }
             }
         }
-        if(dbean.getColselect()==null) dbean.setColselect(false);
         
         boolean isShowScrollX=reportbean.getScrollwidth()!=null&&!reportbean.getScrollwidth().trim().equals("");
         boolean isShowScrollY=reportbean.getScrollheight()!=null&&!reportbean.getScrollheight().trim().equals("");
         ComponentAssistant.getInstance().doPostLoadForComponentScroll(reportbean,isShowScrollX,isShowScrollY,reportbean.getScrollwidth(),
                 reportbean.getScrollheight(),reportbean.getScrollstyle());
         return 1;
-    }
-
-    private void constructSqlForDetailType(SqlBean sqlbean)
-    {
-        if(sqlbean==null||sqlbean.getLstDatasetBeans()==null) return;
-        for(ReportDataSetBean dsbeanTmp:sqlbean.getLstDatasetBeans())
-        {
-            for(ReportDataSetValueBean dsvbeanTmp:dsbeanTmp.getLstValueBeans())
-            {
-                String value=dsvbeanTmp.getValue();
-                if(value==null||value.trim().equals("")||dsvbeanTmp.isStoreProcedure()||dsvbeanTmp.getCustomizeDatasetObj()!=null) continue;
-                dsvbeanTmp.doPostLoadSql(false);
-                if(!dsvbeanTmp.isDependentDataSet()) dsvbeanTmp.buildPageSplitSql();
-            }
-        }
     }
     
     public String getReportFamily()

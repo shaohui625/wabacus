@@ -141,168 +141,45 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
     }
 
 //    /**
-
-
-
-
-
-
 //     */
-
-
-
-
-
-
-
-//        }
-
-
+//        StringBuffer whereBuffer=new StringBuffer();
 //        /**
-
 //         */
-
-
-
-
+//        whereclause=Tools.replaceCharacterInQuote(whereclause,'}',"$_RIGHTBRACKET_$",true);
 //        /**
-
 //         * 1：说明是@{property}类型的参数，即从<col/>中获取值做为参数；
 //         * 2：说明是#{参数名}类型的参数，即引用<params/>中定义的参数
-
 //         */
-
-
-
-
-
 //            if(isParam)
 //            {//说明当前是在"@{"内，后面的字符串都是动态参数对应的<col/>的property，直到"}"为止。
-
 //                {//遇到}，说明动态参数对应的property结束。
-
-
-
-
-
-
-
-
-
-
-
+//                    if(i<whereclause.length()-1&&whereclause.charAt(i+1)=='%')
 //                        i++;//跳过右边的%号
-
-
 //                    {//@{
-//                        String realproperty=property;
-
-
-
-
 //                            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，配置的要更新字段"+property+"不合法，没有取到其值对应的<col/>");
-
-
-
-
-
-
+//                        }
 //                    {//#{
-
-
-
 //                    {//!{
-
 //                    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//            {
 //                    {//是有效的动态查询条件
-//                        isParam=true;
-
-
-
-
-
-
-
+//                {
 //                    {//是有效的动态查询条件
-
-
-
-
-
-
-
 //                    if(k>i)
 //                    {//是有效的动态查询条件
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//        whereclause=whereBuffer.toString();
-//      //将它们替换回来
-
-
-
-
-
-//    /**
-
-
-
-
-
-
-//     */
-
-
-
-//        for(;k<whereclause.length();k++)
-
-//            if(whereclause.charAt(k)==' ') continue;//@、#、! 与 {中间有空格，则跳过
-
-//            {//在@、#、! 之后碰到{，则说明是真正的动态参数
-
-//                {//即是%@{property}、%#{property}、%!{property}格式的动态条件
-
-//                    whereBuffer.deleteCharAt(whereBuffer.length()-1);//删除掉刚才加进去的%号
-
-
-
-
-//            {//在@之后碰到的是其它字符，则不是参数，此时的@、#、! 就是一个普通字符。
-
-
-
-
-
-//        {//是以@字符结尾，则此@字符就是一个普通的字符。
-
 //        }
-
-
+//      //将它们替换回来
+//
+//    /**
+//     */
+//        for(;k<whereclause.length();k++)
+//            if(whereclause.charAt(k)==' ') continue;//@、#、! 与 {中间有空格，则跳过
+//            {//在@、#、! 之后碰到{，则说明是真正的动态参数
+//                {//即是%@{property}、%#{property}、%!{property}格式的动态条件
+//                    whereBuffer.deleteCharAt(whereBuffer.length()-1);//删除掉刚才加进去的%号
+//            {//在@之后碰到的是其它字符，则不是参数，此时的@、#、! 就是一个普通字符。
+//            }
+//        {//是以@字符结尾，则此@字符就是一个普通的字符。
 
     public String parseStandardEditSql(String sql,List<EditableReportParamBean> lstDynParams,String reportTypeKey)
     {
@@ -347,7 +224,7 @@ public abstract class AbsEditableReportEditDataBean implements Cloneable
                 }
                 paramBean.setOwner(cbeanUpdateDest);
                 ColBean cbeanUpdateSrc=cbeanUpdateDest;
-                if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbeanUpdateDest.getDisplaytype()))
+                if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbeanUpdateDest.getDisplaytype(true)))
                 {
                     ColBean cbSrcTmp=cbeanUpdateDest.getUpdateColBeanSrc(false);
                     if(cbSrcTmp!=null) cbeanUpdateSrc=cbSrcTmp;

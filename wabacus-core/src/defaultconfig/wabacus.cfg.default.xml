@@ -4,29 +4,39 @@
 					xsi:schemaLocation="http://www.wabacus.com xsd/wabacus.cfg.xsd">
 	<system>	
 		<item name="webroot" value="/"/><!-- 应用的根URL -->
-		<item name="version" value="4.1"/><!-- 版本号 -->
+		<item name="version" value="4.2"/><!-- 版本号 -->
 		<item name="js-create" value="true"/><!--是否关闭自动生成javascript功能，如果关闭，则加载配置文件时不再生成js文件，可以将在其它地方生成好的拷到指定位置，如果不关闭，则每次加载报表配置文件时，都会生成一份javascript文件。默认为打开状态。建议开发环境打开这个功能-->
-		<item name="default-sqltype" value="preparedstatement"/><!--当通过SQL语句生成报表时，这个属性是指定采用preparedstatement方式执行，还是采用statement方式执行,默认为后者。-->
+		<item name="default-preparedstatement-sql" value="true"/><!--当通过SQL语句生成报表时，这个属性是指定采用preparedstatement方式执行，还是采用statement方式执行,默认为后者。-->
+		<item name="default-report-sqlconvertlevel" value="complete"/><!-- 默认为报表配置的SQL语句是原始SQL语句还是最终SQL语句 -->
 		<item name="pagesplit_side" value="db"/><!--在哪端进行数据分页，默认为数据库层，可以配置为应用层，此时，将value配置成app-->
 		<item name="show-sql" value="false"/><!-- 是否显示执行的SQL语句或存储过程 -->
 		<item name="classcache" value="true"/><!--是否将动态生成的字节码缓存在应用的内存中-->
 		<item name="encode" value="utf-8"/>
 		<item name="prompt-dialog-type" value="artdialog"/><!-- 提示组件类型 -->
+		<item name="default-batchoutput-recordcount" value="100"/><!-- 对于列表报表，批量输出到页面的记录条数 -->
 		<item name="default-jsvalidatetype" value="both"/><!-- 客户端校验类型。默认为失去焦点和提交时都进行校验 -->
 		<item name="default-servervalidatetype" value="onsubmit"/><!-- 服务器端校验类型。默认是提交时进行校验 -->
 		<item name="default-cellresize" value="1"/><!-- 指定整个项目中所有数据自动列表报表的表格单元格默认可移动性 -->
 		<item name="default-celldrag" value="1"/><!-- 指定整个项目中所有数据自动列表报表的表格单元格默认可拖动性 -->
 		<item name="default-pagesize" value="10"/><!-- 分页显示报表数据时，每页数据的条数 -->
+		<item name="default-pagelazyloadata" value="-1"/><!-- 显示列表报表在页面时默认延迟加载记录数 -->
+		<item name="default-dataexportlazyloadata" value="500"/><!-- 数据导出列表报表时默认延迟加载记录数 -->
 		<item name="default-mouseoverbgcolor" value="#CCFAFF"/><!-- 指定整个项目中所有数据自动列表报表鼠标滑过时的背景色 -->
 		<item name="selectedrow-bgcolor" value="#ACFAF0"/><!-- 被选中行的背景色 -->
 		<item name="default-condition-labelposition" value="inner"/><!-- 查询条件提示标签的显示位置 -->
 		<item name="default-scrollstyle" value="normal"/><!-- 滚动条默认样式 -->
 		<item name="colfilter-maxnum-options" value="100"/><!-- 列过滤时，显示的最大过滤选项数，如果配置为小于等于0的数，则显示所有取出来的选项，否则最多只显示前colfilter–maxnum-options个数的选项 -->
+		<item name="default-colselectlabel-position" value="right"/><!--  列选择图表的显示位置，可取值为left、right、both -->
+		<item name="default-listreport-pagecolselect" value="true"/><!-- 列表报表显示在页面时是否支持列选择的默认配置项 -->
+		<item name="default-listreport-dataexportcolselect" value="false"/><!-- 列表报表显示在导出文件时是否支持列选择的默认配置项 -->
+		<item name="default-detailreport-pagecolselect" value="false"/><!-- 细览报表显示在页面时是否支持列选择的默认配置项 -->
+		<item name="default-detailreport-dataexportcolselect" value="false"/><!-- 细览报表显示在导出文件时是否支持列选择的默认配置项 -->
 		<item name="default-colselect-width" value="160px"/><!-- 列选择时，显示选择列窗口的默认宽度，每个报表还可以通过<report/>标签的colselectwidth属性配置自己的列选择窗口宽度 -->
 		<item name="server-validate-class" value="com.wabacus.util.ValidateTools"/><!--服务器端校验类 -->
 		<item name="format-class" value="com.wabacus.util.Tools"/><!-- 格式化类 -->
-		<item name="dataexport-batchselect-count" value="1000"/><!-- 数据导出时，一次从数据库获取数据的条数 -->
 		<item name="dataexport-plainexcel-sheetsize" value="10000"/><!-- 导出到plainexcel时，一个sheet显示多少条记录，超过这个记录将新增sheet显示后面的数据 -->
+		<item name="dataexport-autodelete-interval" value="300|600"/><!-- 自动删除在本地生成的导出文件 -->
+		<item name="default-dataexport-directorydateformat" value="yyyyMMdd"/><!-- 命名存放导出文件的目录方式 -->
 		<item name="dataimport-batchupdate-size" value="20"/><!-- 数据导入的批量更新记录数 -->
 		<item name="skin" value="qq"/><!-- 皮肤样式 -->
 		<item name="3des-keyfilepath" value="classpath{/defaultconfig/3des.key}"/><!-- 3des密钥存放位置 -->
@@ -35,6 +45,7 @@
 		<item name="default-pagepersonalizeclass" value="com.wabacus.system.commoninterface.DefaultPagePersonalizePersistenceImpl"/><!-- 默认保存页面个性化信息的类 -->
 		<item name="default-reportpersonalizeclass" value="com.wabacus.system.commoninterface.DefaultReportPersonalizePersistenceImpl"/><!-- 默认保存报表/表单个性化信息的类 -->
 		<item name="default-tabpanel-titlewidth" value="150px"/><!-- <tabpanel/>容器默认标题宽度 -->
+		<item name="default-savedatatype" value="changed"/><!-- 保存可编辑报表的数据类型，可取值为all、changed三种 -->
 		<item name="default-checkdirtydata" value="true"/><!-- 默认是否要校验报表是否有没保存的脏数据 -->
 		<item name="default-chart-datatype" value="xmlurl"/><!-- 默认的chart图表数据类型 -->
 		<item name="fusioncharts-autodelete-interval" value="60|120"/><!-- 自动清除xml临时数据文件的间隔和过期时间，以秒为单位 -->
@@ -147,6 +158,15 @@
 	  <report-type name="editabledetail2" class="com.wabacus.system.component.application.report.EditableDetailReportType2"/>
 	  <report-type name="fusioncharts" class="com.wabacus.system.component.application.report.chart.FusionChartsReportType"/>
 	</report-types>
+	
+	<report-datasetvalue-providers default="relationaldb">
+		<datasetvalue-provider name="relationaldb" class="com.wabacus.system.dataset.report.value.RelationalDBReportDataSetValueProvider"/>
+	</report-datasetvalue-providers>
+	
+	<common-datasetvalue-providers default="@">
+		<datasetvalue-provider name="@" class="com.wabacus.system.dataset.common.RelationalDBCommonDataSetValueProvider"/>
+	</common-datasetvalue-providers>
+	
 	<!-- 配置本项目中所有报表页面都必须包含的js文件 %ENCODING%表示当前所使用的编码类型（即在wabacus.cfg.xml中encoding中的配置值）的占位符-->
 	<global-jsfiles>
 		<js-file>/webresources/script/wabacus_system.js</js-file>

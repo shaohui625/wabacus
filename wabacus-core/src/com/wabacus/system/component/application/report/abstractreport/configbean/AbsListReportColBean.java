@@ -36,11 +36,8 @@ public class AbsListReportColBean extends AbsExtendConfigBean
     private String slaveReportParamName;
 
 //    private String curvelabelup;//如果当前列标题是显示成折线，则此处存放当前列的折线上面的标题。
-
 //    private String curvelabeldown;//如果当前列标题是显示成折线，则此处存放当前列的折线上面的标题。
-
 //    private String curvecolor;//折线标题中折线的颜色
-
 //    private boolean isCurveLabel;//当前列是否参与了显示折线标题
     
     private boolean isRoworderValue=false;//当前<col/>是否需要在行排序时传入后台，此时会在其所属的<td/>中显示name和value值
@@ -106,45 +103,10 @@ public class AbsListReportColBean extends AbsExtendConfigBean
         this.slaveReportParamName=slaveReportParamName;
     }
 
-
-
-
-
-
-
 //    {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //    {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //    {
-
-
+//    {
 
     public boolean isFixedCol(ReportRequest rrequest)
     {
@@ -198,7 +160,7 @@ public class AbsListReportColBean extends AbsExtendConfigBean
     public boolean isDragable(AbsListReportDisplayBean alrdbean)
     {
         if(this.isFixedCol) return false;
-        if(alrdbean==null||alrdbean.getRowgrouptype()<=0||alrdbean.getRowGroupColsNum()<=0) return true;
+        if(alrdbean==null||alrdbean.getRowgrouptype()<=0||alrdbean.getRowGroupColsNum()<=0) return true;//不是行分组或树形分组报表
         if(this.isRowgroup()) return false;
         return true;
     }
@@ -215,7 +177,6 @@ public class AbsListReportColBean extends AbsExtendConfigBean
         if(this.slaveReportParamName!=null&&!this.slaveReportParamName.trim().equals("")) return true;
         if(this.isRowSelectValue) return true;
         if(this.isRoworderValue) return true;
-        
         return false;
     }
     

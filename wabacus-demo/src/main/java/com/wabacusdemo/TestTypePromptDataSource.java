@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.wabacus.system.ReportRequest;
-import com.wabacus.system.inputbox.option.AbsOptionDatasource;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
 
-public class TestTypePromptDataSource extends AbsOptionDatasource
+public class TestTypePromptDataSource extends AbsCommonDataSetValueProvider
 {
     public List<Map<String,String>> getLstTypePromptOptions(ReportRequest rrequest,String txtValue)
     {
@@ -176,5 +176,23 @@ public class TestTypePromptDataSource extends AbsOptionDatasource
         mOption.put("name","宋国珍");
         lstResults.add(mOption);
         return lstResults;
+    }
+
+    public Map<String,String> getAutoCompleteColumnsData(ReportRequest arg0,Map<String,String> arg1)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public List<Map<String,String>> getDynamicColGroupDataSet(ReportRequest arg0)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public List<Map<String,String>> getLstSelectBoxOptions(ReportRequest arg0,Map<String,String> arg1)
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

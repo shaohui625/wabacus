@@ -94,12 +94,10 @@ public class RegexTools
         StringBuffer resultBuf=new StringBuffer();
         try
         {
-            
             Pattern pattern1=Pattern.compile(ps1);
             Pattern pattern2=Pattern.compile(ps2);
             Matcher matcher1=pattern1.matcher(propString);
             int preEnd=0;
-            
             while(matcher1.find())
             {
                 int start=matcher1.start();

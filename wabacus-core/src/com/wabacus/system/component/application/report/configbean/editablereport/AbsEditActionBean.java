@@ -66,7 +66,7 @@ public abstract class AbsEditActionBean
         }
         if(!isMust&&cbean.isNonFromDbCol()) return null;
         ColBean cbUpdateSrc=cbean;
-        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype()))
+        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true)))
         {
             ColBean cbSrc=cbean.getUpdateColBeanSrc(false);
             if(cbSrc==null)

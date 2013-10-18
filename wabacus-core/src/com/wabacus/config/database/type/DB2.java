@@ -22,7 +22,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringBufferInputStream;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,8 +32,8 @@ import org.apache.commons.logging.LogFactory;
 import COM.ibm.db2.app.Blob;
 import COM.ibm.db2.app.Clob;
 
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
-import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.dataset.report.value.SQLReportDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.sqlconvertor.AbsConvertSQLevel;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
 import com.wabacus.system.datatype.ClobType;
@@ -49,32 +48,32 @@ import com.wabacus.system.datatype.TimeType;
 import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
-//$ByQXO
-public class DB2 extends AbstractJdbcDatabaseType
-{//ByQXO$
+
+public class DB2 extends AbsDatabaseType
+{
     private static Log log=LogFactory.getLog(DB2.class);
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj)
     {
-        String sql=svbean.getSqlWithoutOrderby();
+        String sql=convertSqlObj.getConvertedSql();
         String orderby="";
-        if(sql.indexOf("%orderby%")>0)
+        if(sql.indexOf(SQLReportDataSetValueProvider.orderbyPlaceHolder)>0)
         {
-            sql=Tools.replaceAll(sql,"%orderby%","");
-            orderby="order by "+svbean.getOrderby();
+            sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder,"");
+            orderby="order by "+convertSqlObj.getOrderby();
         }
         sql="SELECT * FROM(SELECT jd_temp_tbl1.*, rownumber() OVER("+orderby+") as ROWID FROM("+sql
-                +") as jd_temp_tbl1) as jd_temp_tbl2 WHERE jd_temp_tbl2.ROWID<=%END% and jd_temp_tbl2.ROWID>%START%";
+                +") as jd_temp_tbl1) as jd_temp_tbl2 WHERE jd_temp_tbl2.ROWID<="+SQLReportDataSetValueProvider.endRowNumPlaceHolder+" and jd_temp_tbl2.ROWID>"+SQLReportDataSetValueProvider.startRowNumPlaceHolder;
         return sql;
     }
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj,String dynorderby)
     {
-        String sql=svbean.getSqlWithoutOrderby();
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
-        sql=Tools.replaceAll(sql,"%orderby%","");
+        String sql=convertSqlObj.getConvertedSql();
+        dynorderby=convertSqlObj.mixDynorderbyAndConfigOrderbyCols(dynorderby);
+        sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder,"");
         sql="select * from (select rownumber() over(order by "+dynorderby+") as ROWID,jd_temp_tbl1.* from("+sql
-                +") as jd_temp_tbl1) as jd_temp_tbl2 where ROWID > %START% AND ROWID<= %END%";
+                +") as jd_temp_tbl1) as jd_temp_tbl2 where ROWID > "+SQLReportDataSetValueProvider.startRowNumPlaceHolder+" AND ROWID<= "+SQLReportDataSetValueProvider.endRowNumPlaceHolder;
         return sql;
     }
 

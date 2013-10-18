@@ -39,7 +39,6 @@ public class EditableReportExternalValueBean implements Cloneable
 
     private AbsEditableReportEditDataBean owner;
     
-
     
     public EditableReportExternalValueBean(AbsEditableReportEditDataBean owner)
     {
@@ -182,7 +181,7 @@ public class EditableReportExternalValueBean implements Cloneable
                     +"的<value/>配置错误，它引用的变量又是引用其它报表变量或列数据的变量。");
         }
         if(this.typeObj==null)
-        {
+        {//此变量没有配置自己的类型，则使用被引用的源变量的类型
             this.typeObj=((EditableReportExternalValueBean)this.refObj).getTypeObj();
         }*/
     }
@@ -240,7 +239,7 @@ public class EditableReportExternalValueBean implements Cloneable
                             +"的<value/>配置错误，引用其它报表某列值时，引用的报表："+lstTmp.get(0)+"没有配置<update/>");
                 }
             }else if("delete".equals(type))
-            {//是引用源报表中删除数据时某列的值
+            {
                 if(editsqlbean.getDeletebean()==null)
                 {//被引用的源报表没有配置<delete/>标签
                     throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()
@@ -283,58 +282,16 @@ public class EditableReportExternalValueBean implements Cloneable
     }
 
 //    /**
-
-
-
-
+//     * @param rbean
 //     */
-
-
-
-
-
 //            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，在<params/>中name属性为"+name+"的<value/>配置错误，查询数据的SQL语句不能为空");
-
 //        lstParamsBean=new ArrayList<EditableReportParamBean>();//不管有没有条件，都必须初始化一此对象，使用时判断是否是SQL语句就要用到此参数是否为null
-
-
 //        {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//                    ercbeanTmp=(EditableReportColBean)cb.getExtendConfigDataForReportType(reportTypeKey);
-
-
-
-
+//                    cb=(ColBean)paramBean.getOwner();
 //                        {//如果是隐藏字段，且被别的列通过updatecol引用到
 //                            cbSrc=cb.getReportBean().getDbean().getColBeanByColProperty(ercbeanTmp.getUpdatedcol());//取到引用此<col/>的<col/>对象
-
-
-
-
-
-
-
-
-
-
+//                        }
 //                lstParamsBean.add(paramBean);
-
-
-
-
     
     
     private void parseSqlExternalValue(String reportTypeKey)
@@ -366,7 +323,6 @@ public class EditableReportExternalValueBean implements Cloneable
         {
             throw new WabacusConfigLoadingException("clone 对象失败",e);
         }
-        
     }
 
     public int hashCode()

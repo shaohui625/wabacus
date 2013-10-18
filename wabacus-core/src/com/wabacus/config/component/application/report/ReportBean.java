@@ -36,9 +36,9 @@ import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.IApplicationConfigBean;
 import com.wabacus.config.component.application.report.extendconfig.IAfterConfigLoadForReportType;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
-import com.wabacus.config.component.other.ButtonsBean;
 import com.wabacus.config.dataexport.DataExportsConfigBean;
 import com.wabacus.config.dataexport.PDFExportBean;
+import com.wabacus.config.other.ButtonsBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.config.template.TemplateBean;
 import com.wabacus.config.xml.XmlElementBean;
@@ -108,7 +108,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private String subtitle;
 
-    private Map<String,String> mDynSubtitleParts;
+    private Map<String,String> mDynSubtitleParts;//副标题subtitle中的动态部分，形式与mDynTitleParts一致
     
     private String parenttitle;
 
@@ -120,7 +120,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private String navigate_reportid;//用哪个报表的翻页导航栏，默认是本报表有一个独立的翻页导航栏，此时此值为<report/>的id值，也可以配置成其它报表的<report/>的id，则与别的报表共用一个翻页导航栏。
     
-    private Set<String> sRelateConditionReportids;//与此报表存在查询条件相关的报表ID，以便在此报表点击搜索或过滤按钮时，能将那些报表也重新计算翻页信息
+    private Set<String> sRelateConditionReportids;
 
     private XmlElementBean eleReportBean;
 
@@ -130,7 +130,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private DisplayBean dbean;
 
-    private SqlBean sbean;
+    private SqlBean sbean;//有关构造查询sql语句的信息
 
     private String scrollheight;
 
@@ -164,6 +164,10 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private int celldrag=0;
 
+    private TemplateBean outerHeaderTplBean;//<outheader/>配置的静态模板对象
+    
+    private TemplateBean outerFooterTplBean;//<outfooter/>配置的静态模板对象
+    
     private TemplateBean headerTplBean;//<header/>配置的静态模板对象
     
     private TemplateBean footerTplBean;//<footer/>配置的静态模板对象
@@ -182,7 +186,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private Map<String,AbsSelectBox> mSelectBoxesInConditionWithRelate;
 
-    private Map<String,AbsSelectBox> mSelectBoxesInColWithRelate;
+    private Map<String,AbsSelectBox> mSelectBoxesInColWithRelate;//存放编辑列中依赖其它选择框数据的下拉框对象，key为inputboxid
     
     private List<FileBox> lstUploadFileBoxes;
 
@@ -192,7 +196,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private Map<String,PopUpBox> mPopUpBoxes;
 
-    private List<AbsInputBox> lstInputboxesWithAutoComplete;//配置的失去焦点后自动填充其它输入框数据的输入框对象集合
+    private List<AbsInputBox> lstInputboxesWithAutoComplete;
     
     private Map<String,AbsInputBox> mInputboxesWithAutoComplete;
     
@@ -212,7 +216,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
 
     private Set<String> sParamNamesFromURL;
 
-    private AbsContainerConfigBean parentContainer;
+    private AbsContainerConfigBean parentContainer;//报表所在的父容器
 
     private List<Integer> lstPagesize;
     
@@ -225,6 +229,10 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     private List<Class> lstServerValidateClasses;
     
     private Map<String,ServerValidateBean> mServerValidateBeansOnBlur;
+    
+    private int pageLazyloadataCount;
+    
+    private int dataexportLazyloadataCount;
     
     public ReportBean(AbsConfigBean parent)
     {
@@ -328,6 +336,40 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         this.valign=valign;
     }
 
+    public int getPageLazyloadataCount()
+    {
+        return pageLazyloadataCount;
+    }
+
+    public void setPageLazyloadataCount(int pageLazyloadataCount)
+    {
+        this.pageLazyloadataCount=pageLazyloadataCount;
+    }
+
+    public int getDataexportLazyloadataCount()
+    {
+        return dataexportLazyloadataCount;
+    }
+
+    public void setDataexportLazyloadataCount(int dataexportLazyloadataCount)
+    {
+        this.dataexportLazyloadataCount=dataexportLazyloadataCount;
+    }
+
+    public boolean isLazyLoadReportData(ReportRequest rrequest)
+    {
+        if(rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT) return false;
+        if(this.sbean==null||this.sbean.isHorizontalDataset()) return false;
+        if(!(Config.getInstance().getReportType(this.type) instanceof AbsListReportType)) return false;//只有列表报表才支持延迟加载数据
+        return rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE&&this.pageLazyloadataCount>0||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE
+                &&this.dataexportLazyloadataCount>0;
+    }
+    
+    public int getLazyLoadDataCount(ReportRequest rrequest)
+    {
+        return rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE?this.pageLazyloadataCount:this.dataexportLazyloadataCount;
+    }
+    
     public String getDependParentId()
     {
         return dependParentId;
@@ -372,7 +414,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         AbsReportType reportTypeObj=(AbsReportType)rrequest.getComponentTypeObj(this.dependParentId,null,false);
         if(reportTypeObj==null||reportTypeObj.getParentContainerType()==null) return true;
         boolean shouldShowParent=reportTypeObj.getReportBean().shouldDisplaySlaveReportDependsonDetailReport(rrequest);
-        if(!shouldShowParent) return false;//如果父报表也是依赖细览报表的子报表，且不需显示，则本子报表无条件不显示
+        if(!shouldShowParent) return false;
         if(rrequest.getStringAttribute(this.id+"_PARENTREPORT_NODATA","").toLowerCase().equals("true")&&!this.isDisplayOnParentNoData())
             return false;
         return true;
@@ -396,22 +438,10 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         return ((ReportBean)this.getPageBean().getChildComponentBean(this.dependParentId,true)).isMasterReportOfMe(rbeanMaster,inherit);
     }
     
-
-
-
-
+//        if(this.rootReportBean==null)
 //        {//还没初始化此从报表的此变量
 //            ReportBean masterReport=this.getPageBean().getReportChild(this.dependParentId,true);//得到当前从报表的主报表对象
-
 //            {//主报表又是一个从报表
-
-
-
-
-
-
-
-//    }
     
     public String getDependparams()
     {
@@ -581,7 +611,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     public String getRefreshGuid()
     {
         if(this.refreshGuid==null)
-        {
+        {//还没有根据refreshid生成，则生成
             this.refreshGuid=ComponentConfigLoadAssistant.getInstance().createComponentRefreshGuidByRefreshId(this.getPageBean(),this.id,this.refreshid);
         }
         return refreshGuid;
@@ -728,6 +758,16 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         this.isPojoClassCache=isPojoClassCache;
     }
 
+    public TemplateBean getOuterHeaderTplBean()
+    {
+        return outerHeaderTplBean;
+    }
+
+    public void setOuterHeaderTplBean(TemplateBean outerHeaderTplBean)
+    {
+        this.outerHeaderTplBean=outerHeaderTplBean;
+    }
+    
     public TemplateBean getHeaderTplBean()
     {
         return headerTplBean;
@@ -750,6 +790,16 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         this.footerTplBean=footerTplBean;
     }
 
+    public TemplateBean getOuterFooterTplBean()
+    {
+        return outerFooterTplBean;
+    }
+
+    public void setOuterFooterTplBean(TemplateBean outerFooterTplBean)
+    {
+        this.outerFooterTplBean=outerFooterTplBean;
+    }
+    
     public void setDbean(DisplayBean dbean)
     {
         this.dbean=dbean;
@@ -1159,8 +1209,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     public boolean isPageSplitReport()
     {
         if(this.lstPagesize.size()>1||this.lstPagesize.get(0)>0) return true;
-        
-        
         return false;
     }
     
@@ -1236,12 +1284,12 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
                 entryTmp.getValue().processRelateInputboxByReportBean();
             }
         }
-        if(this.sbean!=null) sbean.doPostLoad();
         if(this.dataExportsBean!=null) this.dataExportsBean.doPostLoad();
         if(this.printBean!=null) this.printBean.doPostLoad();
         if(pdfPrintBean!=null) pdfPrintBean.doPostLoad();
+        if(this.sbean!=null) sbean.doPostLoad();
         if(lstTextBoxesWithTypePrompt!=null&&lstTextBoxesWithTypePrompt.size()>0)
-        {
+        {//将lstTextBoxesWithTypePrompt中的TextBox对象移入mTextBoxesWithTypePrompt中，以便取用
             mTextBoxesWithTypePrompt=new HashMap<String,TextBox>();
             for(int i=0;i<lstTextBoxesWithTypePrompt.size();i++)
             {
@@ -1281,7 +1329,6 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
                 entryTmp.getValue().processRelateInputboxByReportBean();
             }
         }
-        
         if(this.dbean!=null&&this.dbean.getLstCols()!=null)
         {
             List<ColBean> lstCols=this.dbean.getLstCols();
@@ -1306,7 +1353,7 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
         
         JavaScriptAssistant.getInstance().createComponentOnloadScript(this);
         this.fbean=null;
-        if(this.buttonsBean!=null) this.buttonsBean.doPostLoad();//按钮的doPostLoad()放在最后，因为这个时候能确定本组件要显示的所有按钮
+        if(this.buttonsBean!=null) this.buttonsBean.doPostLoad();
     }
     
     private void processNavigateReportid()
@@ -1340,8 +1387,8 @@ public class ReportBean extends AbsConfigBean implements IApplicationConfigBean
     
     private void checkAndAddButtons()
     {
-        if(sbean.isExistConditionWithInputbox(null))
-        {
+        if(sbean!=null&&sbean.isExistConditionWithInputbox(null))
+        {//存在需要显示搜索输入框的查询条件
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(this,SearchButton.class,Consts.SEARCH_BUTTON_DEFAULT);
         }
     }

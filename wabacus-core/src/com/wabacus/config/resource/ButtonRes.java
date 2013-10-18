@@ -52,7 +52,6 @@ public class ButtonRes extends AbsResource
             {
                 throw new WabacusConfigLoadingException("加载按钮资源项"+key+"下配置的按钮失败，不能自己继承自己");
             }
-            
         }
         return XmlAssistant.getInstance().parseXmlValueToXmlBean(eleButton);
     }

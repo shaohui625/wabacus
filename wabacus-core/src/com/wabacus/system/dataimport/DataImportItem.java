@@ -32,7 +32,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -45,6 +44,7 @@ import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.config.resource.dataimport.configbean.DataImportSqlBean;
 import com.wabacus.exception.WabacusDataImportException;
+import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.dataimport.filetype.AbsFileTypeProcessor;
 import com.wabacus.system.datatype.AbsDateTimeType;
@@ -163,8 +163,21 @@ public class DataImportItem
             }
             conn=Config.getInstance().getDataSource(configBean.getDatasource()).getConnection();
             AbsDatabaseType dbtype=Config.getInstance().getDataSource(configBean.getDatasource()).getDbType();
-            doDataImport(conn,dbtype);
-            conn.commit();
+            if(dynimportype==null||dynimportype.trim().equals("")||dynimportype.trim().equals(configBean.getImporttype()))
+            {
+                doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
+            }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_APPEND)
+                    ||dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_OVERWRITE))
+            {
+                doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(dynimportype));
+            }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_DELETE))
+            {
+                doDeleteData(conn,dbtype);
+            }else
+            {
+                log.warn("为数据文件"+this.datafileObj.getAbsolutePath()+"动态指定的导入类型无效，将采用静态配置的导入类型对其进行数据导入");
+                doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
+            }
             log.info("导入数据文件"+datafileObj.getAbsolutePath()+"到导入项"+configBean.getReskey()+"成功");
             try
             {
@@ -176,6 +189,7 @@ public class DataImportItem
             {
                 throw new WabacusDataImportException("导入数据文件"+datafileObj.getAbsolutePath()+"时，执行后置动作失败",e);
             }
+            if(!conn.getAutoCommit()) conn.commit();
         }catch(Exception e)
         {
             if(configBean.getInterceptor()!=null)
@@ -204,33 +218,11 @@ public class DataImportItem
                 errorBuf.append("如果希望准确了解是哪一条记录导致出错，请将wabacus.cfg.xml的dataimport-batchupdate-size参数配置为1");
             }
             log.error(errorBuf.toString(),e);
-            if(e instanceof WabacusDataImportException){
-                throw (WabacusDataImportException)e;
-            }
             throw new WabacusDataImportException("导入数据文件"+datafileObj.getAbsolutePath()+"失败");
         }finally
         {
             fileProcessor.destroy();
             WabacusAssistant.getInstance().release(conn,null);
-        }
-    }
-
-    public void doDataImport(Connection conn,AbsDatabaseType dbtype) throws SQLException
-    {
-        if(dynimportype==null||dynimportype.trim().equals("")||dynimportype.trim().equals(configBean.getImporttype()))
-        {
-            doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
-        }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_APPEND)
-                ||dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_OVERWRITE))
-        {
-            doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(dynimportype));
-        }else if(dynimportype.trim().equals(Consts_Private.DATAIMPORTTYPE_DELETE))
-        {
-            doDeleteData(conn,dbtype);
-        }else
-        {
-            log.warn("为数据文件"+this.datafileObj.getAbsolutePath()+"动态指定的导入类型无效，将采用静态配置的导入类型对其进行数据导入");
-            doUpdateData(conn,dbtype,configBean.getLstImportSqlObjs(null));
         }
     }
 
@@ -242,7 +234,7 @@ public class DataImportItem
         {
             DataImportSqlBean disqlbean=null;
             if(fileProcessor.isEmpty())
-            {
+            {//如果没有数据，则不论是哪种导入类型，都将清空表中所有数据
                 disqlbean=new DataImportSqlBean();
                 disqlbean.setSql("delete from "+configBean.getTablename());
             }else
@@ -260,7 +252,7 @@ public class DataImportItem
                 boolean matchFileIndex=configBean.getColMapBean().getFileMapType().equals("index");
                 List<String> lstColNames=getLstColNames(matchFileIndex);
                 this.lstColNamesTrace=lstColNames;
-                boolean hasUnCommitData=false;//是否存在没有提交的数据
+                boolean hasUnCommitData=false;
                 List lstDataColValuesPerRow;
                 Map<String,Object> mDataColValues=null;
                 int i=fileProcessor.getStartrecordindex();
@@ -304,7 +296,7 @@ public class DataImportItem
 
     private boolean shouldBatchCommit(int rownum)
     {
-        if(this.batchupdatesize==1) return true;
+        if(this.batchupdatesize==1) return true;//如果是1，则表示每条都单独提交
         if(this.batchupdatesize>0&&rownum!=0&&rownum%this.batchupdatesize==0) return true;
         return false;
     }
@@ -409,14 +401,7 @@ public class DataImportItem
             if(this.shouldBatchCommit(i))
             {
                 hasUnCommitData=false;
-                
-                //$ByQXO 
-                if(false && batchupdatesize==1){
-                    pstmtInsert.executeUpdate();
-                }else{
-                    pstmtInsert.executeBatch();
-                }
-                //ByQXO$
+                pstmtInsert.executeBatch();
             }
             if(configBean.getInterceptor()!=null)
             {
@@ -442,7 +427,6 @@ public class DataImportItem
         {
             return lstColNames;
         }
-        
         List<String> lstColNameResults=new ArrayList<String>();
         for(String colNameTmp:lstColNames)
         {
@@ -451,7 +435,6 @@ public class DataImportItem
                 lstColNameResults.add(null);
             }else
             {
-                
                 lstColNameResults.add(colNameTmp.trim().toUpperCase());
             }
         }
@@ -477,7 +460,7 @@ public class DataImportItem
             {
                 log.debug("正在删除数据文件"+fileObj.getAbsolutePath());
             }else
-            {
+            {//配置了备份路径，则移到备份目录中
                 String filename=fileObj.getName();
                 int idxdot=filename.lastIndexOf(".");
                 if(idxdot>0)
@@ -487,7 +470,7 @@ public class DataImportItem
                 {
                     filename=filename+"_"+Tools.getStrDatetime("yyyyMMddHHmmss",new Date());
                 }
-                File destFile=new File(Tools.standardFilePath(backuppath+File.separator+filename));
+                File destFile=new File(FilePathAssistant.getInstance().standardFilePath(backuppath+File.separator+filename));
                 log.debug("正在将数据文件"+fileObj.getAbsolutePath()+"备份到"+backuppath+"目录中");
                 BufferedInputStream bis=null;
                 BufferedOutputStream bos=null;
@@ -534,9 +517,7 @@ public class DataImportItem
         mDataColValues=new HashMap<String,Object>();
         for(int k=0;k<lstColNames.size();k++)
         {
-            if(k<lstDataColValues.size()){
-                mDataColValues.put(lstColNames.get(k),lstDataColValues.get(k));
-            }
+            mDataColValues.put(lstColNames.get(k),lstDataColValues.get(k));
         }
         return mDataColValues;
     }
@@ -569,9 +550,6 @@ public class DataImportItem
                 {
                     objDataVal=WabacusAssistant.getInstance().getValueFromSession(session,String.valueOf(objCol));
                 }
-                
-            } else  if(Tools.isDefineKey("UUID",String.valueOf(objCol))){
-                objDataVal= UUID.randomUUID().toString();
             }else if(matchFileIndex)
             {
                 if((Integer)objCol<lstDataColValuesPerRow.size()) objDataVal=lstDataColValuesPerRow.get((Integer)objCol);
@@ -585,7 +563,7 @@ public class DataImportItem
                 {
                     ((AbsDateTimeType)lstColType.get(i)).setPreparedStatementValue(i+1,(Date)objDataVal,pstmt);
                 }else
-                {//当作字符串处理
+                {
                     varcharTypeObj.setPreparedStatementValue(i+1,String.valueOf(objDataVal),pstmt,dbtype);
                 }
             }else

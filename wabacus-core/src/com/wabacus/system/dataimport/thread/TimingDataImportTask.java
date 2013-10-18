@@ -31,11 +31,11 @@ import com.wabacus.config.Config;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.exception.WabacusDataImportException;
 import com.wabacus.system.assistant.DataImportAssistant;
+import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.dataimport.DataImportItem;
 import com.wabacus.system.task.ITask;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.FileLockTools;
-import com.wabacus.util.Tools;
 
 public class TimingDataImportTask implements ITask
 {
@@ -43,13 +43,11 @@ public class TimingDataImportTask implements ITask
 
     private long lastExecuteMilSeconds;
 
-    private long intervalMilSeconds;
+    private long intervalMilSeconds=Long.MIN_VALUE;
 
     public TimingDataImportTask()
     {
         lastExecuteMilSeconds=0L;
-        intervalMilSeconds=Config.getInstance().getSystemConfigValue("dataimport-autodetect-interval",30)*1000L;
-        if(intervalMilSeconds<=0) intervalMilSeconds=30*1000L;
     }
 
     public String getTaskId()
@@ -59,6 +57,11 @@ public class TimingDataImportTask implements ITask
 
     public boolean shouldExecute()
     {
+        if(this.intervalMilSeconds==Long.MIN_VALUE)
+        {
+            intervalMilSeconds=Config.getInstance().getSystemConfigValue("dataimport-autodetect-interval",30)*1000L;
+            if(intervalMilSeconds<=0) intervalMilSeconds=30*1000L;
+        }
         return System.currentTimeMillis()-lastExecuteMilSeconds>=intervalMilSeconds;
     }
 
@@ -78,7 +81,7 @@ public class TimingDataImportTask implements ITask
                     log.warn("数据导入项的监控路径"+filepath+"不存在或不是目录，无法导入其上的数据文件");
                     continue;
                 }
-                lockfile=Tools.standardFilePath(filepath+"\\"+Consts_Private.DATAIMPORT_LOCKFILENAME);
+                lockfile=FilePathAssistant.getInstance().standardFilePath(filepath+"\\"+Consts_Private.DATAIMPORT_LOCKFILENAME);
                 Object lockresource=FileLockTools.lock(lockfile,10,5);
                 if(lockresource==null)
                 {

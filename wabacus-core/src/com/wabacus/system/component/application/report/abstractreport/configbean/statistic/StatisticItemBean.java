@@ -22,7 +22,10 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import com.wabacus.config.component.application.report.ConditionBean;
+import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.datatype.IDataType;
+import com.wabacus.util.Tools;
 
 public class StatisticItemBean implements Cloneable
 {
@@ -123,9 +126,39 @@ public class StatisticItemBean implements Cloneable
         return statiscope;
     }
 
-    public void setStatiscope(int statiscope)
+    public void setStatiscope(ReportBean rbean,String statiscope)
     {
-        this.statiscope=statiscope;
+        statiscope=statiscope.toLowerCase().trim();
+        boolean isStatPage=false, isStatReport=false;
+        if(!statiscope.equals(""))
+        {
+            List<String> lstTmp=Tools.parseStringToList(statiscope,"|",false);
+            for(String tmp:lstTmp)
+            {
+                tmp=tmp.trim();
+                if(tmp.equals("")) continue;
+                if(tmp.equals("page"))
+                {
+                    isStatPage=true;
+                }else if(tmp.equals("report"))
+                {
+                    isStatReport=true;
+                }else
+                {
+                    throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"的统计项"+property+"失败，其statiscope属性配置不合法");
+                }
+            }
+        }
+        if(isStatPage&&isStatReport)
+        {
+           this.statiscope=StatisticItemBean.STATSTIC_SCOPE_ALL;
+        }else if(isStatPage)
+        {
+            this.statiscope=StatisticItemBean.STATSTIC_SCOPE_PAGE;
+        }else
+        {
+            this.statiscope=StatisticItemBean.STATSTIC_SCOPE_REPORT;
+        }
     }
 
     public Object clone()

@@ -23,10 +23,9 @@ package com.wabacus.config.database.type;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
-import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.dataset.report.value.SQLReportDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.sqlconvertor.AbsConvertSQLevel;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
 import com.wabacus.system.datatype.ClobType;
@@ -42,36 +41,34 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-//$ByQXO
-public class Postgresql extends AbstractJdbcDatabaseType
-{//ByQXO$
+public class Postgresql extends AbsDatabaseType
+{
     private static Log log=LogFactory.getLog(Postgresql.class);
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj)
     {
-
-        String sql=svbean.getSqlWithoutOrderby();
-        if(sql.indexOf("%orderby%")>0)
+        String sql=convertSqlObj.getConvertedSql();
+        if(sql.indexOf(SQLReportDataSetValueProvider.orderbyPlaceHolder)>0)
         {
-            sql=Tools.replaceAll(sql,"%orderby%"," order by "+svbean.getOrderby());
+            sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder," order by "+convertSqlObj.getOrderby());
         }
-        sql=sql+"   limit  %PAGESIZE%   OFFSET   %START% ";
+        sql=sql+"   limit  "+SQLReportDataSetValueProvider.pagesizePlaceHolder+"  OFFSET   "+SQLReportDataSetValueProvider.startRowNumPlaceHolder;
         return sql;
     }
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj,String dynorderby)
     {
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
+        dynorderby=convertSqlObj.mixDynorderbyAndConfigOrderbyCols(dynorderby);
         dynorderby=" order by "+dynorderby;
-        String sql=svbean.getSqlWithoutOrderby();
-        if(sql.indexOf("%orderby%")<0)
+        String sql=convertSqlObj.getConvertedSql();
+        if(sql.indexOf(SQLReportDataSetValueProvider.orderbyPlaceHolder)<0)
         {
             sql=sql+dynorderby;
         }else
         {
-            sql=Tools.replaceAll(sql,"%orderby%",dynorderby);
+            sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder,dynorderby);
         }
-        sql=sql+"   limit  %PAGESIZE%   OFFSET   %START% ";
+        sql=sql+"   limit  "+SQLReportDataSetValueProvider.pagesizePlaceHolder+"  OFFSET  "+SQLReportDataSetValueProvider.startRowNumPlaceHolder;
         return sql;
     }
 

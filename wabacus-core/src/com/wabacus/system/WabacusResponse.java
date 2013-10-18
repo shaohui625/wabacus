@@ -18,7 +18,11 @@
  */
 package com.wabacus.system;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,23 +37,23 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.Config;
-import com.wabacus.exception.MessageCollector;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.exception.WabacusRuntimeWarningException;
+import com.wabacus.exception.WabacusRuntimeTerminateException;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.chart.FusionChartsReportType;
 import com.wabacus.util.Consts;
+import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
 
-public final class WabacusResponse
+public class WabacusResponse
 {
-    private static final Log log=LogFactory.getLog(WabacusResponse.class);
+    private static Log log=LogFactory.getLog(WabacusResponse.class);
     
     private PrintWriter out;
 
     private JspWriter jspout;
     
-    private StringBuffer outBuf;
+    private StringBuilder outBuf;
 
     private ReportRequest rrequest;
     
@@ -130,7 +134,7 @@ public final class WabacusResponse
         if(this.lstFailedOnloadMethods==null) this.lstFailedOnloadMethods=new ArrayList<String[]>();
         if(this.lstSuccessOnloadMethods==null) this.lstSuccessOnloadMethods=new ArrayList<String[]>();
         if(statecode==Consts.STATECODE_FAILED)
-        {
+        {//只在失败时调用
             if(isInsertFirst)
             {
                 lstFailedOnloadMethods.add(0,methodArr);
@@ -144,7 +148,7 @@ public final class WabacusResponse
             {
                 lstSuccessOnloadMethods.add(0,methodArr);
             }else
-            {//加在后面调用
+            {
                 lstSuccessOnloadMethods.add(methodArr);
             }
         }else
@@ -208,7 +212,7 @@ public final class WabacusResponse
         this.response=response;
     }
 
-    public StringBuffer getOutBuf()
+    public StringBuilder getOutBuf()
     {
         return outBuf;
     }
@@ -231,7 +235,7 @@ public final class WabacusResponse
     public void terminateResponse(int statecode)
     {
         setStatecode(statecode);
-        throw new WabacusRuntimeWarningException();
+        throw new WabacusRuntimeTerminateException();
     }
     
     public void addUpdateReportGuid(String reportguid)
@@ -272,7 +276,7 @@ public final class WabacusResponse
             if(methodTmp==null||methodTmp.length!=2) continue;
             resultBuf.append(methodTmp[0]).append("(");
             if(methodTmp[1]!=null&&!methodTmp[1].trim().equals(""))
-            {
+            {//有json形式的参数
                 resultBuf.append(methodTmp[1]);
             }
             resultBuf.append(");");
@@ -282,30 +286,45 @@ public final class WabacusResponse
     
     public String assembleResultsInfo(Throwable t)
     {
-        //String load_error_mess=getLoadErrorMessage();
+        String defaultErrorPrompt=null;
+        if(t!=null&&!(t instanceof WabacusRuntimeTerminateException))
+        {
+            defaultErrorPrompt=Config.getInstance().getResources().getString(rrequest,rrequest.getPagebean(),Consts.LOADERROR_MESS_KEY,false);
+            if(Tools.isEmpty(defaultErrorPrompt))
+            {
+                defaultErrorPrompt="<strong>System is busy,Please try later</strong>";
+            }else
+            {
+                defaultErrorPrompt=rrequest.getI18NStringValue(defaultErrorPrompt.trim());
+            }
+        }
         if(rrequest.getPagebean()==null)
         {
             log.error("没有取到"+rrequest.getStringAttribute("PAGEID","")+"对应的页面配置");
             return "没有取到"+rrequest.getStringAttribute("PAGEID","")+"对应的页面配置";
         }
-        final StringBuilder resultBuf=new StringBuilder();
+        StringBuilder resultBuf=new StringBuilder();
         if(!rrequest.isLoadedByAjax()||(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&rrequest.getShowtype()!=Consts.DISPLAY_ON_PRINT))
         {
-            resultBuf.append(addAlertMessage(false,"<br>"));
-            resultBuf.append(addSuccessMessage(false,"<br>"));
-            resultBuf.append(addWarnMessage(false,"<br>"));
-            if(t==null||t instanceof WabacusRuntimeWarningException)
+            if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
             {
-                resultBuf.append(addErrorMessage(null,false,null));
+                String promptmessages=this.messageCollector.promptMessageFirstTime(defaultErrorPrompt);
+                if(!Tools.isEmpty(promptmessages))
+                {
+                    resultBuf.append("<span style='display:none'>templary</span>");
+                    resultBuf.append("<script type=\"text/javascript\">");
+                    resultBuf.append(promptmessages);
+                    resultBuf.append("</script>");
+                }
             }else
             {
-                resultBuf.append(addErrorMessage(getLoadErrorMessage(),false,null));
+                resultBuf.append(this.messageCollector.promptMessageInNonPage(defaultErrorPrompt));
             }
         }else
         {
-            final String pageid=rrequest.getPagebean().getId();
+            String pageid=rrequest.getPagebean().getId();
             resultBuf.append("<RESULTS_INFO-").append(pageid).append(">").append("{");
-            final String confirmessage=this.messageCollector.getConfirmmessage();
+            String confirmessage=this.messageCollector.getConfirmmessage();
             if(confirmessage!=null&&!confirmessage.trim().equals(""))
             {
                 resultBuf.append("confirmessage:\"").append(confirmessage).append("\"");
@@ -314,7 +333,6 @@ public final class WabacusResponse
             }else
             {
                 resultBuf.append("pageurl:\"").append(rrequest.getUrl()).append("\",");
-                
                 if(rrequest.getPagebean().isShouldProvideEncodePageUrl())
                 {
                     resultBuf.append("pageEncodeUrl:\"").append(Tools.convertBetweenStringAndAscii(rrequest.getUrl(),true)).append("\",");
@@ -327,27 +345,8 @@ public final class WabacusResponse
                         resultBuf.append("dynamicSlaveReportId:\"").append(dynamicSlaveReportId).append("\",");
                     }
                 }
-                
-                resultBuf.append("statecode:").append(this.getRRequest().getIntAttribute(Consts.RESPONSE_STATECODE_KEY,statecode)).append(",");
-                
-                final String errorMsgRetainSecond =  Config.getInstance().getSystemConfigValue("errorMsgRetainSecond","2");
-                resultBuf.append("errorMsgRetainSecond:\"").append(errorMsgRetainSecond).append("\",");
-                   
-                String wabacusRedirectUrl = (String) this.getRRequest().getAttribute("wabacusRedirectUrl");
-                if( null != wabacusRedirectUrl){
-                    resultBuf.append("redirectUrl:\"").append(wabacusRedirectUrl).append("\",");                    
-                }
-                
-                resultBuf.append(addAlertMessage(true,","));
-                resultBuf.append(addSuccessMessage(true,","));
-                resultBuf.append(addWarnMessage(true,","));
-                if(t==null||t instanceof WabacusRuntimeWarningException)
-                {
-                    resultBuf.append(addErrorMessage(null,true,","));
-                }else
-                {
-                    resultBuf.append(addErrorMessage(getLoadErrorMessage(),true,","));
-                }
+                resultBuf.append("statecode:").append(this.statecode).append(",");
+                resultBuf.append(this.messageCollector.promptMessageByRefreshJs(defaultErrorPrompt));
                 List<String[]> lstOnloadMethods=getLstRealOnloadMethods();
                 if(lstOnloadMethods!=null&&lstOnloadMethods.size()>0)
                 {
@@ -406,103 +405,12 @@ public final class WabacusResponse
         }
         return resultBuf.toString();
     }
-
-    protected String getLoadErrorMessage()
-    {
-        String load_error_mess=Config.getInstance().getResources().getString(rrequest,rrequest.getPagebean(),Consts.LOADERROR_MESS_KEY,false);
-        if(load_error_mess==null||load_error_mess.trim().equals(""))
-        {
-            load_error_mess="<strong>System is busy,Please try later</strong>";
-        }else
-        {
-            load_error_mess=load_error_mess.trim();
-            load_error_mess=rrequest.getI18NStringValue(load_error_mess);
-        }
-        return load_error_mess;
-    }
     
     private List<String[]> getLstRealOnloadMethods()
     {
         return this.statecode==Consts.STATECODE_FAILED?this.lstFailedOnloadMethods:this.lstSuccessOnloadMethods;
     }
     
-    private String addAlertMessage(boolean jsPrompt,String suffixIfExist)
-    {
-        String resultMess="";
-        if(jsPrompt)
-        {
-            resultMess=this.messageCollector.getJsAlertMessages("  ");
-            if(resultMess!=null&&!resultMess.trim().equals(""))
-            {
-                resultMess="alertmess:\""+resultMess.trim()+"\"";
-            }
-        }else
-        {
-            resultMess=this.messageCollector.getJsAlertMessages("<br>");
-        }
-        resultMess=resultMess==null?"":resultMess.trim();
-        if(!resultMess.equals("")&&suffixIfExist!=null) resultMess=resultMess+suffixIfExist;
-        return resultMess;
-    }
-    
-    private String addSuccessMessage(boolean jsPrompt,String suffixIfExist)
-    {
-        String resultMess="";
-        if(jsPrompt)
-        {
-            resultMess=this.messageCollector.getJsSuccessMessages("  ");
-            if(resultMess!=null&&!resultMess.trim().equals(""))
-            {
-                resultMess="successmess:\""+resultMess.trim()+"\"";
-            }
-        }else
-        {
-            resultMess=this.messageCollector.getJsSuccessMessages("<br>");
-        }
-        resultMess=resultMess==null?"":resultMess.trim();
-        if(!resultMess.equals("")&&suffixIfExist!=null) resultMess=resultMess+suffixIfExist;
-        return resultMess;
-    }
-    
-    private String addWarnMessage(boolean jsPrompt,String suffixIfExist)
-    {
-        String resultMess="";
-        if(jsPrompt)
-        {
-            resultMess=this.messageCollector.getJsWarnMessages("  ");
-            if(resultMess!=null&&!resultMess.trim().equals(""))
-            {
-                resultMess="warnmess:\""+resultMess.trim()+"\"";
-            }
-        }else
-        {
-            resultMess=this.messageCollector.getJsWarnMessages("<br>");
-        }
-        resultMess=resultMess==null?"":resultMess.trim();
-        if(!resultMess.equals("")&&suffixIfExist!=null) resultMess=resultMess+suffixIfExist;
-        return resultMess;
-    }
-    
-    private String addErrorMessage(String defaultvalue,boolean jsPrompt,String suffixIfExist)
-    {
-        String resultMess="";
-        if(jsPrompt)
-        {
-            resultMess=this.messageCollector.getJsErrorMessages("  ");
-            if(resultMess==null||resultMess.trim().equals("")) resultMess=defaultvalue;
-            if(resultMess!=null&&!resultMess.trim().equals(""))
-            {
-                resultMess="errormess:\""+resultMess.trim()+"\"";
-            }
-        }else
-        {
-            resultMess=this.messageCollector.getJsErrorMessages("<br>");
-        }
-        resultMess=resultMess==null?"":resultMess.trim();
-        if(!resultMess.equals("")&&suffixIfExist!=null) resultMess=resultMess+suffixIfExist;
-        return resultMess;
-    }
-
     public void setDynamicRefreshComponentGuid(String componentguid,String slaveReportId)
     {
         this.dynamicRefreshComponentGuid=componentguid;
@@ -511,26 +419,20 @@ public final class WabacusResponse
     
     public boolean isOutputImmediately()
     {
-        if(this.response==null) return false;
-        return true;
+        return this.response!=null;
     }
     
     public void initOutput(String attachFilename)
     {
         hasInitOutput=true;
-        if(response!=null&&rrequest.getRequest()!=null)
+        if(response!=null&&rrequest.getRequest()!=null&&!rrequest.isExportToLocalFile())
         {
             rrequest.getRequest().getSession();
-            if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL)
+            if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL||rrequest.getShowtype()==Consts.DISPLAY_ON_WORD)
             {
-                attachFilename=attachFilename==null?"":attachFilename.trim();
-                response.setHeader("Content-disposition","attachment;filename="
-                        +WabacusAssistant.getInstance().encodeAttachFilename(rrequest.getRequest(),attachFilename)+".xls");
-            }else if(rrequest.getShowtype()==Consts.DISPLAY_ON_WORD)
-            {
-                attachFilename=attachFilename==null?"":attachFilename.trim();
-                response.setHeader("Content-disposition","attachment;filename="
-                        +WabacusAssistant.getInstance().encodeAttachFilename(rrequest.getRequest(),attachFilename)+".doc");
+                String filesuffix=rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL?".xls":".doc";
+                attachFilename=WabacusAssistant.getInstance().encodeAttachFilename(rrequest.getRequest(),attachFilename);
+                response.setHeader("Content-disposition","attachment;filename="+attachFilename+filesuffix);
             }
             try
             {
@@ -541,13 +443,15 @@ public final class WabacusResponse
             }
             if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PRINT)
             {
-                out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
+                out
+                        .println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
                 out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset="+Config.encode+"\">");
             }
         }else
-        {//本次是返回显示字符串
-            this.outBuf=new StringBuffer();
-            outBuf.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
+        {
+            this.outBuf=new StringBuilder();
+            outBuf
+                    .append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
             outBuf.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset="+Config.encode+"\">");
         }
     }
@@ -560,28 +464,42 @@ public final class WabacusResponse
     public void println(String content,boolean overwrite)
     {
         if(!hasInitOutput) initOutput(null);
-        if(content==null||content.trim().equals("")) return;
+        if(content==null) return;
+        content=Tools.replaceAll(content,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL||rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
                 ||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT)
         {
             content=WabacusAssistant.getInstance().replaceAllImgPathInExportDataFile(rrequest.getRequest(),content);
         }
-        if(jspout!=null)
+        if(rrequest.isExportToLocalFile())
+        {//当前是在落地的数据导出，则直接输出到文件中
+            if(overwrite) outBuf=new StringBuilder();
+            outBuf.append(content);
+            if(outBuf.length()>10240) writeBufDataToLocalFile();
+        }else if(jspout!=null)
         {//当前是通过<wx:report/>显示报表，则从jsp中取out进行输出
             try
             {
                 jspout.println(content);
             }catch(IOException e)
             {
-                
-                e.printStackTrace();
+                log.debug("向页面输出字符串："+content+"时失败",e);
+                jspout=null;
+                if(out!=null)
+                {
+                    out.println(content);
+                }else
+                {
+                    if(overwrite) outBuf=new StringBuilder();
+                    outBuf.append(content);
+                }
             }
         }else if(out!=null)
         {
             out.println(content);
         }else
         {
-            if(overwrite) outBuf=new StringBuffer();
+            if(overwrite) outBuf=new StringBuilder();
             outBuf.append(content);
         }
         /*if(mReportsWithIncludePage!=null&&mReportsWithIncludePage.size()>0)
@@ -619,7 +537,6 @@ public final class WabacusResponse
                 }
                 RequestDispatcher rd=rrequest.getRequest().getRequestDispatcher(dynTplPathTmp);
                 rd.include(rrequest.getRequest(),response);
-
                 content=content.substring(idx+endtagTmp.length());
                 idx=content.indexOf(starttagTmp);
             }
@@ -634,29 +551,67 @@ public final class WabacusResponse
     public void print(String content,boolean overwrite)
     {
         if(!hasInitOutput) initOutput(null);
-        if(content==null||content.trim().equals("")) return;
+        if(content==null) return;
+        content=Tools.replaceAll(content,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL||rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
                 ||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT)
         {
             content=WabacusAssistant.getInstance().replaceAllImgPathInExportDataFile(rrequest.getRequest(),content);
         }
-        if(jspout!=null)
+        if(rrequest.isExportToLocalFile())
+        {
+            if(overwrite) outBuf=new StringBuilder();
+            outBuf.append(content);
+            if(outBuf.length()>10240) writeBufDataToLocalFile();
+        }else if(jspout!=null)
         {//当前是通过<wx:report/>显示报表，则从jsp中取out进行输出
             try
             {
                 jspout.print(content);
             }catch(IOException e)
             {
-                
-                e.printStackTrace();
+                log.debug("向页面输出字符串："+content+"时失败",e);
+                jspout=null;
+                if(out!=null)
+                {
+                    out.print(content);
+                }else
+                {
+                    if(overwrite) outBuf=new StringBuilder();
+                    outBuf.append(content);
+                }
             }
         }else if(out!=null)
         {
             out.print(content);
         }else
         {
-            if(overwrite) outBuf=new StringBuffer();
+            if(overwrite) outBuf=new StringBuilder();
             outBuf.append(content);
+        }
+    }
+    
+    public void writeBufDataToLocalFile()
+    {
+        if(!rrequest.isExportToLocalFile()||this.outBuf.length()==0) return;
+        BufferedWriter dataExportFileWriter=null;
+        try
+        {
+            dataExportFileWriter=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(rrequest.getDataExportFilepath()),true),Config.encode));
+            dataExportFileWriter.write(this.outBuf.toString());
+            this.outBuf=new StringBuilder();
+        }catch(Exception e)
+        {//此异常不可能产生，因为不存在时会自动创建，创建不成功会抛出异常
+            throw new WabacusRuntimeException("导出数据文件时，写数据文件"+rrequest.getDataExportFilepath()+"失败",e);
+        }finally
+        {
+            try
+            {
+                if(dataExportFileWriter!=null) dataExportFileWriter.close();
+            }catch(IOException e)
+            {
+                throw new WabacusRuntimeException("导出数据文件时，关闭数据文件"+rrequest.getDataExportFilepath()+"失败",e);
+            }
         }
     }
     
@@ -676,6 +631,11 @@ public final class WabacusResponse
         {
             this.addOnloadMethod("wx_sendRedirect","{url:\""+url+"\"}",false);
         }
-        throw new WabacusRuntimeWarningException();//中断报表的后续处理
+        throw new WabacusRuntimeTerminateException();
+    }
+    
+    public void terminateResponse()
+    {
+        throw new WabacusRuntimeTerminateException();
     }
 }

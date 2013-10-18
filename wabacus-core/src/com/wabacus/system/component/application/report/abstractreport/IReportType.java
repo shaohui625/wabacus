@@ -33,7 +33,7 @@ public interface IReportType extends IComponentType
 
     public String showSearchBox();
 
-    public String showReportData();
+    public void showReportData(StringBuilder resultBuf);
 
     public String showNavigateBox();
 

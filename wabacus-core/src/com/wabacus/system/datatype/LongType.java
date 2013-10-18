@@ -62,14 +62,9 @@ public class LongType extends AbsNumberType
         }
     }
 
-    
-    
-    
-    
 
     public Class getJavaTypeClass()
     {
-        
         return Long.class;
     }
 

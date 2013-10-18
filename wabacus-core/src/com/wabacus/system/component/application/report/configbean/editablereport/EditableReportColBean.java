@@ -208,7 +208,7 @@ public final class EditableReportColBean extends AbsExtendConfigBean implements 
             if(Tools.isDefineKey("@",entryTmp.getValue()))
             {
                 colpropTmp=Tools.getRealKeyByDefine("@",entryTmp.getValue());
-                if(colpropTmp.endsWith("__old")) colpropTmp=colpropTmp.substring(0,colpropTmp.length()-5);
+                if(colpropTmp.endsWith("__old")) colpropTmp=colpropTmp.substring(0,colpropTmp.length()-5);//因为是在服务器端显示时获取，因此所有列的新旧值都相同，不用考虑__old
                 colvalTmp=dataObj.getColStringValue(colpropTmp);
                 if(colvalTmp==null) colvalTmp="";
                 realformatemplate=Tools.replaceAll(realformatemplate,entryTmp.getKey(),colvalTmp);

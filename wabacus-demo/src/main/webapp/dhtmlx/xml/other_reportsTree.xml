@@ -130,7 +130,7 @@
 		</item>
 	</item>
 
-	<item id="dataexport" text="数据导出" im0="dhtmlxtree_icon.gif"
+	<item id="dataexport" text="数据导出&lt;font color='red'&gt;New&lt;/font&gt;" im0="dhtmlxtree_icon.gif"
 		im1="dhtmlxtree_icon.gif" im2="dhtmlxtree_icon.gif">
 		<userdata name="groupnode">true</userdata>
 		<userdata name="desc">
@@ -216,7 +216,7 @@
 				</userdata>
 			</item>
 		</item>
-		<item text="控制导出记录数" id="dataexportcount">
+		<item text="控制导出记录数&lt;font color='red'&gt;New&lt;/font&gt;" id="dataexportcount">
 			<userdata name="pageid">dataexportcountpage1</userdata>
 				<userdata name="configfilename">
 					report_dataexportprint.xml
@@ -227,6 +227,29 @@
 					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					这里演示了如何控制数据导出的记录数，比如可以控制导出当前页、所有页，并且可以指定导出的最大记录数。
+				</userdata>
+		</item>
+		<item text="数据导出方式&lt;font color='red'&gt;New&lt;/font&gt;" id="dataexportmode">
+			<userdata name="pageid">dataexportmodepage1</userdata>
+				<userdata name="configfilename">
+					report_dataexportprint.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=dataexportmodepage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					框架支持如下几种导出方式：&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					&lt;b&gt;直接导出&lt;/b&gt;：即数据文件不在服务器端落地，而是直接在内存中生成后输出给客户端，这也是默认的导出方式；&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					&lt;b&gt;先落地再导出&lt;/b&gt;：即导出的数据文件先在服务器端指定临时目录落地，都生成好后再导出，这种导出方式适合于大数据量的导出，因为它的导出不是通过JAVA代码，而是直接访问生成好的数据文件进行导出，因此非常快速；&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					&lt;b&gt;先落地再压缩再导出&lt;/b&gt;：即导出的数据文件先在服务器端临时目录落地，然后框架自动对它进行压缩成zip格式，最后自动跳转到这个zip文件的URL进行导出，这种导出方式比上面的导出性能更好，适合用在更大数据量的导出，因为对于数据文件压缩率非常高，下载非常快速；&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					&lt;b&gt;只落地不导出&lt;/b&gt;：即导出的数据文件只在服务器端落地，而不供自动导出给用户，但会提示导出的文件在服务器端存放的路径。&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					以上导出方式中，只要是在服务器端落地的，都可以指定是否自动删除导出的数据文件，以及数据文件存放多久才自动删除，还可以在报表拦截器或页面拦截器后置动作中访问到导出的数据文件，对它们做进一步处理，比如发送Email等，具体参看开发指南文档的介绍
 				</userdata>
 		</item>
 		<item text="同时导出多个报表" id="multidataexport">
@@ -289,7 +312,7 @@
 					数据导入功能有很多配置项，这里只演示了其中主要部分，关于更多的介绍，请参看《开发指南》中“数据导入导出”一节。
 				</userdata>
 			</item>
-			<item text="为组件配置导入功能&lt;font color='red'&gt;New&lt;/font&gt;" id="excelimport2">
+			<item text="为组件配置导入功能" id="excelimport2">
 				<userdata name="pageid">excelimport1page1</userdata>
 				<userdata name="configfilename">
 					report_usualfunc4.xml
@@ -330,9 +353,9 @@
 		</item>
 	</item>
 	
-	<item id="fileupdownload" text="文件上传/下载" im0="dhtmlxtree_icon.gif"
+	<item id="fileupdownload" text="文件上传/下载&lt;font color='red'&gt;New&lt;/font&gt;" im0="dhtmlxtree_icon.gif"
 		im1="dhtmlxtree_icon.gif" im2="dhtmlxtree_icon.gif">
-		<item text="文件上传" id="fileuploadtag">
+		<item text="文件上传&lt;font color='red'&gt;New&lt;/font&gt;" id="fileuploadtag">
 			<userdata name="pageid">/WabacusDemo/wabacusdemo/jsp/tagpages/fileuploadpage.jsp</userdata>
 			<userdata name="configfilename">
 			</userdata>
@@ -360,7 +383,7 @@
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=filedownloadpage1&lt;br&gt;
 				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-				这里演示如何使用框架实现文件下载功能，主要演示了在资源文件中定义资源项指定文件路径和通过调用Tools.encodeFilePath()方法编码文件路径两种指定文件路径的方式，还演示了下载后保持以前的文件名和修改文件名两种效果。&lt;br&gt;
+				这里演示如何使用框架实现文件下载功能，主要演示了在资源文件中定义资源项指定文件路径和通过调用WabacusUtils.encodeFilePath()方法编码文件路径两种指定文件路径的方式，还演示了下载后保持以前的文件名和修改文件名两种效果。&lt;br&gt;
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 				关于文件下载的详细使用方法，请参看《Wabacus框架开发指南》中“文件上传/下载功能”一节的介绍。
 			</userdata>

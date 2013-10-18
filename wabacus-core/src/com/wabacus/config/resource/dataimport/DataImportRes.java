@@ -19,11 +19,8 @@
 package com.wabacus.config.resource.dataimport;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.dom4j.Attribute;
 import org.dom4j.Element;
 
 import com.wabacus.config.Config;
@@ -32,6 +29,7 @@ import com.wabacus.config.resource.AbsResource;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.config.resource.dataimport.configbean.ColumnMapBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.dataimport.interceptor.IDataImportInterceptor;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.Tools;
@@ -50,10 +48,6 @@ public class DataImportRes extends AbsResource
         String filetype=eleDataImport.attributeValue("filetype");
         AbsDataImportConfigBean dataimportcbean=AbsDataImportConfigBean.createDataImportConfigBean(
                 key,filetype);
-        Map<String,String> vars=getAttributeMap(eleDataImport);
-        dataimportcbean.setAttrs(vars);
-        
-        
         String filename=eleDataImport.attributeValue("filename");
         if(filename!=null)
         {
@@ -91,7 +85,7 @@ public class DataImportRes extends AbsResource
                                 +key
                                 +"的数据导入资源项失败，因为没有在wabacus.cfg.xml中配置default-dataimoprt-filepath，所以必须为此数据导入项配置filepath属性");
         }
-        dataimportcbean.setFilepath(Tools.standardFilePath(filepath.trim()));
+        dataimportcbean.setFilepath(FilePathAssistant.getInstance().standardFilePath(filepath.trim()));
         String datasource=eleDataImport.attributeValue("datasource");
         if(datasource!=null)
         {
@@ -218,17 +212,5 @@ public class DataImportRes extends AbsResource
         dataimportcbean.doPostLoad();
         dataimportcbean.buildImportSqls();
         return dataimportcbean;
-    }
-
-    //TODO移动工具类中
-    protected static Map<String,String> getAttributeMap(Element eleDataImport)
-    {
-        Map<String,String> vars = new HashMap<String,String>();
-        List<Attribute> attributes=eleDataImport.attributes();
-        for(Attribute attribute:attributes)
-        {
-            vars.put(attribute.getName(),attribute.getValue());
-        }
-        return vars;
     }
 }

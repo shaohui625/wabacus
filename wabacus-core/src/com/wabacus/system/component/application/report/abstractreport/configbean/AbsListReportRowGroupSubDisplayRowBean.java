@@ -26,16 +26,12 @@ import com.wabacus.config.component.application.report.DisplayBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
-import com.wabacus.system.datatype.AbsDateTimeType;
-import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
 public class AbsListReportRowGroupSubDisplayRowBean extends AbsListReportSubDisplayRowBean
 {
     private String rowgroupcolumn;
-
-    private String statiSqlGroupby;
 
     private String condition;
 
@@ -49,14 +45,14 @@ public class AbsListReportRowGroupSubDisplayRowBean extends AbsListReportSubDisp
         this.rowgroupcolumn=rowgroupcolumn;
     }
 
-    public String getStatiSqlGroupby()
-    {
-        return statiSqlGroupby;
-    }
-
     public void setCondition(String condition)
     {
         this.condition=condition;
+    }
+
+    public String getCondition()
+    {
+        return condition;
     }
 
     public void validateRowGroupSubDisplayColsConfig(AbsListReportSubDisplayBean subdisplayBean,DisplayBean dbean)
@@ -95,88 +91,52 @@ public class AbsListReportRowGroupSubDisplayRowBean extends AbsListReportSubDisp
             {
                 idxGroupCol=1;
             }
-            subdisplayBean.calColSpanAndStartColIdx(this.lstSubColBeans,alrdbean,alrdbean.getDefaultColumnCount()-idxGroupCol);
-        }
-
-        if(condition!=null&&!condition.trim().equals(""))
-        {
-            String[] colsArr=getParentAndMyOwnRowGroupColumnsArray(dbean);
-            String tmp;
-            for(int i=0;i<colsArr.length-1;i++)
-            {
-                for(int j=i+1;j<colsArr.length;j++)
-                {
-                    if(colsArr[i].length()<colsArr[j].length())
-                    {
-                        tmp=colsArr[i];
-                        colsArr[i]=colsArr[j];
-                        colsArr[j]=tmp;
-                    }
-                }
-            }
-            List<String> lstConditions=Tools.parseStringToList(condition," ");
-            for(int i=0;i<colsArr.length;i++)
-            {
-                boolean hasCon=false;
-                String con;
-                for(int j=lstConditions.size()-1;j>=0;j--)
-                {
-                    con=lstConditions.get(j);
-                    if(con.indexOf(colsArr[i])>=0&&con.indexOf("#"+colsArr[i]+"#")>0)
-                    {
-                        hasCon=true;
-                        lstConditions.remove(j);
-                    }
-                }
-                if(!hasCon)
-                {
-                    throw new WabacusConfigLoadingException("加载报表"+dbean.getReportBean().getPath()+"失败，分组"+this.rowgroupcolumn+"的统计配置没有为父分组"
-                            +colsArr[i]+"列在condition属性中配置查询条件");
-                }
-            }
-        }else
-        {
-            ColBean[] cbeansArr=getParentAndMyOwnRowGroupColBeans(dbean);
-            StringBuffer conditionBuf=new StringBuffer();
-            ColBean cbTmp;
-            String tmp;
-            for(int i=0;i<cbeansArr.length;i++)
-            {
-                cbTmp=cbeansArr[i];
-                if(cbTmp.getDatatypeObj()==null||cbTmp.getDatatypeObj() instanceof VarcharType||cbTmp.getDatatypeObj() instanceof AbsDateTimeType)
-                {
-                    tmp="'";
-                }else
-                {
-                    tmp="";
-                }
-                conditionBuf.append(cbTmp.getColumn()).append("=").append(tmp).append("#").append(cbTmp.getColumn()).append("#").append(tmp).append(
-                        " and ");
-            }
-            condition=conditionBuf.toString().trim();
-            if(condition.endsWith(" and"))  condition=condition.substring(0,condition.length()-4);
+            subdisplayBean.calColSpanAndStartColIdx(this.lstSubColBeans,alrdbean,alrdbean.getDefaultPageColPositionBean().getTotalColCount()-idxGroupCol);
         }
     }
 
-    public void buildStatisticSqlGroupby(DisplayBean dbean)
+    public void validateConditionConfig(ReportBean rbean)
     {
-        String[] colsArr=getParentAndMyOwnRowGroupColumnsArray(dbean);
-        StringBuffer groupbyBuf=new StringBuffer();
+        if(this.condition==null||this.condition.trim().equals("")) return;
+        String[] colsArr=getParentAndMyOwnRowGroupColumnsArray(rbean);
+        String tmp;
+        for(int i=0;i<colsArr.length-1;i++)
+        {
+            for(int j=i+1;j<colsArr.length;j++)
+            {
+                if(colsArr[i].length()<colsArr[j].length())
+                {
+                    tmp=colsArr[i];
+                    colsArr[i]=colsArr[j];
+                    colsArr[j]=tmp;
+                }
+            }
+        }
+        List<String> lstConditions=Tools.parseStringToList(this.condition," ");
         for(int i=0;i<colsArr.length;i++)
         {
-            groupbyBuf.append(colsArr[i]).append(",");
+            boolean hasCon=false;
+            String con;
+            for(int j=lstConditions.size()-1;j>=0;j--)
+            {
+                con=lstConditions.get(j);
+                if(con.indexOf(colsArr[i])>=0&&con.indexOf("#"+colsArr[i]+"#")>0)
+                {
+                    hasCon=true;
+                    lstConditions.remove(j);
+                }
+            }
+            if(!hasCon)
+            {
+                throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，分组"+this.rowgroupcolumn+"的统计配置没有为父分组"+colsArr[i]
+                        +"列在condition属性中配置查询条件");
+            }
         }
-        if(groupbyBuf.charAt(groupbyBuf.length()-1)==',')
-        {
-            groupbyBuf.deleteCharAt(groupbyBuf.length()-1);
-        }
-        this.statiSqlGroupby=" group by "+groupbyBuf.toString()+" having "+condition;
-        condition=null;
     }
 
-    private String[] getParentAndMyOwnRowGroupColumnsArray(DisplayBean dbean)
+    public String[] getParentAndMyOwnRowGroupColumnsArray(ReportBean rbean)
     {
-       ColBean[] cbeansArr=getParentAndMyOwnRowGroupColBeans(dbean);
+       ColBean[] cbeansArr=getParentAndMyOwnRowGroupColBeans(rbean);
        String[] resultsArr=new String[cbeansArr.length];
        for(int i=0;i<cbeansArr.length;i++)
        {
@@ -185,22 +145,22 @@ public class AbsListReportRowGroupSubDisplayRowBean extends AbsListReportSubDisp
        return resultsArr;
     }
     
-    private ColBean[] getParentAndMyOwnRowGroupColBeans(DisplayBean dbean)
+    public ColBean[] getParentAndMyOwnRowGroupColBeans(ReportBean rbean)
     {
         List<ColBean> lstCbeans=new ArrayList<ColBean>();
-        for(ColBean cbean:dbean.getLstCols())
+        for(ColBean cbean:rbean.getDbean().getLstCols())
         {
-            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) continue;
+            if(cbean.isControlCol()||cbean.isNonFromDbCol()||cbean.isNonValueCol()) continue;
+            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true))||Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(false))) continue;
             lstCbeans.add(cbean);
             if(rowgroupcolumn.equals(cbean.getColumn()))
-            {
+            {//循环到了当前分组，则后面再有分组列也是当前分组列的子分组
                 break;
             }
         }
         if(lstCbeans==null||lstCbeans.size()==0)
         {
-            throw new WabacusConfigLoadingException("加载报表"+dbean.getReportBean().getPath()
-                    +"失败，没有column为"+rowgroupcolumn+"的分组列，无法将其配置分组统计");
+            throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，没有column为"+rowgroupcolumn+"的分组列，无法将其配置分组统计");
         }
         return lstCbeans.toArray(new ColBean[lstCbeans.size()]);
     }

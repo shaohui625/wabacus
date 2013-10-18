@@ -11,11 +11,12 @@
 			}
 		-->
 		</STYLE>
+		<script type="text/javascript"  src="/WabacusDemo/wabacusdemo/js/testcallback.js"></script>
 	</head>
 	<body>
 		<table border="0" cellspacing="1px" width="100%" style="border:1px solid #5F9EA0;BORDER-COLLAPSE:collapse;" align="left">
 			<tr>
-				<td colspan="3" class="cls_td1"><font size="3" color="blue"><b>测试文件上传标签</b></font></td>
+				<td colspan="3" class="cls_td1"><font size="3" color="blue"><b>文件上传标签</b></font></td>
 			</tr>
 		
 				<tr>
@@ -86,7 +87,7 @@
 				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
 					如果指定了&lt;wx:fileupload/&gt;标签的newfilename属性，则会上传文件后使用newfilename属性指定值做为新的文件名。<br/>
 					此属性除了常量字符串外，还可以指定如下类型的值： {date}：以当前日期做为文件名；{time}：以当前时间做为文件名；{timestamp}：以当前日期时间的毫秒数做为文件名，可以保持每次上传的文件名不重复<br/>
-					注意：只有一次上传一个文件时，即uploadcount属性不指定，或指定为1时，才能改变上传文件名。
+					另外，还可以通过将newfilename配置为request/session{key/key.property}的方式获取动态新文件名，或者在上传拦截器中动态指定新上传文件名
 				</td>
 			</tr>
 			<tr>
@@ -101,13 +102,40 @@
 				</td>
 			</tr>
 			<tr>
-				<td class="cls_td1" width="20%">文件上传拦截器<font color='red'>New<font/></td>
+				<td class="cls_td1" width="20%">上传前客户端回调函数<font color='red'>New</font></td>
+				<td  class="cls_td1" width="10%">
+					<wx:fileupload savepath="relative{/}" allowtypes="xls;doc;txt;rtf;pdf" beforepopup="popupcallbackmethod"
+										uploadcount="5" popupparams="{width:300,height:250}"/>
+				</td>
+				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
+					在点击“文件上传”按钮时会先调用配置的JS方法，在此JS方法中可以修改弹出URL中的参数，或者阻止弹出文件上传界面
+				</td>
+			</tr>
+			<tr>
+				<td class="cls_td1" width="20%">文件上传拦截器</td>
 				<td  class="cls_td1" width="10%">
 					<wx:fileupload savepath="relative{/}" allowtypes="xls;doc;txt;rtf;pdf"  
 						interceptor="com.wabacusdemo.TestFileUploadInterceptor"/>
 				</td>
 				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
 					这里通过文件上传输入框的拦截器在上传界面显示了一个额外的表单输入框，上传完成后将文件大小及用户在此表单域中输入的数据提示到前台页面
+				</td>
+			</tr>
+		</table>
+		<table width="100%" style="border:0px" align="left"><tr><td height="30px">&nbsp;</td></tr></table>
+		<table border="0" cellspacing="1px" cellpadding="20px" width="100%" style="border:1px solid #5F9EA0;BORDER-COLLAPSE:collapse;" align="left">
+			<tr>
+				<td class="cls_td1"><font size="3" color="blue"><b>文件上传接口方法&nbsp;&nbsp;<font color='red'>New</font></b></font></td>
+			</tr>
+			<tr>
+				<td class="cls_td1"  style="text-align:left;color:red">说明：<br/>
+					&nbsp;&nbsp;1、这里上传文件接口方法只能被框架配置的报表的上下文调用，比如在&lt;format/&gt;或者拦截器各拦截方法中调用。<br/>
+					&nbsp;&nbsp;2、文件上传接口方法功能与文件上传标签基本一致，这里不再一一演示，只演示一个示例<br/>
+				</td>
+			</tr>
+			<tr>
+				<td class="cls_td1">
+					<jsp:include page="/ShowReport.wx?PAGEID=testFileuploadApiPage1"></jsp:include>
 				</td>
 			</tr>
 		</table>

@@ -23,16 +23,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.wabacus.config.Config;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.WabacusAssistant;
+import com.wabacus.util.Tools;
 
 public class DisplayBean extends AbsConfigBean
 {
-    private Boolean colselect=null;
+    public final static String COLSELECT_LEFT="left";
+    
+    public final static String COLSELECT_RIGHT="right";
+    
+    public final static String COLSELECT_BOTH="both";
+    
+    private boolean pageColselect;
+    
+    private boolean dataexportColselect;
+    
+    private boolean isAllColDisplaytypesEquals=true;
     
     private int colselectwidth;
     
     private int colselectmaxheight=350;
+    
+    private String colselectlabelposition;
     
     private String dataheader;
 
@@ -42,7 +56,7 @@ public class DisplayBean extends AbsConfigBean
     
     private String valuestyleproperty;//显示数据行<tr/>的样式字符串
     
-    private List<String> lstDynValuestylepropertyParts;
+    private List<String> lstDynValuestylepropertyParts;//valuestyleproperty中的动态部分，key为此动态值的在valuestyleproperty中的占位符，值为request{xxx}、session{key}、url{key}等等形式，用于运行时得到真正值
     
     private List<ColBean> lstCols=new ArrayList<ColBean>();
     private Map<String,ColBean> mPropsAndColBeans;
@@ -51,12 +65,12 @@ public class DisplayBean extends AbsConfigBean
     
     private Map<String,ColBean> mColIdsAndColBeans;
     
-    private int generate_childid=0;//此属性纯粹用于加载<group/>和<col/>时，产生各个<group/>和<col/>对应ColBean和GroupBean的id属性值。
+    private long generate_childid=0L;//此属性纯粹用于加载<group/>和<col/>时，产生各个<group/>和<col/>对应ColBean和GroupBean的id属性值。
         
     public DisplayBean(AbsConfigBean parent)
     {
         super(parent);
-        generate_childid=0;
+        generate_childid=0L;
     }
 
     public String getDataheader()
@@ -69,20 +83,24 @@ public class DisplayBean extends AbsConfigBean
         this.dataheader=dataheader;
     }
 
-    public Boolean getColselect()
+    public boolean isPageColselect()
     {
-        return colselect;
+        return pageColselect;
     }
 
-    public boolean isColselect()
+    public void setPageColselect(boolean pageColselect)
     {
-        if(colselect==null) return false;
-        return colselect.booleanValue();
+        this.pageColselect=pageColselect;
     }
-    
-    public void setColselect(Boolean colselect)
+
+    public boolean isDataexportColselect()
     {
-        this.colselect=colselect;
+        return dataexportColselect;
+    }
+
+    public void setDataexportColselect(boolean dataexportColselect)
+    {
+        this.dataexportColselect=dataexportColselect;
     }
 
     public int getColselectwidth()
@@ -105,13 +123,47 @@ public class DisplayBean extends AbsConfigBean
         this.colselectmaxheight=colselectmaxheight;
     }
 
+    public String getColselectlabelposition()
+    {
+        if(Tools.isEmpty(colselectlabelposition))
+        {
+            colselectlabelposition=Config.getInstance().getSystemConfigValue("default-colselectlabel-position","right");
+        }
+        return colselectlabelposition;
+    }
+
+    public void setColselectlabelposition(String colselectlabelposition)
+    {
+        this.colselectlabelposition=colselectlabelposition;
+    }
+
+    public boolean isAllColDisplaytypesEquals()
+    {
+        return isAllColDisplaytypesEquals;
+    }
+
+    public boolean isDisplayColSelectLabelLeft()
+    {
+        return COLSELECT_LEFT.equalsIgnoreCase(this.colselectlabelposition)||COLSELECT_BOTH.equalsIgnoreCase(this.colselectlabelposition);
+    }
+    
+    public boolean isDisplayColSelectLabelRight()
+    {
+        return !COLSELECT_LEFT.equalsIgnoreCase(this.colselectlabelposition);
+    }
+    
+    void setAllColDisplaytypesEquals(boolean isAllColDisplaytypesEquals)
+    {
+        this.isAllColDisplaytypesEquals=isAllColDisplaytypesEquals;
+    }
+
     public void clearChildrenInfo()
     {
         if(lstCols!=null) lstCols.clear(); 
-        generate_childid=0;
+        generate_childid=0L;
     }
     
-    public int generate_childid()
+    public long generate_childid()
     {
         return generate_childid++;
     }
@@ -220,7 +272,6 @@ public class DisplayBean extends AbsConfigBean
         ((ReportBean)parent).setDbean(dbeanNew);
         if(lstCols!=null)
         {
-            
             List<ColBean> lstColsNew=new ArrayList<ColBean>();
             for(int i=0;i<lstCols.size();i++)
             {

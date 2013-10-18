@@ -24,17 +24,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.wabacus.config.Config;
-import com.wabacus.config.component.application.report.ConditionBean;
-import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.typeprompt.ITypePromptOptionMatcher;
 import com.wabacus.config.typeprompt.TypePromptBean;
 import com.wabacus.config.typeprompt.TypePromptColBean;
-import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.dataset.common.SQLCommonDataSetValueProvider;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.system.inputbox.TextBox;
-import com.wabacus.util.Tools;
 
 public class TypepromptOptionBean extends AbsOptionBean
 {
@@ -49,19 +46,19 @@ public class TypepromptOptionBean extends AbsOptionBean
     {
         mPromptcolValues=promptcolValues;
     }
-
+    
     public List<Map<String,String>> getLstRuntimeOptions(ReportRequest rrequest,String txtValue)
     {
         List<Map<String,String>> lstResults=null;
-        if(this.optionDatasourceObj==null)
+        if(this.datasetProvider==null)
         {//没有指定动态获取选项数据的数据源对象，则说明此<option/>就是一个常量选项的配置
             lstResults=new ArrayList<Map<String,String>>();
             lstResults.add((Map<String,String>)((HashMap<String,String>)mPromptcolValues).clone());
         }else
         {
-            lstResults=this.optionDatasourceObj.getLstTypePromptOptions(rrequest,txtValue);
+            lstResults=this.datasetProvider.getLstTypePromptOptions(rrequest,txtValue);
         }
-        if(!(this.optionDatasourceObj instanceof SQLOptionDatasource))
+        if(!(this.datasetProvider instanceof SQLCommonDataSetValueProvider))
         {
             TypePromptBean typePromptBean=((TextBox)this.getOwnerInputboxObj()).getTypePromptBean();
             ITypePromptOptionMatcher matcherObj=typePromptBean.getTypePromptMatcherObj();
@@ -81,28 +78,13 @@ public class TypepromptOptionBean extends AbsOptionBean
         return lstResults;
     }
     
-    public void doPostLoad()
-    {
-        
-      
-        if(this.optionDatasourceObj instanceof SQLOptionDatasource)
-        {
-            //$ByQXO
-            AbsDatabaseType dbType=Config.getInstance().getDbType(((SQLOptionDatasource)optionDatasourceObj).getDatasource());
-            dbType.doPostLoadSQLOptionDatasource(this);
-            //ByQXO$
-            
-        }
-        super.doPostLoad();
-    }
-
-    public String getMatchColConditionExpression()
+    public String getMatchColSQLConditionExpression()
     {
         TypePromptBean typePromptBean=((TextBox)this.ownerInputboxObj).getTypePromptBean();
         List<TypePromptColBean> lstPromptColBeans=typePromptBean.getLstPColBeans();
         StringBuffer resultBuf=new StringBuffer();
         String labelcolTmp,expressionTmp;
-        AbsDatabaseType dbtype=Config.getInstance().getDataSource(((SQLOptionDatasource)this.optionDatasourceObj).getDatasource()).getDbType();
+        AbsDatabaseType dbtype=Config.getInstance().getDataSource(this.datasetProvider.getDatasource()).getDbType();
         for(TypePromptColBean tpColbeanTmp:lstPromptColBeans)
         {
             if(tpColbeanTmp.getMatchmode()<=0) continue;
@@ -133,5 +115,7 @@ public class TypepromptOptionBean extends AbsOptionBean
         }
         return newOptionBean;
     }
+
+    
 }
 

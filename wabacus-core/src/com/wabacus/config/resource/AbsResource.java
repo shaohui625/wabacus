@@ -23,19 +23,8 @@ import org.dom4j.Element;
 public abstract class AbsResource
 {
 //    protected boolean dependOtherRes;//当前资源项是否依赖其它资源项的内容，在加载时，如果当前资源项依赖其它资源项，但别的资源项还没有加载，则需要用到这个变量来标识，以便稍后再给它赋真正值。
-
-
-
-
-
-
 //    /**
-
-
 //     */
-
-
-
-
+//    {
     public abstract Object getValue(Element itemElement);
 }

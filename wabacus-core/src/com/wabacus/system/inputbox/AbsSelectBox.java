@@ -34,6 +34,7 @@ import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.IEditableReportType;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
 import com.wabacus.system.inputbox.option.SelectboxOptionBean;
 import com.wabacus.util.Tools;
 
@@ -134,7 +135,7 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
                 {
                     mParentValues.put(parentidTmp,"[%ALL%]");
                 }
-                lstOptionsResult=getOptionsList(rrequest,mParentValues);
+                lstOptionsResult=getOptionsList(rrequest,mParentValues);//取当前子选择框所有下拉选项数据
                 if(lstOptionsResult!=null)
                 {
                     rrequest.setAttribute("LISTOPTIONS_"+rbean.getId()+owner.getInputBoxId()+"_[ALL]",lstOptionsResult);
@@ -168,7 +169,7 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
             lstOptionsResult=(List<Map<String,String>>)rrequest.getAttribute("LISTOPTIONS_"+rbean.getId()+realinputboxid);
         }
         if(lstOptionsResult==null)
-        {//缓存中没有取到
+        {
             if(!this.isDependsOtherInputbox())
             {
                 lstOptionsResult=getOptionsList(rrequest,null);
@@ -199,9 +200,9 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
         {
             for(SelectboxOptionBean obean:lstOptions)
             {
-                if(obean.getOptionDatasourceObj()!=null||obean.getType()==null) continue;
+                if(obean.getDatasetProvider()!=null||obean.getType()==null) continue;
                 if(obean.getType().length==1&&obean.getType()[0].equals("%false-false%"))
-                {
+                {//当前下拉选项是在选择框没有选项数据时才显示出来
                     mOptionTmp=new HashMap<String,String>();
                     mOptionTmp.put("label",rrequest.getI18NStringValue(obean.getLabel()));
                     mOptionTmp.put("value",obean.getValue());
@@ -212,7 +213,7 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
         {
             for(SelectboxOptionBean obean:lstOptions)
             {
-                if(obean.getOptionDatasourceObj()!=null||obean.getType()==null) continue;
+                if(obean.getDatasetProvider()!=null||obean.getType()==null) continue;
                 if(obean.getType().length==1&&obean.getType()[0].equals("%true-true%"))
                 {
                     mOptionTmp=new HashMap<String,String>();
@@ -426,15 +427,15 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
         {
             if(eleOptionBeanTmp==null) continue;
             SelectboxOptionBean ob=new SelectboxOptionBean(this);
-            String source=eleOptionBeanTmp.attributeValue("source");
+            String dataset=eleOptionBeanTmp.attributeValue("dataset");
             labeltemp=eleOptionBeanTmp.attributeValue("label");
             valuetemp=eleOptionBeanTmp.attributeValue("value");
             labeltemp=labeltemp==null?"":labeltemp.trim();
             valuetemp=valuetemp==null?"":valuetemp.trim();
             ob.setLabel(Config.getInstance().getResourceString(null,rbean.getPageBean(),labeltemp,true));
             ob.setValue(valuetemp);
-            source=source==null?"":source.trim();
-            if(source.equals(""))
+            dataset=dataset==null?"":dataset.trim();
+            if(dataset.equals(""))
             {
                 String type=eleOptionBeanTmp.attributeValue("type");
                 if(type!=null)
@@ -463,18 +464,21 @@ public abstract class AbsSelectBox extends AbsInputBox implements Cloneable
                     }
                     ob.setType(typearray);
                 }
-            }else if(Tools.isDefineKey("$",source))
+            }else if(Tools.isDefineKey("$",dataset))
             {
-                loadOptionInfo(lstOptions,(List<XmlElementBean>)Config.getInstance().getResourceObject(null,rbean.getPageBean(),source,true));
+                loadOptionInfo(lstOptions,(List<XmlElementBean>)Config.getInstance().getResourceObject(null,rbean.getPageBean(),dataset,true));
                 continue;
-            }else if(Tools.isDefineKey("@",source)||Tools.isDefineKey("class",source))
-            {
-                ob.loadOptionDynDatasourceObj(eleOptionBeanTmp,source);
             }else
-            {
-                throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的选择框选项的source："+eleOptionBeanTmp.attributeValue("source")+"不合法");
+            {//从数据集中获取
+                AbsCommonDataSetValueProvider dsProvider=AbsCommonDataSetValueProvider.createCommonDataSetValueProviderObj(rbean,dataset);
+                if(dsProvider==null)
+                {
+                    throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的选择框选项的dataset："+eleOptionBeanTmp.attributeValue("dataset")+"不合法");
+                }
+                ob.setDatasetProvider(dsProvider);
+                dsProvider.setOwnerOptionBean(ob);
+                dsProvider.loadConfig(eleOptionBeanTmp);
             }
-
             lstOptions.add(ob);
         }
     }

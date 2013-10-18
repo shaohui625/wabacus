@@ -45,23 +45,13 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
 {
     private static Log log=LogFactory.getLog(XlsFileProcessor.class);
 
+    private Workbook workbook;
+    
     private BufferedInputStream bis;
 
     private Sheet sheetObj;
 
-    public void setSheetObj(Sheet sheetObj)
-    {
-        this.sheetObj=sheetObj;
-        
-        layoutObj.init();
-    }
-
     private IXlsDataLayout layoutObj;
-
-    public IXlsDataLayout getLayoutObj()
-    {
-        return layoutObj;
-    }
 
     private XlsDataImportBean xlsConfigBean;
 
@@ -70,14 +60,6 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
         super(configBean);
         xlsConfigBean=(XlsDataImportBean)configBean;
         layoutObj=new HorizontalDataLayout();
-        
-    }
-    
-    private  Workbook workbook;
-
-    public Sheet getSheetObj()
-    {
-        return sheetObj;
     }
 
     public Workbook getWorkbook()
@@ -90,8 +72,7 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
         try
         {
             bis=new BufferedInputStream(new FileInputStream(datafile));
-          //  POIFSFileSystem fs=new POIFSFileSystem(bis);
-           workbook= WorkbookFactory.create(bis);
+            workbook=WorkbookFactory.create(bis);
             String sheet=xlsConfigBean.getSheet();
             if(sheet==null||sheet.trim().equals(""))
             {
@@ -110,14 +91,15 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
                         +"中没有取到所需的sheet");
             }
             layoutObj.init();
-        }catch(InvalidFormatException e){
-            throw new WabacusDataImportException("数据导入失败:"+datafile.getAbsolutePath(),e);
         }catch(FileNotFoundException e)
         {
             throw new WabacusDataImportException("数据导入失败，没有找到数据文件"+datafile.getAbsolutePath(),e);
         }catch(IOException ioe)
         {
             throw new WabacusDataImportException("导入数据文件"+datafile.getAbsolutePath()+"失败",ioe);
+        }catch(InvalidFormatException e)
+        {
+            throw new WabacusDataImportException("数据导入失败，数据文件"+datafile.getAbsolutePath()+"格式不对",e);
         }
     }
 
@@ -148,8 +130,6 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
     {
         try
         {
-            this.workbook = null;
-            this.sheetObj = null;
             if(bis!=null) bis.close();
         }catch(IOException e)
         {
@@ -171,10 +151,9 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
         public void init()
         {
 //            /**
-
 //             */
 //            startrecordindex=xlsConfigBean.getStartdatarowindex()-sheetObj.getFirstRowNum();//得到真正的相对getFirstRowNum()的起始行
-
+//            if(startrecordindex<0) startrecordindex=0;
             startrecordindex=xlsConfigBean.getStartdatarowindex();
             recordcount=sheetObj.getLastRowNum()-startrecordindex+1;
             if(recordcount<0) recordcount=0;
@@ -198,42 +177,11 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
                     lstResults.add("");
                 }else
                 {
-                     lstResults.add(getCellValue(cellTmp));
+                    lstResults.add(cellTmp.getRichStringCellValue().getString());
                 }
             }
             return lstResults;
         }
-        
-        
-        public  String getCellValue(Cell cell){
-
-            if(cell == null) return "";
-            
-            if(true){
-                cell.setCellType(Cell.CELL_TYPE_STRING);
-                
-                return cell.getRichStringCellValue().getString();
-            }
-            if(cell.getCellType() == Cell.CELL_TYPE_STRING){
-
-                return cell.getStringCellValue();
-
-            }else if(cell.getCellType() == Cell.CELL_TYPE_BOOLEAN){
-
-                return Boolean.toString(cell.getBooleanCellValue());
-
-            }else if(cell.getCellType() == Cell.CELL_TYPE_FORMULA){
-
-                return cell.getCellFormula() ;
-
-            }else if(cell.getCellType() == Cell.CELL_TYPE_NUMERIC){
-
-                return Double.toString(cell.getNumericCellValue());
-
-            }
-            return "";
-        }
-        
 
         public List getRowData(int recordidx)
         {
@@ -252,87 +200,20 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
         }
     }
 
-
-
-//        public void init()
-
 //            startrecordindex=xlsConfigBean.getStartdatacolindex();//数据的起始列号
 //            HSSFRow row=sheetObj.getRow(xlsConfigBean.getStartdatarowindex());//取到数据第一行
-
 //            int colcnt=row.getLastCellNum()-row.getFirstCellNum();//总列数
-
-
-
-
-
-
-
-
-
-
-
-
-//        {
-
+//            int endrecordidx=xlsConfigBean.getEnddatacolindex();
+//        public List<String> getLstColnameData()
 //            if(endnamerowidx<=0) return null;//没有数据
-
-
 //            {//如果配置了字段名列的最后一行行号，且小于最大行数
-
-
-
-
-
-
-
-
-
-
-
-//                }else
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//        public List getRowData(int recordidx)
-
-
+//            for(int i=xlsConfigBean.getStartnamerowindex();i<=endnamerowidx;i++)
+//                    {
+//
 //            if(enddatarowidx<=0) return null;//没有数据
-
-
 //            {//如果配置了字段名列的最后一行行号，且小于最大行数
-
-
-
-
-
-
-
-
-
-
-//                {
-
-
-
-
-
-
-
-
-
-
-
+//            HSSFCell cellTmp;
+//                    cellTmp=rowTmp.getCell(recordidx);
 
     private Object getCellValue(Cell cell)
     {
@@ -352,10 +233,10 @@ public class XlsFileProcessor extends AbsFileTypeProcessor
                     return String.valueOf(cell.getNumericCellValue());
                     /*double d=cell.getNumericCellValue();
                     if(d-(int)d<Double.MIN_VALUE)
-                    { 
+                    { // 是否为int型  
                         return (int)d;
                     }else
-                    { // 是否为double型  
+                    { 
                         return cell.getNumericCellValue();
                     }*/
                 }

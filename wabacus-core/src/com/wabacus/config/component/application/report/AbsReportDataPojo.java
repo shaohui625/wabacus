@@ -42,16 +42,13 @@ public abstract class AbsReportDataPojo
     
     protected Map<String,Object> mDynamicColData;
 
-    public Map<String,Object> getmDynamicColData()
-    {
-        return mDynamicColData;
-    }
-
     protected String wx_rowdata_key;
 
     protected String wx_belongto_datasetid;//当前记录所属的<dataset/>的id，只有配置了多个<dataset/>时才会设置它的值
 
     protected List<AbsReportDataPojo> lstAllDataObjs;
+    
+    protected ColBean hdsDataColBean;//对于横向数据集，这里存放本条记录对应的数据<col/>配置
     
     public AbsReportDataPojo(ReportRequest rrequest,ReportBean rbean)
     {
@@ -90,6 +87,16 @@ public abstract class AbsReportDataPojo
         this.wx_belongto_datasetid=wx_belongto_datasetid;
     }
 
+    public ColBean getHdsDataColBean()
+    {
+        return hdsDataColBean;
+    }
+
+    public void setHdsDataColBean(ColBean hdsDataColBean)
+    {
+        this.hdsDataColBean=hdsDataColBean;
+    }
+
     public Object getDynamicColData(String colname)
     {
         if(mDynamicColData==null) return null;
@@ -124,9 +131,16 @@ public abstract class AbsReportDataPojo
 
     public boolean setColValue(String property,Object value)
     {
-        ColBean cbean=rbean.getDbean().getColBeanByColProperty(property);
-        if(cbean==null) return false;
-        return setColValue(cbean,value);
+        if(this.hdsDataColBean!=null)
+        {
+            this.setDynamicColData(property,value);
+            return true;
+        }else
+        {
+            ColBean cbean=this.getColBeanByColProperty(property);
+            if(cbean==null) return false;
+            return setColValue(cbean,value);
+        }
     }
 
     public Object getColValue(ColBean cbean)
@@ -150,24 +164,92 @@ public abstract class AbsReportDataPojo
 
     public Object getColValue(String property)
     {
-        ColBean cbean=rbean.getDbean().getColBeanByColProperty(property);
-        if(cbean==null) return null;
-        return getColValue(cbean);
+        if(this.hdsDataColBean!=null)
+        {
+            return getDynamicColData(property);
+        }else
+        {
+            ColBean cbean=this.getColBeanByColProperty(property);
+            if(cbean==null) return null;
+            return getColValue(cbean);
+        }
     }
 
+    public Object getHdsColValueInOriginalRow(String coltitlevalue,String property)
+    {
+        if(this.hdsDataColBean==null) return null;
+        if(property==null||property.trim().equals("")) return null;
+        if(property.equals(this.hdsDataColBean.getProperty()))
+        {//如果要获取的列就是当前记录行对应的列的值
+            return this.getDynamicColData(coltitlevalue);
+        }else if(property.equals(rbean.getSbean().getHdsTitleValueCbean().getProperty()))
+        {
+            return coltitlevalue;
+        }else if(property.equals(rbean.getSbean().getHdsTitleLabelCbean().getProperty()))
+        {
+            ColBean cbTmp=rrequest.getCdb(rbean.getId()).getHdsColBeanByColumn(coltitlevalue);
+            return cbTmp==null?null:cbTmp.getLabel(rrequest);
+        }else
+        {
+            if(this.lstAllDataObjs==null) return null;
+            for(AbsReportDataPojo dataObjTmp:this.lstAllDataObjs)
+            {
+                if(isEqualsMyDatasetid(dataObjTmp.getWx_belongto_datasetid())&&dataObjTmp.getHdsDataColBean()!=null
+                        &&property.equals(dataObjTmp.getHdsDataColBean().getProperty()))
+                {
+                    return dataObjTmp.getDynamicColData(coltitlevalue);
+                }
+            }
+            return null;
+        }
+    }
+    
+    private boolean isEqualsMyDatasetid(String datasetid)
+    {
+        if(Tools.isEmpty(datasetid)&&Tools.isEmpty(this.wx_belongto_datasetid)) return true;
+        if(Tools.isEmpty(datasetid)||Tools.isEmpty(this.wx_belongto_datasetid)) return false;
+        return datasetid.equals(this.wx_belongto_datasetid);
+    }
+    
+    public String getHdsColStringValueInOriginalRow(String coltitlevalue,String property)
+    {
+        ColBean cbean=rbean.getDbean().getColBeanByColProperty(property);
+        if(cbean==null) return null;
+        return getHdsColStringValueInOriginalRow(coltitlevalue,cbean);
+    }
+    
+    public String getHdsColStringValueInOriginalRow(String coltitlevalue,ColBean cbean)
+    {
+        if(cbean==null) return null;
+        Object objVal=getHdsColValueInOriginalRow(coltitlevalue,cbean.getProperty());
+        if(objVal==null) return null;
+        if(cbean.getDatatypeObj()==null) return String.valueOf(objVal);
+        return cbean.getDatatypeObj().value2label(objVal);
+    }
+    
     public String getColStringValue(ColBean cbean)
     {
         Object objValue=getColValue(cbean);
         if(objValue==null) return null;
+        if(this.hdsDataColBean!=null) cbean=this.hdsDataColBean;//如果是横向数据集，则数据类型以此记录对应的数据<col/>的datatype为准
         if(cbean.getDatatypeObj()==null) return String.valueOf(objValue);
         return cbean.getDatatypeObj().value2label(objValue);
     }
 
     public String getColStringValue(String property)
     {
-        ColBean cbean=rbean.getDbean().getColBeanByColProperty(property);
-        if(cbean==null) return null;
-        return getColStringValue(cbean);
+        Object objVal=getColValue(property);
+        if(objVal==null) return null;
+        ColBean cbean=null;
+        if(this.hdsDataColBean!=null)
+        {
+            cbean=this.hdsDataColBean;//如果是横向数据集，则数据类型以此记录对应的数据<col/>的datatype为准
+        }else
+        {
+            cbean=this.getColBeanByColProperty(property);
+        }
+        if(cbean==null) return String.valueOf(objVal);
+        return cbean.getDatatypeObj().value2label(objVal);
     }
 
     public void setRowLabelstyleproperty(String labelstyleproperty,boolean isAppend)
@@ -207,29 +289,6 @@ public abstract class AbsReportDataPojo
         if(rowvaluestyleproperty==null) rowvaluestyleproperty=rbean.getDbean().getValuestyleproperty(rrequest,false);
         return rowvaluestyleproperty;
     }
-
-    public void setRowValuestyleproperty(String colproperty,String valuestyleproperty,boolean isAppend)
-    {
-        if(isAppend)
-        {
-            if(valuestyleproperty==null||valuestyleproperty.equals("")) return;
-            String oldvaluestyleproperty=getRowValuestyleproperty(colproperty);
-            if(oldvaluestyleproperty==null) oldvaluestyleproperty="";
-            valuestyleproperty=oldvaluestyleproperty+" "+valuestyleproperty;
-        }
-        colproperty=ReportAssistant.getInstance().getHorizontalRowValueStylepropertyKey(this.wx_belongto_datasetid,colproperty,
-                rbean.getSbean().isMultiDatasetRows());
-        rrequest.getCdb(rbean.getId()).setRowValuestyleproperty(colproperty,valuestyleproperty);
-    }
-    
-    public String getRowValuestyleproperty(String colproperty)
-    {
-        colproperty=ReportAssistant.getInstance().getHorizontalRowValueStylepropertyKey(this.wx_belongto_datasetid,colproperty,
-                rbean.getSbean().isMultiDatasetRows());
-        String rowvaluestyleproperty=rrequest.getCdb(rbean.getId()).getDynRowValuestyleproperty(colproperty);
-        if(rowvaluestyleproperty==null) rowvaluestyleproperty=rbean.getDbean().getValuestyleproperty(rrequest,false);
-        return rowvaluestyleproperty;
-    }
     
     public void setColLabelstyleproperty(String colproperty,String labelstyleproperty,boolean isAppend)
     {
@@ -257,7 +316,14 @@ public abstract class AbsReportDataPojo
         String labelstyleproperty=rrequest.getCdb(rbean.getId()).getDynColLabelstyleproperty(key);
         if(labelstyleproperty==null)
         {
-            ColBean cbTmp=getColBeanByColProperty(colproperty);
+            ColBean cbTmp;
+            if(this.hdsDataColBean!=null)
+            {
+                cbTmp=this.rbean.getSbean().getHdsTitleLabelCbean();
+            }else
+            {
+                cbTmp=getColBeanByColProperty(colproperty);
+            }
             if(cbTmp==null) return "";
             labelstyleproperty=cbTmp.getLabelstyleproperty(rrequest,false);
         }
@@ -281,7 +347,14 @@ public abstract class AbsReportDataPojo
         String valuestyleproperty=rrequest.getCdb(rbean.getId()).getDynColValuestyleproperty(this.wx_rowdata_key+"_col_"+colproperty);
         if(valuestyleproperty==null)
         {
-            ColBean cbTmp=getColBeanByColProperty(colproperty);
+            ColBean cbTmp;
+            if(this.hdsDataColBean!=null)
+            {
+                cbTmp=this.hdsDataColBean;
+            }else
+            {
+                cbTmp=getColBeanByColProperty(colproperty);
+            }
             if(cbTmp==null) return "";
             valuestyleproperty=cbTmp.getValuestyleproperty(rrequest,false);
         }
@@ -389,7 +462,7 @@ public abstract class AbsReportDataPojo
                 {
                     cbTmp=cdb.getDynamicColBeanByColumn(propertyTmp);
                     if(cbTmp!=null)
-                    {
+                    {//是动态列
                         dataObjNew.setDynamicColData(propertyTmp,valueTmp);
                     }else
                     {
@@ -447,7 +520,7 @@ public abstract class AbsReportDataPojo
             urlBuf.append("&PAGEID="+linkid);
             urlBuf.append("&REPORTID="+linkreportid);
             if(conditionValues!=null&&!conditionValues.trim().equals(""))
-            {//指定了查询条件参数
+            {
                 List<String> lstConVals=Tools.parseStringToList(conditionValues,"&",false);
                 for(String convalTmp:lstConVals)
                 {
@@ -497,8 +570,4 @@ public abstract class AbsReportDataPojo
     
     public void format()
     {}
-    
-    public  void saveToOldProps(){
-        
-    }
 }

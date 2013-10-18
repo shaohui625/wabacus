@@ -32,22 +32,21 @@ import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetBean;
+import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsChartReportType;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsChartReportBean;
-import com.wabacus.system.component.application.report.abstractreport.configbean.AbsChartReportDisplayBean;
 import com.wabacus.system.component.application.report.chart.configbean.FunsionChartsReportBean;
-import com.wabacus.system.component.application.report.chart.configbean.FusionChartsReportColBean;
 import com.wabacus.system.component.application.report.chart.fusioncharts.AbsDatasetType;
-import com.wabacus.system.component.application.report.chart.fusioncharts.DeleteTempChartDataFileTask;
 import com.wabacus.system.component.application.report.chart.fusioncharts.HorizontalDatasetType;
 import com.wabacus.system.component.application.report.chart.fusioncharts.VerticalDatasetType;
 import com.wabacus.system.component.container.AbsContainerType;
 import com.wabacus.system.intercept.ReportDataBean;
 import com.wabacus.system.tags.component.AbsComponentTag;
+import com.wabacus.system.task.DeleteTempFileTask;
 import com.wabacus.system.task.TimingThread;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Consts_Private;
@@ -90,9 +89,8 @@ public class FusionChartsReportType extends AbsChartReportType
         return getTitleDisplayValue(null,showButtonsOnTitleBar());
     }
 
-    public String showReportData()
+    public void showReportData(StringBuilder resultBuf)
     {
-        StringBuffer resultBuf=new StringBuffer();
         ReportDataBean reportDataObjFromInterceptor=null;
         if(rbean.getInterceptor()!=null)
         {
@@ -111,7 +109,7 @@ public class FusionChartsReportType extends AbsChartReportType
         {
             resultBuf.append(reportDataObjFromInterceptor.getAfterDisplayString());
         }
-        if(reportDataObjFromInterceptor!=null&&!reportDataObjFromInterceptor.isShouldDisplayReportData()) return resultBuf.toString();
+        if(reportDataObjFromInterceptor!=null&&!reportDataObjFromInterceptor.isShouldDisplayReportData()) return;
         String chartDataStr;
         if(reportDataObjFromInterceptor==null||reportDataObjFromInterceptor.getChartDataString()==null)
         {
@@ -122,7 +120,7 @@ public class FusionChartsReportType extends AbsChartReportType
         }
         if(reportDataObjFromInterceptor==null||!reportDataObjFromInterceptor.isStopAutoDisplayChart())
         {
-            StringBuffer paramsBuf=new StringBuffer();
+            StringBuilder paramsBuf=new StringBuilder();
             paramsBuf.append("{pageid:\"").append(rbean.getPageBean().getId()).append("\"");
             paramsBuf.append(",reportid:\"").append(rbean.getId()).append("\"");
             paramsBuf.append(",swfileurl:\"").append(Config.webroot+"webresources/component/FusionCharts/swf/"+acrbean.getChartype()).append("\"");
@@ -136,17 +134,8 @@ public class FusionChartsReportType extends AbsChartReportType
                 paramsBuf.append(",data:\"").append(Tools.jsParamEncode(chartDataStr)).append("\"");
             }else
             {
-                if(chartXmlFileTempPath==null)
-                {
-                    String xmlTmpPath=Config.webroot_abspath;
-                    if(!xmlTmpPath.endsWith(File.separator)) xmlTmpPath=xmlTmpPath+File.separator;
-                    xmlTmpPath+="wx_chart_files";
-                    File f=new File(xmlTmpPath);
-                    if(!f.exists()||!f.isDirectory()) f.mkdir();
-                    chartXmlFileTempPath=xmlTmpPath;
-                }
                 String filename=Tools.getRandomString(6);
-                if(rrequest.getRequest()!=null) filename+=Tools.replaceAll(rrequest.getRequest().getRemoteAddr(),".","");
+                if(rrequest.getRequest()!=null) filename+=getPureNumber(rrequest.getRequest().getRemoteAddr());
                 filename+=System.currentTimeMillis()+".xml";
                 String filepath=chartXmlFileTempPath+File.separator+filename;
                 FilePathAssistant.getInstance().writeFileContentToDisk(filepath,chartDataStr,false);
@@ -154,7 +143,7 @@ public class FusionChartsReportType extends AbsChartReportType
             }
             List<String[]> lstChartOnloadMethods=rrequest.getWResponse().getLstChartOnloadMethods(rbean.getId());
             if(lstChartOnloadMethods!=null&&lstChartOnloadMethods.size()>0)
-            {
+            {//配置了显示图表后的回调函数
                 paramsBuf.append(",chartOnloadMethods:[");
                 for(String[] methodTmp:lstChartOnloadMethods)
                 {
@@ -167,9 +156,22 @@ public class FusionChartsReportType extends AbsChartReportType
             paramsBuf.append("}");
             rrequest.getWResponse().addOnloadMethod("displayFusionChartsData",paramsBuf.toString(),true);
         }
-        return resultBuf.toString();
     }
 
+    private String getPureNumber(String ip)
+    {
+        StringBuilder ipBuf=new StringBuilder();
+        if(ip!=null)
+        {
+            for(int i=0;i<ip.length();i++)
+            {
+                if(ip.charAt(i)<'0'||ip.charAt(i)>'9') continue;
+                ipBuf.append(ip.charAt(i));
+            }
+        }
+        return ipBuf.toString();
+    }
+    
     public String loadStringChartData(boolean invokeInterceptor)
     {
         if(invokeInterceptor&&rbean.getInterceptor()!=null)
@@ -178,7 +180,7 @@ public class FusionChartsReportType extends AbsChartReportType
             rbean.getInterceptor().beforeDisplayReportData(rrequest,rbean,reportDataObjFromInterceptor);
             if(reportDataObjFromInterceptor.getChartDataString()!=null) return reportDataObjFromInterceptor.getChartDataString();
         }
-        StringBuffer resultBuf=new StringBuffer();
+        StringBuilder resultBuf=new StringBuilder();
         String title=rbean.getTitle(rrequest);
         resultBuf.append("<chart ");
         if(title!=null&&!title.equals("")) resultBuf.append(" caption='").append(title).append("'");
@@ -196,9 +198,8 @@ public class FusionChartsReportType extends AbsChartReportType
     public String getDataPartDisplayValue()
     {
         StringBuffer resultBuf=new StringBuffer();
-        List<ColBean> lstDisplayedColBeans=getLstDisplayColBeans();
-        AbsDatasetType datasetTypeObj=getDataSetTypeObj(lstDisplayedColBeans);
-        if(lstDisplayedColBeans!=null&&lstDisplayedColBeans.size()>0)
+        AbsDatasetType datasetTypeObj=getDataSetTypeObj();
+        if(datasetTypeObj.getLstDisplayedColBeans()!=null&&datasetTypeObj.getLstDisplayedColBeans().size()>0)
         {
             if(fcrbean.isXyPlotChart()||!fcrbean.isSingleSeriesChart())
             {
@@ -210,7 +211,7 @@ public class FusionChartsReportType extends AbsChartReportType
                 {
                     ((VerticalDatasetType)datasetTypeObj).displayXyPlotChartDataPart(resultBuf);
                 }else if(fcrbean.isSingleSeriesChart())
-                {//单序列数据
+                {
                     datasetTypeObj.displaySingleSeriesDataPart(resultBuf);
                 }else if(fcrbean.isDualLayerDatasetTag())
                 {//两层<dataset/>的图表数据
@@ -250,38 +251,17 @@ public class FusionChartsReportType extends AbsChartReportType
         mLinkedDataString.put(linkid,linkedChartData);
     }
     
-    private AbsDatasetType getDataSetTypeObj(List<ColBean> lstDisplayedColBeans)
+    private AbsDatasetType getDataSetTypeObj()
     {
         AbsDatasetType datasetTypeObj=null;
-        if(this.acrdbean.getCbeanLabel()!=null)
+        if(rbean.getSbean().isHorizontalDataset()&&!fcrbean.isXyPlotChart())
         {
-            datasetTypeObj=new HorizontalDatasetType(this,lstDisplayedColBeans);
+            datasetTypeObj=new HorizontalDatasetType(this);
         }else
         {
-            datasetTypeObj=new VerticalDatasetType(this,lstDisplayedColBeans);
+            datasetTypeObj=new VerticalDatasetType(this);
         }
         return datasetTypeObj;
-    }
-
-    private List<ColBean> getLstDisplayColBeans()
-    {
-        List<ColBean> lstColBeans=rbean.getDbean().getLstCols();
-        if(lstColBeans==null||lstColBeans.size()==0) return null;
-        List<ColBean> lstResults=new ArrayList<ColBean>();
-        for(ColBean cbTmp:lstColBeans)
-        {
-            if(fcrbean.isXyPlotChart())
-            {
-                if("x".equals(cbTmp.getProperty())||"y".equals(cbTmp.getProperty())||"z".equals(cbTmp.getProperty()))
-                {
-                    lstResults.add(cbTmp);
-                    continue;
-                }
-            }
-            if(cbTmp.isControlCol()||this.isHiddenCol(cbTmp)) continue;
-            lstResults.add(cbTmp);
-        }
-        return lstResults;
     }
     
     public String getColSelectedMetadata()
@@ -292,28 +272,112 @@ public class FusionChartsReportType extends AbsChartReportType
     protected void showReportOnPdfWithoutTpl()
     {}
 
-    public Workbook showReportOnPlainExcel(Workbook workbook)
+    public void showReportOnPlainExcel(Workbook workbook)
+    {}
+    
+    public boolean addNonFromDbColForChart(String beforelabelvalue,String displayvalue)
     {
-        return workbook;
+        List<ColBean> lstColBeans=rrequest.getCdb(rbean.getId()).getLstDynOrderColBeans();
+        if(lstColBeans==null) lstColBeans=rbean.getDbean().getLstCols();
+        if(lstColBeans==null) return false;
+        int addindex=-1;
+        if(beforelabelvalue==null)
+        {
+            addindex=0;
+        }else
+        {
+            int i=0;
+            beforelabelvalue=beforelabelvalue.trim();
+            for(ColBean cbTmp:lstColBeans)
+            {
+                if(beforelabelvalue.equals(cbTmp.isNonFromDbCol()?cbTmp.getTagcontent(rrequest).trim():cbTmp.getLabel(rrequest).trim()))
+                {
+                    addindex=i+1;
+                    break;
+                }
+                i++;
+            }
+        }
+        if(addindex==-1) return false;
+        return addNonFromDbColForChart(addindex,displayvalue);
     }
     
-    public int afterColLoading(ColBean colbean,List<XmlElementBean> lstEleColBeans)
+    public boolean addNonFromDbColForChart(String displayvalue)
     {
-        super.afterColLoading(colbean,lstEleColBeans);
-        if(colbean.isNonFromDbCol())
-        {
-            FusionChartsReportColBean fcrcbean=(FusionChartsReportColBean)colbean.getExtendConfigDataForReportType(KEY);
-            if(fcrcbean==null)
-            {
-                fcrcbean=new FusionChartsReportColBean(colbean);
-                colbean.setExtendConfigDataForReportType(KEY,fcrcbean);
-            }
-            fcrcbean
-                    .setNonfromdb_colvalue(Config.getInstance().getResourceString(null,colbean.getPageBean(),lstEleColBeans.get(0).getContent(),true));
-        }
-        return 1;
+        List<ColBean> lstColBeans=rrequest.getCdb(rbean.getId()).getLstDynOrderColBeans();
+        if(lstColBeans==null) lstColBeans=rbean.getDbean().getLstCols();
+        if(lstColBeans==null) return false;
+        lstColBeans=(List<ColBean>)((ArrayList<ColBean>)lstColBeans).clone();
+        lstColBeans.add(createNonFromDBCol(displayvalue));
+        rrequest.getCdb(rbean.getId()).setLstDynOrderColBeans(lstColBeans);
+        return true;
     }
-
+    
+    public boolean addNonFromDbColForChart(int index,String displayvalue)
+    {
+        if(index<0) return false;
+        List<ColBean> lstColBeans=rrequest.getCdb(rbean.getId()).getLstDynOrderColBeans();
+        if(lstColBeans==null) lstColBeans=rbean.getDbean().getLstCols();
+        if(lstColBeans==null) return false;
+        lstColBeans=(List<ColBean>)((ArrayList<ColBean>)lstColBeans).clone();
+        if(index>=lstColBeans.size())
+        {
+            lstColBeans.add(createNonFromDBCol(displayvalue));
+        }else
+        {
+            lstColBeans.add(index,createNonFromDBCol(displayvalue));
+        }
+        rrequest.getCdb(rbean.getId()).setLstDynOrderColBeans(lstColBeans);
+        return true;
+    }
+    
+    private ColBean createNonFromDBCol(String displayvalue)
+    {
+        ColBean cbeanNonFromDb=new ColBean(rbean.getDbean());
+        cbeanNonFromDb.setColumn(Consts_Private.NON_FROMDB);
+        cbeanNonFromDb.setProperty(cbeanNonFromDb.getColid());
+        cbeanNonFromDb.setDisplaytype(new String[]{Consts.COL_DISPLAYTYPE_ALWAYS,Consts.COL_DISPLAYTYPE_ALWAYS});
+        cbeanNonFromDb.setTagcontent(displayvalue);
+        return cbeanNonFromDb;
+    }
+    
+    public boolean deleteNonFromDbColForChart(String displayvalue)
+    {
+        List<ColBean> lstColBeans=rrequest.getCdb(rbean.getId()).getLstDynOrderColBeans();
+        if(lstColBeans==null) lstColBeans=rbean.getDbean().getLstCols();
+        if(lstColBeans==null) return false;
+        lstColBeans=(List<ColBean>)((ArrayList<ColBean>)lstColBeans).clone();
+        boolean result=false;
+        for(int i=lstColBeans.size()-1;i>=0;i--)
+        {
+            if(lstColBeans.get(i).isNonFromDbCol())
+            {
+                if(displayvalue==null||displayvalue.equals(lstColBeans.get(i).getTagcontent(rrequest).trim()))
+                {
+                    lstColBeans.remove(i);
+                    result=true;
+                }
+            }
+        }
+        if(result) rrequest.getCdb(rbean.getId()).setLstDynOrderColBeans(lstColBeans);
+        return result;
+    }
+    
+    public boolean deleteNonFromDbColForChart(int index)
+    {
+        List<ColBean> lstColBeans=rrequest.getCdb(rbean.getId()).getLstDynOrderColBeans();
+        if(lstColBeans==null) lstColBeans=rbean.getDbean().getLstCols();
+        if(lstColBeans==null||lstColBeans.size()<=index) return false;
+        if(lstColBeans.get(index)!=null&&lstColBeans.get(index).isNonFromDbCol())
+        {
+            lstColBeans=(List<ColBean>)((ArrayList<ColBean>)lstColBeans).clone();
+            lstColBeans.remove(index);
+            rrequest.getCdb(rbean.getId()).setLstDynOrderColBeans(lstColBeans);
+            return true;
+        }
+        return false;
+    }
+    
     public int afterReportLoading(ReportBean reportbean,List<XmlElementBean> lstEleReportBeans)
     {
         super.afterReportLoading(reportbean,lstEleReportBeans);
@@ -353,7 +417,7 @@ public class FusionChartsReportType extends AbsChartReportType
             fcrbean.setLinkChart(linkchart.toLowerCase().trim().equals("true"));
         }
         String debugmode=eleReportBean.attributeValue("debugmode");
-        if(debugmode!=null) fcrbean.setDebugmode(debugmode.trim().toLowerCase().equals("true"));
+        if(debugmode!=null) fcrbean.setDebugmode(debugmode.trim().toLowerCase().equals("true"));//默认是false
         String registerwithjs=eleReportBean.attributeValue("registerwithjs");
         if(registerwithjs!=null) fcrbean.setRegisterwithjs(!registerwithjs.trim().toLowerCase().equals("false"));
         XmlElementBean eleSubdisplayBean=eleReportBean.getChildElementByName("subdisplay");
@@ -373,16 +437,23 @@ public class FusionChartsReportType extends AbsChartReportType
         AbsChartReportBean acrbean=(AbsChartReportBean)reportbean.getExtendConfigDataForReportType(AbsChartReportType.KEY);
         if(acrbean.getDatatype().equals(AbsChartReportBean.DATATYPE_JSONURL)||acrbean.getDatatype().equals(AbsChartReportBean.DATATYPE_XMLURL))
         {
-            TimingThread.getInstance().addTask(new DeleteTempChartDataFileTask());
+            if(chartXmlFileTempPath==null)
+            {
+                String xmlTmpPath=Config.webroot_abspath;
+                if(!xmlTmpPath.endsWith(File.separator)) xmlTmpPath=xmlTmpPath+File.separator;
+                xmlTmpPath+="wxtmpfiles"+File.separator+"chartdata"+File.separator;
+                FilePathAssistant.getInstance().checkAndCreateDirIfNotExist(xmlTmpPath);
+                chartXmlFileTempPath=xmlTmpPath;
+            }
+            DeleteTempFileTask taskObj=new DeleteTempFileTask();
+            taskObj.parseInterval(Config.getInstance().getSystemConfigValue("fusioncharts-autodelete-interval",""));
+            taskObj.setId("fusioncharts_files");
+            taskObj.setFilepath(chartXmlFileTempPath);
+            TimingThread.getInstance().addTask(taskObj);
         }
-        AbsChartReportDisplayBean acrdbean=(AbsChartReportDisplayBean)reportbean.getDbean().getExtendConfigDataForReportType(AbsChartReportType.KEY);
         FunsionChartsReportBean fcrbean=(FunsionChartsReportBean)reportbean.getExtendConfigDataForReportType(KEY);
         if(fcrbean.isXyPlotChart())
         {
-            if(acrdbean.getCbeanLabel()!=null)
-            {
-                throw new WabacusConfigLoadingException("报表"+reportbean.getPath()+"为"+acrbean.getChartype()+"类型，不能配置横向数据集");
-            }
             fcrbean.setDualLayerDatasetTag(false);
             Map<String,ColBean> mXyzColBeans=new HashMap<String,ColBean>();
             for(ColBean cbTmp:reportbean.getDbean().getLstCols())
@@ -408,7 +479,7 @@ public class FusionChartsReportType extends AbsChartReportType
             for(Entry<String,ColBean> entryTmp:mXyzColBeans.entrySet())
             {
                 cbTmp=entryTmp.getValue();
-                if(cbTmp.isControlCol()||cbTmp.isNonFromDbCol()||cbTmp.isNonValueCol()||Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbTmp.getDisplaytype()))
+                if(cbTmp.isControlCol()||cbTmp.isNonFromDbCol()||cbTmp.isNonValueCol()||Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbTmp.getDisplaytype(true)))
                 {
                     throw new WabacusConfigLoadingException("报表"+reportbean.getPath()+"是"+acrbean.getChartype()
                             +"图表类型，property为x、y、z的<col/>必须是显示的且有效的数据列");
@@ -421,27 +492,27 @@ public class FusionChartsReportType extends AbsChartReportType
             }
         }else
         {
-            fcrbean.setDualLayerDatasetTag(isDualLayerDatasetTag(reportbean,acrdbean.getCbeanLabel()!=null));
+            fcrbean.setDualLayerDatasetTag(isDualLayerDatasetTag(reportbean));
         }
         return 1;
     }
     
-    private boolean isDualLayerDatasetTag(ReportBean reportbean,boolean isHorizontalDataset)
+    private boolean isDualLayerDatasetTag(ReportBean reportbean)
     {
-        AbsChartReportBean acrbean=(AbsChartReportBean)reportbean.getExtendConfigDataForReportType(AbsChartReportType.KEY);
+        SqlBean sbean=reportbean.getSbean();
         FunsionChartsReportBean fcrbean=(FunsionChartsReportBean)reportbean.getExtendConfigDataForReportType(KEY);
-        if(fcrbean.isSingleSeriesChart()||acrbean.getLstDatasetGroupBeans().size()<=1) return false;//是单序列数据或者只有一个groupid的<dataset/>配置
-        if(!isHorizontalDataset) return true;//垂直数据集的话，配置了多个独立的<dataset/>就要在图表中显示两层<dataset/>
-        AbsChartReportDisplayBean acrdbean=(AbsChartReportDisplayBean)reportbean.getDbean().getExtendConfigDataForReportType(AbsChartReportType.KEY);
+        if(fcrbean.isSingleSeriesChart()||!sbean.isMultiDatasetGroups(true)) return false;//是单序列数据或者只有一个groupid的<dataset/>配置
+        if(!sbean.isHorizontalDataset()) return true;//垂直数据集的话，配置了多个独立的<dataset/>就要在图表中显示两层<dataset/>
         List<String> lstDatasetGroupidForData=new ArrayList<String>();
         for(ColBean cbTmp:reportbean.getDbean().getLstCols())
         {
-            if(cbTmp.isControlCol()||Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbTmp.getDisplaytype())) continue;
-            if(acrdbean.getLabelcolumn().trim().equals(cbTmp.getColumn())) continue;
+            if(cbTmp.isControlCol()||Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbTmp.getDisplaytype(true))) continue;
+            if(sbean.getHdsTitleLabelCbean().getColumn().trim().equals(cbTmp.getColumn())
+                    ||sbean.getHdsTitleValueCbean().getColumn().equals(cbTmp.getColumn())) continue;
             String matchedDatasetGroupid=null;//存放本<col/>的数据来自的<dataset/>的groupid
-            for(ReportDataSetBean dsbeanTmp:reportbean.getSbean().getLstDatasetBeans())
+            for(ReportDataSetBean dsbeanTmp:sbean.getLstDatasetBeans())
             {
-                if(dsbeanTmp.getDatasetValueBeanById(cbTmp.getDatasetValueId())==null) continue;
+                if(dsbeanTmp.getDatasetValueBeanOfCbean(cbTmp)==null) continue;
                 if(!lstDatasetGroupidForData.contains(dsbeanTmp.getGroupid()))
                 {
                     if(lstDatasetGroupidForData.size()>0)

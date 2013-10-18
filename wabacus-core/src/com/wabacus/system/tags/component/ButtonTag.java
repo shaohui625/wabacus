@@ -51,6 +51,16 @@ public class ButtonTag extends AbsComponentTag
     
     private String dataexportcomponentids;
     
+    private String localstroage;
+    
+    private String download;
+    
+    private String autodelete;
+    
+    private String zip;
+    
+    private String directorydateformat;
+    
     public void setType(String type)
     {
         this.type=type;
@@ -79,6 +89,31 @@ public class ButtonTag extends AbsComponentTag
     public void setBeforecallback(String beforecallback)
     {
         this.beforecallback=beforecallback;
+    }
+
+    public void setLocalstroage(String localstroage)
+    {
+        this.localstroage=localstroage;
+    }
+
+    public void setDownload(String download)
+    {
+        this.download=download;
+    }
+
+    public void setAutodelete(String autodelete)
+    {
+        this.autodelete=autodelete;
+    }
+
+    public void setZip(String zip)
+    {
+        this.zip=zip;
+    }
+
+    public void setDirectorydateformat(String directorydateformat)
+    {
+        this.directorydateformat=directorydateformat;
     }
 
     public int doStartTag() throws JspException
@@ -122,13 +157,18 @@ public class ButtonTag extends AbsComponentTag
         attributes.put("componentids",this.dataexportcomponentids);
         attributes.put("pageurl",pageurl);
         attributes.put("beforecallback",beforecallback);
+        attributes.put("directorydateformat",this.directorydateformat);
+        attributes.put("download",this.download);
+        attributes.put("autodelete",this.autodelete);
+        attributes.put("localstroage",this.localstroage);
+        attributes.put("zip",this.zip);
         if(Consts.lstDataExportTypes.contains(type))
-        {
-            TagAssistant.getInstance().printlnTag(out,rrequest,TagAssistant.getInstance().getButtonDisplayValue(this.ownerComponentObj,attributes));
+        {//如果是导出数据的按钮，则不用初始化displayReportObj，因为reportid可以传入多个报表的id，即使某个报表当前没显示，也可以提供导出它数据的链接，所以跟displayReportObj无关
+            println(TagAssistant.getInstance().getButtonDisplayValue(this.ownerComponentObj,attributes));
         }else
         {
             if(this.displayComponentObj==null) return EVAL_PAGE;
-            TagAssistant.getInstance().printlnTag(out,rrequest,TagAssistant.getInstance().getButtonDisplayValue(this.displayComponentObj,attributes));
+            println(TagAssistant.getInstance().getButtonDisplayValue(this.displayComponentObj,attributes));
         }
         return EVAL_PAGE;
     }

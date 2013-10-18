@@ -103,14 +103,7 @@ public class DesEncryptTools
             e.printStackTrace();
             return null;
         }
-        
-        
-        
-        
-        
-        
-        
-        
+        //            return null;
     }
 
     private static byte[] base64Decode(String s)
@@ -125,15 +118,7 @@ public class DesEncryptTools
             return null;
         }
 
-        
-        
-        
-        //        {
-        
-        
-        
-        
-        
+        //        }
     }
 
     public static void initEncryptKey() throws IOException
@@ -146,8 +131,6 @@ public class DesEncryptTools
             log.warn("没有在wabacus.cfg.xml中通过配置项3des-keyfilepath配置3des密钥存放路径");
             return;
         }
-        
-        
         InputStream istream=null;
         File file=null;
         ObjectInputStream ois=null;

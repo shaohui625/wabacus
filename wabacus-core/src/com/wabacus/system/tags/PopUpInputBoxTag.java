@@ -62,7 +62,6 @@ public class PopUpInputBoxTag extends TagSupport
         if(idx>0)
         {
             boxid=boxid.substring(0,idx);
-
         }
         PopUpBox popupboxObj=rbean.getPopUpBox(boxid);
         if(popupboxObj==null)

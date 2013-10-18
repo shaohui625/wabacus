@@ -121,7 +121,7 @@ public class SearchBoxTag extends AbsComponentTag
                 resultBuf.append(resultStr);
                 resultStr=resultBuf.toString();
             }
-            TagAssistant.getInstance().printlnTag(out,rrequest,resultStr);
+            println(resultStr);
         }
         return EVAL_PAGE;
     }
@@ -142,7 +142,6 @@ public class SearchBoxTag extends AbsComponentTag
         {
             dataObj=lstData.get(0);
         }
-        TagAssistant.getInstance().printlnTag(out,rrequest,
-                TagAssistant.getInstance().showConditionBox(rrequest,cbean,dataObj,iteratorindex,showinputbox,styleproperty));
+        println(TagAssistant.getInstance().showConditionBox(rrequest,cbean,dataObj,iteratorindex,showinputbox,styleproperty));
     }
 }

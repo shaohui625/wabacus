@@ -48,11 +48,6 @@ public class PlainExcelExportBean extends AbsDataExportBean
         return plainexcelsheetsize;
     }
 
-    public void setPlainexcelsheetsize(int plainexcelsheetsize)
-    {
-        this.plainexcelsheetsize=plainexcelsheetsize;
-    }
-
     public void loadConfig(XmlElementBean eleDataExport)
     {
         super.loadConfig(eleDataExport);

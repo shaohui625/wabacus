@@ -90,7 +90,7 @@ public class TestServerCallBack1 implements IServerAction
     public String executeSeverAction(ReportRequest rrequest,IComponentConfigBean ccbean,List<Map<String,String>> lstData,Map<String,String> mCustomizedData)
     {
         System.out.println("调用executeSeverAction(ReportRequest rrequest,IComponentConfigBean ccbean,List<Map<String,String>> lstData)方法...");
-        rrequest.getWResponse().getMessageCollector().success("调用服务器端方法成功",false);//向前台提示一条信息，这里还可以终止后续处理
+        rrequest.getWResponse().getMessageCollector().success("调用服务器端方法成功");//向前台提示一条信息，这里还可以终止后续处理
         printLstParams(lstData);//打印客户端传过来的参数
         return "调用成功!!!";
     }

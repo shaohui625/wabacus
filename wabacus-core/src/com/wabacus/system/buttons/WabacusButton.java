@@ -18,10 +18,6 @@
  */
 package com.wabacus.system.buttons;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -43,12 +39,10 @@ public class WabacusButton extends AbsButtonType
     
     public String showButton(ReportRequest rrequest,String dynclickevent)
     {
-        
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT) return "";
         if(!checkDisplayPermission(rrequest)) return "";
         String clickevent="";
         StringBuffer resultBuf=new StringBuffer();
-        String mystyleproperty=null;
         boolean isDisabled=checkDisabledPermission(rrequest);
         if(!isDisabled)
         {
@@ -64,24 +58,14 @@ public class WabacusButton extends AbsButtonType
                 if(clickevent==null) clickevent="";
                 log.warn("为组件"+this.ccbean.getPath()+"配置的按钮："+this.name+"没有配置点击事件");
             }
-            mystyleproperty=this.styleproperty;
-        }else
-        {
-            if(this.disabledstyleproperty!=null&&!this.disabledstyleproperty.trim().equals(""))
-            {
-                mystyleproperty=disabledstyleproperty;
-            }else
-            {
-                mystyleproperty=this.styleproperty;
-            }
         }
-        mystyleproperty=mystyleproperty==null?"":mystyleproperty.trim();
         String labeltemp=label;
         if(Tools.isDefineKey("$",labeltemp))
         {
             labeltemp=Config.getInstance().getResourceString(rrequest,ccbean.getPageBean(),labeltemp,false);
         }
         labeltemp=rrequest.getI18NStringValue(labeltemp);
+        String mystyleproperty=this.getStyleproperty(!isDisabled);
         if(Tools.isDefineKey("image",labeltemp)||Tools.isDefineKey("button",labeltemp))
         {
             if(!isDisabled)
@@ -111,11 +95,6 @@ public class WabacusButton extends AbsButtonType
         {
             resultBuf.append("<input type=\"button\" value=\""+labeltemp+"\" ");
             resultBuf.append(mystyleproperty);
-            //$ByQXO
-            if(isDisabled){
-                resultBuf.append(" disabled ");
-            }
-            //ByQXO$
             resultBuf.append(" onclick=\""+getRealClickEvent(rrequest,clickevent)+"\"").append(">");
         }
         return resultBuf.toString();
@@ -123,14 +102,14 @@ public class WabacusButton extends AbsButtonType
 
     public String showButton(ReportRequest rrequest,String dynclickevent,String button)
     {
-        
+        //if(shouldStopDisplayAsRefered(rrequest)) return "";
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT) return "";
         if(button==null||button.trim().equals("")) return showButton(rrequest,dynclickevent);
         if(!checkDisplayPermission(rrequest)) return "";
         StringBuffer resultBuf=new StringBuffer();
         boolean isDisabled=checkDisabledPermission(rrequest);
         if(!isDisabled)
-        {//如果不是禁用，则有点击权限
+        {
             String clickevent=null;
             if(dynclickevent!=null&&!dynclickevent.trim().equals(""))
             {
@@ -157,7 +136,6 @@ public class WabacusButton extends AbsButtonType
     
     public String showMenu(ReportRequest rrequest,String dynclickevent)
     {
-        
         if(menulabel==null||menulabel.trim().equals("")) return "";
         if(!checkDisplayPermission(rrequest)) return "";
         String clickevent="";
@@ -203,59 +181,13 @@ public class WabacusButton extends AbsButtonType
         return "try{"+clickevent+"}catch(e){logErrorsAsJsFileLoad(e);}";
     }
     
-
-
-
 //        {//当前按钮被容器引用显示，且不在原位置显示
-
+//            if(rrequest.getStringAttribute("DISPLAY_ON_SOURCEREPORT","").equals("false"))
 //            {//不是在源报表中显示此按钮
 //                rrequest.removeAttribute("DISPLAY_ON_SOURCEREPORT");//及时清除掉
 //                return false;//如果当前不是在源报表上显示，则显示出来
-
-
-
-
-
-
-//    }
     
     public void loadExtendConfig(XmlElementBean eleButtonBean)
     {
-       // System.out.println("eleButtonBean:"+eleButtonBean);
-        
-        setAttrs(eleButtonBean.getMPropertiesClone());
     }
-    
-    
-    
-    //$ByQXO　所有属性列表Map,以便扩展类中使用
-    private Map<String,String> attrs;
-
-    public Map<String,String> getAttrs()
-    {
-        return attrs == null ? MapUtils.EMPTY_MAP : attrs;
-    }
-
-    public void setAttrs(Map<String,String> attrs)
-    {
-        this.attrs=attrs;
-    }
-    
-    public void mergeAttrs(Map<String,String> overrideAttrs){
-        if(overrideAttrs == null || overrideAttrs.isEmpty()){
-            return;
-        }
-        if(attrs == null){
-            attrs = new HashMap<String,String>();
-        }
-        attrs.putAll(overrideAttrs);
-    }
-
-    @Override
-    public String getButtonType()
-    {
-        return this.getAttrs().get("type");
-    }    
-    
-    //ByQXO$
 }

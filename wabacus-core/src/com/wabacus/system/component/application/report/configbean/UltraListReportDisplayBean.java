@@ -36,22 +36,33 @@ public class UltraListReportDisplayBean extends AbsExtendConfigBean
     
     private List lstChildren;
     
-    private Map<String,ColAndGroupTitlePositionBean> mChildrenDefaultPositions;
+    private Map<String,ColAndGroupTitlePositionBean> mChildrenDefaultPagePositions;
+    
+    private Map<String,ColAndGroupTitlePositionBean> mChildrenDefaultDataExportPositions;
 
     public UltraListReportDisplayBean(AbsConfigBean owner)
     {
         super(owner);
     }
 
-    public Map<String,ColAndGroupTitlePositionBean> getMChildrenDefaultPositions()
+    public Map<String,ColAndGroupTitlePositionBean> getMChildrenDefaultPagePositions()
     {
-        return mChildrenDefaultPositions;
+        return mChildrenDefaultPagePositions;
     }
 
-    public void setMChildrenDefaultPositions(
-            Map<String,ColAndGroupTitlePositionBean> childrenDefaultPositions)
+    public void setMChildrenDefaultPagePositions(Map<String,ColAndGroupTitlePositionBean> childrenDefaultPagePositions)
     {
-        mChildrenDefaultPositions=childrenDefaultPositions;
+        mChildrenDefaultPagePositions=childrenDefaultPagePositions;
+    }
+
+    public Map<String,ColAndGroupTitlePositionBean> getMChildrenDefaultDataExportPositions()
+    {
+        return mChildrenDefaultDataExportPositions;
+    }
+
+    public void setMChildrenDefaultDataExportPositions(Map<String,ColAndGroupTitlePositionBean> childrenDefaultDataExportPositions)
+    {
+        mChildrenDefaultDataExportPositions=childrenDefaultDataExportPositions;
     }
 
     public boolean isHasGroupConfig(ReportRequest rrequest)
@@ -131,14 +142,14 @@ public class UltraListReportDisplayBean extends AbsExtendConfigBean
     public AbsExtendConfigBean clone(AbsConfigBean owner)
     {
         DisplayBean disbean=(DisplayBean)owner;
-        UltraListReportDisplayBean bean=(UltraListReportDisplayBean)super.clone(owner);
-        if(bean.getLstChildren()!=null&&bean.getLstChildren().size()>0)
+        UltraListReportDisplayBean beanNew=(UltraListReportDisplayBean)super.clone(owner);
+        if(beanNew.getLstChildren()!=null&&beanNew.getLstChildren().size()>0)
         {
             List lstTemp=new ArrayList();
             ColBean cbTmp;
-            for(int i=0;i<bean.getLstChildren().size();i++)
+            for(int i=0;i<beanNew.getLstChildren().size();i++)
             {
-                Object obj=bean.getLstChildren().get(i);
+                Object obj=beanNew.getLstChildren().get(i);
                 if(obj==null) continue;
                 if(obj instanceof ColBean)
                 {
@@ -153,8 +164,16 @@ public class UltraListReportDisplayBean extends AbsExtendConfigBean
                     lstTemp.add(((AbsConfigBean)obj).clone(owner));
                 }
             }
-            bean.setLstChildren(lstTemp);
+            beanNew.setLstChildren(lstTemp);
+            beanNew.mChildrenDefaultPagePositions=cloneDefaultPositions(this.mChildrenDefaultPagePositions);
+            beanNew.mChildrenDefaultDataExportPositions=cloneDefaultPositions(this.mChildrenDefaultDataExportPositions);
         }
+        
+        return beanNew;
+    }
+    
+    private Map<String,ColAndGroupTitlePositionBean> cloneDefaultPositions(Map<String,ColAndGroupTitlePositionBean> mChildrenDefaultPositions)
+    {
         try
         {
             if(mChildrenDefaultPositions!=null)
@@ -165,13 +184,12 @@ public class UltraListReportDisplayBean extends AbsExtendConfigBean
                     mChildrenPositionsNew.put(entry.getKey(),(ColAndGroupTitlePositionBean)entry
                             .getValue().clone());
                 }
-                bean.setMChildrenDefaultPositions(mChildrenPositionsNew);
+                return mChildrenPositionsNew;
             }
         }catch(CloneNotSupportedException e)
         {
             e.printStackTrace();
         }
-        return bean;
+        return null;
     }
-    
 }

@@ -22,7 +22,6 @@ import java.util.List;
 
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.AbsConfigBean;
-import com.wabacus.config.component.application.report.ReportDataSetBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
@@ -50,8 +49,6 @@ public class AbsChartReportBean extends AbsExtendConfigBean
 
     private List<String> lstDynChartstylepropertyParts;
 
-    private List<List<ReportDataSetBean>> lstDatasetGroupBeans;//根据<dataset/>的groupid进行分组存放，相同的groupid存放在一个List中
-    
     public AbsChartReportBean(AbsConfigBean owner)
     {
         super(owner);
@@ -115,15 +112,5 @@ public class AbsChartReportBean extends AbsExtendConfigBean
             this.chartstyleproperty=(String)objArr[0];
             this.lstDynChartstylepropertyParts=(List<String>)objArr[1];
         }
-    }
-
-    public List<List<ReportDataSetBean>> getLstDatasetGroupBeans()
-    {
-        return lstDatasetGroupBeans;
-    }
-
-    public void setLstDatasetGroupBeans(List<List<ReportDataSetBean>> lstDatasetGroupBeans)
-    {
-        this.lstDatasetGroupBeans=lstDatasetGroupBeans;
     }
 }

@@ -250,7 +250,7 @@ public class Resources
         if(o instanceof String)
         {
             if(rrequest!=null)
-            {
+            {//如果是在运行时获取资源项
                 o=Tools.replaceAll((String)o,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());
             }
             return ((String)o).trim();
@@ -301,7 +301,7 @@ public class Resources
             o=mTemp.get(key);
             if(rrequest!=null&&o instanceof String)
             {
-                o=Tools.replaceAll((String)o,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());//替换掉资源项中的主题风格占位符
+                o=Tools.replaceAll((String)o,Consts_Private.SKIN_PLACEHOLDER,rrequest.getPageskin());
             }
         }
         if(o==null)

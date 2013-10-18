@@ -198,12 +198,11 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         EditableReportColBean ercbeanTmp=null;
         for(ColBean cbean:rbean.getDbean().getLstCols())
         {
-            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) continue;
+            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true))) continue;
             if(mColPositions.get(cbean.getColid()).getDisplaymode()<=0) continue;
             if(cbean.isNonValueCol()) continue;
             ercbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
             if(ercbeanTmp==null||!ercbeanTmp.isEditableForUpdate()) continue;
-            
             resultBuf.append(ercbeanTmp.getInputbox().initDisplay(rrequest));
         }
         return resultBuf.toString();
@@ -218,21 +217,9 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
     {
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return super.initDisplayCol(cbean,dataObj);
         if(cbean.isNonValueCol()) return null;
-
-
-
-
-
-
-//            EditableReportColBean ercbean=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
-
+//        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype()))
 //            {//没有通过updatecol属性引用别的列进行更新
-
-
-
-
-
-
+//                col_editvalue=getColOriginalValue(dataObj,ercbean.getUpdateCbean());
         String col_editvalue=getColOriginalValue(dataObj,cbean);
         return EditableReportColDataBean.createInstance(rrequest,this.cacheDataBean,ersqlbean.getUpdatebean(),cbean,col_editvalue,this.currentSecretColValuesBean);
     }
@@ -317,7 +304,6 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
             if(ercbean!=null) col_displayvalue=ercbean.getRealColDisplayValue(rrequest,dataObj,col_displayvalue);
         }else if(ercbean.getInputbox().getFillmode()==2)
         {
-            
             if(ercdatabean.isNeedDefaultValue())
             {//如果当前是显示输入框的默认值
                 col_displayvalue=ercdatabean.getDefaultvalue();
@@ -410,7 +396,7 @@ public class EditableDetailReportType2 extends DetailReportType implements IEdit
         EditableReportColBean ercolbeanTmp;
         for(ColBean cbean:reportbean.getDbean().getLstCols())
         {
-            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) continue;
+            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true))) continue;
             ercolbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
             String align=Tools.getPropertyValueByName("align",cbean.getValuestyleproperty(null,true),true);
             if(align==null||align.trim().equals("")) align="left";

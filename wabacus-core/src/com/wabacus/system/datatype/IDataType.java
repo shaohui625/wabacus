@@ -48,7 +48,4 @@ public interface IDataType extends Cloneable
     public void loadTypeConfig(Element eleDataType);
 
     public IDataType setUserConfigString(String configstring);
-    
-    
-    public Object convertValue(Object from);
 }

@@ -157,7 +157,7 @@ public class JspTemplateApp extends AbsApplicationType
             if(this.jspConfigBean.getBelongToCcbean() instanceof ReportBean)
             {
                 AbsReportType reportTypeObj=rrequest.getDisplayReportTypeObj(this.jspConfigBean.getBelongToCcbean().getId());
-                rrequest.getRequest().setAttribute("WX_COMPONENT_OBJ",reportTypeObj);
+                rrequest.getRequest().setAttribute("WX_COMPONENT_OBJ",reportTypeObj);//存进去，以便JSP中的自定义标签能正常使用
             }
             jspUrl=jspConfigBean.getUrl().trim();
         }

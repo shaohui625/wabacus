@@ -84,7 +84,7 @@ public class TemplateParser
                             }
                         }
                         if(propBuf.length()>0)
-                        {
+                        {//如果当前标签有属性
                             tagbean.setMTagAttributes(RegexTools.parseXmlTagAttribute(propBuf.toString()));
                         }
                         propBuf=null;
@@ -132,7 +132,7 @@ public class TemplateParser
                                             +endtag);
                                 }
                                 if(content.substring(i,i+endTag.length()).equals(endTag))
-                                {//碰到了此子标签的结束标签
+                                {
                                     lstEndChildTags.remove(0);
                                 }
                             }
@@ -178,7 +178,7 @@ public class TemplateParser
                         tagname=tagname+content.charAt(i);
                     }
                     if(tagname.equals(""))
-                    {
+                    {//不是有效标签，则略过
                         fullContentBuf=new StringBuffer();
                     }else
                     {

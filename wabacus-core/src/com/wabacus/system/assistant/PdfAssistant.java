@@ -155,7 +155,7 @@ public class PdfAssistant
                     String fieldValueTmp=null;
                     for(String fieldNameTmp:mFields.keySet())
                     {
-                        fieldValueTmp=getPdfFieldValueByName(rrequest,mReportTypeObjs,ccbean,fieldNameTmp,rowidx);
+                        fieldValueTmp=getPdfFieldValueByName(rrequest,mReportTypeObjs,ccbean,fieldNameTmp,rowidx);//取出此域的真正内容
                         if(pdfbean!=null&&pdfbean.getInterceptorObj()!=null)
                         {
                             fieldValueTmp=pdfbean.getInterceptorObj().beforeDisplayFieldWithTemplate(ccbean,mReportTypeObjs,rowidx,stamp,
@@ -219,7 +219,7 @@ public class PdfAssistant
         if(part==null||part.trim().equals("")) return null;
         if(part.equals("title"))
         {
-            if(!rrequest.checkPermission(reportid,Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return null;//如果本报表不显示标题
+            if(!rrequest.checkPermission(reportid,Consts.TITLE_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return null;
             if(lstParts.size()==2||!"subtitle".equals(lstParts.get(2)))
             {
                 return reportTypeObjTmp.getReportBean().getTitle(rrequest);
@@ -245,10 +245,10 @@ public class PdfAssistant
             {
                 throw new WabacusRuntimeException("导出报表"+reportTypeObjTmp.getReportBean().getPath()+"到PDF文件失败，此报表不存在property为"+colproperty+"的<col/>");
             }
-            if(rrequest.getCdb(reportid).getColDisplayModeAfterAuthorize(cbean)<=0) return null;
+            if(rrequest.getCdb(reportid).getColDisplayModeAfterAuthorize(cbean,false)<=0) return null;
             ColDisplayData colDisplayData=null;
             if(lstParts.size()==3||!"label".equals(lstParts.get(3)))
-            {
+            {//显示此列的数据部分
                 String col_displayvalue=dataObjTmp.getColStringValue(cbean);
                 colDisplayData=ColDisplayData.getColDataFromInterceptor(reportTypeObjTmp,cbean,dataObjTmp,rowidx,null,col_displayvalue);
             }else

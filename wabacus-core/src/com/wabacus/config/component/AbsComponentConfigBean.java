@@ -23,15 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.collections.MapUtils;
-
 import com.wabacus.config.Config;
 import com.wabacus.config.OnloadMethodBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
-import com.wabacus.config.component.other.ButtonsBean;
 import com.wabacus.config.dataexport.DataExportsConfigBean;
 import com.wabacus.config.dataexport.PDFExportBean;
+import com.wabacus.config.other.ButtonsBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.config.template.TemplateBean;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -79,7 +77,7 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
     
     protected String parenttitle;
     
-    protected Map<String,String> mDynParenttitleParts;
+    protected Map<String,String> mDynParenttitleParts;//副标题parenttitle中的动态部分，形式与mDynTitleParts一致
     
     protected String parentSubtitle;
     
@@ -89,6 +87,10 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
     
     private boolean showContextMenu=true;
     
+    private TemplateBean outerHeaderTplBean;//<outheader/>配置的静态模板对象
+    
+    private TemplateBean outerFooterTplBean;//<outfooter/>配置的静态模板对象
+    
     private TemplateBean headerTplBean;//<header/>配置的静态模板对象
     
     private TemplateBean footerTplBean;//<footer/>配置的静态模板对象
@@ -97,7 +99,7 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
     
     protected AbsPrintProviderConfigBean printBean;
     
-    private PDFExportBean pdfPrintBean;//PDF打印配置，与pdf导出配置完全一样，但与其它打印方式不同，所以单独做为一个成员变量存放
+    private PDFExportBean pdfPrintBean;
     
     protected List<OnloadMethodBean> lstOnloadMethods;
     
@@ -356,6 +358,16 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
         this.showContextMenu=showContextMenu;
     }
     
+    public TemplateBean getOuterHeaderTplBean()
+    {
+        return outerHeaderTplBean;
+    }
+
+    public void setOuterHeaderTplBean(TemplateBean outerHeaderTplBean)
+    {
+        this.outerHeaderTplBean=outerHeaderTplBean;
+    }
+
     public TemplateBean getHeaderTplBean()
     {
         return headerTplBean;
@@ -378,6 +390,16 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
         this.footerTplBean=footerTplBean;
     }
     
+    public TemplateBean getOuterFooterTplBean()
+    {
+        return outerFooterTplBean;
+    }
+
+    public void setOuterFooterTplBean(TemplateBean outerFooterTplBean)
+    {
+        this.outerFooterTplBean=outerFooterTplBean;
+    }
+
     public ButtonsBean getButtonsBean()
     {
         return buttonsBean;
@@ -521,30 +543,4 @@ public abstract class AbsComponentConfigBean implements IComponentConfigBean,Clo
             return null;
         }
     }
-    
-    
-    //$ByQXO　所有属性列表Map,以便扩展类中使用
-    private Map<String,String> attrs;
-
-    public Map<String,String> getAttrs()
-    {
-        return attrs == null ? MapUtils.EMPTY_MAP : attrs;
-    }
-
-    public void setAttrs(Map<String,String> attrs)
-    {
-        this.attrs=attrs;
-    }
-    
-    public void mergeAttrs(Map<String,String> overrideAttrs){
-        if(overrideAttrs == null || overrideAttrs.isEmpty()){
-            return;
-        }
-        if(attrs == null){
-            attrs = new HashMap<String,String>();
-        }
-        attrs.putAll(overrideAttrs);
-    }    
-    //ByQXO$
-    
 }

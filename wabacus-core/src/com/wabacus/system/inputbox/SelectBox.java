@@ -76,7 +76,6 @@ public class SelectBox extends AbsSelectBox
         resultBuf.append("if(onchangeEvent!=null&&onchangeEvent!=''){boxstr=boxstr+\" onchange=\\\"try{\"+onchangeEvent+\"}catch(e){logErrorsAsJsFileLoad(e);}\\\"\";}");
         resultBuf.append("  if(onfocusmethod!=null&&onfocusmethod!='') boxstr=boxstr+\" onfocus=\\\"try{\"+onfocusmethod+\"}catch(e){logErrorsAsJsFileLoad(e);}\\\"\";");
         resultBuf.append("  boxstr=boxstr+\">\";");
-        
         resultBuf.append("  if(inputboxSpanObj!=null){");
         resultBuf.append("      var optionSpans=inputboxSpanObj.getElementsByTagName(\"span\");");
         resultBuf.append("      if(optionSpans!=null&&optionSpans.length>0){ ");
@@ -93,15 +92,9 @@ public class SelectBox extends AbsSelectBox
         return resultBuf.toString();
     }
 
-
-
-
 //        {//如果是点击时再填充
-
-
+//            return super.getDefaultvalue(rrequest);
 //        //下面处理显示时就直接填充的情况，此时如果没有配置默认值，则以第一个下拉选项做为默认值
-
-
 
     public String getIndependentDisplayString(ReportRequest rrequest,String value,String dynstyleproperty,Object specificDataObj,boolean isReadonly)
     {
@@ -131,7 +124,7 @@ public class SelectBox extends AbsSelectBox
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append("if(boxObj.options.length==0){value='';label='';return;}");
         resultBuf.append("var separator=boxObj.getAttribute('separator');");
-        resultBuf.append("if(separator==null||separator==''){");//单选下拉框
+        resultBuf.append("if(separator==null||separator==''){");
         resultBuf.append("  value=boxObj.options[boxObj.options.selectedIndex].value;");
         resultBuf.append("  label=boxObj.options[boxObj.options.selectedIndex].text;");
         resultBuf.append("}else{");
@@ -179,7 +172,7 @@ public class SelectBox extends AbsSelectBox
         resultBuf.append("var selectboxObj=document.getElementById(id);");
         resultBuf.append("if(selectboxObj==null||selectboxObj.options.length==0){return;}");
         resultBuf.append("var separator=selectboxObj.getAttribute('separator');");
-        resultBuf.append("if(separator!=null&&separator!=''){");
+        resultBuf.append("if(separator!=null&&separator!=''){");//如果是复选的下拉框
         resultBuf.append("  for(var j=0,len=selectboxObj.options.length;j<len;j++){");
         resultBuf.append("      if(selectboxObj.options[j].selected&&selectboxObj.options[j].value==newvalue){return;}");
         resultBuf.append("  }");

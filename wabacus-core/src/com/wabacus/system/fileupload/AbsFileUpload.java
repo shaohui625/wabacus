@@ -19,7 +19,6 @@
 package com.wabacus.system.fileupload;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,6 +36,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.system.assistant.DataImportAssistant;
+import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.dataimport.DataImportItem;
 import com.wabacus.system.dataimport.queue.UploadFilesQueue;
 import com.wabacus.system.dataimport.thread.FileUpDataImportThread;
@@ -100,18 +100,12 @@ public abstract class AbsFileUpload
         {
             filepath=Tools.replaceAll(filepath,"\\","/");
             int idxsep=filepath.lastIndexOf("/");
-            if(idxsep>=0)
-            {
-                filename=filepath.substring(idxsep+1);
-            }
+            if(idxsep>=0) filename=filepath.substring(idxsep+1);
         }else
         {
             filepath=Tools.replaceAll(filepath,"/","\\");
             int idxsep=filepath.lastIndexOf("\\");
-            if(idxsep>=0)
-            {
-                filename=filepath.substring(idxsep+1);
-            }
+            if(idxsep>=0) filename=filepath.substring(idxsep+1);
         }
         return filename.trim();
     }
@@ -140,14 +134,14 @@ public abstract class AbsFileUpload
         return resultBuf.toString();
     }
 
-    protected String uploadDataImportFiles(List lstFieldItems,List<AbsDataImportConfigBean> lstDiBeans,boolean isAsyn,Appendable out) throws IOException
+    protected String uploadDataImportFiles(List lstFieldItems,List<AbsDataImportConfigBean> lstDiBeans,boolean isAsyn,PrintWriter out)
     {
         if(lstDiBeans==null||lstDiBeans.size()==0)
         {
             return "没有提供数据导入功能，不能上传数据导入文件";
         }
         String filepath=lstDiBeans.get(0).getFilepath();
-        File f=new File(Tools.standardFilePath(filepath));
+        File f=new File(FilePathAssistant.getInstance().standardFilePath(filepath));
         if(!f.exists()||!f.isDirectory())
         {
             return "数据导入项"+lstDiBeans.get(0).getReskey()+"配置的filepath不存在或不是目录";
@@ -189,7 +183,7 @@ public abstract class AbsFileUpload
             return "没有取到要导入的数据文件";
         }
         Map<List<DataImportItem>,Map<File,FileItem>> uploadFiles=new HashMap<List<DataImportItem>,Map<File,FileItem>>();
-        String errorinfo=generateUploadFilesAndImportItems(lstDiBeans,mUploadFiles,uploadFiles,filepath);
+        String errorinfo=generateUploadFilesAndImportItems(lstDiBeans,mUploadFiles,uploadFiles,filepath);//校验上传的数据文件与配置的数据导入项的关系是否正确
         if(errorinfo!=null&&!errorinfo.trim().equals("")) return errorinfo;
         if(isAsyn)
         {
@@ -206,7 +200,7 @@ public abstract class AbsFileUpload
             Map<List<DataImportItem>,Map<File,FileItem>> mResults,String filepath)
     {
         List<DataImportItem> lstDataImportItems=new ArrayList<DataImportItem>();
-        Map<File,FileItem> mUploadFileItems=new HashMap<File,FileItem>();//为了数据文件上传
+        Map<File,FileItem> mUploadFileItems=new HashMap<File,FileItem>();
         mResults.put(lstDataImportItems,mUploadFileItems);
         List<String> lstTmpFile=new ArrayList<String>();
         File fTmp;
@@ -220,7 +214,7 @@ public abstract class AbsFileUpload
                 strArrTmp=DataImportAssistant.getInstance().getRealFileNameAndImportType(filenameTmp);
                 if(dibeanTmp.isMatch(strArrTmp[0]))
                 {
-                    String file=Tools.standardFilePath(filepath+File.separator+filenameTmp);
+                    String file=FilePathAssistant.getInstance().standardFilePath(filepath+File.separator+filenameTmp);
                     fTmp=mFileTmp.get(file);
                     if(fTmp==null)
                     {
@@ -239,7 +233,6 @@ public abstract class AbsFileUpload
             if(lstTmpFile.size()==0)
             {
                 log.warn("本次上传没有上传与数据导入项"+dibeanTmp.getReskey()+"匹配的数据文件");
-                
             }else if(lstTmpFile.size()>1)
             {
                 log.warn("数据文件上传失败，数据导入项"+dibeanTmp.getReskey()+"与本次上传的多个数据文件名"+lstTmpFile+"匹配");
@@ -255,43 +248,67 @@ public abstract class AbsFileUpload
 
     protected String getSaveFileName(String name,String newfilename)
     {
-        if(newfilename!=null&&!newfilename.equals(""))
+        if(Tools.isEmpty(newfilename)) return name;
+        String suffix=null;
+        int idx=name.lastIndexOf(".");
+        if(idx>0) suffix=name.substring(idx);
+        suffix=suffix==null?"":suffix.trim();
+        name=newfilename;
+        if(name.startsWith("{")&&name.endsWith("}"))
         {
-            String suffix=null;
-            int idx=name.lastIndexOf(".");
-            if(idx>0)
+            name=name.substring(1,name.length()-1).trim();
+            if(name.equalsIgnoreCase("date"))
             {
-                suffix=name.substring(idx);
-            }
-            suffix=suffix==null?"":suffix.trim();
-            name=newfilename;
-            if(name.startsWith("{")&&name.endsWith("}"))
+                name=Tools.getStrDatetime("yyyy-MM-dd",new Date());
+            }else if(name.equalsIgnoreCase("time"))
             {
-                name=name.substring(1,name.length()-1).trim();
-                if(name.equalsIgnoreCase("date"))
-                {
-                    name=Tools.getStrDatetime("yyyy-MM-dd",new Date());
-                }else if(name.equalsIgnoreCase("time"))
-                {
-                    name=Tools.getStrDatetime("HH:mm:ss",new Date());
-                }else if(name.equalsIgnoreCase("timestamp"))
-                {
-                    name=String.valueOf(System.currentTimeMillis());
-                }else
-                {
-                    name=newfilename;
-                }
+                name=Tools.getStrDatetime("HH:mm:ss",new Date());
+            }else if(name.equalsIgnoreCase("timestamp"))
+            {
+                name=String.valueOf(System.currentTimeMillis());
+            }else
+            {
+                name=newfilename;
             }
-            name=name+suffix;
         }
-        return name;
+        return name+suffix;
     }
 
+    protected String displayFileUpload(int uploadcount,String allowtypes,String disallowtypes)
+    {
+        StringBuilder resultBuf=new StringBuilder();
+        resultBuf.append("<table border=0 cellspacing=1 cellpadding=2  style=\"margin:0px\" width=\"98%\" ID=\"Table1\" align=\"center\">");
+        resultBuf.append("<tr class=filetitle><td style='font-size:13px;'>文件上传</td></tr>");
+        for(int i=0;i<uploadcount;i++)
+        {//为每一种数据文件生成一个上传输入框
+            resultBuf.append("<tr><td style='font-size:13px;'><input type=\"file\" contentEditable=\"false\" name=\"uploadfile"+i+"\"></td></tr>");
+        }
+        resultBuf.append(getAllowedFileSuffixPrompt(allowtypes,disallowtypes));
+        resultBuf.append("<tr><td style='font-size:13px;'><input type=\"submit\" class=\"cls-button\" name=\"submit\" value=\"上传\">");
+        return resultBuf.toString();
+    }
+    
+    private String getAllowedFileSuffixPrompt(String allowtypes,String disallowtypes)
+    {
+        StringBuilder resultBuf=new StringBuilder();
+        if(!Tools.isEmpty(allowtypes)||!Tools.isEmpty(disallowtypes))
+        {
+            resultBuf.append("<tr class=filetitle><td style='font-size:13px;'>[");
+            if(!Tools.isEmpty(allowtypes)) resultBuf.append(stardardFileSuffixString(allowtypes));
+            if(!Tools.isEmpty(disallowtypes))
+            {
+                resultBuf.append("&nbsp;&nbsp;disallowed：<font color='red'>"+stardardFileSuffixString(disallowtypes)+"</font>");
+            }
+            resultBuf.append("]</td></tr>");
+        }
+        return resultBuf.toString();
+    }
+    
     protected String stardardFileSuffixString(String filesuffixes)
     {
         if(filesuffixes==null||filesuffixes.trim().equals("")) return "";
         List<String> lstSuffixes=Tools.parseStringToList(filesuffixes.trim(),";");
-        StringBuffer suffixBuf=new StringBuffer();
+        StringBuilder suffixBuf=new StringBuilder();
         for(String typeTmp:lstSuffixes)
         {
             if(typeTmp==null||typeTmp.trim().equals("")||typeTmp.trim().equals(".")) continue;
@@ -325,52 +342,49 @@ public abstract class AbsFileUpload
         return lstResults;
     }
 
+    protected void getRealUploadFileName(List<String> lstDestFileNames,String originalFilename)
+    {
+        String destfilename=mFormFieldValues.get(AbsFileUploadInterceptor.FILENAME_KEY);
+        if(Tools.isEmpty(destfilename)) destfilename=originalFilename;
+        if(lstDestFileNames.contains(destfilename))
+        {
+            int idx=destfilename.lastIndexOf(".");
+            String nameTmp=idx>0?destfilename.substring(0,idx):destfilename;
+            String suffix=idx>0?destfilename.substring(idx):"";
+            idx=1;
+            while(true)
+            {
+                if(!lstDestFileNames.contains(nameTmp+"("+(++idx)+")"+suffix)) break;
+            }
+            destfilename=nameTmp+"("+idx+")"+suffix;
+            mFormFieldValues.put(AbsFileUploadInterceptor.FILENAME_KEY,destfilename);
+        }
+        lstDestFileNames.add(destfilename);
+    }
+    
     protected String doUploadFileAction(FileItem item,Map<String,String> mFormFieldValues,String orginalFilename,String configAllowTypes,
-            List<String> lstConfigAllowTypes)
+            List<String> lstConfigAllowTypes,String configDisallowTypes,
+            List<String> lstConfigDisallowTypes)
     {
         String strmaxsize=mFormFieldValues.get(AbsFileUploadInterceptor.MAXSIZE_KEY);
         if(strmaxsize!=null&&!strmaxsize.trim().equals(""))
         {
             long lmaxsize=Long.parseLong(strmaxsize.trim());
-            if(lmaxsize>0&&lmaxsize<item.getSize())
-            {
-                return "上传失败，上传文件太大";
-            }
+            if(lmaxsize>0&&lmaxsize<item.getSize()) return "上传失败，上传文件太大";
         }
-        String allowTypesTmp=mFormFieldValues.get(AbsFileUploadInterceptor.ALLOWTYPES_KEY);
-        if(allowTypesTmp!=null&&!allowTypesTmp.trim().equals(""))
+        if(!isInvalidUploadFileType(orginalFilename,configAllowTypes,lstConfigAllowTypes,configDisallowTypes,lstConfigDisallowTypes))
         {
-            List<String> lstAllowTypesTmp=null;
-            if(allowTypesTmp.equalsIgnoreCase(configAllowTypes))
-            {
-                lstAllowTypesTmp=lstConfigAllowTypes;
-            }else
-            {
-                lstAllowTypesTmp=getFileSuffixList(allowTypesTmp);
-            }
-            if(lstAllowTypesTmp!=null&&lstAllowTypesTmp.size()>0)
-            {
-                int idxdot=orginalFilename.lastIndexOf(".");
-                if(idxdot>0&&idxdot!=orginalFilename.length()-1)
-                {
-                    String suffix=orginalFilename.substring(idxdot+1).toLowerCase().trim();
-                    if(!lstAllowTypesTmp.contains(suffix))
-                    {
-                        return "文件上传失败，文件类型不合法";
-                    }
-                }else
-                {
-                    return "文件上传失败，文件类型不合法";
-                }
-            }
+            return "文件上传失败，文件类型不合法";
         }
         String savepathTmp=mFormFieldValues.get(AbsFileUploadInterceptor.SAVEPATH_KEY);
         String destfilenameTmp=mFormFieldValues.get(AbsFileUploadInterceptor.FILENAME_KEY);
-        if(savepathTmp!=null&&!savepathTmp.trim().equals("")&&destfilenameTmp!=null&&!destfilenameTmp.trim().equals(""))
+        if(!Tools.isEmpty(savepathTmp)&&!Tools.isEmpty(destfilenameTmp))
         {
             try
             {
-                item.write(new File(Tools.standardFilePath(savepathTmp+"/"+destfilenameTmp)));
+                savepathTmp=FilePathAssistant.getInstance().standardFilePath(savepathTmp+File.separator);
+                FilePathAssistant.getInstance().checkAndCreateDirIfNotExist(savepathTmp);
+                item.write(new File(savepathTmp+destfilenameTmp));
             }catch(Exception e)
             {
                 log.error("上传文件"+orginalFilename+"到路径"+savepathTmp+"失败",e);
@@ -380,9 +394,31 @@ public abstract class AbsFileUpload
         return null;
     }
     
-    public abstract void showUploadForm(Appendable out) throws IOException;
-
-    public abstract String doFileUpload(List lstFieldItems,Appendable out)  throws IOException;
+    private boolean isInvalidUploadFileType(String orginalFilename,String configAllowTypes,List<String> lstConfigAllowTypes,
+            String configDisallowTypes,List<String> lstConfigDisallowTypes)
+    {
+        String suffix="";
+        int idxdot=orginalFilename.lastIndexOf(".");
+        if(idxdot>0&&idxdot!=orginalFilename.length()-1) suffix=orginalFilename.substring(idxdot+1).toLowerCase().trim();
+        String allowTypesTmp=mFormFieldValues.get(AbsFileUploadInterceptor.ALLOWTYPES_KEY);
+        if(!Tools.isEmpty(allowTypesTmp))
+        {
+            List<String> lstAllowTypesTmp=allowTypesTmp.equalsIgnoreCase(configAllowTypes)?lstConfigAllowTypes:getFileSuffixList(allowTypesTmp);
+            if(!Tools.isEmpty(lstAllowTypesTmp)&&!lstAllowTypesTmp.contains(suffix)) return false;
+        }
+        String disallowTypesTmp=mFormFieldValues.get(AbsFileUploadInterceptor.DISALLOWTYPES_KEY);
+        if(!Tools.isEmpty(disallowTypesTmp))
+        {
+            List<String> lstDisallowTypesTmp=disallowTypesTmp.equalsIgnoreCase(configDisallowTypes)?lstConfigDisallowTypes
+                    :getFileSuffixList(disallowTypesTmp);
+            if(!Tools.isEmpty(lstDisallowTypesTmp)&&lstDisallowTypesTmp.contains(suffix)) return false;
+        }
+        return true;
+    }
     
-    public abstract void promptSuccess(Appendable out,boolean isArtDialog)  throws IOException;
+    public abstract void showUploadForm(PrintWriter out);
+
+    public abstract String doFileUpload(List lstFieldItems,PrintWriter out);
+    
+    public abstract void promptSuccess(PrintWriter out,boolean isArtDialog);
 }

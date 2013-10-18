@@ -50,6 +50,8 @@ public abstract class AbsPopUpBox extends AbsInputBox
 
     protected String initsize;//初始大小，可配置值包括min/max/normal，分别表示最大化、最小化、正常窗口大小（即上面pagewidth/pageheight配置的大小）
     
+    protected String beforepopup;
+    
     public AbsPopUpBox(String typename)
     {
         super(typename);
@@ -100,7 +102,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
     
     protected String getPopupUrlJsonString()
     {
-        StringBuffer resultBuf=new StringBuffer();
+        StringBuilder resultBuf=new StringBuilder();
         resultBuf.append("{pageid:\"").append(owner.getReportBean().getPageBean().getId()).append("\"");
         resultBuf.append(",reportid:\"").append(owner.getReportBean().getId()).append("\"");
         resultBuf.append(",popupPageUrl:\"").append(this.poppageurl).append("\"");
@@ -113,6 +115,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
             resultBuf.append(",paramConditions:\"").append(getDynParamsAsJsonString(this.mDynParamConditions)).append("\"");
         }
         resultBuf.append(",popupparams:\"").append(this.popupparams).append("\"");
+        if(!Tools.isEmpty(this.beforepopup)) resultBuf.append(",beforePopupMethod:").append(this.beforepopup);
         resultBuf.append("}");
         return Tools.jsParamEncode(resultBuf.toString());
     }
@@ -120,7 +123,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
     private String getDynParamsAsJsonString(Map<String,String> mDynParams)
     {
         if(mDynParams==null||mDynParams.size()==0) return "";
-        StringBuffer paramsBuf=new StringBuffer();
+        StringBuilder paramsBuf=new StringBuilder();
         for(Entry<String,String> entryParamTmp:mDynParams.entrySet())
         {
             paramsBuf.append(entryParamTmp.getValue()).append(";");
@@ -145,6 +148,8 @@ public abstract class AbsPopUpBox extends AbsInputBox
         if(popupparams!=null)  this.popupparams=popupparams.trim();
         String initsize=eleInputboxBean.attributeValue("initsize");
         if(initsize!=null) this.initsize=initsize.trim().toLowerCase();
+        String beforepopup=eleInputboxBean.attributeValue("beforepopup");
+        if(beforepopup!=null) this.beforepopup=beforepopup.trim();
         parseDynParamsInUrl();
     }
     
@@ -221,7 +226,6 @@ public abstract class AbsPopUpBox extends AbsInputBox
     protected void processStylePropertyAfterMerged(AbsReportType reportTypeObj,IInputBoxOwnerBean ownerbean)
     {
         super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
-        
         if(this.styleproperty.toLowerCase().indexOf("readonly")<0) this.styleproperty=this.styleproperty+" readonly ";
     }
     
@@ -251,7 +255,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
             fillmode=String.valueOf(this.getFillmode());
             paramname=EditableReportAssistant.getInstance().getColParamName((ColBean)((EditableReportColBean)this.getOwner()).getOwner());
         }
-        StringBuffer resultBuf=new StringBuffer();
+        StringBuilder resultBuf=new StringBuilder();
         String parentWindowName,closeMeCodeString;
         if(Config.getInstance().getSystemConfigValue("prompt-dialog-type","artdialog").equals("artdialog"))
         {
@@ -276,7 +280,7 @@ public abstract class AbsPopUpBox extends AbsInputBox
         resultBuf.append("','").append(this.owner.getReportBean().getGuid()).append("','").append(this.getTypename()).append("');");
         resultBuf.append("}else{");
         if(isConditionBox)
-        {
+        {//如果当前是为查询条件设置值
             resultBuf.append(parentWindowName+".setReportInputBoxValue(\""+this.owner.getReportBean().getPageBean().getId()+"\",\""
                     +this.owner.getReportBean().getId()+"\",true,"+parentWindowName+".getObjectByJsonString(\"{\"+name+\":\\\"\"+value+\"\\\"}\"));");
         }else

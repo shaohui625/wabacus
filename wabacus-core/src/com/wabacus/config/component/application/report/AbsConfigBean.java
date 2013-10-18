@@ -22,13 +22,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.wabacus.config.AbstractConfigExtendable;
+import com.wabacus.config.ConfigLoadManager;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
+import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 
-public abstract class AbsConfigBean extends AbstractConfigExtendable  implements Cloneable
+public abstract class AbsConfigBean implements Cloneable
 {
     private Map<String,AbsExtendConfigBean> mExtendConfigForReportType=new HashMap<String,AbsExtendConfigBean>();
 
@@ -100,19 +101,25 @@ public abstract class AbsConfigBean extends AbstractConfigExtendable  implements
         return getParentContainer().getPageBean();
     }
 
+    public XmlElementBean getElementBean()
+    {
+        if(ConfigLoadManager.mAllXmlTagObjects==null) return null;
+        return ConfigLoadManager.mAllXmlTagObjects.get(this.toString());
+    }
+    
+    public void setElementBean(XmlElementBean eleBean)
+    {
+        if(ConfigLoadManager.mAllXmlTagObjects==null) return;
+        ConfigLoadManager.mAllXmlTagObjects.put(this.toString(),eleBean);
+    }
+    
     public AbsConfigBean clone(AbsConfigBean parent)
     {
         try
         {
             AbsConfigBean newbean=(AbsConfigBean)super.clone();
-           
-            //$ByQXO
-            if(attrs != null){
-               newbean.setAttrs(new HashMap(attrs));
-           }
-           //ByQXO$
-            
             newbean.setParent(parent);
+            newbean.setElementBean(this.getElementBean());
             return newbean;
         }catch(CloneNotSupportedException e)
         {
@@ -120,7 +127,7 @@ public abstract class AbsConfigBean extends AbstractConfigExtendable  implements
         }
     }
 
-    public void cloneExtendConfig(AbsConfigBean newConfigBean)
+    protected void cloneExtendConfig(AbsConfigBean newConfigBean)
     {
         if(mExtendConfigForReportType!=null)
         {
@@ -132,5 +139,5 @@ public abstract class AbsConfigBean extends AbstractConfigExtendable  implements
                 mTemp.put(entryTmp.getKey(),entryTmp.getValue().clone(newConfigBean));
             }
         }
-    }    
+    }
 }

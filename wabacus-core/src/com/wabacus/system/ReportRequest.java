@@ -18,11 +18,15 @@
  */
 package com.wabacus.system;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,8 +34,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -45,10 +49,13 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.page.PageBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
+import com.wabacus.config.dataexport.AbsDataExportBean;
+import com.wabacus.config.dataexport.DataExportLocalStroageBean;
 import com.wabacus.config.dataexport.PDFExportBean;
 import com.wabacus.config.print.DefaultPrintProviderConfigBean;
 import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.assistant.AuthorizationAssistant;
+import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.IComponentType;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
@@ -57,7 +64,6 @@ import com.wabacus.system.component.application.report.abstractreport.IEditableR
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportDisplayBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
-import com.wabacus.system.component.application.report.configbean.ColAndGroupDisplayBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportSqlBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.transaction.ITransactionType;
 import com.wabacus.system.component.application.report.configbean.editablereport.transaction.TransactionTypeWrapper;
@@ -98,7 +104,8 @@ public class ReportRequest
 
     private WabacusResponse wresponse;
 
-  
+    private Map<String,Connection> connections=new HashMap<String,Connection>();
+
     private Map<String,AbsDatabaseType> mDbTypes=new HashMap<String,AbsDatabaseType>();
 
     private int showtype;
@@ -107,7 +114,7 @@ public class ReportRequest
 
     private String url;
     
-    private List<String> lstAncestorUrls;
+    private List<String> lstAncestorUrls;//所有层级跳转的URL列表，以堆栈的形式存放它们的跳转关系，即下标为0的元素对应的URL为当前页面的父页面，下标为1的元素对应的URL为父页面的父页面，等等
 
     private String actiontype=Consts.SHOWREPORT_ACTION;
 
@@ -121,9 +128,7 @@ public class ReportRequest
 
     private IComponentConfigBean refreshComponentBean;
 
-    private IComponentType refreshComponentTypeObj;//本次加载更新的组件类型对象
-
-    private Map<String,List<ColAndGroupDisplayBean>> mColAndGroupDisplayBeans;
+    private IComponentType refreshComponentTypeObj;
 
     private Map<String,ComponentPermissionBean> mComponentsPermissions;
 
@@ -133,7 +138,7 @@ public class ReportRequest
     
     private UpdateComponentDataServerActionBean serverActionBean;
     
-    private Map<String,Set<String>> mShouldAddToUrlAttriuteNames=null;
+    private Map<String,Set<String>> mShouldAddToUrlAttriuteNames=null;//存放本次访问如果用户调用rrequest.setAttribute(name,value)方法设置某属性值时，需要将属性更新到URL参数中的属性名集合，KEY为报表ID，值为此报表需要设置到URL中的属性名集合。
     
     private TransactionTypeWrapper transactionWrapper=null;
     
@@ -178,7 +183,6 @@ public class ReportRequest
                 {
                     log.warn("request中存在多个变量名为"+name+"的参数值");
                 }
-                
                 String[] values=request.getParameterValues(name);
                 if(values==null)
                 {
@@ -216,7 +220,6 @@ public class ReportRequest
             }
         }
         this.showtype=_showtype;
-        
     }
 
     public void initGetFilterDataList()
@@ -263,22 +266,25 @@ public class ReportRequest
         reportid=reportid==null?"":reportid.trim();
         if(pageid.equals(""))
         {
-            this.wresponse.getMessageCollector().warn("页面ID不能为空",true,Consts.STATECODE_FAILED);
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("页面ID不能为空",null,true);
         }
         this.pagebean=Config.getInstance().getPageBean(pageid);
         if(pagebean==null)
         {
-            this.wresponse.getMessageCollector().warn("没有配置页面ID为："+pageid+"的报表",true,Consts.STATECODE_FAILED);
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("没有配置页面ID为："+pageid+"的报表",null,true);
         }
         if(reportid==null||reportid.equals(""))
         {
-            this.wresponse.getMessageCollector().warn("没有取到报表ID",true,Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("没有取到报表ID",null,true);
         }
         lstAllReportBeans=new ArrayList<ReportBean>();
         ReportBean rbean=this.pagebean.getReportChild(reportid,true);
         if(rbean==null)
         {
-            this.wresponse.getMessageCollector().warn("页面："+pageid+"中没有配置ID为"+reportid+"的报表",true,Consts.STATECODE_FAILED);
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("页面："+pageid+"中没有配置ID为"+reportid+"的报表",null,true);
         }
         lstAllReportBeans.add(rbean);
         this.url="";
@@ -289,12 +295,14 @@ public class ReportRequest
         pageid=pageid==null?"":pageid.trim();
         if(pageid.equals(""))
         {
-            this.wresponse.getMessageCollector().warn("页面ID为空，请重试",true,Consts.STATECODE_FAILED);
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("页面ID为空，请重试",null,true);
         }
         this.pagebean=Config.getInstance().getPageBean(pageid);
         if(pagebean==null)
         {
-            this.wresponse.getMessageCollector().warn("没有配置页面ID为："+pageid+"的报表",true,Consts.STATECODE_FAILED);
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("没有配置页面ID为："+pageid+"的报表",null,true);
         }
         if(this.showtype==Consts.DISPLAY_ON_PAGE)
         {
@@ -312,10 +320,10 @@ public class ReportRequest
         lstPageInterceptors.addAll(Config.getInstance().getLstGlobalPageInterceptors(pageid));
         lstPageInterceptors.addAll(pagebean.getLstInterceptors());
         for(AbsPageInterceptor interceptorTmp:lstPageInterceptors)
-        {//依次执行所有全局级页面拦截器
+        {
             interceptorTmp.doStart(this);
         }
-        this.pageskin=Config.getInstance().getSkin(this.request,this.pagebean);
+        this.pageskin=Config.getInstance().getSkin(this.request,this.pagebean);//放在页面拦截器的doStart()执行之后，因为开发人员可能在doStart()中设置本页面的主题风格
         if(this.showtype==Consts.DISPLAY_ON_PAGE)
         {
             initDisplayOnPage(pageid);
@@ -375,14 +383,16 @@ public class ReportRequest
                 {
                     if(!refreshComponentGuid.startsWith(pagebean.getId()+Consts_Private.GUID_SEPERATOR))
                     {
-                        this.wresponse.getMessageCollector().warn("刷新页面失败","传入的刷新组件GUID："+refreshComponentGuid+"不合法",true,Consts.STATECODE_FAILED);
+                        this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+                        log.warn("传入的刷新组件GUID："+refreshComponentGuid+"不合法");
+                        this.wresponse.getMessageCollector().warn("刷新页面失败",null,true);
                     }
                     initCommonComponent(refreshComponentGuid.substring((pagebean.getId()+Consts_Private.GUID_SEPERATOR).length()).trim());
                 }
             }
             pageObj.initUrl(pagebean,this);
             if(refreshComponentTypeObj instanceof AbsReportType)
-            {
+            {//当前只更新某个报表
                 lstAllReportBeans=new ArrayList<ReportBean>();
                 lstAllReportBeans.add((ReportBean)refreshComponentBean);
                 ((AbsReportType)refreshComponentTypeObj).init();
@@ -402,7 +412,9 @@ public class ReportRequest
         String componentIds=refreshComponentGuid.substring("[DYNAMIC]".length()).trim();
         if(componentIds.equals(""))
         {
-            this.wresponse.getMessageCollector().warn("刷新页面失败","没有取到refreshComponentGuid"+refreshComponentGuid,true,Consts.STATECODE_FAILED);
+            log.warn("没有取到refreshComponentGuid"+refreshComponentGuid);
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("刷新页面失败",null,true);
         }
         List<String> lstComponentids=Tools.parseStringToList(componentIds,";");
         String refreshId=null;
@@ -411,12 +423,17 @@ public class ReportRequest
         {
             if(cidTmp==null||cidTmp.trim().equals("")) continue;
             if(cidTmp.equals(pagebean.getId()))
-            {//如果当前组件ID是页面ID，则不用再看其它组件了，本次就是刷新整个页面
+            {
                 refreshId=pagebean.getId();
                 break;
             }
             ccbTmp=pagebean.getChildComponentBean(cidTmp,true);
-            if(ccbTmp==null) this.wresponse.getMessageCollector().warn("刷新页面失败","在页面"+pagebean.getId()+"下没有取到ID为"+cidTmp+"的组件",true,Consts.STATECODE_FAILED);
+            if(ccbTmp==null)
+            {
+                log.warn("在页面"+pagebean.getId()+"下没有取到ID为"+cidTmp+"的组件");
+                this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+                this.wresponse.getMessageCollector().warn("刷新页面失败",null,true);
+            }
             if(refreshId==null||refreshId.equals(""))
             {
                 refreshId=ccbTmp.getRefreshid();
@@ -428,7 +445,9 @@ public class ReportRequest
         }
         if(refreshId==null||refreshId.trim().equals(""))
         {
-            this.wresponse.getMessageCollector().warn("刷新页面失败","刷新页面失败，根据"+refreshComponentGuid+"没有取到真正的刷新页面ID",true,Consts.STATECODE_FAILED);
+            log.warn("刷新页面失败，根据"+refreshComponentGuid+"没有取到真正的刷新页面ID");
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("刷新页面失败",null,true);
         }
         return refreshId;
     }
@@ -444,7 +463,9 @@ public class ReportRequest
             this.refreshComponentBean=this.pagebean.getChildComponentBean(refreshComponentid,true);
             if(refreshComponentBean==null)
             {
-                wresponse.getMessageCollector().warn("加载页面失败","没有取到ID为"+refreshComponentid+"的组件",true,Consts.STATECODE_FAILED);
+                log.warn("没有取到ID为"+refreshComponentid+"的组件");
+                this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+                wresponse.getMessageCollector().warn("加载页面失败",null,true);
             }
             refreshComponentTypeObj=getComponentTypeObj(refreshComponentBean,null,true);
         }
@@ -455,7 +476,8 @@ public class ReportRequest
         this.slaveReportBean=this.pagebean.getReportChild(slaveid,true);
         if(slaveReportBean==null)
         {
-            wresponse.getMessageCollector().warn("没有取到ID为"+slaveid+"的从报表",true,Consts.STATECODE_FAILED);
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            wresponse.getMessageCollector().warn("没有取到ID为"+slaveid+"的从报表",null,true);
         }
         slaveReportTypeObj=(AbsReportType)getComponentTypeObj(slaveReportBean,null,true);
         slaveReportTypeObj.initUrl(slaveReportBean,this);
@@ -466,17 +488,70 @@ public class ReportRequest
         this.refreshComponentBean=slaveReportBean;
     }
 
+    private boolean dataexport_localstroageautodelete;
+    
+    private String dataexport_localstroagedirectorydateformat;
+    
+    private boolean dataexport_localstroagedownload;
+    
+    private boolean dataexport_localstroagezip;
+
+    private String dataExportFilepath;
+    
+    private String dataExportFileurl;
+    
+    private boolean isExportToLocalFile;
+
+    public boolean isDataexport_localstroagedownload()
+    {
+        return dataexport_localstroagedownload;
+    }
+
+    public boolean isDataexport_localstroagezip()
+    {
+        return dataexport_localstroagezip;
+    }
+
+    public boolean isExportToLocalFile()
+    {
+        return isExportToLocalFile;
+    }
+
+    public String getDataExportFilepath()
+    {
+        return dataExportFilepath;
+    }
+
+    public String getDataExportFileurl()
+    {
+        return dataExportFileurl;
+    }
+
+    public void setDataExportFilepath(String dataExportFilepath)
+    {
+        this.dataExportFilepath=dataExportFilepath;
+    }
+
+    public void setDataExportFileurl(String dataExportFileurl)
+    {
+        this.dataExportFileurl=dataExportFileurl;
+    }
+    
     private void initNonDisplayOnPage()
     {
         String comids=this.getStringAttribute("COMPONENTIDS","");
         String applicationids=this.getStringAttribute("INCLUDE_APPLICATIONIDS","");
         if(comids.equals(""))
         {
-            this.wresponse.getMessageCollector().warn("页面初始化失败","没有传入对页面"+this.pagebean.getId()+"进行打印/数据导出等操作所针对的组件ID",null,Consts.STATECODE_FAILED);
+            log.warn("没有传入对页面"+this.pagebean.getId()+"进行打印/数据导出等操作所针对的组件ID");
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("页面初始化失败",null,true);
         }
         if(applicationids.trim().equals(""))
         {
-            this.wresponse.getMessageCollector().warn("初始化失败","没有取到页面"+this.pagebean.getId()+"要操作的应用",null,Consts.STATECODE_FAILED);
+            log.warn("没有取到页面"+this.pagebean.getId()+"要操作的应用");
+            this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+            this.wresponse.getMessageCollector().warn("初始化失败",null,true);
         }
         this.lstComponentBeans=new ArrayList<IComponentConfigBean>();
         List<String> lstComids=new UniqueArrayList<String>();
@@ -499,11 +574,16 @@ public class ReportRequest
         {
             if(appidTmp==null||appidTmp.trim().equals("")) continue;
             appbeanTmp=pagebean.getApplicationChild(appidTmp,true);
-            if(appbeanTmp==null) this.wresponse.getMessageCollector().warn("导出/打印应用数据失败","在页面"+this.pagebean.getId()+"中没有取到ID为"+appidTmp+"的应用",null,Consts.STATECODE_FAILED);
+            if(appbeanTmp==null)
+            {
+                log.warn("在页面"+this.pagebean.getId()+"中没有取到ID为"+appidTmp+"的应用");
+                this.wresponse.setStatecode(Consts.STATECODE_FAILED);
+                this.wresponse.getMessageCollector().warn("导出/打印应用数据失败",null,true);
+            }
             if(appbeanTmp instanceof ReportBean) lstAllReportBeans.add((ReportBean)appbeanTmp);
         }
         if(this.showtype==Consts.DISPLAY_ON_PDF)
-        {
+        {//如果是PDF导出或PDF打印，下面判断哪些报表是被有pdf模板的组件使用，如果被PDF模板的组件使用，则在加载数据时不会分批加载
             this.mReportidsInPdfTemplate=new HashMap<String,String>();
             boolean ispdfprint=this.isPdfPrintAction();
             for(IComponentConfigBean ccbeanTmp:this.lstComponentBeans)
@@ -525,6 +605,54 @@ public class ReportRequest
                 }
             }
         }
+        if(this.showtype!=Consts.DISPLAY_ON_PRINT&&(this.showtype!=Consts.DISPLAY_ON_PDF||!this.isPdfPrintAction()))
+        {
+            this.isExportToLocalFile="true".equalsIgnoreCase(this.getStringAttribute("dataexport_localstroage"));
+            if(this.isExportToLocalFile)
+            {
+                try
+                {
+                    this.dataexport_localstroagedirectorydateformat=URLDecoder.decode(this.getStringAttribute(
+                            "dataexport_localstroagedirectorydateformat"),"utf-8");
+                }catch(UnsupportedEncodingException e)
+                {
+                    e.printStackTrace();
+                    this.dataexport_localstroagedirectorydateformat=this.getStringAttribute("dataexport_localstroagedirectorydateformat");
+                }
+                this.dataexport_localstroageautodelete=!"false".equalsIgnoreCase(this.getStringAttribute("dataexport_localstroageautodelete"));
+                this.dataexport_localstroagedownload=!"false".equalsIgnoreCase(this.getStringAttribute("dataexport_localstroagedownload"));
+                this.dataexport_localstroagezip="true".equalsIgnoreCase(this.getStringAttribute("dataexport_localstroagezip"));
+            }
+            if(!this.isExportToLocalFile&&this.lstComponentBeans.size()==1&&lstComponentBeans.get(0).getDataExportsBean()!=null)
+            {
+                AbsDataExportBean exportBean=lstComponentBeans.get(0).getDataExportsBean().getDataExportBean(showtype);
+                if(exportBean!=null&&exportBean.getLocalStroageBean()!=null)
+                {
+                    this.isExportToLocalFile=true;
+                    this.dataexport_localstroageautodelete=exportBean.getLocalStroageBean().isAutodelete();
+                    this.dataexport_localstroagedirectorydateformat=exportBean.getLocalStroageBean().getRealDirectorydateformat();
+                    this.dataexport_localstroagedownload=exportBean.getLocalStroageBean().isDownload();
+                    this.dataexport_localstroagezip=exportBean.getLocalStroageBean().isZip();
+                }
+            }
+        }
+        if(this.showtype!=Consts.DISPLAY_ON_PRINT&&!this.isExportToLocalFile&&this.wresponse.getResponse()!=null)
+        {
+            this.wresponse.getResponse().reset();
+            if(this.showtype==Consts.DISPLAY_ON_PLAINEXCEL)
+            {
+                this.wresponse.getResponse().setContentType("application/vnd.ms-excel;charset="+Config.encode);
+            }else if(this.showtype==Consts.DISPLAY_ON_RICHEXCEL)
+            {
+                this.wresponse.getResponse().setContentType("application/vnd.ms-excel;charset="+Config.encode);
+            }else if(this.showtype==Consts.DISPLAY_ON_WORD)
+            {
+                this.wresponse.getResponse().setContentType("application/vnd.ms-word;charset="+Config.encode);
+            }else if(this.showtype==Consts.DISPLAY_ON_PDF)
+            {
+                this.wresponse.getResponse().setContentType("application/pdf;charset="+Config.encode);
+            }
+        }
         if(lstAllReportBeans!=null)
         {
             AbsReportType reportObjTmp;
@@ -535,8 +663,58 @@ public class ReportRequest
                 reportObjTmp.loadReportData(true);
             }
         }
+        if(this.isExportToLocalFile)
+        {//当前是以落地的方式导出数据文件，这个放在初始化的最后，即加载完数据的时候，因为取导出文件名的时候可能要用到报表数据
+            createDataExportFileObj();
+        }
     }
 
+    private void createDataExportFileObj()
+    {
+        this.dataExportFilepath=DataExportLocalStroageBean.dataExportFileRootPath;
+        this.dataExportFileurl=DataExportLocalStroageBean.dataExportFileRootUrl;
+        if(this.dataexport_localstroageautodelete)
+        {//自动删除的数据文件统一放在dataexport/temp/目录下面
+            this.dataExportFilepath+="temp"+File.separator;
+            this.dataExportFileurl+="temp/";
+        }
+        if(!Tools.isEmpty(this.dataexport_localstroagedirectorydateformat)
+                &&!DataExportLocalStroageBean.ROOTDIRECTORY.equals(this.dataexport_localstroagedirectorydateformat))
+        {
+            String datename=Tools.removeNonNumberFromDatetime(Tools.getStrDatetime(this.dataexport_localstroagedirectorydateformat,new Date()));
+            this.dataExportFilepath+=datename+File.separator;
+            this.dataExportFileurl+=datename+"/";
+        }
+        FilePathAssistant.getInstance().checkAndCreateDirIfNotExist(this.dataExportFilepath);
+        String tmp=Long.toHexString(System.currentTimeMillis())+Tools.getRandomString(2);
+        String filename=this.getDataExportFilename();
+        filename=Tools.isEmpty(filename)?tmp:(filename+"_"+tmp);
+        String filesuffix;
+        if(this.showtype==Consts.DISPLAY_ON_PDF)
+        {
+            filesuffix=".pdf";
+        }else if(this.showtype==Consts.DISPLAY_ON_PLAINEXCEL||this.showtype==Consts.DISPLAY_ON_RICHEXCEL)
+        {
+            filesuffix=".xls";
+        }else if(this.showtype==Consts.DISPLAY_ON_WORD)
+        {
+            filesuffix=".doc";
+        }else
+        {
+            filesuffix=".tmp";
+        }
+        this.dataExportFilepath+=filename+filesuffix;
+        this.dataExportFileurl+=WabacusAssistant.getInstance().encodeAttachFilename(this.request,filename)+filesuffix;
+        File fResult=new File(this.dataExportFilepath);
+        try
+        {
+            if(!fResult.exists()||!fResult.isFile()) fResult.createNewFile();
+        }catch(IOException e)
+        {
+            throw new WabacusRuntimeException("导出文件时，创建文件"+this.dataExportFilepath+"失败",e);
+        }
+    }
+    
     public boolean isReportInPdfTemplate(String reportid)
     {
         if(this.showtype!=Consts.DISPLAY_ON_PDF) return false;
@@ -568,6 +746,29 @@ public class ReportRequest
         }
     }
     
+    public String getDataExportFilename()
+    {
+        StringBuffer filenameBuf=new StringBuffer();
+        if(this.lstComponentBeans==null||this.lstComponentBeans.size()==0) return "NoData";
+        String filenameTmp;
+        for(IComponentConfigBean ccbeanTmp:this.lstComponentBeans)
+        {
+            filenameTmp=null;
+            if(ccbeanTmp.getDataExportsBean()!=null)
+            {
+                filenameTmp=ccbeanTmp.getDataExportsBean().getFilename(this);
+            }
+            if(filenameTmp==null||filenameTmp.trim().equals(""))
+            {//如果此组件没有在<dataexports/>中配置filename，则用标题做为文件名
+                filenameTmp=ccbeanTmp.getTitle(this);
+            }
+            if(filenameTmp==null||filenameTmp.trim().equals("")) continue;
+            filenameBuf.append(filenameTmp).append(",");
+        }
+        if(filenameBuf.length()==0) return "DataExport";
+        if(filenameBuf.charAt(filenameBuf.length()-1)==',') filenameBuf.deleteCharAt(filenameBuf.length()-1);
+        return filenameBuf.toString();
+    }
     
     private List<String> lstProcessedTargetPageIds;
     public String forwardPageWithBack(String url)
@@ -632,6 +833,9 @@ public class ReportRequest
         }else if(val instanceof String)
         {
             value=(String)val;
+        }else
+        {
+            value=val.toString();
         }
         return value;
     }
@@ -648,30 +852,25 @@ public class ReportRequest
         }
         return value;
     }
-    //$ByQXO
-    public final int getIntAttribute(final String name)
-    {
-        return getIntAttribute(name,0);
-    }
+
     public int getIntAttribute(String name,int defaultvalue)
     {
-        final Object v=attributes.get(name);
-        if( null == v ){
-            return defaultvalue;
-        }else if(v instanceof Number){
-            return ((Number)v).intValue();
-        }
-        String value= v instanceof String  ? ((String) v).trim() : v.toString();
-        try
-        {
-            return Integer.parseInt(value);
-        }catch(NumberFormatException e)
+        String value=getStringAttribute(name);
+        if(value==null||value.trim().equals(""))
         {
             return defaultvalue;
+        }else
+        {
+            try
+            {
+                return Integer.parseInt(value.trim());
+            }catch(NumberFormatException e)
+            {
+                return defaultvalue;
+            }
         }
     }
- //ByQXO$
-    
+
     public Object getAttribute(String reportid,String name)
     {
         CacheDataBean cdb=this.getCdb(reportid);
@@ -756,7 +955,7 @@ public class ReportRequest
     public void setAttribute(String reportid,String name,Object value)
     {
         if(this.isShouldAddToUrlAttributeName(reportid,name))
-        {//如果需要更新到URL中
+        {
             if(value==null)
             {
                 this.addParamToUrl(name,null,true);
@@ -780,20 +979,11 @@ public class ReportRequest
 
     }
 
-
-
+//    private void updateConditionValue(String reportid,String name,Object value)
 //        //        CacheDataBean cdb = this.getCdb(reportid);
 //        //        if (cdb == null || !(value instanceof String)) return;
-
-
-
-
-
 //        {//如果此name属性是此报表的动态查询条件的name属性配置值
-
-
-
-
+//    }
 
     public TransactionTypeWrapper getTransactionWrapper()
     {
@@ -921,27 +1111,12 @@ public class ReportRequest
         return (CacheDataBean)mCacheDataBeans.get(reportid);
     }
     
-    //$ByQXO
-    private Map<String,IConnection> connections=new HashMap<String,IConnection>();
-
-    /**
-     *  @Deprecated 采改getIConnection以支持其它数源
-     */
-     @Deprecated 
-     public Connection getConnection(String datasource){
-         return ( (JdbcConnection)getIConnection(datasource) ).getNativeConnection();
-     }
-
-     /**
-      * @Deprecated 采改getIConnection以支持其它数源
-      */
-     public Connection getConnection()
-     {
-         return getConnection(Config.getInstance().getDefault_datasourcename());
-     }
-     
+    public Connection getConnection()
+    {
+        return getConnection(Config.getInstance().getDefault_datasourcename());
+    }
     
-    public IConnection getIConnection(String datasource)
+    public Connection getConnection(String datasource)
     {
         if(Tools.isDefineKey("i18n",datasource))
         {
@@ -949,10 +1124,10 @@ public class ReportRequest
             if(this.locallanguage!=null&&!this.locallanguage.trim().equals(""))
             {
                 String dsTemp=datasource+"_"+this.locallanguage;
-                IConnection conn=connections.get(dsTemp);
+                Connection conn=connections.get(dsTemp);
                 if(conn==null)
                 {
-                    conn=Config.getInstance().getDataSource(dsTemp).getIConnection();
+                    conn=Config.getInstance().getDataSource(dsTemp).getConnection();
                     connections.put(dsTemp,conn);
                 }
                 if(conn!=null)
@@ -968,12 +1143,11 @@ public class ReportRequest
         if(datasource==null||datasource.trim().equals("")||datasource.trim().equals(Consts.DEFAULT_KEY)) datasource=Config.getInstance().getDefault_datasourcename();
         if(connections.get(datasource)==null)
         {
-            connections.put(datasource,Config.getInstance().getDataSource(datasource).getIConnection());
+            connections.put(datasource,Config.getInstance().getDataSource(datasource).getConnection());
         }
         return connections.get(datasource);
     }
-    //ByQXO$
-    
+
     public AbsDatabaseType getDbType(String datasource_name)
     {
         if(Tools.isDefineKey("i18n",datasource_name))
@@ -1047,7 +1221,7 @@ public class ReportRequest
     public String addParamToUrl(String paramname,String paramvalue,boolean overwrite)
     {
         if(!overwrite&&(url.indexOf("&"+paramname+"=")>=0||url.indexOf("?"+paramname+"=")>=0))
-        {//如果不覆盖，且URL中已经存在此参数名的参数，则不将新参数加入
+        {
             return url;
         }
         if(Tools.isDefineKey("rrequest",paramvalue))
@@ -1089,7 +1263,7 @@ public class ReportRequest
                 }
                 if(Consts.DATA_PART.equals(parttype)&&Consts.PERMISSION_TYPE_DISPLAY.equals(permissiontype)
                         &&"false".equalsIgnoreCase(permissionvalue)&&partid!=null&&!partid.trim().equals("")&&ccbean instanceof ReportBean)
-                {
+                {//如果当前是对某一个报表的某一列授“不显示”的权限
                     this.setAttribute(componentId,"authroize_col_display","false");
                 }
                 cabean=new ComponentPermissionBean(ccbean);
@@ -1114,7 +1288,6 @@ public class ReportRequest
         }
         if(!AuthorizationAssistant.getInstance().isExistPermissiontype(permissiontype)) return false;
         if(!AuthorizationAssistant.getInstance().isExistValueOfPermissiontype(permissiontype,permissionvalue)) return false;
-        
         String myPermissionKey=componentId;
         if(parttype!=null&&!parttype.trim().equals("")) myPermissionKey=myPermissionKey+"_"+parttype.trim();
         if(partid!=null&&!partid.trim().equals("")) myPermissionKey=myPermissionKey+"_"+partid.trim();
@@ -1145,9 +1318,9 @@ public class ReportRequest
         if(permission==Consts.CHKPERMISSION_NO)
         {
             this.setAttribute(myPermissionKey,false);
-            return false;//显示授的权限值不是当前权限值
+            return false;
         }
-        
+        //在支持时没有显式授此权限值，即返回值为Consts.CHKPERMISSION_EMPTY，下面再看一下有没有给它授此默认权限值
         IComponentConfigBean ccbean=null;
         if(this.pagebean.getId().equals(componentId))
         {
@@ -1168,7 +1341,6 @@ public class ReportRequest
             this.setAttribute(myPermissionKey,false);
             return false;//显示授了此组件/元素不具有此默认权限值
         }
-        
         boolean defaultpermission=AuthorizationAssistant.getInstance().checkDefaultPermissionTypeValue(permissiontype,permissionvalue);
         this.setAttribute(myPermissionKey,defaultpermission);
         return defaultpermission;
@@ -1192,7 +1364,6 @@ public class ReportRequest
         {
             return checkPermission(componentId,null,null,permissiontype,permissionvalue);
         }
-        
         if(componentId.equals(this.pagebean.getId())) throw new WabacusRuntimeException("不能判断<page/>的父组件权限");
         IComponentConfigBean ccbean=this.pagebean.getChildComponentBean(componentId,true);
         return ccbean.getParentContainer().invokeCheckPermissionByChild(this,ccbean,permissiontype,permissionvalue);
@@ -1244,7 +1415,7 @@ public class ReportRequest
         if(this.getActiontype().equalsIgnoreCase(Consts.SHOWREPORT_ACTION))
         {
             if(flag&&this.lstAllReportBeans!=null&&this.lstAllReportBeans.size()>0)
-            {
+            {//调用所有报表的拦截器的后置动作
                 for(ReportBean rbeanTemp:lstAllReportBeans)
                 {
                     if(rbeanTemp!=null&&rbeanTemp.getInterceptor()!=null)
@@ -1263,7 +1434,12 @@ public class ReportRequest
                 }
             }
         }
-        if(this.lstAllUsedStatement!=null&&this.lstAllUsedStatement.size()>0)
+        releaseDBResources();
+    }
+
+    public void releaseDBResources()
+    {
+        if(this.lstAllUsedStatement.size()>0)
         {
             Statement stmt;
             for(int i=0;i<this.lstAllUsedStatement.size();i++)
@@ -1272,16 +1448,16 @@ public class ReportRequest
                 if(stmt==null) continue;
                 WabacusAssistant.getInstance().release(null,stmt);
             }
-            this.lstAllUsedStatement=null;
+            this.lstAllUsedStatement.clear();
         }
-        if(connections!=null&&connections.size()>0)
+        if(connections.size()>0)
         {
             Iterator<String> itConns=connections.keySet().iterator();
             String name;
             while(itConns.hasNext())
             {
                 name=itConns.next();
-                WabacusAssistant.getInstance().release(connections.get(name));
+                WabacusAssistant.getInstance().release(connections.get(name),null);
             }
             connections.clear();
         }
@@ -1423,7 +1599,7 @@ public class ReportRequest
     public List<Map<String,String>> getLstInvokeServerActionParams(String componentid)
     {
         if(this.serverActionBean==null||componentid==null||componentid.trim().equals("")) return null;
-        if(!componentid.equals(this.serverActionBean.getComponentid())) return null;//当前调用服务器端操作不是针对componentid对应的组件
+        if(!componentid.equals(this.serverActionBean.getComponentid())) return null;
         return this.serverActionBean.getLstParams();
     }
     
@@ -1507,20 +1683,6 @@ public class ReportRequest
         key=Tools.getRealKeyByDefine("i18n",key);
         if(key.length()==len) return key;
         return Config.getInstance().getResources().getI18NStringValue(key,localelanguage);
-    }
-    
-    public Map<String,List<ColAndGroupDisplayBean>> getMColAndGroupDisplayBeans()
-    {
-        return mColAndGroupDisplayBeans;
-    }
-
-    public void addColAndGroupDisplayBean(String reportid,List<ColAndGroupDisplayBean> lstColAndGroupDisplayBeans)
-    {
-        if(mColAndGroupDisplayBeans==null)
-        {
-            mColAndGroupDisplayBeans=new HashMap<String,List<ColAndGroupDisplayBean>>();
-        }
-        mColAndGroupDisplayBeans.put(reportid,lstColAndGroupDisplayBeans);
     }
 
     public List<ReportBean> getLstAllReportBeans()
@@ -1736,9 +1898,6 @@ public class ReportRequest
         {
             if(this.lstReportWithDefaultSelectedRows==null) this.lstReportWithDefaultSelectedRows=new ArrayList<String>();
             if(!this.lstReportWithDefaultSelectedRows.contains(rbean.getId())) this.lstReportWithDefaultSelectedRows.add(rbean.getId());
-        }else if(this.lstReportWithDefaultSelectedRows!=null&&this.lstReportWithDefaultSelectedRows.contains(rbean.getId()))
-        {
-            this.lstReportWithDefaultSelectedRows.remove(rbean.getId());
         }
     }
 
@@ -1756,10 +1915,5 @@ public class ReportRequest
     public Map<String,String> getMServerValidateDatas()
     {
         return mServerValidateDatas;
-    }
-    
-    
-    public void setResponseStatecode(final int statecode){
-        setAttribute(Consts.RESPONSE_STATECODE_KEY,statecode);
     }
 }

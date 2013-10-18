@@ -27,11 +27,11 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.dataimport.DataImportItem;
 import com.wabacus.system.dataimport.queue.UploadFilesQueue;
 import com.wabacus.util.Consts_Private;
 import com.wabacus.util.FileLockTools;
-import com.wabacus.util.Tools;
 
 public class FileUpDataImportThread extends AbsDataImportThread
 {
@@ -78,7 +78,7 @@ public class FileUpDataImportThread extends AbsDataImportThread
     public String doDataImport(List<DataImportItem> lstDataItems,Map<File,FileItem> mUploadFiles)
     {
         if(lstDataItems==null||lstDataItems.size()==0||mUploadFiles==null||mUploadFiles.size()==0) return "";
-        String lockfile=Tools.standardFilePath(lstDataItems.get(0).getConfigBean().getFilepath()+"\\"+Consts_Private.DATAIMPORT_LOCKFILENAME);
+        String lockfile=FilePathAssistant.getInstance().standardFilePath(lstDataItems.get(0).getConfigBean().getFilepath()+"\\"+Consts_Private.DATAIMPORT_LOCKFILENAME);
         Object lockresource=FileLockTools.lock(lockfile,5,10);
         if(lockresource==null)
         {
@@ -108,7 +108,7 @@ public class FileUpDataImportThread extends AbsDataImportThread
         }catch(Exception e)
         {
             log.error("导入数据失败",e);
-            return "导入数据失败:"+e.getMessage();
+            return "导入数据失败";
         }finally
         {
             try

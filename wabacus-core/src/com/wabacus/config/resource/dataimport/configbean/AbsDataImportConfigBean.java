@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dom4j.Element;
@@ -35,7 +34,7 @@ import com.wabacus.util.Consts_Private;
 import com.wabacus.util.RegexTools;
 import com.wabacus.util.Tools;
 
-public abstract class AbsDataImportConfigBean implements Cloneable
+public abstract class AbsDataImportConfigBean
 {
     private static Log log=LogFactory.getLog(AbsDataImportConfigBean.class);
     
@@ -59,7 +58,7 @@ public abstract class AbsDataImportConfigBean implements Cloneable
 
     private String datasource;
 
-    private Map<String,List<DataImportSqlBean>> mImportSqlObjs;
+    private Map<String,List<DataImportSqlBean>> mImportSqlObjs;//存放每条要执行的sql以及相应的参数类型，加载时根据用户配置生成，key为导入类型，这里主要是考虑动态导入指定导入类型的情况，这样每次动态指定导入类型时，就不用每次去构造导入SQL语句
 
     public String getReskey()
     {
@@ -169,7 +168,7 @@ public abstract class AbsDataImportConfigBean implements Cloneable
                 }
                 return lstDataImportDataSqls;
             }else if(colMapBean.getMatchmode().equals(Consts_Private.DATAIMPORT_MATCHMODE_EVERYTIME))
-            {//每次导数据时建立SQL语句
+            {
                 log.debug("正在为数据导入资源项"+this.getReskey()+"建立数据文件和数据表映射...");
                 return colMapBean.createImportDataSqls(null);
             }else
@@ -211,8 +210,9 @@ public abstract class AbsDataImportConfigBean implements Cloneable
         if(filetype.equals(FILE_TYPE_EXCEL))
         {
             dicbean=new XlsDataImportBean();
-        }else  {
-         //   throw new WabacusConfigLoadingException("加载数据导入资源项"+key+"失败，配置的数据文件类型"+filetype+"不支持");
+        }else
+        {
+            throw new WabacusConfigLoadingException("加载数据导入资源项"+key+"失败，配置的数据文件类型"+filetype+"不支持");
         }
         dicbean.setReskey(key);
         return dicbean;
@@ -247,47 +247,4 @@ public abstract class AbsDataImportConfigBean implements Cloneable
             return realfilename.trim().equals(this.filename);
         }
     }
-    
-    //$ByQXO　所有属性列表Map,以便扩展类中使用
-
-    @Override
-    public Object clone() 
-    {
-         try
-        {
-           AbsDataImportConfigBean ret = (AbsDataImportConfigBean)super.clone();
-           if(this.attrs != null){
-               ret.attrs = new HashMap<String,String>(this.attrs);
-           }
-            return ret;
-        }catch(CloneNotSupportedException e)
-        {
-            throw new IllegalStateException(e.getMessage(),e);
-        }
-    }
-    
-  
-    private Map<String,String> attrs;
-
-    public Map<String,String> getAttrs()
-    {
-        return attrs == null ? MapUtils.EMPTY_MAP : attrs;
-    }
-
-    public void setAttrs(Map<String,String> attrs)
-    {
-        this.attrs=attrs;
-    }
-    
-    public void mergeAttrs(Map<String,String> overrideAttrs){
-        if(overrideAttrs == null || overrideAttrs.isEmpty()){
-            return;
-        }
-        if(attrs == null){
-            attrs = new HashMap<String,String>();
-        }
-        attrs.putAll(overrideAttrs);
-    }    
-    //ByQXO$
-    
 }

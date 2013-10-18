@@ -42,7 +42,6 @@ public class ComponentTag extends AbsComponentTag
         {
             throw new WabacusRuntimeException("组件"+this.displayComponentObj.getConfigBean().getPath()+"不是应用，不能调用<wx:component/>显示其内容");
         }
-        rrequest.getWResponse().setJspout(this.out);//本次是通过<wx:component/>显示完整的报表，则此报表的所有输出都要通过这里的out（即jsp传入的out）对象进行输出，而不能用wresponse本身的out对象
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
         {
             ((AbsApplicationType)this.displayComponentObj).displayOnPage(this);

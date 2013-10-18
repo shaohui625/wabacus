@@ -42,15 +42,15 @@ import org.apache.commons.logging.LogFactory;
 
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.assistant.ReportAssistant;
 import com.wabacus.system.buttons.EditableReportSQLButtonDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportExternalValueBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportParamBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
+import com.wabacus.system.dataset.report.value.SQLReportDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.sqlconvertor.AbsConvertSQLevel;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
 import com.wabacus.system.datatype.ClobType;
@@ -63,39 +63,38 @@ import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
 
-//$ByQXO
-public class Oracle extends AbstractJdbcDatabaseType
-{//ByQXO$
+public class Oracle extends AbsDatabaseType
+{
     private final static Log log=LogFactory.getLog(Oracle.class);
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj)
     {
-        String sql=svbean.getSqlWithoutOrderby();
-        if(sql.indexOf("%orderby%")>0)
+        String sql=convertSqlObj.getConvertedSql();
+        if(sql.indexOf(SQLReportDataSetValueProvider.orderbyPlaceHolder)>0)
         {
-            sql=Tools.replaceAll(sql,"%orderby%"," order by "+svbean.getOrderby());
+            sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder," order by "+convertSqlObj.getOrderby());
         }
         StringBuffer sqlBuffer=new StringBuffer("SELECT * FROM(SELECT wx_temp_tbl1.*, ROWNUM row_num FROM ");
-        sqlBuffer.append("("+sql+")  wx_temp_tbl1 WHERE ROWNUM<=%END%)  wx_temp_tbl2");
-        sqlBuffer.append(" WHERE row_num>%START%");
+        sqlBuffer.append("("+sql+")  wx_temp_tbl1 WHERE ROWNUM<="+SQLReportDataSetValueProvider.endRowNumPlaceHolder+")  wx_temp_tbl2");
+        sqlBuffer.append(" WHERE row_num>"+SQLReportDataSetValueProvider.startRowNumPlaceHolder);
         return sqlBuffer.toString();
     }
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj,String dynorderby)
     {
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
+        dynorderby=convertSqlObj.mixDynorderbyAndConfigOrderbyCols(dynorderby);
         dynorderby=" ORDER BY "+dynorderby;
-        String sql=svbean.getSqlWithoutOrderby();
-        if(sql.indexOf("%orderby%")<0)
+        String sql=convertSqlObj.getConvertedSql();
+        if(sql.indexOf(SQLReportDataSetValueProvider.orderbyPlaceHolder)<0)
         {
             sql=sql+dynorderby;
         }else
         {
-            sql=Tools.replaceAll(sql,"%orderby%",dynorderby);
+            sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder,dynorderby);
         }
         StringBuffer sqlBuffer=new StringBuffer("SELECT * FROM(SELECT wx_temp_tbl1.*, ROWNUM row_num FROM ");
-        sqlBuffer.append("("+sql+")  wx_temp_tbl1 WHERE ROWNUM<=%END%)  wx_temp_tbl2");
-        sqlBuffer.append(" WHERE row_num>%START%");
+        sqlBuffer.append("("+sql+")  wx_temp_tbl1 WHERE ROWNUM<="+SQLReportDataSetValueProvider.endRowNumPlaceHolder+")  wx_temp_tbl2");
+        sqlBuffer.append(" WHERE row_num>"+SQLReportDataSetValueProvider.startRowNumPlaceHolder);
         return sqlBuffer.toString();
     }
 
@@ -378,7 +377,7 @@ public class Oracle extends AbstractJdbcDatabaseType
         if(sqlBuffer.charAt(sqlBuffer.length()-1)==',') sqlBuffer.deleteCharAt(sqlBuffer.length()-1);
         List<UpdateSqlActionBean> lstUpdateSqls=new ArrayList<UpdateSqlActionBean>();
         if(mLobParamsBean!=null&&mLobParamsBean.size()>0)
-        {
+        {//存在大字段需要更新
             String tablename=configUpdateSql.substring("update".length()+1).trim();
             if(tablename.indexOf("(")>0) tablename=tablename.substring(0,tablename.indexOf("(")).trim();
             List<EditableReportParamBean> lstParamsBean2=new ArrayList<EditableReportParamBean>();
@@ -405,13 +404,10 @@ public class Oracle extends AbstractJdbcDatabaseType
             //先执行update 大字段=EMPTY_C/BLOB()
             lstUpdateSqls.add(new UpdateSqlActionBean(sqlUpdateLob.toString(),new ArrayList<EditableReportParamBean>(),updateSqlBean
                     .getOwnerGroupBean(),null));
-            
             lstUpdateSqls.add(new UpdateSqlActionBean(sqlSelectLob.toString(),lstParamsBean2,updateSqlBean.getOwnerGroupBean(),null));
         }
-        
-        
         if(hasNonLobTypeUpdateParams)
-        {//有需要更新的普通类型的字段
+        {
             lstUpdateSqls.add(new UpdateSqlActionBean(sqlBuffer.toString(),lstParamsBean,updateSqlBean.getOwnerGroupBean(),updateSqlBean
                     .getReturnValueParamname()));
         }

@@ -18,7 +18,7 @@
  */
 package com.wabacus.system.fileupload;
 
-import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
@@ -39,29 +39,30 @@ public class DataImportReportUpload extends AbsFileUpload
         super(request);
     }
 
-    public void showUploadForm(Appendable out) throws IOException
+    public void showUploadForm(PrintWriter out)
     {
         String pageid=getRequestString("PAGEID","");
         String comid=getRequestString("COMPONENTID","");
         String buttonname=getRequestString("DATAIMPORT_BUTTONNAME","");
-        DataImportButton buttonObj=getDataImportButtonObj(pageid,comid,buttonname);
-        out.append("<input type='hidden' name='PAGEID' value='"+pageid+"'/>");
-        out.append("<input type='hidden' name='COMPONENTID' value='"+comid+"'/>");
-        out.append("<input type='hidden' name='DATAIMPORT_BUTTONNAME' value='"+buttonname+"'/>");
+        this.dataImportButtonObj=getDataImportButtonObj(pageid,comid,buttonname);
+        out.print("<input type='hidden' name='PAGEID' value='"+pageid+"'/>");
+        out.print("<input type='hidden' name='COMPONENTID' value='"+comid+"'/>");
+        out.print("<input type='hidden' name='DATAIMPORT_BUTTONNAME' value='"+buttonname+"'/>");
         boolean flag=true;
-        if(buttonObj.getDataimportInterceptorObj()!=null)
+        if(this.dataImportButtonObj.getDataimportInterceptorObj()!=null)
         {
+            interceptorObj=this.dataImportButtonObj.getDataimportInterceptorObj();
             Map<String,String> mFormFieldValues=(Map<String,String>)request.getAttribute("WX_FILE_UPLOAD_FIELDVALUES");
-            request.setAttribute("LST_DATAIMPORT_CONFIGBEANS",buttonObj.getLstDataImportItems());
-            flag=buttonObj.getDataimportInterceptorObj().beforeDisplayFileUploadInterface(request,mFormFieldValues,out);
+            request.setAttribute("LST_DATAIMPORT_CONFIGBEANS",this.dataImportButtonObj.getLstDataImportItems());
+            flag=interceptorObj.beforeDisplayFileUploadInterface(request,mFormFieldValues,out);
         }
         if(flag)
         {
-            out.append(showDataImportFileUpload(buttonObj.getLstDataImportFileNames()));
+            out.print(showDataImportFileUpload(this.dataImportButtonObj.getLstDataImportFileNames()));
         }
     }
 
-    public String doFileUpload(List lstFieldItems,Appendable out) throws IOException
+    public String doFileUpload(List lstFieldItems,PrintWriter out)
     {
         String pageid=mFormFieldValues.get("PAGEID");
         String comid=mFormFieldValues.get("COMPONENTID");
@@ -98,7 +99,7 @@ public class DataImportReportUpload extends AbsFileUpload
         return buttonObj;
     }
     
-    public void promptSuccess(Appendable out,boolean isArtDialog)  throws IOException
+    public void promptSuccess(PrintWriter out,boolean isArtDialog)
     {
         String message="";
         if(this.dataImportButtonObj.isDataImportAsyn())
@@ -111,19 +112,19 @@ public class DataImportReportUpload extends AbsFileUpload
         String parentRef=null;
         if(isArtDialog)
         {
-            out.append("artDialog.open.origin.wx_success('"+message+"');\n");
-            out.append("art.dialog.close();\n");
+            out.println("artDialog.open.origin.wx_success('"+message+"');");
+            out.println("art.dialog.close();");
             parentRef="artDialog.open.origin";
         }else
         {
-            out.append("parent.wx_success('"+message+"');\n");
-            out.append("parent.closePopupWin();");
+            out.println("parent.wx_success('"+message+"');");
+            out.println("parent.closePopupWin();");
             parentRef="parent";
         }
         IComponentConfigBean ccbean=this.dataImportButtonObj.getCcbean();
         if(!this.dataImportButtonObj.isDataImportAsyn())
         {
-            out.append(parentRef+".refreshComponentDisplay('"+ccbean.getPageBean().getId()+"','"+ccbean.getId()+"',true);\n");
+            out.println(parentRef+".refreshComponentDisplay('"+ccbean.getPageBean().getId()+"','"+ccbean.getId()+"',true);");
         }
     }
 }

@@ -79,9 +79,7 @@ public abstract class AbsPermissionBean
         }
         if(!AuthorizationAssistant.getInstance().isExistValueOfPermissiontype(permissiontype,permissionvalue.trim()))
         {
-
             log.error("为组件"+this.getComponentConfigBean().getPath()+"或其上元素授权时，传入的权限值"+permissionvalue+"为空或在权限类型"+permissiontype+"中不支持");
-
             return;
         }
         if(mPermissions==null) mPermissions=new HashMap<String,String>();

@@ -47,7 +47,6 @@ public abstract class AbsJavaEditActionBean extends AbsEditActionBean
     
     public void parseActionscript(String reportTypeKey,String actionscript)
     {
-        
         if(actionscript==null||actionscript.trim().equals("")) return;
         if(this.ownerGroupBean.getOwnerUpdateBean().isAutoReportdata()
                 &&!(this.ownerGroupBean.getOwnerUpdateBean() instanceof EditableReportDeleteDataBean))

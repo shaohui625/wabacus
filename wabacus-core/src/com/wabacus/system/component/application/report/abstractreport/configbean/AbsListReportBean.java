@@ -21,6 +21,7 @@ package com.wabacus.system.component.application.report.abstractreport.configbea
 import java.util.ArrayList;
 import java.util.List;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
@@ -48,11 +49,13 @@ public class AbsListReportBean extends AbsExtendConfigBean
 
     private List<String> lstRoworderTypes;
     
-    private IListReportRoworderPersistence loadStoreRoworderObject;
+    private IListReportRoworderPersistence loadStoreRoworderObject;//读写行顺序的对象
     
     private int fixedrows;
     
     private int fixedcols;
+    
+    private Integer batchouputcount;
     
     private AbsListReportSubDisplayBean subdisplaybean;
     
@@ -125,6 +128,20 @@ public class AbsListReportBean extends AbsExtendConfigBean
         lstRowSelectCallBackFuncs.add(rowselectMethod);
     }
 
+    public int getBatchouputcount()
+    {
+        if(batchouputcount==null)
+        {
+            batchouputcount=Config.getInstance().getSystemConfigValue("default-batchoutput-recordcount",-1);
+        }
+        return batchouputcount.intValue();
+    }
+
+    public void setBatchouputcount(Integer batchouputcount)
+    {
+        this.batchouputcount=batchouputcount;
+    }
+
     public int getFixedrows()
     {
         return fixedrows;
@@ -149,7 +166,7 @@ public class AbsListReportBean extends AbsExtendConfigBean
         {
             this.fixedcols=fixedcols;
         }else
-        {//是运行时设置fixedcols（目前只有交叉动态列报表是这种情况，在运行时计算固定列）
+        {
             rrequest.setAttribute(this.getOwner().getReportBean().getId(),"DYNAMIC_FIXED_COLSCOUNT",fixedcols);
         }
     }
@@ -198,7 +215,6 @@ public class AbsListReportBean extends AbsExtendConfigBean
         {
             mynewrbean.setSubdisplaybean((AbsListReportSubDisplayBean)subdisplaybean.clone(owner));
         }
-        
         return mynewrbean;
     }
 }

@@ -82,7 +82,7 @@ public class EditableReportInsertDataBean extends AbsEditableReportEditDataBean
 
     protected void setParamBeanInfoOfColBean(ColBean cbUpdateSrc,EditableReportParamBean paramBean,String configColProperty,String reportTypeKey)
     {
-        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbUpdateSrc.getDisplaytype()))
+        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbUpdateSrc.getDisplaytype(true)))
         {
             EditableReportColBean ercbeanUpdated=(EditableReportColBean)cbUpdateSrc.getExtendConfigDataForReportType(reportTypeKey);
             ercbeanUpdated.setEditableWhenInsert(2);

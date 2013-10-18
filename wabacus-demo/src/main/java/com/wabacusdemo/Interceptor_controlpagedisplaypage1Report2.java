@@ -51,7 +51,7 @@ public class Interceptor_controlpagedisplaypage1Report2 extends AbsInterceptorDe
                 for(int i=0;i<rowDataBean.getLstColBeans().size();i++)
                 {
                     cbTmp=(ColBean)rowDataBean.getLstColBeans().get(i);
-                    if(cbTmp.getDisplaytype().equals(Consts.COL_DISPLAYTYPE_HIDDEN)) continue;
+                    if(cbTmp.getDisplaytype(true).equals(Consts.COL_DISPLAYTYPE_HIDDEN)) continue;
                     labelTmp=cbTmp.getLabel(rrequest);
                     if(labelTmp==null||labelTmp.trim().equals("")||labelTmp.equals(ColBean.NON_LABEL))
                         continue;

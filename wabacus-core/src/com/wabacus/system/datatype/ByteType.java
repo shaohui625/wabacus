@@ -50,10 +50,6 @@ public class ByteType extends AbsDataType
         pstmt.setByte(iindex,(Byte)label2value(value));
     }
 
-    
-    
-    
-    
 
     public Class getJavaTypeClass()
     {

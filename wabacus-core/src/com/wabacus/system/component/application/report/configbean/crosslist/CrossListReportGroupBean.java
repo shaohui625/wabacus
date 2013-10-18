@@ -132,7 +132,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
                 if(clrcgbeanTmp==null||(!clrcgbeanTmp.isDynamicColGroup()&&!clrcgbeanTmp.hasDynamicColGroupChild()))
                 {
                     if(!shouldDisplay
-                            &&(childColGroupBeanTmp instanceof UltraListReportGroupBean||((ColBean)childColGroupBeanTmp).getDisplaytype()!=Consts.COL_DISPLAYTYPE_HIDDEN))
+                            &&(childColGroupBeanTmp instanceof UltraListReportGroupBean||((ColBean)childColGroupBeanTmp).getDisplaytype(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)!=Consts.COL_DISPLAYTYPE_HIDDEN))
                     {
                         shouldDisplay=true;
                     }
@@ -153,10 +153,10 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         ReportBean rbean=crossListReportType.getReportBean();
         ReportRequest rrequest=crossListReportType.getReportRequest();
         if(this.isDynamicColGroup())
-        {
+        {//当前分组列是动态分组列
             if(!mDynamicColGroupDisplayType.get(groupBean.getGroupid())
-                    &&(!this.hasDisplayStatisBeansOfReport(mDynamicColGroupDisplayType)||this.lstDatasetConditions==null||this.lstDatasetConditions
-                            .size()==0)) 
+                    &&(!this.hasDisplayStatisBeansOfReport(mDynamicColGroupDisplayType)||this.titleDatasetProvider.getLstConditions()==null||this.titleDatasetProvider
+                            .getLstConditions().size()==0))
             {
                 crossListReportType.addDynamicSelectCols(this,"");
                 return;
@@ -168,7 +168,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
                 return;
             }
             StringBuffer allDynColConditonsBuf=new StringBuffer();
-            StringBuffer dynSelectedColsBuf=new StringBuffer();//存放查询动态统计数据的字段列表
+            StringBuffer dynSelectedColsBuf=new StringBuffer();
             StringBuffer conditionBuf;
             Map<String,String> mCurrentGroupValues=new HashMap<String,String>();//用于存放每个<group/>上一个行的显示值，以便它们决定是否要新开一个GroupBean
             Map<String,String> mAllColConditionsInGroup=new HashMap<String,String>();//存放当前正在处理的每个分组包括的所有<col/>对应的条件,并用or拼凑在一起,以便对整个分组进行统计时能取到此分组的条件
@@ -190,7 +190,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         }else
         {
             UltraListReportGroupBean groupBeanTmp=(UltraListReportGroupBean)groupBean.clone(rbean.getDbean());
-            List lstChildrenTmp=new ArrayList();
+            List lstChildrenTmp=new ArrayList();//存放此分组列包含的子列
             crossListReportType.getAllRuntimeColGroupBeans(groupBean.getLstChildren(),lstChildrenTmp,lstAllRuntimeColBeans,mDynamicColGroupDisplayType);
             if(lstChildrenTmp.size()>0)
             {
@@ -201,7 +201,7 @@ public class CrossListReportGroupBean extends AbsCrossListReportColAndGroupBean
         
     }
 
-    protected void getRealLabelValueFromResultset(ResultSet rs,Map<String,String> mRowData) throws SQLException
+    public void getRealLabelValueFromResultset(ResultSet rs,Map<String,String> mRowData) throws SQLException
     {
         String myLabelValue=rs.getString(column);
         myLabelValue=myLabelValue==null?"":myLabelValue.trim();

@@ -44,18 +44,11 @@ public class DataExportsConfigBean implements Cloneable
     
     private Map<String,String> mDynFilename;
     
-    private int batchselectcount=Integer.MIN_VALUE;
-    
     private List<String> lstAutoDataExportTypes;
 
     private Map<String,AbsDataExportBean> mDataExportBeans;
 
     private IComponentConfigBean owner;
-
-    public int getBatchselectcount()
-    {
-        return batchselectcount;
-    }
 
     public DataExportsConfigBean(IComponentConfigBean owner)
     {
@@ -147,17 +140,6 @@ public class DataExportsConfigBean implements Cloneable
     {
         return getIncludeApplicationids(ComponentAssistant.getInstance().getDataExportTypeByShowType(showtype));
     }
-    
-    public int getDataExportRecordcount(String reportid,String dataexporttype)
-    {
-        if(this.mDataExportBeans==null||!this.mDataExportBeans.containsKey(dataexporttype)) return -1;
-        return this.mDataExportBeans.get(dataexporttype).getDataExportRecordcount(reportid);
-    }
-    
-    public int getDataExportRecordcount(String reportid,int showtype)
-    {
-        return getDataExportRecordcount(reportid,ComponentAssistant.getInstance().getDataExportTypeByShowType(showtype));
-    }
 
     public AbsDataExportBean getDataExportBean(String dataexporttype)
     {
@@ -172,14 +154,6 @@ public class DataExportsConfigBean implements Cloneable
     
     public void loadConfig(XmlElementBean eleDataExports)
     {
-        String batchselectcount=eleDataExports.attributeValue("batchselectcount");
-        if(batchselectcount==null||batchselectcount.trim().equals(""))
-        {
-            this.batchselectcount=Config.getInstance().getDataexportBatchCount();
-        }else
-        {
-            this.batchselectcount=Integer.parseInt(batchselectcount);
-        }
         String filename=eleDataExports.attributeValue("filename");
         if(filename!=null)
         {
@@ -207,7 +181,6 @@ public class DataExportsConfigBean implements Cloneable
             {
                 throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的数据导出<dataexports/>失败，<dataexport/>配置的type属性"+type+"存在重复");
             }
-            
             childDataExportBean=createDataExportBean(type);
             childDataExportBean.loadConfig(eleChildTmp);
             mDataExportBeans.put(type,childDataExportBean);
@@ -237,7 +210,6 @@ public class DataExportsConfigBean implements Cloneable
     {
         if(lstAutoDataExportTypes==null||lstAutoDataExportTypes.size()==0) return;
         List<AbsButtonType> lstDataExportButtons=null;
-        int i=1;
         for(String dataexportTypeTmp:lstAutoDataExportTypes)
         {
             lstDataExportButtons=null;
@@ -246,13 +218,10 @@ public class DataExportsConfigBean implements Cloneable
             {//此报表没有配置这种类型的数据导出按钮（注意这里不包括那些在<button/>标签内容中指定了自己导出应用ID的按钮）
                 AbsButtonType buttonObj=Config.getInstance().getResourceButton(null,this.getOwner(),
                         Consts.M_DATAEXPORT_DEFAULTBUTTONS.get(dataexportTypeTmp),DataExportButton.class);
-                if(buttonObj.getName()==null||buttonObj.getName().trim().equals(""))
-                {
-                    buttonObj.setName(DataExportButton.class.getName()+(i++)+"."+(int)(Math.random()*10000));
-                }
+                buttonObj.setDefaultNameIfNoName();
                 if(this.owner instanceof AbsContainerConfigBean)
                 {
-                    buttonObj.setPosition("top");
+                    buttonObj.setPosition("top");//对于容器，默认位置在顶部
                 }
                 ComponentConfigLoadManager.addButtonToPositions(this.getOwner(),buttonObj);
             }

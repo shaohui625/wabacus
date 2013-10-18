@@ -38,4 +38,6 @@ public interface IComponentType
     public void displayOnPage(AbsComponentTag displayTag);
     
     public void displayOnExportDataFile(Object templateObj,boolean isFirstime);
+
+    public ReportRequest getReportRequest();
 }

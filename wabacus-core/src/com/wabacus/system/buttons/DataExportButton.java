@@ -18,6 +18,8 @@
  */
 package com.wabacus.system.buttons;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +27,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
+import com.wabacus.config.dataexport.DataExportLocalStroageBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -35,7 +38,9 @@ import com.wabacus.util.Tools;
 public class DataExportButton extends WabacusButton
 {
     private String dataexporttype;
-    
+
+    private DataExportLocalStroageBean localStroageBean;//如果导出文件要在本地落地，在这里存放相关信息，只有在<button></button>中指定了导出组件时，才能在<button/>中指定是否落地，以及落地方式
+
     public DataExportButton(IComponentConfigBean ccbean)
     {
         super(ccbean);
@@ -55,36 +60,37 @@ public class DataExportButton extends WabacusButton
     {
         return dataexporttype;
     }
-    
+
     public boolean isExportBySpecifyApplicationids()
     {
         if(this.clickhandler==null) return false;
         if(this.clickhandler instanceof IButtonClickeventGenerate) return true;//在<button/>标签内容中指定了要导出的应用
-        if(this.clickhandler.toString().trim().equals("")) return false;
-        return true;
+        return !this.clickhandler.toString().trim().equals("");
     }
-    
+
     public String showButton(ReportRequest rrequest,String dynclickevent)
     {
-        return super.showButton(rrequest,getDataExportClickEvent(rrequest,null,this.dataexporttype));
+        return super.showButton(rrequest,getDataExportClickEvent(rrequest,null,this.dataexporttype,null));
     }
-    
+
     public String showButton(ReportRequest rrequest,String dynclickevent,String button)
     {
-        return super.showButton(rrequest,getDataExportClickEvent(rrequest,null,this.dataexporttype),button);
+        return super.showButton(rrequest,getDataExportClickEvent(rrequest,null,this.dataexporttype,null),button);
     }
 
     public String showMenu(ReportRequest rrequest,String dynclickevent)
     {
-        return super.showMenu(rrequest,getDataExportClickEvent(rrequest,null,this.dataexporttype));
+        return super.showMenu(rrequest,getDataExportClickEvent(rrequest,null,this.dataexporttype,null));
     }
 
-    public String showButton(ReportRequest rrequest,String dataexporttype,String exportComponentIds,String button)
+    public String showButtonTag(ReportRequest rrequest,String dataexporttype,String exportComponentIds,String button,
+            DataExportLocalStroageBean localStroageBean)
     {
-        return super.showButton(rrequest,getDataExportClickEvent(rrequest,exportComponentIds,dataexporttype),button);
+        return super.showButton(rrequest,getDataExportClickEvent(rrequest,exportComponentIds,dataexporttype,localStroageBean),button);
     }
-    
-    private String getDataExportClickEvent(ReportRequest rrequest,String exportComponentIds,String dataexporttype)
+
+    private String getDataExportClickEvent(ReportRequest rrequest,String exportComponentIds,String dataexporttype,
+            DataExportLocalStroageBean localStroageBean)
     {
         if(exportComponentIds==null||exportComponentIds.trim().equals(""))
         {
@@ -137,7 +143,7 @@ public class DataExportButton extends WabacusButton
                 componentids+=ccbean.getId()+";";
                 includeAppidsTmp=null;
                 if(ccbean.getDataExportsBean()!=null)
-                {
+                {//配置了数据导出功能
                     includeAppidsTmp=ccbean.getDataExportsBean().getIncludeApplicationids(dataexporttype);
                 }
                 if(includeAppidsTmp==null||includeAppidsTmp.trim().equals(""))
@@ -159,10 +165,11 @@ public class DataExportButton extends WabacusButton
                 if(!includeApplicationids.endsWith(";")) includeApplicationids=includeApplicationids+";";
             }
         }
-        return getDataExportEvent(rrequest,rbean,componentids,includeApplicationids,dataexporttype);
+        return getDataExportEvent(rrequest,rbean,componentids,includeApplicationids,dataexporttype,localStroageBean);
     }
-    
-    private String getDataExportEvent(ReportRequest rrequest,ReportBean rbean,String componentids,String includeApplicationids,String exporttype)
+
+    private String getDataExportEvent(ReportRequest rrequest,ReportBean rbean,String componentids,String includeApplicationids,String exporttype,
+            DataExportLocalStroageBean localStroageBean)
     {
         String clickevent=null;
         String exporturl=null;
@@ -176,19 +183,26 @@ public class DataExportButton extends WabacusButton
         {
             exporturl=Config.showreport_onpdf_url;
         }else
-        {//Consts.DATAEXPORT_RICHEXCEL
+        {
             exporturl=Config.showreport_onrichexcel_url;
         }
-        //$ByQXO 可全局配置导出有无列选择功能export-colsect-feature,并可配置export-colsect-feature=false来全局禁用
-        Boolean colselect =  rbean!=null ? rbean.getDbean().getColselect() : null;
-        final Config config=Config.getInstance();
-        if( colselect == null){
-            colselect= config.getSystemConfigValue("export-colsect-feature",false);
-        }else if(colselect){
-            colselect= config.getSystemConfigValue("export-colsect-feature",colselect.booleanValue());
+        if(localStroageBean==null) localStroageBean=this.localStroageBean;
+        if(localStroageBean!=null)
+        {
+            exporturl+=(exporturl.indexOf("?")>0?"&":"?")+"dataexport_localstroage=true";
+            exporturl+="&dataexport_localstroageautodelete="+localStroageBean.isAutodelete();
+            exporturl+="&dataexport_localstroagedownload="+localStroageBean.isDownload();
+            exporturl+="&dataexport_localstroagezip="+localStroageBean.isZip();
+            try
+            {
+                exporturl+="&dataexport_localstroagedirectorydateformat="+URLEncoder.encode(localStroageBean.getRealDirectorydateformat(),"utf-8");
+            }catch(UnsupportedEncodingException e)
+            {
+                e.printStackTrace();
+                exporturl+="&dataexport_localstroagedirectorydateformat="+localStroageBean.getRealDirectorydateformat();
+            }
         }
-        //ByQXO$
-        if(colselect)
+        if(rbean!=null&&rbean.getDbean().isDataexportColselect())
         {
             StringBuffer paramsBuf=new StringBuffer();
             paramsBuf.append("{reportguid:\"").append(rbean.getGuid()).append("\"");
@@ -203,9 +217,10 @@ public class DataExportButton extends WabacusButton
             clickevent="createTreeObjHtml(this,'"+Tools.jsParamEncode(paramsBuf.toString())+"',event);";
         }else
         {
-            
+            //clickevent="postlinkurl('"+url+"',true);";
             clickevent="exportData('"+rrequest.getPagebean().getId()+"','"+componentids+"','"+includeApplicationids+"','"
-                    +Config.showreport_onpage_url+"','"+exporturl+"');";
+                    +Config.showreport_onpage_url+"','"+exporturl+"',null";
+            clickevent+=","+(rbean==null||!rbean.getDbean().isAllColDisplaytypesEquals())+")";
         }
         return clickevent;
     }
@@ -216,16 +231,35 @@ public class DataExportButton extends WabacusButton
         String dataexporttype=eleButtonBean.attributeValue("type");
         if(dataexporttype==null||dataexporttype.trim().equals(""))
         {
-            throw new WabacusConfigLoadingException("加载报表"+ccbean.getPath()+"上的按钮"+this.name
-                    +"失败，此按钮为数据导出按钮，必须配置其dataexporttype属性，指定本按钮的数据导出类型");
+            throw new WabacusConfigLoadingException("加载报表"+ccbean.getPath()+"上的按钮"+this.name+"失败，此按钮为数据导出按钮，必须配置其dataexporttype属性，指定本按钮的数据导出类型");
         }
         dataexporttype=dataexporttype.trim();
         if(!Consts.lstDataExportTypes.contains(dataexporttype))
         {
-            throw new WabacusConfigLoadingException("加载报表"+ccbean.getPath()+"上的按钮"+this.name+"失败，为此数据导出按钮配置的dataexporttype："
-                    +dataexporttype+"无效");
+            throw new WabacusConfigLoadingException("加载报表"+ccbean.getPath()+"上的按钮"+this.name+"失败，为此数据导出按钮配置的dataexporttype："+dataexporttype+"无效");
         }
         this.dataexporttype=dataexporttype;
-    }    
-}
+        String localstorage=eleButtonBean.attributeValue("localstorage");
+        if("true".equalsIgnoreCase(localstorage))
+        {
+            this.localStroageBean=new DataExportLocalStroageBean();
+            this.localStroageBean.setDownload(!"false".equalsIgnoreCase(eleButtonBean.attributeValue("download")));
+            this.localStroageBean.setAutodelete(!"false".equalsIgnoreCase(eleButtonBean.attributeValue("autodelete")));
+            this.localStroageBean.setZip("true".equalsIgnoreCase(eleButtonBean.attributeValue("zip")));
+            this.localStroageBean.setDirectorydateformat(eleButtonBean.attributeValue("directorydateformat"));
+        }else
+        {
+            this.localStroageBean=null;
+        }
+    }
 
+    public void doPostLoad()
+    {
+        super.doPostLoad();
+        if(this.localStroageBean!=null)
+        {
+            this.localStroageBean.doPostLoad();
+        }
+    }
+
+}

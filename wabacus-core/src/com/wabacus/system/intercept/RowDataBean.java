@@ -44,6 +44,8 @@ public class RowDataBean
     private boolean readonly;
 
     private boolean isSelectedRow;
+    
+    private boolean disableSelectedRow;
 
     public RowDataBean(AbsReportType reportTypeObj,String rowstyleproperty,List lstColBeans,AbsReportDataPojo rowDataObj,int rowindex,int colspans)
     {
@@ -123,13 +125,33 @@ public class RowDataBean
 
     public void setSelectedRow(boolean isSelectedRow)
     {
-        this.isSelectedRow=isSelectedRow;
-        reportTypeObj.getReportRequest().addListReportWithDefaultSelectedRows(reportTypeObj.getReportBean(),isSelectedRow);
+        if(disableSelectedRow)
+        {
+            this.isSelectedRow=false;
+        }else
+        {
+            this.isSelectedRow=isSelectedRow;
+            reportTypeObj.getReportRequest().addListReportWithDefaultSelectedRows(reportTypeObj.getReportBean(),isSelectedRow);
+        }
     }
     
     public Object getRowDataObj()
     {
         return rowDataObj;
+    }
+
+    public boolean isDisableSelectedRow()
+    {
+        return disableSelectedRow;
+    }
+
+    public void setDisableSelectedRow(boolean disableSelectedRow)
+    {
+        if(disableSelectedRow)
+        {//如果是禁止选中
+            this.isSelectedRow=false;
+        }
+        this.disableSelectedRow=disableSelectedRow;
     }
 
     public Object getColData(String property)

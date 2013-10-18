@@ -36,7 +36,6 @@ public class EditableReportColDataBean
 
     private String encodeDefaultvalue;
 
-    
 
     private boolean isEditable;
 
@@ -92,15 +91,7 @@ public class EditableReportColDataBean
         this.encodeDefaultvalue=encodeDefaultvalue;
     }
 
-
-
-
-
-
-
-
-
-
+//    }
 
     public boolean isEditable()
     {
@@ -180,7 +171,7 @@ public class EditableReportColDataBean
     {
         EditableReportColDataBean ercdbean=new EditableReportColDataBean();
         ercdbean.setEditvalue(col_editvalue);
-        int displaymode=cdb.getColDisplayModeAfterAuthorize(cbean);
+        int displaymode=cdb.getColDisplayModeAfterAuthorize(cbean,rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE);
         ercdbean.setDisplaymode(displaymode);
         if(displaymode<0)
         {
@@ -192,7 +183,7 @@ public class EditableReportColDataBean
         if(cbeanUpdateSrc==null) cbeanUpdateSrc=cbean;
         EditableReportColBean ercbeanSrc=(EditableReportColBean)cbeanUpdateSrc.getExtendConfigDataForReportType(EditableReportColBean.class);
         if(ercbeanSrc==null||cbean.isSequenceCol()||cbean.isControlCol()
-                ||(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())&&cbean.getUpdateColBeanSrc(false)==null))
+                ||(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE))&&cbean.getUpdateColBeanSrc(false)==null))
         {
             return formatInstance(cbean,ercdbean);
         }
@@ -211,7 +202,7 @@ public class EditableReportColDataBean
         {
             String defaultvalue=ercbeanSrc.getInputbox().getDefaultvalue(rrequest);
             if(defaultvalue!=null&&!defaultvalue.equals(""))
-            {//为其输入框配置了默认值，则用默认值
+            {
                 if(cbean.getUpdateColBeanDest(false)!=null)
                 {
                     ercdbean.setDefaultvalue(ercbeanSrc.getInputbox().getDefaultlabel(rrequest));   
@@ -248,7 +239,7 @@ public class EditableReportColDataBean
     {
         String value_name=EditableReportAssistant.getInstance().getColParamName(cbean);
         if(ercdbean.isNeedEncode())
-        {
+        {//当前列数据需要编码显示
             ercdbean.setValuename(Consts_Private.COL_NONDISPLAY_PERMISSION_PREX+value_name);
             ercdbean.setOldvalue(ercdbean.getEncodeEditvalue());
         }else

@@ -127,7 +127,7 @@ public class JavaScriptAssistant
         scriptBuf.append(   hideAllSlaveReports(rbean,null));
         scriptBuf.append("}else");
         scriptBuf.append("{");
-        scriptBuf.append(   refreshAllSlaveReports(rbean));
+        scriptBuf.append(   refreshAllSlaveReports(rbean));//刷新所有从报表
         scriptBuf.append("}");
         return scriptBuf.toString();
     }
@@ -154,7 +154,7 @@ public class JavaScriptAssistant
             }else
             {
                 Map<String,String> mParamsTmp=reportEntries.getValue();
-                scriptBuf.append("staticlinkparams='';");//存放刷新每个从报表所配置的常量参数
+                scriptBuf.append("staticlinkparams='';");
                 for(Entry<String,String> paramEntry:mParamsTmp.entrySet())
                 {
                     if(!Tools.isDefineKey("@",paramEntry.getValue()))
@@ -185,7 +185,7 @@ public class JavaScriptAssistant
             for(Entry<String,String> paramEntry:mParamsTmp.entrySet())
             {
                 if(!Tools.isDefineKey("@",paramEntry.getValue()))
-                {
+                {//当前参数是常量参数
                     scriptBuf
                             .append("staticlinkparams=staticlinkparams+'&"+paramEntry.getKey()+"='+encodeURIComponent('"+paramEntry.getValue()+"');");
                 }
@@ -284,7 +284,6 @@ public class JavaScriptAssistant
                 scriptBuf.append("      }");
                 scriptBuf.append("  }");
             }
-            
             scriptBuf.append("  return false;");
             scriptBuf.append("}");
         }

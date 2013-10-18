@@ -88,7 +88,7 @@ public class TextAreaBox extends AbsInputBox
         sbuffer.append("if(fillmode==2){");
         sbuffer
                 .append("var textareaObj=document.getElementById('WX_TEXTAREA_BOX');value=textareaObj.value; label=textareaObj.value;textareaObj.style.display='none';");
-        sbuffer.append("}else if(fillmode==1){");
+        sbuffer.append("}else if(fillmode==1){");//显示时即填充输入框
         sbuffer.append("value=boxObj.value; label=boxObj.value;");
         sbuffer.append("}");
         return sbuffer.toString();

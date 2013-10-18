@@ -53,10 +53,10 @@ public class BlockListReportType extends AbsListReportType
         super(parentContainerType,comCfgBean,rrequest);
     }
 
-    public String showReportData()
+    public void showReportData(StringBuilder resultBuf)
     {
-        if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return "";
-        StringBuffer resultBuf=new StringBuffer();
+        if(!rrequest.checkPermission(rbean.getId(),Consts.DATA_PART,null,Consts.PERMISSION_TYPE_DISPLAY)) return;
+        dataPartStringBuffer=resultBuf;
         ReportDataBean reportDataObjFromInterceptor=null;
         if(rbean.getInterceptor()!=null)
         {
@@ -65,87 +65,79 @@ public class BlockListReportType extends AbsListReportType
         }
         if(reportDataObjFromInterceptor!=null&&reportDataObjFromInterceptor.getBeforeDisplayString()!=null)
         {
-            resultBuf.append(reportDataObjFromInterceptor.getBeforeDisplayString());
+            dataPartStringBuffer.append(reportDataObjFromInterceptor.getBeforeDisplayString());
         }
         if(reportDataObjFromInterceptor==null||reportDataObjFromInterceptor.isShouldDisplayReportData())
         {
-            resultBuf.append(showReportScrollStartTag());
-            resultBuf.append("<ul id=\""+rbean.getGuid()+"_data\" class=\"cls-blocklist\"");
-            resultBuf.append(" style=\"");
-            resultBuf.append(" width:"+getReportDataWidthOnPage()+";");
+            dataPartStringBuffer.append(showReportScrollStartTag());
+            dataPartStringBuffer.append("<ul id=\""+rbean.getGuid()+"_data\" class=\"cls-blocklist\"");
+            dataPartStringBuffer.append(" style=\"");
+            dataPartStringBuffer.append(" width:"+getReportDataWidthOnPage()+";");
             if(rbean.getHeight()!=null&&!rbean.getHeight().trim().equals(""))
             {
-                resultBuf.append("height:").append(rbean.getHeight()).append(";");
+                dataPartStringBuffer.append("height:").append(rbean.getHeight()).append(";");
             }
-            resultBuf.append("\"");
+            dataPartStringBuffer.append("\"");
             if(rbean.shouldShowContextMenu())
             {
-                resultBuf.append(" oncontextmenu=\"try{showcontextmenu('contextmenu_"+rbean.getGuid()
+                dataPartStringBuffer.append(" oncontextmenu=\"try{showcontextmenu('contextmenu_"+rbean.getGuid()
                         +"',event);}catch(e){logErrorsAsJsFileLoad(e);}\"");
             }
-            resultBuf.append(">");
-            if(this.lstReportData==null||this.lstReportData.size()==0)
+            dataPartStringBuffer.append(">");
+            if(getDisplayRowInfo()[1]<=0)
             {
-                resultBuf.append("<li class=\"cls-blocklist-block\"><div class=\"cls-blocklist-item\">");
-                if(this.isLazyDataLoad()&&rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
+                dataPartStringBuffer.append("<li class=\"cls-blocklist-block\"><div class=\"cls-blocklist-item\">");
+                if(this.isLazyDisplayData()&&rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
                 {
-                    resultBuf.append(rrequest.getStringAttribute(rbean.getId()+"_lazyloadmessage",""));
+                    dataPartStringBuffer.append(rrequest.getStringAttribute(rbean.getId()+"_lazydisplaydata_prompt",""));
                 }else
                 {
-                    resultBuf.append(rrequest.getI18NStringValue((Config.getInstance().getResources().getString(rrequest,rbean.getPageBean(),
+                    dataPartStringBuffer.append(rrequest.getI18NStringValue((Config.getInstance().getResources().getString(rrequest,rbean.getPageBean(),
                             Consts.NODATA_PROMPT_KEY,true))));
                 }
-                resultBuf.append("</div></li></ul>");
-                return resultBuf.toString();
+                dataPartStringBuffer.append("</div></li></ul>");
+                return;
             }
             if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE)
             {
-                resultBuf.append("<table border='1'");
+                dataPartStringBuffer.append("<table border='1'");
                 if(rrequest.getShowtype()==Consts.DISPLAY_ON_WORD)
                 {
-                    resultBuf.append(" style=\"");
+                    dataPartStringBuffer.append(" style=\"");
                     if(!rbean.getWidth().trim().equals(""))
                     {
-                        resultBuf.append(" width:"+rbean.getWidth()+";");
+                        dataPartStringBuffer.append(" width:"+rbean.getWidth()+";");
                     }else
                     {
-                        resultBuf.append("width:100%;");
+                        dataPartStringBuffer.append("width:100%;");
                     }
-                    resultBuf
+                    dataPartStringBuffer
                             .append("border-collapse:collapse;border:none;mso-border-alt:solid windowtext .25pt;mso-border-insideh:.5pt solid windowtext;mso-border-insidev:.5pt solid windowtext");
-                    resultBuf.append("\"");
+                    dataPartStringBuffer.append("\"");
                 }else
                 {
-                    resultBuf.append(" width=\"100%\"");
+                    dataPartStringBuffer.append(" width=\"100%\"");
                 }
-                resultBuf.append(">");
+                dataPartStringBuffer.append(">");
             }
-            resultBuf.append(showDataPart());
+            showDataPart();
             if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE)
             {
-                resultBuf.append("</table>");
+                dataPartStringBuffer.append("</table>");
             }
-            resultBuf.append("</ul>");
-            resultBuf.append(showReportScrollEndTag());
+            dataPartStringBuffer.append("</ul>");
+            dataPartStringBuffer.append(showReportScrollEndTag());
         }
         if(reportDataObjFromInterceptor!=null&&reportDataObjFromInterceptor.getAfterDisplayString()!=null)
         {
-            resultBuf.append(reportDataObjFromInterceptor.getAfterDisplayString());
+            dataPartStringBuffer.append(reportDataObjFromInterceptor.getAfterDisplayString());
         }
-        return resultBuf.toString();
     }
 
-    private String showDataPart()
+    private void showDataPart()
     {
-        StringBuffer resultBuf=new StringBuffer();
-        int startNum=0;
-        if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
-        {
-            startNum=(this.cacheDataBean.getFinalPageno()-1)*this.cacheDataBean.getPagesize();
-        }else
-        {
-            resultBuf.append("<tr>");
-        }
+        int startNum=this.cacheDataBean.isLoadAllReportData()?0:(this.cacheDataBean.getFinalPageno()-1)*this.cacheDataBean.getPagesize();
+        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) dataPartStringBuffer.append("<tr>");
         List<ColBean> lstColBeans=rbean.getDbean().getLstCols();
         BlockListReportDisplayBean blrdbean=(BlockListReportDisplayBean)rbean.getDbean().getExtendConfigDataForReportType(KEY);
         RowDataBean rowInterceptorObjTmp;
@@ -154,58 +146,69 @@ public class BlockListReportType extends AbsListReportType
         AbsReportDataPojo rowDataObjTmp;
         int colsinexportfile=blrdbean.getColsinexportfile();
         int n=1;
-        for(int i=0,size=lstReportData.size();i<size;i++)
+        boolean isLazyLoadata=rbean.isLazyLoadReportData(rrequest);
+        int lazyloadataCount=rbean.getLazyLoadDataCount(rrequest);
+        int recordidx=-1;
+        int[] displayrowinfo=getDisplayRowInfo();
+        for(int i=displayrowinfo[0];i<displayrowinfo[1];i++)
         {
-            rowDataObjTmp=this.lstReportData.get(i);
+            if(isLazyLoadata&&i%lazyloadataCount==0)
+            {
+                loadLazyReportData(startNum+i,startNum+i+lazyloadataCount);
+                if(lstReportData.size()==0) break;
+                recordidx=-1;
+            }
+            recordidx=isLazyLoadata?(recordidx+1):i;
+            if(recordidx>=lstReportData.size()) break;
+            rowDataObjTmp=lstReportData.get(recordidx);
             trstylepropertyTmp=rowDataObjTmp.getRowValuestyleproperty();
             if(rbean.getInterceptor()!=null)
             {
                 rowInterceptorObjTmp=new RowDataBean(this,trstylepropertyTmp,lstColBeans,rowDataObjTmp,i,-1);
                 rbean.getInterceptor().beforeDisplayReportDataPerRow(this.rrequest,this.rbean,rowInterceptorObjTmp);
-                if(rowInterceptorObjTmp.getInsertDisplayRowHtml()!=null) resultBuf.append(rowInterceptorObjTmp.getInsertDisplayRowHtml());
+                if(rowInterceptorObjTmp.getInsertDisplayRowHtml()!=null) dataPartStringBuffer.append(rowInterceptorObjTmp.getInsertDisplayRowHtml());
                 if(!rowInterceptorObjTmp.isShouldDisplayThisRow()) continue;
                 trstylepropertyTmp=rowInterceptorObjTmp.getRowstyleproperty();
             }
             if(trstylepropertyTmp==null) trstylepropertyTmp="";
             if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
             {
-                resultBuf.append("<li class=\"cls-blocklist-block\" "+trstylepropertyTmp+">");
+                dataPartStringBuffer.append("<li class=\"cls-blocklist-block\" "+trstylepropertyTmp+">");
             }else
             {
-                resultBuf.append("<td "+trstylepropertyTmp+">");
+                dataPartStringBuffer.append("<td "+trstylepropertyTmp+">");
             }
             for(ColBean cbean:lstColBeans)
             {
                 if(this.isHiddenCol(cbean)) continue;
-                
                 col_displayvalue=getColDisplayValue(cbean,rowDataObjTmp,startNum);
-                resultBuf.append("<div class=\"cls-blocklist-item\"");
+                dataPartStringBuffer.append("<div class=\"cls-blocklist-item\"");
                 colDisplayData=ColDisplayData.getColDataFromInterceptor(this,cbean,rowDataObjTmp,i,rowDataObjTmp.getColValuestyleproperty(cbean
                         .getProperty()),col_displayvalue);
-                resultBuf.append(colDisplayData.getStyleproperty());
-                resultBuf.append(">").append(colDisplayData.getValue());
-                resultBuf.append("</div>");
+                dataPartStringBuffer.append(colDisplayData.getStyleproperty());
+                dataPartStringBuffer.append(">").append(colDisplayData.getValue());
+                dataPartStringBuffer.append("</div>");
             }
             if(rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
             {
-                resultBuf.append("</li>");
+                dataPartStringBuffer.append("</li>");
             }else
             {
-                resultBuf.append("</td>");
-                if(colsinexportfile>0&&n++%colsinexportfile==0) resultBuf.append("</tr><tr>");
+                dataPartStringBuffer.append("</td>");
+                if(colsinexportfile>0&&n++%colsinexportfile==0) dataPartStringBuffer.append("</tr><tr>");
             }
+            this.checkAndPrintBufferData(i);
         }
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE)
         {
-            resultBuf.toString().endsWith("</tr>");
+            dataPartStringBuffer.append("</tr>");
         }
         if(rbean.getInterceptor()!=null)
         {
             rowInterceptorObjTmp=new RowDataBean(this,rbean.getDbean().getValuestyleproperty(rrequest,false),lstColBeans,null,Integer.MAX_VALUE,-1);
             rbean.getInterceptor().beforeDisplayReportDataPerRow(this.rrequest,this.rbean,rowInterceptorObjTmp);
-            if(rowInterceptorObjTmp.getInsertDisplayRowHtml()!=null) resultBuf.append(rowInterceptorObjTmp.getInsertDisplayRowHtml());
+            if(rowInterceptorObjTmp.getInsertDisplayRowHtml()!=null) dataPartStringBuffer.append(rowInterceptorObjTmp.getInsertDisplayRowHtml());
         }
-        return resultBuf.toString();
     }
 
     private String getColDisplayValue(ColBean cbean,AbsReportDataPojo dataObj,int startNum)
@@ -240,13 +243,12 @@ public class BlockListReportType extends AbsListReportType
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return "";
         boolean isShowScrollX=rbean.getScrollwidth()!=null&&!rbean.getScrollwidth().trim().equals("");
         boolean isShowScrollY=rbean.getScrollheight()!=null&&!rbean.getScrollheight().trim().equals("");
-        return ComponentAssistant.getInstance().showComponentScrollEndPart(isShowScrollX,isShowScrollY);
+        return ComponentAssistant.getInstance().showComponentScrollEndPart(rbean.getScrollstyle(),isShowScrollX,isShowScrollY);
     }
 
-    public String showReportData(boolean showtype)
+    public void showReportData(boolean showtype,StringBuilder resultBuf)
     {
-        if(showtype) return showReportData();
-        return "";
+        if(showtype) showReportData(resultBuf);
     }
 
     public String getColSelectedMetadata()
@@ -254,6 +256,11 @@ public class BlockListReportType extends AbsListReportType
         return "";
     }
 
+    public boolean isSupportHorizontalDataset(ReportBean reportbean)
+    {
+        return false;
+    }
+    
     public int afterDisplayLoading(DisplayBean disbean,List<XmlElementBean> lstEleDisplayBeans)
     {
         super.beforeDisplayLoading(disbean,lstEleDisplayBeans);
@@ -282,7 +289,7 @@ public class BlockListReportType extends AbsListReportType
             if(!style.equals("")&&!style.endsWith(";")) style=style+";";
             style=style+"width:"+blockwidth+";";
         }
-        String heightinstyle=Tools.getPropertyValueFromStyle("height",style);
+        String heightinstyle=Tools.getPropertyValueFromStyle("height",style);//从style中取到height属性值
         if((heightinstyle==null||heightinstyle.trim().equals(""))&&blockheight!=null&&!blockheight.trim().equals(""))
         {//没有在blockstyleproperty的style中指定height，但在<display/>中配置了blockheight
             if(!style.equals("")&&!style.endsWith(";")) style=style+";";
@@ -300,7 +307,8 @@ public class BlockListReportType extends AbsListReportType
     public int doPostLoad(ReportBean reportbean)
     {
         DisplayBean disbean=reportbean.getDbean();
-        disbean.setColselect(false);
+        disbean.setPageColselect(false);
+        disbean.setDataexportColselect(false);
         AbsListReportBean alrbean=(AbsListReportBean)disbean.getReportBean().getExtendConfigDataForReportType(AbsListReportType.KEY);
         alrbean.setRowSelectType(Consts.ROWSELECT_NONE);
         return super.doPostLoad(reportbean);
@@ -309,7 +317,6 @@ public class BlockListReportType extends AbsListReportType
     protected void processReportScrollConfig(ReportBean reportbean)
     {
         AbsListReportBean alrbean=(AbsListReportBean)reportbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
-        
         alrbean.setFixedcols(null,0);
         alrbean.setFixedrows(0);
         boolean isShowScrollX=reportbean.getScrollwidth()!=null&&!reportbean.getScrollwidth().trim().equals("");
@@ -324,7 +331,7 @@ public class BlockListReportType extends AbsListReportType
             }else
             {
                 if(htmlsizeArr[1]!=null&&htmlsizeArr[1].equals("%"))
-                {//如果配置的为百分比
+                {
                     throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()
                             +"失败,blocklist报表类型要显示图片垂直滚动条时，必须配置height属性，且不能配置为百分比，否则在firefox/chrome等浏览器上显示不出垂直滚动条");
                 }

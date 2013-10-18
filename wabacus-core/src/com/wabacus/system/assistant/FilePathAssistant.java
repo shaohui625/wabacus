@@ -149,7 +149,7 @@ public class FilePathAssistant
                 urlTmp=(URL)rootUrls.nextElement();
                 protocolTmp=urlTmp.getProtocol();
                 if("vfs".equals(protocolTmp))
-                {
+                {//jboss的目录
                     String filePath=URLDecoder.decode(urlTmp.getFile(),"UTF-8");
                     int indexOf=filePath.indexOf("/WEB-INF");
                     if(indexOf>0&&!new File(filePath).exists())
@@ -160,7 +160,7 @@ public class FilePathAssistant
                 }else if("file".equals(protocolTmp))
                 {
                     String filePath=URLDecoder.decode(urlTmp.getFile(),"UTF-8");
-                    getFileFromClasspathDir(rootpath,filePath,regex,isRecursive,lstResults);// 以文件的方式扫描整个包下的文件 并添加到集合中
+                    getFileFromClasspathDir(rootpath,filePath,regex,isRecursive,lstResults);
                 }else if("jar".equals(protocolTmp))
                 {
                     JarFile jar=((JarURLConnection)urlTmp.openConnection()).getJarFile();
@@ -172,9 +172,8 @@ public class FilePathAssistant
                         if(jarEntryTmp.isDirectory()) continue;
                         String name=jarEntryTmp.getName();
                         if(name.charAt(0)=='/') name=name.substring(1);// 如果是以/开头的
-                        
                         if(isValidFileInJar(rootpath,name,isRecursive))
-                        {
+                        {//如果是根目录，或者不是根目录，且当前包在此目录中
                             String filenameTmp=name;
                             int idx=name.lastIndexOf('/');
                             if(idx>0) filenameTmp=filenameTmp.substring(idx+1).trim();
@@ -272,5 +271,79 @@ public class FilePathAssistant
                 throw new WabacusConfigLoadingException("将文件内容"+filecontent+"写入文件"+filepath+"失败",e);
             }
         }
+    }
+    
+    public void checkAndCreateDirIfNotExist(String filepath)
+    {
+        if(Tools.isEmpty(filepath)) return;
+        filepath=standardFilePath(filepath);
+        List<String> lstPaths=Tools.parseStringToList(filepath,File.separator);
+        filepath="";
+        File fTmp;
+        for(String pathTmp:lstPaths)
+        {
+            filepath+=pathTmp+File.separator;
+            fTmp=new File(filepath);
+            if(!fTmp.exists()||!fTmp.isDirectory()) fTmp.mkdir();
+        }
+    }
+    
+    public void deleteDir(File dirFileObj)
+    {
+        if(dirFileObj==null||!dirFileObj.exists()||!dirFileObj.isDirectory()) return;
+        File[] childFilesArr=dirFileObj.listFiles();
+        if(childFilesArr.length==0) dirFileObj.delete();
+        for(int i=0,len=childFilesArr.length;i<len;i++)
+        {
+            if(childFilesArr[i].isDirectory())
+            {
+                deleteDir(childFilesArr[i]);
+            }else
+            {
+                childFilesArr[i].delete();
+            }
+        }
+        dirFileObj.delete();
+    }
+    
+    public void delete(File f,String suffix,boolean inherit) throws IOException
+    {
+        if(!f.exists()) return;
+        if(f.isFile())
+        {
+            if(suffix!=null&&!suffix.trim().equals(""))
+            {
+                String temp=suffix.toLowerCase().trim();
+                String filename=f.getName().toLowerCase();
+                if(filename.endsWith(temp)) f.delete();
+            }else
+            {
+                f.delete();
+            }
+        }else if(f.isDirectory())
+        {
+            File[] files=f.listFiles();
+            for(int i=0;i<files.length;i++)
+            {
+                if(files[i].isFile()||inherit) delete(files[i],suffix,inherit);
+            }
+            if(f.listFiles().length==0) f.delete();
+        }
+    }
+
+    public String standardFilePath(String filePath)
+    {
+        if(filePath==null||filePath.trim().equals("")) return filePath;
+        filePath=filePath.trim();
+        if(File.separator.equals("\\"))
+        {
+            filePath=Tools.replaceAll(filePath,"/","\\");
+            filePath=Tools.replaceAll(filePath,"\\\\","\\");
+        }else if(File.separator.equals("/"))
+        {
+            filePath=Tools.replaceAll(filePath,"\\","/");
+            filePath=Tools.replaceAll(filePath,"//","/");
+        }
+        return filePath;
     }
 }

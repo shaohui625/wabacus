@@ -180,7 +180,7 @@
 					是指在一个图表中显示多种图表类型，比如同时显示折线图、柱状图等等。
 				</userdata>
 			</item>
-			<item text="散列/泡沫图" id="xychart">
+			<item text="散列/泡沫图&lt;font color='red'&gt;New&lt;/font&gt;" id="xychart">
 				<userdata name="pageid">xychartpage1</userdata>
 				<userdata name="configfilename">
 					report_fusioncharts.xml
@@ -278,7 +278,7 @@
 	<!--==============================================================================-->
 	<!--=================================容器类型配置===================================-->
 	<!--==============================================================================-->
-	<item id="container" text="容器类型" im0="dhtmlxtree_icon.gif"
+	<item id="container" text="容器类型&lt;font color='red'&gt;New&lt;/font&gt;" im0="dhtmlxtree_icon.gif"
 		im1="dhtmlxtree_icon.gif" im2="dhtmlxtree_icon.gif">
 		<userdata name="groupnode">true</userdata>
 		<userdata name="desc">
@@ -905,7 +905,7 @@
 				</userdata>
 			</item>
 		</item>
-		<item text="容器Header/Footer" id="pageheader">
+		<item text="容器Header/Footer&lt;font color='red'&gt;New&lt;/font&gt;" id="pageheader">
 			<userdata name="pageid">containerheaderpage1</userdata>
 			<userdata name="configfilename">report_container.xml</userdata>
 			<userdata name="desc">
@@ -914,8 +914,14 @@
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=containerheaderpage1&lt;br&gt;
 				&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					这里演示为容器配置Header和Footer部分的显示代码，可以配置为普通字符串、html代码、静态模板等，可以直接配置在＜header/＞、＜footer＞标签中，也可以配置为引用资源文件中的html代码或静态模板资源项。
-					关于为容器配置Header和Footer部分的详细说明，可以参看《Wabacus框架开发指南》文档中“组件公共子标签”一节的介绍。
+					对于所有组件（包括容器和报表）都支持＜outerheader/＞＜header/＞＜footer＞＜outerfooter/＞标签，
+					＜header/＞＜footer＞用于配置显示在本组件内部的顶层和底层的显示内容；&lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					＜outerheader/＞、＜outerfooter/＞用于配置显示在本组件外部的顶层和底层的显示内容&lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+				它们的配置方法完全相同，都可以配置普通字符串、html代码、静态模板等，也可以配置为引用资源文件中的html代码或静态模板资源项。&lt;br&gt;
+				&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					关于为容器配置＜outerheader/＞＜header/＞＜footer＞＜outerfooter/＞部分的详细说明，可以参看《Wabacus框架开发指南》文档中“组件公共子标签”一节的介绍。
 			</userdata>
 		</item>
 		<!--item text="容器综合应用示例" id="complexcontainer">
@@ -1806,7 +1812,7 @@
 				这样当会话没有过期时，打开报表仍然会保留上次的拖动后的列顺序。关于保存列拖动效果的更多介绍请参看《Wabacus框架开发指南》文档“持久化报表表单个性化信息”一节。
 			</userdata>
 		</item>
-		<item text="列选择功能" id="colselected">
+		<item text="列选择功能&lt;font color='red'&gt;New&lt;/font&gt;" id="colselected">
 			<userdata name="groupnode">true</userdata>
 			<userdata name="desc">
 				&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -1887,14 +1893,42 @@
 					更多它们的使用说明，请参看《开发指南二》中相关章节的介绍。
 				</userdata>
 			</item>
-			<item text="多数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="multipledataset">
+			<item text="SQL语句封装级别&lt;font color='red'&gt;New&lt;/font&gt;" id="sqllevel">
+				<userdata name="pageid">sqllevelpage1</userdata>
+				<userdata name="configfilename">
+					report_usualfunc5.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=sqllevelpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					
+				</userdata>
+			</item>
+			<item text="报表横向数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="hdataset">
+				<userdata name="pageid">hdatasetpage1</userdata>
+				<userdata name="configfilename">
+					report_usualfunc5.xml
+				</userdata>
+				<userdata name="desc">
+					&lt;br&gt; &lt;b&gt;本报表页面访问URL：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=hdatasetpage1&lt;br&gt;
+					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					横向数据集是指显示的行数是固定的，列数可以动态扩展，目前只有列表报表和图形报表支持横向数据集，图形报表的横向数据集在“报表类型”－－－“图形报表”中有演示。&lt;br&gt;
+					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+					这里演示的是列表报表的横向数据集，在列表报表的横向数据集中，一个＜col/＞显示横向扩展的标题行，一个或多个＜col/＞显示横向扩展的数据记录行，每个＜col/＞显示一行数据行，它们可以来自不同的数据集＜value/＞
+				</userdata>
+			</item>
+			<item text="多数据集" id="multipledataset">
 				<userdata name="groupnode">true</userdata>
 				<userdata name="desc">
 					&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
 					在wabacus框架中，支持一个报表的记录行来自多个数据集，一个记录行上各列的数据也可以来自多个数据集，前者称为纵向多数据集，后者称为横向多数据集。
 				</userdata>
-				<item text="纵向多数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="vmultipledataset">
+				<item text="纵向多数据集" id="vmultipledataset">
 					<userdata name="pageid">vmultipledatasetpage1</userdata>
 					<userdata name="configfilename">
 						report_usualfunc5.xml
@@ -1948,7 +1982,7 @@
 						</userdata>
 					</item>
 				</item>
-				<item text="混合多数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="complexmultipledataset">
+				<item text="混合多数据集" id="complexmultipledataset">
 					<userdata name="pageid">complexmultipledatasetpage1</userdata>
 					<userdata name="configfilename">
 						report_usualfunc5.xml
@@ -1963,7 +1997,7 @@
 					</userdata>
 				</item>
 			</item>
-			<item text="使用拦截器控制数据集" id="resultset">
+			<item text="使用拦截器控制数据集&lt;font color='red'&gt;New&lt;/font&gt;" id="resultset">
 				<userdata name="groupnode">true</userdata>
 				<userdata name="desc">
 					&lt;br&gt; &lt;b&gt;说明：&lt;/b&gt; &lt;br&gt;
@@ -1996,7 +2030,7 @@
 						只是打印出来，然后原封不动的返回，后面会演示如何控制它们。
 					</userdata>
 				</item>
-				<item text="控制报表数据记录集" id="resultset2">
+				<item text="控制报表数据记录集&lt;font color='red'&gt;New&lt;/font&gt;" id="resultset2">
 					<userdata name="pageid">resultsetpage2</userdata>
 					<userdata name="configfilename">
 						report_usualfunc4.xml
@@ -2063,7 +2097,7 @@
 						获取每个下拉选项的label和value的字段名从OptionBean对象中可以得到，它有一个getLabel()和getValue()方法，分别获取到获取label和value数据的字段名。
 					</userdata>
 				</item>
-				<item text="报表数据来自多个数据源" id="resultset4">
+				<item text="使用加载数据后置动作控制" id="resultset4">
 					<userdata name="pageid">resultsetpage4</userdata>
 					<userdata name="configfilename">
 						report_usualfunc4.xml
@@ -2145,7 +2179,7 @@
 			</userdata>
 			<item text="通过URL指定延迟加载" id="lazydataloadurl">
 				<userdata name="pageid">lazydataloadurlpage1</userdata>
-				<userdata name="params">&amp;report1_lazyload=true&amp;report1_lazyloadmessage=NoData</userdata>
+				<userdata name="params">&amp;report1_lazydisplaydata=true&amp;report1_lazydisplaydata_prompt=NoData</userdata>
 				<userdata name="configfilename">
 					report_usualfunc3.xml
 				</userdata>
@@ -2916,7 +2950,7 @@
 			</item>
 		</item>
 		
-		<item text="客户端/服务器端校验配置&lt;font color='red'&gt;New&lt;/font&gt;" id="validate">
+		<item text="客户端/服务器端校验配置" id="validate">
 			<userdata name="pageid">validatepage1</userdata>
 			<userdata name="configfilename">
 				report_usualfunc1.xml
@@ -3386,7 +3420,7 @@
 					本页面演示为报表配置单行选中功能的方法，只需将&lt;report/&gt;的rowselect属性配置为single即可。
 				</userdata>
 			</item>
-			<item text="单选框单行选中&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectsingle2">
+			<item text="单选框单行选中" id="rowselectsingle2">
 				<userdata name="pageid">rowselectsinglepage2</userdata>
 				<userdata name="configfilename">
 					report_usualfunc2.xml
@@ -3415,7 +3449,7 @@
 					用鼠标单击记录行进行选中
 				</userdata>
 			</item>
-			<item text="复选框多行选中&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectmulti2">
+			<item text="复选框多行选中" id="rowselectmulti2">
 				<userdata name="pageid">rowselectmultipage2</userdata>
 				<userdata name="configfilename">
 					report_usualfunc2.xml
@@ -3430,7 +3464,7 @@
 					这里除了演示了由框架自动生成行选中的复选框列，在最后一个报表还演示了如何控制行选择列的显示位置或样式，方法就是为它专门配置一个＜col/＞，将其column配置为{col-rowselect}，然后它就可以像普通列一样控制样式。
 				</userdata>
 			</item>
-			<item text="跨页选中多记录行&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectmulticrosspage">
+			<item text="跨页选中多记录行" id="rowselectmulticrosspage">
 				<userdata name="pageid">rowselectmulticrosspage1</userdata>
 				<userdata name="configfilename">
 					report_usualfunc2.xml
@@ -3443,7 +3477,7 @@
 					这里演示一次选中多页上的记录
 				</userdata>
 			</item>
-			<item text="服务器端指定选中记录行&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectbyserverside">
+			<item text="服务器端控制记录行选中&lt;font color='red'&gt;New&lt;/font&gt;" id="rowselectbyserverside">
 				<userdata name="pageid">rowselectbyserversidepage1</userdata>
 				<userdata name="configfilename">
 					report_usualfunc2.xml
@@ -3453,7 +3487,7 @@
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;/WabacusDemo/ShowReport.wx?PAGEID=rowselectbyserversidepage1&lt;br&gt;
 					&lt;b&gt;主要演示效果：&lt;/b&gt; &lt;br&gt;
 					&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-					
+					这里演示了在报表拦截器的显示每行记录拦截方法中设置某些行默认选中和设置某些行不允许选中
 				</userdata>
 			</item>
 			<item text="执行选中回调函数" id="rowselect3">
@@ -3780,7 +3814,7 @@
 			</item>
 		</item>
 		
-		<item text="onload回调函数&lt;font color='red'&gt;New&lt;/font&gt;" id="onload">
+		<item text="onload回调函数" id="onload">
 			<userdata name="pageid">onloadpage1</userdata>
 			<userdata name="configfilename">
 				report_usualfunc3.xml

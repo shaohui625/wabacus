@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dom4j.Document;
@@ -51,10 +50,9 @@ import com.wabacus.config.component.application.report.condition.ConditionValueS
 import com.wabacus.config.component.application.report.extendconfig.LoadExtendConfigManager;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
 import com.wabacus.config.component.container.page.PageBean;
-import com.wabacus.config.component.other.ButtonsBean;
-import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.dataexport.DataExportsConfigBean;
 import com.wabacus.config.dataexport.PDFExportBean;
+import com.wabacus.config.other.ButtonsBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.config.print.DefaultPrintProviderConfigBean;
 import com.wabacus.config.print.LodopPrintProviderConfigBean;
@@ -77,6 +75,7 @@ import com.wabacus.system.buttons.UpdateButton;
 import com.wabacus.system.buttons.WabacusButton;
 import com.wabacus.system.commoninterface.IPagePersonalizePersistence;
 import com.wabacus.system.commoninterface.IReportPersonalizePersistence;
+import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportBean;
@@ -355,18 +354,8 @@ public class ComponentConfigLoadManager
         String right=eleComponent.attributeValue("right");
         String scrollstyle=eleComponent.attributeValue("scrollstyle");
         String dataexport=eleComponent.attributeValue("dataexport");
-        
-        //$ByQXO 支持全局方式配置数据导出类型
-        if( null == dataexport){
-            dataexport = Config.getInstance().getSystemConfigValue("dataexport",null);
-        }else{
-            dataexport = Config.getInstance().getSystemConfigValue(dataexport,dataexport);
-        }
-        //ByQXO$
-        
         String contextmenu=eleComponent.attributeValue("contextmenu");
         String onload=eleComponent.attributeValue("onload");
-        acbean.mergeAttrs(eleComponent.getMPropertiesClone());
         if(id==null||id.trim().equals(""))
         {
             throw new WabacusConfigLoadingException("没有为页面"+acbean.getPageBean().getId()+"中子组件配置id属性");
@@ -520,7 +509,7 @@ public class ComponentConfigLoadManager
                 acbean.setPdfPrintBean(null);
             }else if(type.equals("pdf"))
             {
-                acbean.setPrintBean(null);
+                acbean.setPrintBean(null);//将可能从父报表继承过来的其它类型的打印清空
                 PDFExportBean pdfprintbean=new PDFExportBean(acbean,Consts.DATAEXPORT_PDF);
                 pdfprintbean.setPrint(true);
                 pdfprintbean.loadConfig(elePrintBean);
@@ -540,8 +529,10 @@ public class ComponentConfigLoadManager
             loadButtonsInfo(acbean,eleButtonBean);
         }
         //加载组件的header/footer
+        loadHeaderFooterConfig(acbean,eleComponent,"outerheader");
         loadHeaderFooterConfig(acbean,eleComponent,"header");
         loadHeaderFooterConfig(acbean,eleComponent,"footer");
+        loadHeaderFooterConfig(acbean,eleComponent,"outerfooter");
         if(onload!=null)
         {
             onload=onload.trim();
@@ -566,7 +557,7 @@ public class ComponentConfigLoadManager
         htmlsize=htmlsize.trim();
         String[] htmlsizeArr=WabacusAssistant.getInstance().parseHtmlElementSizeValueAndType(htmlsize);
         if(htmlsizeArr==null) return "";
-        if(htmlsizeArr[0].equals("0")) return "";//如果配置为0，则相当于没有配置
+        if(htmlsizeArr[0].equals("0")) return "";
         return htmlsizeArr[0]+htmlsizeArr[1];
     }
 
@@ -591,8 +582,10 @@ public class ComponentConfigLoadManager
         LstNonChildComponentNames.add("print");
         LstNonChildComponentNames.add("buttons");
         LstNonChildComponentNames.add("interceptor");
+        LstNonChildComponentNames.add("outerheader");
         LstNonChildComponentNames.add("header");
         LstNonChildComponentNames.add("footer");
+        LstNonChildComponentNames.add("outerfooter");
     }
 
     public static void loadContainerCommonConfig(XmlElementBean eleContainer,AbsContainerConfigBean ccbean)
@@ -685,8 +678,7 @@ public class ComponentConfigLoadManager
         List<XmlElementBean> lstChildElements=eleContainer.getLstChildElements();
         if(lstChildElements==null||lstChildElements.size()==0)
         {
-            //throw new WabacusConfigLoadingException("加载页面/容器"+ccbean.getPath()+"失败，内容为空");
-            return; //允许组件为空，以扩展可替换
+            throw new WabacusConfigLoadingException("加载页面/容器"+ccbean.getPath()+"失败，内容为空");
         }
         for(XmlElementBean eleChildTmp:lstChildElements)
         {
@@ -757,8 +749,7 @@ public class ComponentConfigLoadManager
                 }else
                 {
                     rbean=(ReportBean)rbeanParent.clone(reportid,parentContainerBean);
-                    
-                    
+                    //                    rbean.setId(reportid);
                 }
             }else
             {
@@ -792,14 +783,12 @@ public class ComponentConfigLoadManager
     public static void loadReportInfo(ReportBean rb,XmlElementBean eleReportBean,ReportBean rbParent) throws Exception
     {
         try
-        {   //$ByQXO　初始化属性Ｍap，以便扩展类中使用
-           // rb.mergeAttrs(eleReportBean.getMPropertiesClone());
-            //ByQXO$
+        {
+            rb.setElementBean(eleReportBean);
             loadComponentCommonConfig(eleReportBean,rb);
             loadApplicationCommonConfig(eleReportBean,rb);
             List<XmlElementBean> lstEleReportBeans=new ArrayList<XmlElementBean>();
             lstEleReportBeans.add(eleReportBean);
-            
             String type=eleReportBean.attributeValue("type");
             if(type!=null) rb.setType(type.trim());
             LoadExtendConfigManager.loadBeforeExtendConfigForReporttype(rb,lstEleReportBeans);
@@ -808,17 +797,17 @@ public class ComponentConfigLoadManager
             String border=eleReportBean.attributeValue("border");
             String bordercolor=eleReportBean.attributeValue("bordercolor");
             String datastyleproperty=eleReportBean.attributeValue("datastyleproperty");
-
             String template=eleReportBean.attributeValue("template");
             String cellresize=eleReportBean.attributeValue("cellresize");
             String celldrag=eleReportBean.attributeValue("celldrag");
             String depends=eleReportBean.attributeValue("depends");
-            
             String dependstype=eleReportBean.attributeValue("dependstype");
             String dependsParams=eleReportBean.attributeValue("dependsparams");
             String scrollheight=eleReportBean.attributeValue("scrollheight");
             String scrollwidth=eleReportBean.attributeValue("scrollwidth");
             String pagesize=eleReportBean.attributeValue("pagesize");
+            String pagelazyloadata=eleReportBean.attributeValue("pagelazyloadata");
+            String dataexportlazyloadata=eleReportBean.attributeValue("dataexportlazyloadata");
             String navigate_reportid=eleReportBean.attributeValue("navigate_reportid");
             String navigate=eleReportBean.attributeValue("navigate");
             String personalizeclass=eleReportBean.attributeValue("personalizeclass");
@@ -861,6 +850,24 @@ public class ComponentConfigLoadManager
                     rb.setLstPagesize(lstDefaultPageSize);
                 }
             }
+            if(pagelazyloadata!=null||rbParent==null)
+            {
+                if((pagelazyloadata==null&&rbParent==null)||(pagelazyloadata!=null&&pagelazyloadata.trim().equals("")))
+                {
+                    pagelazyloadata=Config.getInstance().getSystemConfigValue("default-pagelazyloadata","-1");
+                }
+                rb.setPageLazyloadataCount(Integer.parseInt(pagelazyloadata));
+            }
+            
+            if(dataexportlazyloadata!=null||rbParent==null)
+            {
+                if((dataexportlazyloadata==null&&rbParent==null)||(dataexportlazyloadata!=null&&dataexportlazyloadata.trim().equals("")))
+                {
+                    dataexportlazyloadata=Config.getInstance().getSystemConfigValue("default-dataexportlazyloadata","-1");
+                }
+                rb.setDataexportLazyloadataCount(Integer.parseInt(dataexportlazyloadata));
+            }
+            
             if(navigate_reportid!=null) rb.setNavigate_reportid(navigate_reportid.trim());
             if(navigate!=null)
             {
@@ -884,7 +891,6 @@ public class ComponentConfigLoadManager
                     rb.setNavigateObj(obj);
                 }
             }
-
             if(personalizeclass!=null)
             {
                 personalizeclass=personalizeclass.trim();
@@ -973,7 +979,7 @@ public class ComponentConfigLoadManager
             {
                 String[] htmlsizeArr=WabacusAssistant.getInstance().parseHtmlElementSizeValueAndType(rb.getScrollheight().trim());
                 if(htmlsizeArr==null||htmlsizeArr[0].equals("")||htmlsizeArr[0].equals("0"))
-                {
+                {//配置的html大小无效或配置为0，则相当于没有配置
                     rb.setScrollheight(null);
                 }else
                 {
@@ -1080,9 +1086,7 @@ public class ComponentConfigLoadManager
                     }else
                     {
                         //                   if(!template.toLowerCase().startsWith("http://")&&!template.toLowerCase().startsWith(Config.webroot))
-                        
                         //                       template=Config.webroot+"/"+template;
-                        
                         //                   template=Tools.replaceAll(template,"//","/");
                         rb.setDynTplPath(template);
                     }
@@ -1100,6 +1104,7 @@ public class ComponentConfigLoadManager
                 rb.setMSelectBoxesInColWithRelate(null);//配置了自己的<display/>，则把从父报表中继承过来的查询条件关联下拉框对象从rbean中移除掉
                 DisplayBean dbean=new DisplayBean(rb);
                 rb.setDbean(dbean);
+                dbean.setElementBean(eleDisplayBean);
                 loadDisplayConfig(dbean,eleDisplayBean);
             }
 
@@ -1109,6 +1114,7 @@ public class ComponentConfigLoadManager
                 rb.setMSelectBoxesInConditionWithRelate(null);//配置了自己的<sql/>，则把从父报表中继承过来的查询条件关联下拉框对象从rbean中移除掉
                 SqlBean sbean=new SqlBean(rb);
                 rb.setSbean(sbean);
+                sbean.setElementBean(eleSqlBean);
                 loadSqlConfig(sbean,eleSqlBean);
             }
 
@@ -1120,12 +1126,12 @@ public class ComponentConfigLoadManager
                 List<XmlElementBean> lstEleFormatBeans=new ArrayList<XmlElementBean>();
                 lstEleFormatBeans.add(eleFormatBean);
                 lstEleFormatBeans.addAll(ConfigLoadAssistant.getInstance().getRefElements(eleFormatBean.attributeValue("ref"),"format",null,rb));//取到所有被此<format ref=""/>引用的<format/>配置
-                lstImports=getListImportPackages(lstEleFormatBeans);//得到引用的所有外部包
+                lstImports=getListImportPackages(lstEleFormatBeans);
                 XmlElementBean eleFormatValueBean=null;
                 for(XmlElementBean eleFormatBeanTmp:lstEleFormatBeans)
                 {
                     eleFormatValueBean=eleFormatBeanTmp.getChildElementByName("value");
-                    if(eleFormatValueBean!=null) break;
+                    if(eleFormatValueBean!=null) break;//取到一个就跳出，优先级低的不再取
                 }
                 if(eleFormatValueBean!=null)
                 {
@@ -1146,12 +1152,8 @@ public class ComponentConfigLoadManager
                     }
                 }
             }
-            //$ByQXO 设置pojoClassCache=false将在文件系统中生成报表类
-            rb.setPojoClassCache(Config.getInstance().getSystemConfigValue("pojoClassCache",true));
-           //ByQXO$
-            
+            rb.setPojoClassCache(true);
             LoadExtendConfigManager.loadAfterExtendConfigForReporttype(rb,lstEleReportBeans);
-            
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("报表"+rb.getPath()+"配置失败",e);
@@ -1363,7 +1365,7 @@ public class ComponentConfigLoadManager
             if(ComponentConfigLoadAssistant.getInstance().isStaticTemplateResource(content))
             {
                 if(Tools.isDefineKey("$",content))
-                {
+                {//取资源文件中的显示值
                     Object obj=Config.getInstance().getResourceObject(null,ccbean.getPageBean(),content,true);
                     if(obj==null) obj="";
                     if(obj instanceof TemplateBean)
@@ -1380,17 +1382,21 @@ public class ComponentConfigLoadManager
                 }
             }else
             {
-                //                tplBean=new TemplateBean();
-                
                 tplBean=TemplateParser.parseTemplateByContent(content.trim());
             }
         }
-        if(headerfooter.equals("footer"))
+        if(headerfooter.equals("outerheader"))
         {
-            ccbean.setFooterTplBean(tplBean);
-        }else
+            ccbean.setOuterHeaderTplBean(tplBean);
+        }else if(headerfooter.equals("header"))
         {
             ccbean.setHeaderTplBean(tplBean);
+        }else if(headerfooter.equals("footer"))
+        {
+            ccbean.setFooterTplBean(tplBean);
+        }else if(headerfooter.equals("outerfooter"))
+        {
+            ccbean.setOuterFooterTplBean(tplBean);
         }
     }
 
@@ -1548,12 +1554,13 @@ public class ComponentConfigLoadManager
             String clickevent=eleButtonBean.getContent();
             if(clickevent!=null&&!clickevent.trim().equals(""))
             {
-               //$ByQXO   让com.wabacus.system.buttons.ServerSQLActionButton直接支持服务器端其他脚本
-                AbsDatabaseType dbType=Config.getInstance().getDbType(null);//FIXME 获取 按钮所在报表采用的数据源对应的DbType
-                buttonObj.setClickEvent(dbType.parseButtonsClickevent(ccbean,buttonObj,clickevent));
-                //ByQXO$
+                if(clickevent.indexOf('\"')>=0)
+                {
+                    throw new WabacusConfigLoadingException("加载组件"+ccbean.getPath()+"的按钮"+buttonname+"失败，按钮事件中不能用双引号，只能用单引用，如果有多级，可以加上转义字符\\");
+                }
+                buttonObj.setClickEvent(Tools.formatStringBlank(clickevent.trim()));
             }else
-            {
+            {//动态事件字符串（用JAVA代码生成）
                 List<String> lstImports=ConfigLoadAssistant.getInstance().loadImportsConfig(eleButtonBean);
                 XmlElementBean eleDynEventBean=eleButtonBean.getChildElementByName("dynevent");
                 if(eleDynEventBean!=null)
@@ -1612,14 +1619,13 @@ public class ComponentConfigLoadManager
         List<XmlElementBean> lstEleSqlBeans=new ArrayList<XmlElementBean>();
         lstEleSqlBeans.add(eleSqlBean);
         lstEleSqlBeans.addAll(ConfigLoadAssistant.getInstance().getRefElements(eleSqlBean.attributeValue("ref"),"sql",null,sbean.getReportBean()));
-        
         LoadExtendConfigManager.loadBeforeExtendConfigForReporttype(sbean,lstEleSqlBeans);
 
         Map<String,String> mSqlProperties=ConfigLoadAssistant.getInstance().assembleAllAttributes(lstEleSqlBeans,
-                new String[] { "type", "datasource", "beforesearch" });//组装所有<sql/>配置的这些属性
+                new String[] { "preparedstatement", "datasource", "beforesearch" });//组装所有<sql/>配置的这些属性
 
-        String type=mSqlProperties.get("type");
-        sbean.setStatementType(type);
+        String preparedstatement=mSqlProperties.get("preparedstatement");
+        if(preparedstatement!=null) sbean.setPreparedStatement(preparedstatement.trim());
         String datasource=mSqlProperties.get("datasource");
         if(datasource==null||datasource.trim().equals(""))
         {
@@ -1635,14 +1641,7 @@ public class ComponentConfigLoadManager
         {
             sbean.setBeforeSearchMethod(beforesearch.trim());
         }
-        
-        
-        
-        //            sbean.setPagesplit_side(pagesplit_side.trim());
-        
-        
-        
-        
+        //        }else
         List<ReportDataSetBean> lstDatasetBeans=getLstDatasetBeans(sbean,lstEleSqlBeans);//从所有<sql/>中得到配置的所有<dataset/>及其<value/>对象
         if(lstDatasetBeans!=null)
         {
@@ -1660,7 +1659,6 @@ public class ComponentConfigLoadManager
         }
         sbean.afterSqlLoad();
         LoadExtendConfigManager.loadAfterExtendConfigForReporttype(sbean,lstEleSqlBeans);
-        
     }
 
     private static List<ReportDataSetBean> getLstDatasetBeans(SqlBean sbean,List<XmlElementBean> lstEleSqlBeans)
@@ -1669,7 +1667,7 @@ public class ComponentConfigLoadManager
         List<ReportDataSetBean> lstResults=new ArrayList<ReportDataSetBean>();
         List<String> lstExistDatasetGroupids=new ArrayList<String>();//存放已经处理过的<dataset/>的id属性
         boolean isExistNoIdGroup=false;//是否已经存在没有配置id的<dataset/>
-        XmlElementBean eleDatasetParentEleBean=getEleDatasetParentBean(lstEleSqlBeans);
+        XmlElementBean eleDatasetParentEleBean=getEleDatasetParentBean(sbean,lstEleSqlBeans);
         if(eleDatasetParentEleBean==null) return null;
         ReportBean rbean=sbean.getReportBean();
         List<XmlElementBean> lstValueBeansTmp=null;
@@ -1683,6 +1681,7 @@ public class ComponentConfigLoadManager
                 lstValueBeansTmp=eleDatasetBeanTmp.getLstChildElementsByName("value");
                 if(lstValueBeansTmp==null||lstValueBeansTmp.size()==0) return null;
                 dsbeanTmp=new ReportDataSetBean(sbean);
+                dsbeanTmp.setElementBean(eleDatasetBeanTmp);
                 dsidTmp=eleDatasetBeanTmp.attributeValue("id");
                 if(dsidTmp==null||dsidTmp.trim().equals(""))
                 {
@@ -1736,7 +1735,7 @@ public class ComponentConfigLoadManager
         return lstResults;
     }
 
-    private static XmlElementBean getEleDatasetParentBean(List<XmlElementBean> lstEleSqlBeans)
+    private static XmlElementBean getEleDatasetParentBean(SqlBean sbean,List<XmlElementBean> lstEleSqlBeans)
     {
         List<XmlElementBean> lstTmps;
         XmlElementBean eleSelectBeanTmp, eleDatasetParentBean=null;
@@ -1745,6 +1744,21 @@ public class ComponentConfigLoadManager
             eleSelectBeanTmp=eleSqlBeanTmp.getChildElementByName("select");
             if(eleSelectBeanTmp!=null)
             {
+                String titlelabelcolumn=eleSelectBeanTmp.attributeValue("titlelabelcolumn");
+                String titlevaluecolumn=eleSelectBeanTmp.attributeValue("titlevaluecolumn");
+                titlelabelcolumn=titlelabelcolumn==null?"":titlelabelcolumn.trim();
+                titlevaluecolumn=titlevaluecolumn==null?"":titlevaluecolumn.trim();
+                if(!titlelabelcolumn.equals("")||!titlevaluecolumn.equals(""))
+                {
+                    if(titlelabelcolumn.equals("")) titlelabelcolumn=titlevaluecolumn;
+                    if(titlevaluecolumn.equals("")) titlevaluecolumn=titlelabelcolumn;
+                    sbean.setHdsTitleLabelColumn(titlelabelcolumn);
+                    sbean.setHdsTitleValueColumn(titlevaluecolumn);
+                    String titlecolumndatasetid=eleSelectBeanTmp.attributeValue("titlecolumndatasetid");
+                    if(titlecolumndatasetid!=null) sbean.setTitlecolumndatasetid(titlecolumndatasetid.trim());
+                }
+                String preparedstatement=eleSelectBeanTmp.attributeValue("preparedstatement");
+                if(preparedstatement!=null) sbean.setSelectPreparedStatement(preparedstatement.trim());
                 eleDatasetParentBean=eleSelectBeanTmp;
             }else
             {
@@ -1802,12 +1816,12 @@ public class ComponentConfigLoadManager
     {
         List<ConditionBean> lstConditions=new ArrayList<ConditionBean>();
         sbean.setLstConditions(lstConditions);
-        
         List<String> lstConNamesTmp=new ArrayList<String>();
         for(XmlElementBean eleConditionBeanTmp:lstConditionElements)
         {
             if(eleConditionBeanTmp==null) continue;
             ConditionBean cb=new ConditionBean(sbean);
+            cb.setElementBean(eleConditionBeanTmp);
             String name=eleConditionBeanTmp.attributeValue("name");
             if(name==null||name.trim().equals(""))
             {
@@ -1820,10 +1834,9 @@ public class ComponentConfigLoadManager
             }
             lstConNamesTmp.add(name);
             lstConditions.add(cb);
-            cb.setName(name.trim()); 
+            cb.setName(name.trim()); //此输入框的name属性
             List<XmlElementBean> lstEleConditionBeans=new ArrayList<XmlElementBean>();
             lstEleConditionBeans.add(eleConditionBeanTmp);
-            
             LoadExtendConfigManager.loadBeforeExtendConfigForReporttype(cb,lstEleConditionBeans);
             String label=eleConditionBeanTmp.attributeValue("label");
             if(label!=null)
@@ -1831,7 +1844,6 @@ public class ComponentConfigLoadManager
                 cb.setLabel(Config.getInstance().getResourceString(null,sbean.getPageBean(),label,true));
             }
             String labelposition=eleConditionBeanTmp.attributeValue("labelposition");
-            
             String hidden=eleConditionBeanTmp.attributeValue("hidden");
             String constant=eleConditionBeanTmp.attributeValue("constant");
             String br=eleConditionBeanTmp.attributeValue("br");
@@ -1910,7 +1922,6 @@ public class ComponentConfigLoadManager
             }
             if(cb.isConstant())
             {
-                
                 XmlElementBean eleValueBeanTmp=eleConditionBeanTmp.getChildElementByName("value");
                 if(eleValueBeanTmp==null)
                     throw new WabacusConfigLoadingException("报表"+cb.getReportBean().getPath()+"的查询条件"+cb.getName()+"是常量查询条件，必须配置<value/>并在其中指定常量值");
@@ -1980,7 +1991,7 @@ public class ComponentConfigLoadManager
                             if(cilbean.isEmpty()) continue;
                             cb.setCinnerlogicbean(cilbean);
                         }else if(xebeanTmp.getName().equals("inputbox"))
-                        {//输入框
+                        {
                             if(lstChildOrders.contains("inputbox"))
                             {
                                 throw new WabacusConfigLoadingException("加载报表"+cb.getReportBean().getPath()+"的name属性为"+cb.getName()
@@ -2023,11 +2034,8 @@ public class ComponentConfigLoadManager
                             cb.setCvaluesbean(csbean);
                         }else if(xebeanTmp.getName().equals("value"))
                         {
-                            
-                            
                             //                                log.warn("报表"+cb.getReportBean().getPath()+"采用存储过程加载数据，可以不为其动态查询条件配置<value/>子标签");
-                            
-                            
+                            //                                continue;
                             if(cb.getConditionExpression()!=null)
                             {
                                 throw new WabacusConfigLoadingException("加载报表"+cb.getReportBean().getPath()+"的name属性为"+cb.getName()
@@ -2067,17 +2075,11 @@ public class ComponentConfigLoadManager
             }else
             {
                 XmlElementBean eleValueBean=eleConditionBeanTmp.getChildElementByName("value");
-                
-                
                 //                    throw new WabacusConfigLoadingException("加载报表"+cb.getReportBean().getPath()+"的<condition/>失败，此查询条件为隐藏查询条件，必须配置<value/>子标签");
-                
                 if(eleValueBean!=null)
                 {
                     String expression=eleValueBean.getContent();
-                    
-                    
                     //                    throw new WabacusConfigLoadingException("加载报表"+cb.getReportBean().getPath()+"的<condition/>失败，此查询条件不需显示输入框，必须配置<value/>子标签内容");
-                    
                     if(expression!=null&&!expression.trim().equals(""))
                     {
                         ConditionExpressionBean cexpressionBean=new ConditionExpressionBean();
@@ -2087,7 +2089,6 @@ public class ComponentConfigLoadManager
                 }
             }
             LoadExtendConfigManager.loadAfterExtendConfigForReporttype(cb,lstEleConditionBeans);
-            
         }
     }
 
@@ -2101,7 +2102,7 @@ public class ComponentConfigLoadManager
                     +"的<condition/>下<values/>的子标签<value/>失败，不能同时为它配置标签内容和<column/>子标签");
         }
         if(conditionexpression!=null&&!conditionexpression.trim().equals(""))
-        {
+        {//直接配置条件表达式
             ConditionExpressionBean cebean=new ConditionExpressionBean();
             cebean.setValue(conditionexpression.trim());
             return cebean;
@@ -2167,6 +2168,32 @@ public class ComponentConfigLoadManager
         return lstConditions;
     }
 
+    public static List<ConditionBean> loadCommonDatasetConditios(ReportBean rbean,XmlElementBean eleDatasetConditions)
+    {
+        if(eleDatasetConditions==null) return null;
+        List<ConditionBean> lstConditionBeans=new ArrayList<ConditionBean>();
+        List<XmlElementBean> lstConditionEles=eleDatasetConditions.getLstChildElementsByName("condition");
+        if(lstConditionEles!=null&&lstConditionEles.size()>0)
+        {//在<tablecondtions/>中配置了条件
+            ConditionBean cbTmp;
+            for(XmlElementBean eleConBeanTmp:lstConditionEles)
+            {
+                if(eleConBeanTmp==null) continue;
+                cbTmp=loadHiddenConditionConfig(eleConBeanTmp,rbean);
+                if(cbTmp==null) continue;
+                if(!Tools.isDefineKey("ref",cbTmp.getName())
+                        &&(cbTmp.getConditionExpression()==null||cbTmp.getConditionExpression().getValue()==null||cbTmp.getConditionExpression()
+                                .getValue().trim().equals("")))
+                {//如果没有引用在<sql/>中配置的条件，则必须在<condition/>中指定条件表达式
+                    throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"的name为"+cbTmp.getName()
+                            +"的<condition/>失败，没有引用<sql/>中的条件时必须为<value/>配置条件表达式");
+                }
+                lstConditionBeans.add(cbTmp);
+            }
+        }
+        return lstConditionBeans.size()==0?null:lstConditionBeans;
+    }
+    
     public static ConditionBean loadHiddenConditionConfig(XmlElementBean eleConditionBean,ReportBean rbean)
     {
         if(eleConditionBean==null) return null;
@@ -2198,7 +2225,7 @@ public class ComponentConfigLoadManager
         }
         if(keepkeywords!=null)
         {
-            conbean.setKeepkeywords(keepkeywords.trim().equalsIgnoreCase("true"));//保留sql关键字
+            conbean.setKeepkeywords(keepkeywords.trim().equalsIgnoreCase("true"));
         }
         XmlElementBean eleConValue=eleConditionBean.getChildElementByName("value");
         if(eleConValue!=null)
@@ -2220,52 +2247,45 @@ public class ComponentConfigLoadManager
         lstEleDisplayBeans.add(eleDisplayBean);
         lstEleDisplayBeans.addAll(ConfigLoadAssistant.getInstance().getRefElements(eleDisplayBean.attributeValue("ref"),"display",null,
                 dbean.getReportBean()));
-        
         LoadExtendConfigManager.loadBeforeExtendConfigForReporttype(dbean,lstEleDisplayBeans);
         Map<String,String> mDisplayProperties=ConfigLoadAssistant.getInstance().assembleAllAttributes(lstEleDisplayBeans,
-                new String[] { "dataheader", "colselect", "colselectwidth", "colselectmaxheight", "labelstyleproperty", "valuestyleproperty" });
+                new String[] { "dataheader", "pagecolselect","dataexportcolselect","colselectwidth", "colselectmaxheight","colselectlabelposition", "labelstyleproperty", "valuestyleproperty" });
         String dataheader=mDisplayProperties.get("dataheader");
-        String colselect= Config.getInstance().getSystemConfigValue("global-colselect",mDisplayProperties.get("colselect"));
+        String pagecolselect=mDisplayProperties.get("pagecolselect");
+        String dataexportcolselect=mDisplayProperties.get("dataexportcolselect");
         String colselectwidth=mDisplayProperties.get("colselectwidth");
         String colselectmaxheight=mDisplayProperties.get("colselectmaxheight");
         String labelstyleproperty=mDisplayProperties.get("labelstyleproperty");
         String valuestyleproperty=mDisplayProperties.get("valuestyleproperty");
+        String colselectlabelposition=mDisplayProperties.get("colselectlabelposition");
         if(dataheader!=null)
         {
             dbean.setDataheader(Config.getInstance().getResourceString(null,dbean.getPageBean(),dataheader,true));
         }
-        if(colselect!=null)
+        boolean isListReportType=Config.getInstance().getReportType(dbean.getReportBean().getType()) instanceof AbsListReportType;
+        if(Tools.isEmpty(pagecolselect))
         {
-            colselect=colselect.toLowerCase().trim();
-            if(colselect.equals(""))
-            {
-                dbean.setColselect(null);
-            }else if(colselect.equals("true"))
-            {
-                dbean.setColselect(true);
-            }else if(colselect.equals("false"))
-            {
-                dbean.setColselect(false);
-            }else
-            {
-                throw new WabacusConfigLoadingException("加载报表"+dbean.getReportBean().getPath()+"的<display/>标签失败，配置的colselect属性："+colselect+"无效");
-            }
+            pagecolselect=Config.getInstance().getSystemConfigValue(
+                    isListReportType?"default-listreport-pagecolselect":"default-detailreport-pagecolselect","");
         }
-        if(StringUtils.isBlank(colselectwidth))
+        dbean.setPageColselect("true".equalsIgnoreCase(pagecolselect.trim()));
+        if(Tools.isEmpty(dataexportcolselect))
+        {
+            dataexportcolselect=Config.getInstance().getSystemConfigValue(
+                    isListReportType?"default-listreport-dataexportcolselect":"default-detailreport-dataexportcolselect","");
+        }
+        dbean.setDataexportColselect("true".equalsIgnoreCase(dataexportcolselect.trim()));
+        if(colselectwidth==null||colselectwidth.trim().equals(""))
         {
             colselectwidth=Config.getInstance().getSystemConfigValue("default-colselect-width","");
         }
-        if(StringUtils.isBlank(colselectmaxheight)){
-            colselectmaxheight=Config.getInstance().getSystemConfigValue("default-colselect-height","350");
-        }
-        
         if(colselectwidth!=null) dbean.setColselectwidth(Tools.getWidthHeightIntValue(colselectwidth.trim()));
         if(colselectmaxheight!=null) dbean.setColselectmaxheight(Tools.getWidthHeightIntValue(colselectmaxheight.trim()));
         if(labelstyleproperty!=null) dbean.setLabelstyleproperty(labelstyleproperty.trim(),false);
         if(valuestyleproperty!=null) dbean.setValuestyleproperty(valuestyleproperty.trim(),false);
+        if(colselectlabelposition!=null) dbean.setColselectlabelposition(colselectlabelposition.toLowerCase().trim());
         loadColInfo(lstEleDisplayBeans,dbean);
         LoadExtendConfigManager.loadAfterExtendConfigForReporttype(dbean,lstEleDisplayBeans);
-        
     }
 
     private static void loadColInfo(List<XmlElementBean> lstEleDisplayBeans,DisplayBean dbean)
@@ -2306,11 +2326,7 @@ public class ComponentConfigLoadManager
     {
         if(eleColBean==null) return null;
         ColBean cb=new ColBean(dbean);
-        
-        //$ByQXO 支持属性扩展
-        cb.setAttrs(eleColBean.getMPropertiesClone());
-        //ByQXO$
-        
+        cb.setElementBean(eleColBean);
         String column=eleColBean.attributeValue("column");
         if(column==null||column.trim().equals(""))
         {
@@ -2320,7 +2336,17 @@ public class ComponentConfigLoadManager
         int idx=column.indexOf(".");
         if(idx>0)
         {
-            cb.setDatasetValueId(column.substring(0,idx).trim());
+            String datasetids=column.substring(0,idx).trim();
+            List<String> lstDatasetids=new ArrayList<String>();
+            if(datasetids.startsWith("(")&&datasetids.endsWith(")"))
+            {//需要匹配多个<dataset/>下面的<value/>
+                datasetids=datasetids.substring(1,datasetids.length()-1).trim();
+                lstDatasetids.addAll(Tools.parseStringToList(datasetids,";",false));
+            }else
+            {
+                if(!datasetids.equals("")) lstDatasetids.add(datasetids);
+            }
+            cb.setLstDatasetValueids(lstDatasetids.size()==0?null:lstDatasetids);
             column=column.substring(idx+1).trim();
         }
         cb.setColumn(column);
@@ -2329,7 +2355,7 @@ public class ComponentConfigLoadManager
         if(property==null||property.trim().equals(""))
         {
             if(cb.isNonFromDbCol())
-            {
+            {//如果当前列的数据不是从DB中获取，则必须配置property属性值
                 throw new WabacusConfigLoadingException("加载报表"+dbean.getReportBean().getPath()+"失败，对于column配置为"+Consts_Private.NON_FROMDB
                         +"的列，必须配置其property属性");
             }
@@ -2339,9 +2365,7 @@ public class ComponentConfigLoadManager
 
         List<XmlElementBean> lstEleColBeans=new ArrayList<XmlElementBean>();
         lstEleColBeans.add(eleColBean);
-        
         LoadExtendConfigManager.loadBeforeExtendConfigForReporttype(cb,lstEleColBeans);
-        
         String label=eleColBean.attributeValue("label");
         if(label!=null)
         {
@@ -2355,16 +2379,7 @@ public class ComponentConfigLoadManager
         if(labelstyleproperty==null) labelstyleproperty="";
         cb.setValuestyleproperty(valuestyleproperty,false);
         cb.setLabelstyleproperty(labelstyleproperty,false);
-        
-        
-        
         //        {
-        
-        
-        
-        
-        
-        
         String plainexcelwidth=eleColBean.attributeValue("plainexcelwidth");
         if(plainexcelwidth!=null)
         {
@@ -2392,10 +2407,6 @@ public class ComponentConfigLoadManager
         {
             cb.setPrintwidth(printwidth.trim());
         }
-        
-        
-        
-        
         if(labelstyleproperty!=null&&!labelstyleproperty.trim().equals(""))
         {
             cb.setLabelalign(Tools.getPropertyValueByName("align",labelstyleproperty,true));
@@ -2404,14 +2415,24 @@ public class ComponentConfigLoadManager
         {
             cb.setValuealign(Tools.getPropertyValueByName("align",valuestyleproperty,true));
         }
-        if(displaytype!=null) cb.setDisplaytype(displaytype.toLowerCase().trim());
+        if(displaytype!=null) 
+        {
+            displaytype=displaytype.toLowerCase().trim();
+            idx=displaytype.indexOf("|");
+            if(idx>=0)
+            {
+                cb.setDisplaytype(new String[] { displaytype.substring(0,idx).trim(), displaytype.substring(idx+1).trim() });
+            }else
+            {
+                cb.setDisplaytype(new String[] { displaytype, displaytype });
+            }
+        }
         String tagcontent=eleColBean.getContent();
         if(tagcontent!=null&&!tagcontent.trim().equals(""))
         {
             cb.setTagcontent(Config.getInstance().getResourceString(null,cb.getPageBean(),tagcontent.trim(),false));
         }
         LoadExtendConfigManager.loadAfterExtendConfigForReporttype(cb,lstEleColBeans);
-        
         return cb;
     }
 
@@ -2425,14 +2446,21 @@ public class ComponentConfigLoadManager
         }
         XmlElementBean eleReportBean=lstEleReportBeans.get(0);
         String checkdirtydata=eleReportBean.attributeValue("checkdirtydata");
-        if(checkdirtydata==null) return;
-        checkdirtydata=checkdirtydata.toLowerCase().trim();
-        if(checkdirtydata.equals(""))
+        if(checkdirtydata!=null)
         {
-            erbean.setCheckdirtydata(null);
-        }else
+            checkdirtydata=checkdirtydata.toLowerCase().trim();
+            if(checkdirtydata.equals(""))
+            {
+                erbean.setCheckdirtydata(null);
+            }else
+            {
+                erbean.setCheckdirtydata(!checkdirtydata.equals("false"));
+            }
+        }
+        String savedatatype=eleReportBean.attributeValue("savedatatype");
+        if(savedatatype!=null)
         {
-            erbean.setCheckdirtydata(!checkdirtydata.equals("false"));
+            erbean.setSavedatatype(savedatatype.toLowerCase().trim());
         }
     }
 
@@ -2447,14 +2475,14 @@ public class ComponentConfigLoadManager
         }
         String defaultvalue=eleColBean.attributeValue("defaultvalue");
         if(defaultvalue!=null) ercbean.setDefaultvalue(defaultvalue.trim());
-        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(colbean.getDisplaytype())&&!colbean.isNonValueCol()&&!colbean.isSequenceCol()
+        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(colbean.getDisplaytype(true))&&!colbean.isNonValueCol()&&!colbean.isSequenceCol()
                 &&!colbean.isControlCol())
-        {
+        {//只有显示在html页面上的且与数据库相关的列才允许编辑数据
             String updatecol=eleColBean.attributeValue("updatecol");
             if(updatecol!=null) ercbean.setUpdatecolDest(updatecol.trim());
             XmlElementBean eleInputboxBean=eleColBean.getChildElementByName("inputbox");
             if(eleInputboxBean!=null)
-            {//配置了输入框
+            {
                 String inputbox=eleInputboxBean.attributeValue("type");
                 String fillmode=eleInputboxBean.attributeValue("fillmode");
                 String box_defaultvalue=eleInputboxBean.attributeValue("defaultvalue");
@@ -2577,7 +2605,6 @@ public class ComponentConfigLoadManager
         return editBean;
     }
 
-    //$ByQXO 解决不同的script预处理的问题
     private static boolean loadEditActionGroupConfig(XmlElementBean eleEditBean,AbsEditableReportEditDataBean editBean)
     {
         boolean hasValidActionscript=false;
@@ -2588,11 +2615,10 @@ public class ComponentConfigLoadManager
             for(XmlElementBean eleActionGroupBeanTmp:lstValueBeans)
             {
                 if(eleActionGroupBeanTmp==null) continue;
-                String datasource=eleActionGroupBeanTmp.attributeValue("datasource");
-                String actionScripts= Config.getInstance().getDbType(datasource).parseAndTrimScript(eleActionGroupBeanTmp.getContent());
-                
+                String actionScripts=Tools.formatStringBlank(eleActionGroupBeanTmp.getContent()).trim();
                 if(actionScripts.equals("")) continue;
                 hasValidActionscript=true;
+                String datasource=eleActionGroupBeanTmp.attributeValue("datasource");
                 actionGroupBeanTmp=new EditActionGroupBean(editBean);
                 if(datasource!=null) actionGroupBeanTmp.setDatasource(datasource.trim());
                 actionGroupBeanTmp.setActionscripts(actionScripts);
@@ -2600,7 +2626,7 @@ public class ComponentConfigLoadManager
             }
         }else
         {//没有配置<value/>子标签，则直接加载<insert/>、<update/>、<delete/>标签本身的脚本
-            String actionScripts= Config.getInstance().getDbType(null).parseAndTrimScript(eleEditBean.getContent());
+            String actionScripts=Tools.formatStringBlank(eleEditBean.getContent()).trim();
             if(!actionScripts.equals(""))
             {
                 actionGroupBeanTmp=new EditActionGroupBean(editBean);
@@ -2611,7 +2637,6 @@ public class ComponentConfigLoadManager
         }
         return hasValidActionscript;
     }
-    //ByQXO$
 
     public static XmlElementBean getEleSqlUpdateBean(List<XmlElementBean> lstEleSqlBeans,String updatetype)
     {
@@ -2682,7 +2707,7 @@ public class ComponentConfigLoadManager
                 valueBean.setTypeObj(ConfigLoadAssistant.loadDataType(eleExternalValueBeanTmp));
             }
             if(value.trim().equals("now{}"))
-            {
+            {//是取当前时间做为参数值
                 if(!(valueBean.getTypeObj() instanceof AbsDateTimeType))
                 {
                     throw new WabacusConfigLoadingException("配置为取当前时间（now()）的参数值的数据类型必须配置为日期类型");
@@ -2715,15 +2740,8 @@ public class ComponentConfigLoadManager
             return;
         }
         String systemjsfile="/webresources/script/wabacus_editsystem.js";
-        
-        
         //            systemjsfile="/webresources/script/wabacus_editsystem.js";
-        
-        
-        //            String encode=Config.encode;
-        
         //            systemjsfile="/webresources/script/"+encode.toLowerCase()+"/wabacus_editsystem.js";
-        
         systemjsfile=Tools.replaceAll(Config.webroot+"/"+systemjsfile,"//","/");
         reportbean.getPageBean().addMyJavascriptFile(systemjsfile,0);
         List<ReportBean> lstBindingReportBeans=getLstBindedReportBeans(reportbean,ersqlbean.getLstSaveBindingReportIds(),"savebinding");
@@ -2737,7 +2755,7 @@ public class ComponentConfigLoadManager
         {
             ersqlbean.setLstDeleteBindingReportBeans(lstBindingReportBeans);
         }
-        ersqlbean.setLstDeleteBindingReportIds(null);
+        ersqlbean.setLstDeleteBindingReportIds(null);//清空，因为运行时用不上
 
         if(ersqlbean.getInsertbean()!=null)
         {
@@ -2802,7 +2820,7 @@ public class ComponentConfigLoadManager
         if(lstCols==null||lstCols.size()==0) return;
         for(ColBean cbean:lstCols)
         {
-            if(cbean==null||Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) continue;
+            if(cbean==null||Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true))) continue;
             if(cbean.getProperty()==null||cbean.getProperty().trim().equals("")) continue;
             if(cbean.isNonValueCol()||cbean.isSequenceCol()||cbean.isControlCol()) continue;
             ColBean cbUpdateDest=cbean.getUpdateColBeanDest(false);

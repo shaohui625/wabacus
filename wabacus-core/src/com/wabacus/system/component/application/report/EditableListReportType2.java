@@ -38,7 +38,6 @@ import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.CacheDataBean;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.EditableReportAssistant;
 import com.wabacus.system.assistant.ReportAssistant;
@@ -213,10 +212,10 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         }
     }
 
-    protected boolean isLazyDataLoad()
+    protected boolean isLazyDisplayData()
     {
-        boolean isLazyLoad=super.isLazyDataLoad();
-        int[] maxminrownums=getMaxMinRownums();
+        boolean isLazyLoad=super.isLazyDisplayData();
+        int[] maxminrownums=getMaxMinRownums();//获取到指定的最大小记录数
         if(maxminrownums[1]>0)
         {
             if(isLazyLoad)
@@ -252,7 +251,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         int maxrownum=maxminrownums[0];
         int minrownum=maxminrownums[1];
         if(maxrownum>0&&maxrownum<this.cacheDataBean.getRecordcount())
-        {//如果配置了最大记录数，且小于总记录数，则用最大记录数来更新页码信息
+        {
             rowcount=maxrownum;
             if(this.cacheDataBean.getPagesize()>0)
             {
@@ -269,11 +268,10 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         {
             rowcount=minrownum;
             if(this.cacheDataBean.getPagesize()>0)
-            {
+            {//如果是分页显示报表，则用新记录数重新更新页数信息
                 if(this.cacheDataBean.getRefreshNavigateInfoType()<=0)
                 {
                     this.cacheDataBean.setPagecount(ReportAssistant.getInstance().calPageCount(this.cacheDataBean.getPagesize(),rowcount));
-                    
                 }
             }else
             {
@@ -294,23 +292,22 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
                 display_rowcount=this.cacheDataBean.getPagesize();
             }
         }
-        if(!this.isLazyDataLoad()&&shouldInvokePostaction) doLoadReportDataPostAction();
+        if(!this.isLazyDisplayData()&&shouldInvokePostaction) doLoadReportDataPostAction();
     }
 
     private int[] getMaxMinRownums()
     {
-        CacheDataBean cdb=rrequest.getCdb(rbean.getId());
         int[] rownums=new int[2];
         rownums[0]=elrdbean.getMaxrownum();
         rownums[1]=elrdbean.getMinrownum();
         boolean hasDynMaxminrownums=false;
-        String maxrownum=(String)cdb.getAttributes().get("maxrownum");
+        String maxrownum=(String)this.cacheDataBean.getAttributes().get("maxrownum");
         if(maxrownum!=null&&!maxrownum.trim().equals(""))
         {
             rownums[0]=Integer.parseInt(maxrownum.trim());
             hasDynMaxminrownums=true;
         }
-        String minrownum=(String)cdb.getAttributes().get("minrownum");
+        String minrownum=(String)this.cacheDataBean.getAttributes().get("minrownum");
         if(minrownum!=null&&!minrownum.trim().equals(""))
         {
             rownums[1]=Integer.parseInt(minrownum.trim());
@@ -320,13 +317,18 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         return rownums;
     }
 
+    protected int getMinRownum()
+    {
+        return getMaxMinRownums()[1];
+    }
+    
     protected String showMetaDataDisplayStringStart()
     {
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append(super.showMetaDataDisplayStringStart());
         resultBuf.append(EditableReportAssistant.getInstance().getEditableMetaData(this));
         if(!this.realAccessMode.equals(Consts.READONLY_MODE))
-        {
+        {//不是只读访问模式
             if(this.ersqlbean.getInsertbean()!=null)
             {
                 if(this.ersqlbean.getInsertbean().getAddposition()!=null)
@@ -355,7 +357,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         StringBuffer colsBuf=new StringBuffer();
         colsBuf.append("{");
         int currentTotalRowcount=this.cacheDataBean.getRecordcount();
-        int[] maxminrownums=getMaxMinRownums();//获取到指定的最大小记录数
+        int[] maxminrownums=getMaxMinRownums();
         int maxrownum=maxminrownums[0];
         int minrownum=maxminrownums[1];
         if(maxrownum>0&&minrownum>0&&minrownum>currentTotalRowcount)
@@ -381,14 +383,12 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
                         {
                             tmp=this.cacheDataBean.getPagesize();
                         }else
-                        {
+                        {//最后一页的话，计算出此页实际显示的添加新记录的行数
                             tmp=minrownum-((this.cacheDataBean.getFinalPageno()-1)*this.cacheDataBean.getPagesize());
                         }
                     }
-                    
                     currentTotalRowcount=currentTotalRowcount+tmp;
                 }
-                
             }else
             {
                 currentTotalRowcount=minrownum;
@@ -407,8 +407,8 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         {
             ercbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
             colsBuf.append("{");
-            displaymodeTmp=this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean);
-            if(displaymodeTmp<=0) colsBuf.append("hidden:\"true\",");//当前列是隐藏列
+            displaymodeTmp=this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean,true);
+            if(displaymodeTmp<=0) colsBuf.append("hidden:\"true\",");
             if(ercbeanTmp==null||displaymodeTmp<=0||cbean.isControlCol()||!ercbeanTmp.isEditableForInsert()||cbean.checkReadonlyPermission(rrequest))
             {
                 isReadonlyCol=true;
@@ -428,7 +428,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
                 {
                     colsBuf.append("coltype:\"ROWSELECTED-RADIOBOX\"");
                 }else
-                {
+                {//行选中方式是通过checkbox方式
                     colsBuf.append("coltype:\"ROWSELECTED-CHECKBOX\"");
                 }
                 colsBuf.append("},");
@@ -478,7 +478,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
                 colsBuf.append(",defaultvalue:\"").append(defaultvalue).append("\"");
                 colsBuf.append(",defaultvaluelabel:\"").append(defaultvaluelabel).append("\"");
             }
-            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype()))
+            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true)))
             {
                 colsBuf.append("},");
                 continue;
@@ -509,9 +509,9 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
 
     protected boolean isFixedLayoutTable()
     {
-        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return false;
+        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return false;//不是显示在页面上
         if(this.realAccessMode.equals(Consts.READONLY_MODE)) return super.isFixedLayoutTable();
-        return true;//可编辑报表类型
+        return true;
     }
 
     protected String showMetaDataContentDisplayString()
@@ -531,7 +531,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         EditableReportColBean ercbeanTmp;
         for(ColBean cbean:this.getLstDisplayColBeans())
         {
-            if(this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean)<=0) continue;
+            if(this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean,true)<=0) continue;
             if(cbean.isSequenceCol()||cbean.isControlCol()) continue;
             ercbeanTmp=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
             if(ercbeanTmp==null) continue;
@@ -601,7 +601,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
             }
         }
         if(cbean.getUpdateColBeanDest(false)!=null)
-        {
+        {//通过updatecol引用其它列进行更新
             resultBuf.append(" updatecolDest=\"").append(cbean.getUpdateColBeanDest(false).getProperty()).append("\"");
         }else if(cbean.getUpdateColBeanSrc(false)!=null)
         {
@@ -648,13 +648,13 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
             boolean isEditableCol=false;
             resultBuf.append("<td class='"+getDataTdClassName()+"'");
             if(cbean.getUpdateColBeanDest(false)!=null)
-            {//通过updatecol引用其它列进行更新
+            {
                 resultBuf.append(" updatecolDest=\"").append(cbean.getUpdateColBeanDest(false).getProperty()).append("\"");
             }else if(cbean.getUpdateColBeanSrc(false)!=null)
             {
                 resultBuf.append(" updatecolSrc=\"").append(cbean.getUpdateColBeanSrc(false).getProperty()).append("\"");
             }
-            colDisplayModeTmp=this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean);
+            colDisplayModeTmp=this.cacheDataBean.getColDisplayModeAfterAuthorize(cbean,true);
             if(colDisplayModeTmp<0)
             {
                 resultBuf.append(" id=\"").append(EditableReportAssistant.getInstance().getInputBoxId(cbean)).append("__td"+rowidx).append("\"");
@@ -672,15 +672,15 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
                     resultBuf.append(" style=\"display:none;\"></td>");
                     continue;
                 }
-                col_displayvalue=getNonEditableColDisplayValueInAddMode(cbean,rowidx);
+                col_displayvalue=getNonEditableColDisplayValueInAddMode(cbean,rowInterceptorObjTmp,rowidx);
             }else
-            {
+            {//当前列是可编辑，即需要显示输入框
                 resultBuf.append(" id=\"").append(EditableReportAssistant.getInstance().getInputBoxId(cbean)).append("__td"+rowidx+"\" ");
                 resultBuf.append(" value_name=\"").append(ercdatabeanTmp.getValuename()).append("\"");
                 resultBuf.append(" value=\"").append(Tools.htmlEncode(ercdatabeanTmp.getValue())).append("\"");
                 if(isReadonlyByRowInterceptor)
                 {
-                    col_displayvalue=getNonEditableColDisplayValueInAddMode(cbean,rowidx);
+                    col_displayvalue=getNonEditableColDisplayValueInAddMode(cbean,rowInterceptorObjTmp,rowidx);
                 }else if(colDisplayModeTmp>0)
                 {
                     col_displayvalue=showInputBoxForCol(tdPropsBuf,(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY),rowidx,null,
@@ -696,7 +696,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
             isReadonlyByColInterceptor=colDisplayData.getColdataByInterceptor()!=null&&colDisplayData.getColdataByInterceptor().isReadonly();
             if(isReadonlyByColInterceptor&&isEditableCol)
             {
-                col_displayvalue=getNonEditableColDisplayValueInAddMode(cbean,rowidx);
+                col_displayvalue=getNonEditableColDisplayValueInAddMode(cbean,rowInterceptorObjTmp,rowidx);
                 tdPropsBuf.delete(0,tdPropsBuf.length());
             }else
             {
@@ -715,12 +715,12 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         return resultBuf.toString();
     }
 
-    private String getNonEditableColDisplayValueInAddMode(ColBean cbean,int rowidx)
+    private String getNonEditableColDisplayValueInAddMode(ColBean cbean,RowDataBean rowInterceptorObj,int rowidx)
     {
         String col_displayvalue=null;
         if(cbean.isSequenceCol()||cbean.isRowSelectCol())
         {
-            col_displayvalue=super.getColDisplayValue(cbean,null,null,null,rowidx,true);
+            col_displayvalue=super.getColDisplayValue(cbean,null,rowInterceptorObj,null,null,rowidx,true);
         }else
         {
             col_displayvalue="&nbsp;";
@@ -740,13 +740,13 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         return oldvalue;
     }
     
-    protected String getColDisplayValue(ColBean cbean,AbsReportDataPojo dataObj,StringBuffer tdPropBuf,Object colDataObj,int rowidx,boolean isReadonlyByInterceptor)
+    protected String getColDisplayValue(ColBean cbean,AbsReportDataPojo dataObj,RowDataBean rowDataByInterceptor,StringBuffer tdPropBuf,Object colDataObj,int rowidx,boolean isReadonlyByInterceptor)
     {
         String col_displayvalue;
         EditableReportColBean ercbean=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);
         if(isReadonlyCol(cbean,colDataObj,isReadonlyByInterceptor))
         {
-            col_displayvalue=super.getColDisplayValue(cbean,dataObj,tdPropBuf,colDataObj,rowidx,isReadonlyByInterceptor);
+            col_displayvalue=super.getColDisplayValue(cbean,dataObj,rowDataByInterceptor,tdPropBuf,colDataObj,rowidx,isReadonlyByInterceptor);
             if(ercbean!=null) col_displayvalue=ercbean.getRealColDisplayValue(rrequest,dataObj,col_displayvalue);
         }else
         {
@@ -770,27 +770,24 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
                         "','"+ercbean.getInputBoxId()+"__"+rowindex+"');}catch(e){logErrorsAsJsFileLoad(e);}\"");
                 tdPropBuf.append(" attachinfo=\""+ercbean.getInputbox().attachInfoForDisplay()+"\" ");
             }
-            
             if(ercdatabean.isNeedDefaultValue())
             {
                 col_displayvalue=ercdatabean.getDefaultvalue();
             }else
             {
-                //$ByQXO 解决count数据大于实际结果数据时报错问题
-                col_displayvalue=  dataObj == null ? null : dataObj.getColStringValue(cbean);
-                //ByQXO$
+                col_displayvalue=dataObj.getColStringValue(cbean);
                 if(col_displayvalue==null||col_displayvalue.equals("null")) col_displayvalue="";
             }
             if(ercbean!=null) col_displayvalue=ercbean.getRealColDisplayValue(rrequest,dataObj,col_displayvalue);
         }else
-        {
+        {//显示时就直接填充
             rrequest.getAttributes().put("DYN_INPUTBOX_ID",ercbean.getInputBoxId()+"__"+rowindex);
             col_displayvalue=ercbean.getInputbox().getDisplayStringValue(
                     rrequest,ercdatabean.getValue(),
                     "style=\"text-align:"+ercbean.getTextalign()+";\" onblur=\"try{fillInputBoxValueToParentTd(this,'"
                             +ercbean.getInputbox().getTypename()+"','"+rbean.getGuid()+"','"+this.getReportFamily()
                             +"',1,'"+ercbean.getInputBoxId()+"__"+rowindex+"');}catch(e){logErrorsAsJsFileLoad(e);}\"",isReadonlyPermission);
-            rrequest.getAttributes().remove("DYN_INPUTBOX_ID");//用完一定要清掉，否则可能会被同一页面的其它报表用上
+            rrequest.getAttributes().remove("DYN_INPUTBOX_ID");
         }
         return col_displayvalue;
     }
@@ -865,7 +862,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         {
             if(ersqlbean.getInsertbean()==null) return false;
             int[] maxminrownums=getMaxMinRownums();
-            if(maxminrownums[0]>0&&maxminrownums[0]==maxminrownums[1]) return false;
+            if(maxminrownums[0]>0&&maxminrownums[0]==maxminrownums[1]) return false;//如果是固定记录行数，则不显示添加按钮
             return true;
         }else if(buttonType instanceof DeleteButton)
         {
@@ -972,14 +969,9 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
                 alrbean.setRowSelectType(Consts.ROWSELECT_MULTIPLE);
             }
         }
-
 //        {//如果允许跨页编辑，则必须要允许跨页行选中功能
-//            if(alrbean.getRowSelectType()==null||alrbean.getRowSelectType().trim().equals(Consts.ROWSELECT_NONE))
 //            {//默认为multiply
-
-
-
-
+//        }
         if((ersqlbean.getInsertbean()!=null||ersqlbean.getUpdatebean()!=null)&&(alrbean.getFixedcols(null)>0||alrbean.getFixedrows()>0))
         {//如果配置了<insert/>或<update/>，且配置为冻结行或列标题
             throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()
@@ -999,7 +991,7 @@ public class EditableListReportType2 extends UltraListReportType implements IEdi
         EditableReportColBean ercolbean;
         for(ColBean cbean:reportbean.getDbean().getLstCols())
         {
-            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) continue;
+            if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true))) continue;
             String align=Tools.getPropertyValueByName("align",cbean.getValuestyleproperty(null,true),true);
             if(align==null||align.trim().equals("")) align="left";
             ercolbean=(EditableReportColBean)cbean.getExtendConfigDataForReportType(KEY);

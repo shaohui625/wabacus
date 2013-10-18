@@ -109,7 +109,7 @@
 				</td>
 			</tr>
 			<tr>
-				<td class="cls_td1" width="20%">导入数据来自request/session&nbsp;&nbsp;<font color='red'>New</font></td>
+				<td class="cls_td1" width="20%">导入数据来自request/session&nbsp;&nbsp;</td>
 				<td  class="cls_td1" width="10%"><wx:dataimport ref="dataimport.request.session"/></td>
 				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
 					如果显式指定要导哪些字段，则可以指定“字段名/字段下标=requet/session{key/key.property}”，即指定数据表中某个下标的字段或某个字段名的字段的数据来自于request或session某个属性值或某个对象的成员变量值
@@ -145,7 +145,14 @@
 				<th class="cls_td1" colspan="3" style="background-color:#F0F8FF;text-align:left;"><b>其它</b></th>
 			</tr>
 			<tr>
-				<td class="cls_td1" width="20%">异步导入<font color='red'>New</font></td>
+				<td class="cls_td1" width="20%">导入Excel2007文件（.xlsx格式）<font color='red'>New</font></td>
+				<td  class="cls_td1" width="10%"><wx:dataimport ref="dataimport.xlsx"/></td>
+				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
+					导入的数据文件为.xlsx格式
+				</td>
+			</tr>
+			<tr>
+				<td class="cls_td1" width="20%">异步导入</td>
 				<td  class="cls_td1" width="10%"><wx:dataimport ref="dataimport.interceptor" asyn="true"/></td>
 				<td class="cls_td1" style="text-align:left" width="70%">&nbsp;&nbsp;&nbsp;&nbsp;特点：
 					通过&lt;dataimport/&gt;的asyn属性可以指定本数据导入为异步导入，异步导入是指数据文件上传完后立即返回，并通知另一个独立线程完成数据导入，这样用户可以立即得到响应，适用于大数据量的导入，不需用户等待。

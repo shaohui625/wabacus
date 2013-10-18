@@ -18,7 +18,6 @@
  */
 package com.wabacus.system.assistant;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspWriter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,7 +36,8 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
-import com.wabacus.config.component.other.JavascriptFileBean;
+import com.wabacus.config.dataexport.DataExportLocalStroageBean;
+import com.wabacus.config.other.JavascriptFileBean;
 import com.wabacus.config.resource.dataimport.configbean.AbsDataImportConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
@@ -205,12 +204,12 @@ public class TagAssistant
             styleproperty=attributes.get("styleproperty");
         }
         if(cbean==null)
-        {
-            StringBuffer resultBuf=new StringBuffer();
+        {//显示整个报表数据部分
+            StringBuilder resultBuf=new StringBuilder();
             resultBuf.append(showTopSpace(top));
             if(isShowlabel&&isShowdata)
             {
-                resultBuf.append(reportTypeObj.showReportData());
+                reportTypeObj.showReportData(resultBuf);
             }else
             {
                 if(reportTypeObj instanceof AbsDetailReportType)
@@ -221,10 +220,10 @@ public class TagAssistant
                 AbsListReportType listReportObj=(AbsListReportType)reportTypeObj;
                 if(isShowlabel)
                 {
-                    resultBuf.append(listReportObj.showReportData(false));
+                    listReportObj.showReportData(false,resultBuf);
                 }else
                 {
-                    resultBuf.append(listReportObj.showReportData(true));
+                    listReportObj.showReportData(true,resultBuf);
                 }
             }
             return resultBuf.toString();
@@ -247,7 +246,8 @@ public class TagAssistant
             }
         }else
         {
-            throw new WabacusRuntimeException("错误的报表类型");
+            throw new WabacusRuntimeException("报表"+reportTypeObj.getReportBean().getPath()+"的报表类型"+reportTypeObj.getReportBean().getType()
+                    +"不支持显示某一列的数据");
         }
     }
 
@@ -278,7 +278,7 @@ public class TagAssistant
             return showButton(ccbean,rrequest,buttonObj,label);
         }
         if(Consts.lstDataExportTypes.contains(type))
-        {//数据导出
+        {
             String componentids=attributes.get("componentids");
             if(componentids==null||componentids.trim().equals("")) componentids=ccbean.getId();
             if(componentids.equals(ccbean.getId()))
@@ -292,9 +292,16 @@ public class TagAssistant
             }
             AbsButtonType buttonObj=Config.getInstance().getResourceButton(rrequest,ccbean.getPageBean(),
                     Consts.M_DATAEXPORT_DEFAULTBUTTONS.get(type),DataExportButton.class);
-            return ((DataExportButton)buttonObj).showButton(rrequest,type,componentids,label);
-        }else if(type.equals(Consts_Private.FORWARDWITHBACK_BUTTON))
+            return ((DataExportButton)buttonObj).showButtonTag(rrequest,type,componentids,label,createDataExportStroageBean(attributes));
+        }else if(Consts.M_PRINT_DEFAULTBUTTONS.containsKey(type))
         {
+            List<AbsButtonType> lstPrintButtons=null;
+            if(componentObj.getConfigBean().getButtonsBean()!=null)
+                lstPrintButtons=componentObj.getConfigBean().getButtonsBean().getLstPrintTypeButtons(type);
+            if(lstPrintButtons==null||lstPrintButtons.size()==0) return "";
+            return lstPrintButtons.get(0).showButton(rrequest,null);
+        }else if(type.equals(Consts_Private.FORWARDWITHBACK_BUTTON))
+        {//带返回功能的跳转按钮
             String pageurl=attributes.get("pageurl");
             if(pageurl==null||pageurl.trim().equals(""))
             {
@@ -307,7 +314,8 @@ public class TagAssistant
             if(label==null||label.trim().equals("")) label="<input type='button' class='cls-button' value='跳转'>";
             if(rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
                     Consts.PERMISSION_TYPE_DISABLED)) return label;
-            return "<a href=\"#\" onclick=\"try{"+rrequest.forwardPageWithBack(pageurl,beforecallback)+"}catch(e){logErrorsAsJsFileLoad(e);}\">"+label+"</a>";
+            return "<a href=\"#\" onclick=\"try{"+rrequest.forwardPageWithBack(pageurl,beforecallback)+"}catch(e){logErrorsAsJsFileLoad(e);}\">"
+                    +label+"</a>";
         }else if(type.equals(Consts_Private.BACK_BUTTON))
         {
             BackButton buttonObj=null;
@@ -361,7 +369,7 @@ public class TagAssistant
             buttonObj=rbean.getButtonsBean().getcertainTypeButton(DeleteButton.class);
             String deletebinding=attributes.get("deletebinding");
             if(deletebinding!=null&&!deletebinding.trim().equals(""))
-            {
+            {//如果动态指定了绑定删除报表ID列表
                 List<ReportBean> lstDynBindedReportBeans=getLstBindedReportBeans(rbean,Tools.parseStringToList(deletebinding,";"));
                 if(lstDynBindedReportBeans!=null&&lstDynBindedReportBeans.size()>0)
                 {
@@ -369,7 +377,7 @@ public class TagAssistant
                 }
             }
         }else if(type.equals(Consts_Private.MODIFY_BUTTON))
-        {//修改按钮
+        {
             if(!(reportTypeObj instanceof IEditableReportType))
             {
                 throw new WabacusRuntimeException("报表"+rbean.getPath()+"不是可编辑报表类型，不能显示修改按钮");
@@ -454,7 +462,7 @@ public class TagAssistant
             {
                 AbsButtonType buttonObj=Config.getInstance().getResourceButton(rrequest,ccbean.getPageBean(),
                         Consts.M_DATAEXPORT_DEFAULTBUTTONS.get(type),DataExportButton.class);
-                return ((DataExportButton)buttonObj).showButton(rrequest,type,componentids,label);
+                return ((DataExportButton)buttonObj).showButtonTag(rrequest,type,componentids,label,createDataExportStroageBean(attributes));
             }
         }else if(type.equals(Consts_Private.FORWARDWITHBACK_BUTTON))
         {
@@ -466,7 +474,7 @@ public class TagAssistant
             String beforecallback=attributes.get("beforecallback");
             beforecallback=beforecallback==null||beforecallback.trim().equals("")?null:beforecallback.trim();
             if(!rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
-                    Consts.PERMISSION_TYPE_DISPLAY)) return "";
+                    Consts.PERMISSION_TYPE_DISPLAY)) return "";//没有显示权限
             if(label==null||label.trim().equals("")) label="<input type='button' class='cls-button' value='跳转'>";
             if(rrequest.checkPermission(ccbean.getPageBean().getId(),Consts.BUTTON_PART,"type{"+Consts_Private.FORWARDWITHBACK_BUTTON+"}",
                     Consts.PERMISSION_TYPE_DISABLED)) return label;
@@ -486,6 +494,24 @@ public class TagAssistant
         }
     }
 
+    private DataExportLocalStroageBean createDataExportStroageBean(Map<String,String> mAttributes)
+    {
+        if(mAttributes==null||mAttributes.size()==0) return null;
+        String localstroage=mAttributes.get("localstroage");
+        if(!"true".equalsIgnoreCase(localstroage)) return null;
+        String directorydateformat=mAttributes.get("directorydateformat");
+        String download=mAttributes.get("download");
+        String autodelete=mAttributes.get("autodelete");
+        String zip=mAttributes.get("zip");
+        DataExportLocalStroageBean bean=new DataExportLocalStroageBean();
+        bean.setDownload(!"false".equalsIgnoreCase(download));
+        bean.setAutodelete(!"false".equalsIgnoreCase(autodelete));
+        bean.setZip("true".equalsIgnoreCase(zip));
+        bean.setDirectorydateformat(directorydateformat);
+        bean.doPostLoad();
+        return bean;
+    }
+    
     private List<ReportBean> getLstBindedReportBeans(ReportBean reportbean,List<String> lstBindedReportIds)
     {
         if(lstBindedReportIds==null||lstBindedReportIds.size()==0) return null;
@@ -537,7 +563,7 @@ public class TagAssistant
         CacheDataBean cdb=rrequest.getCdb(rbean.getId());
         label=label==null?"":label.trim();
         if(Tools.isDefineKey("$",label))
-        {//是从资源文件中获取
+        {
             label=Config.getInstance().getResourceString(rrequest,rbean.getPageBean(),label,false);
         }
         if(Tools.isDefineKey("i18n",label))
@@ -649,7 +675,7 @@ public class TagAssistant
                 return "";
             if(rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT)
             {
-                if(cdb.getPrintPagesize()<=0) return "1";
+                if(cdb.getPrintPagesize()<=0) return "1";//不分页或只打印当前页
                 return String.valueOf(cdb.getPrintPagecount());
             }
             return String.valueOf(cdb.getPagecount());
@@ -825,12 +851,8 @@ public class TagAssistant
         for(String strTmp:lst)
         {
             if(strTmp.equals("")) continue;
-            
-            
             //                throw new JspException("<dataimport/>的ref属性必须引用资源文件中定义的数据导入项");
-            
-            //            strTmp=Tools.getRealKeyByDefine("$",strTmp).trim();
-            
+            //            }
             Object obj=Config.getInstance().getResources().get(null,strTmp,true);
             if(!(obj instanceof AbsDataImportConfigBean))
             {
@@ -878,8 +900,8 @@ public class TagAssistant
         return resultBuf.toString();
     }
 
-    public String getFileUploadDisplayValue(String maxsize,String allowtypes,String uploadcount,String newfilename,String savepath,String rooturl,
-            String popupparams,String initsize,String interceptor,String label,HttpServletRequest request)
+    public String getFileUploadDisplayValue(String maxsize,String allowtypes,String disallowtypes,String uploadcount,String newfilename,String savepath,
+            String rooturl,String popupparams,String initsize,String interceptor,String label,String beforepopup,HttpServletRequest request)
     {
         popupparams=WabacusAssistant.getInstance().addDefaultPopupParams(popupparams,initsize,"300","160",null);
         if(savepath==null||savepath.trim().equals(""))
@@ -895,37 +917,20 @@ public class TagAssistant
         {
             throw new WabacusRuntimeException("显示文件上传标签失败，指定的文件上传输入框个数小于0");
         }
-        if(newfilename!=null&&!newfilename.trim().equals("")&&iuploadcount>1)
-        {
-            throw new WabacusRuntimeException("显示文件上传标签失败，当指定的文件上传输入框个数大于1时，不能指定newfilename");
-        }
+        if(beforepopup==null||beforepopup.trim().equals("")) beforepopup="null";
         String token="?";
         if(Config.showreport_url.indexOf("?")>0) token="&";
         String url=Config.showreport_url+token+"ACTIONTYPE=ShowUploadFilePage&FILEUPLOADTYPE="+Consts_Private.FILEUPLOADTYPE_FILETAG;
-        url=url+"&SAVEPATH="+urlEncode(savepath)+"&UPLOADCOUNT="+iuploadcount;
-        if(newfilename!=null&&!newfilename.trim().equals(""))
-        {
-            url=url+"&NEWFILENAME="+urlEncode(newfilename);
-        }
-        if(maxsize!=null&&!maxsize.trim().equals(""))
-        {
-            url=url+"&MAXSIZE="+maxsize;
-        }
-        if(allowtypes!=null&&!allowtypes.trim().equals(""))
-        {
-            url=url+"&ALLOWTYPES="+urlEncode(allowtypes);
-        }
-        if(rooturl!=null&&!rooturl.trim().equals(""))
-        {
-            url=url+"&ROOTURL="+urlEncode(rooturl);
-        }
-        if(interceptor!=null&&!interceptor.trim().equals(""))
-        {
-            url=url+"&INTERCEPTOR="+interceptor;
-        }
-        String clickevent="wx_winpage('"+url+"',"+popupparams+");";
-        StringBuffer resultBuf=new StringBuffer();
-        if(label!=null&&!label.trim().equals(""))
+        url+="&SAVEPATH="+urlEncode(savepath)+"&UPLOADCOUNT="+iuploadcount;
+        if(!Tools.isEmpty(rooturl)) url+="&ROOTURL="+urlEncode(rooturl);
+        if(!Tools.isEmpty(newfilename)) url+="&NEWFILENAME="+urlEncode(newfilename);
+        if(!Tools.isEmpty(maxsize)) url+="&MAXSIZE="+maxsize;
+        if(!Tools.isEmpty(allowtypes)) url+="&ALLOWTYPES="+urlEncode(allowtypes);
+        if(!Tools.isEmpty(disallowtypes)) url+="&DISALLOWTYPES="+urlEncode(disallowtypes);
+        if(!Tools.isEmpty(interceptor)) url+="&INTERCEPTOR="+interceptor;
+        String clickevent="wx_winpage('"+url+"',"+popupparams+","+beforepopup+");";
+        StringBuilder resultBuf=new StringBuilder();
+        if(!Tools.isEmpty(label))
         {
             resultBuf.append("<a onmouseover=\"this.style.cursor='pointer';\" onclick=\""+clickevent+"\">");
             resultBuf.append(label);
@@ -936,7 +941,7 @@ public class TagAssistant
             resultBuf.append("<input type=\"button\" class=\"cls-button2\" onClick=\""+clickevent+"\"");
             resultBuf.append("  onFocus=\"this.select();\" value=\""+label+"\">");
         }
-        resultBuf.append(addPopupIncludeJsCss(request));
+        if(request!=null) resultBuf.append(addPopupIncludeJsCss(request));
         return resultBuf.toString();
     }
 
@@ -955,7 +960,7 @@ public class TagAssistant
     
     private String addPopupIncludeJsCss(HttpServletRequest request)
     {
-        StringBuffer resultBuf=new StringBuffer();
+        StringBuilder resultBuf=new StringBuilder();
         String includejscss=(String)request.getAttribute("wx_has_includejscss");
         if(includejscss==null)
         {//还没提供必须的js/css文件
@@ -974,7 +979,7 @@ public class TagAssistant
             resultBuf.append("<script language=\"javascript\"  src=\"").append(
                     Tools.replaceAll(Config.webroot+"/webresources/script/wabacus_tools.js","//","/")).append("\"></script>");
             resultBuf.append("<script language=\"javascript\"  src=\"").append(
-                    Tools.replaceAll(Config.webroot+"/wabacus-generatejs/generate_system.js","//","/")).append("\"></script>");
+                    Tools.replaceAll(Config.webroot+"/wxtmpfiles/js/generate_system.js","//","/")).append("\"></script>");
             List<JavascriptFileBean> lstJsTmp=ConfigLoadAssistant.getInstance().getLstPopupComponentJs();
             for(JavascriptFileBean jsBeanTmp:lstJsTmp)
             {
@@ -1000,16 +1005,5 @@ public class TagAssistant
         resultBuf.append(TagAssistant.getInstance().showTopSpace(top));
         resultBuf.append(displaystr);
         return resultBuf.toString();
-    }
-
-    public void printlnTag(JspWriter out,ReportRequest rrequest,String value) throws IOException
-    {
-        if(value==null) value="";
-        if(rrequest.getShowtype()==Consts.DISPLAY_ON_RICHEXCEL||rrequest.getShowtype()==Consts.DISPLAY_ON_WORD
-                ||rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT)
-        {//如果是下载到这两类型的数据文件中，替换其中的<img/>中的路径，加上http://xxx/，以方便它们能正常显示图片
-            value=WabacusAssistant.getInstance().replaceAllImgPathInExportDataFile(rrequest.getRequest(),value);
-        }
-        out.println(value);
     }
 }

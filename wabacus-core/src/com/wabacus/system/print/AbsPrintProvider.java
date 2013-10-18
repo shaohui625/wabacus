@@ -58,21 +58,13 @@ public abstract class AbsPrintProvider
     
     public void doPrint()
     {
-
 //        {//如果本次打印有打印报表，则依次记录各报表打印的页大小
-
-
-
 //                {//是报表
-
-
-
-
         CacheDataBean cdbTmp;
         int totalpagecnt=0;
         for(PrintSubPageBean pspagebeanTmp:this.ppcbean.getLstPrintPageBeans())
         {
-            int maxpagecnt=0;
+            int maxpagecnt=0;//存放当前子页的实际页数
             if(pspagebeanTmp.isSplitPrintPage())
             {
                 int recordcntTmp, pagecntTmp;
@@ -90,7 +82,7 @@ public abstract class AbsPrintProvider
                     if(pagecntTmp>maxpagecnt) maxpagecnt=pagecntTmp;
                 }
                 if(maxpagecnt<pspagebeanTmp.getMinpagecount()) maxpagecnt=pspagebeanTmp.getMinpagecount();
-                if(pspagebeanTmp.getMaxpagecount()>0&&maxpagecnt>pspagebeanTmp.getMaxpagecount()) maxpagecnt=pspagebeanTmp.getMaxpagecount();//大于本页面配置的最大页数
+                if(pspagebeanTmp.getMaxpagecount()>0&&maxpagecnt>pspagebeanTmp.getMaxpagecount()) maxpagecnt=pspagebeanTmp.getMaxpagecount();
                 if(maxpagecnt==0) continue;
                 if(pspagebeanTmp.isMergeUp()&&totalpagecnt>0)
                 {
@@ -115,7 +107,7 @@ public abstract class AbsPrintProvider
         {
             setSubPagePageno(pspagebeanTmp,i);
             for(Entry<String,PrintTemplateElementBean> entryTmp:pspagebeanTmp.getMPrintElements().entrySet())
-            {
+            {//依次打印每一页中各动态元素的内容
                 printElement(entryTmp.getKey(),entryTmp.getValue());
             }
         }
@@ -145,7 +137,7 @@ public abstract class AbsPrintProvider
             if(ptEleBean.getType()==PrintTemplateElementBean.ELEMENT_TYPE_STATICTPL)
             {
                 TemplateBean tplbean=(TemplateBean)ptEleBean.getValueObj();
-                this.wresponse.print(tplbean.getDisplayValue(rrequest,reportTypeObj));
+                tplbean.printDisplayValue(rrequest,reportTypeObj);
             }else if(ptEleBean.getType()==PrintTemplateElementBean.ELEMENT_TYPE_DYNTPL)
             {
                 String jspfile=(String)ptEleBean.getValueObj();
@@ -188,7 +180,6 @@ public abstract class AbsPrintProvider
             {
                 throw new WabacusRuntimeException("打印报表"+reportTypeObj.getReportBean().getPath()+"的查询条件失败，没有取到"+lstParts.get(2)+"对应的查询条件");
             }
-            
             Object dataObj=null;
             if(reportTypeObj.getLstReportData()!=null&&reportTypeObj.getLstReportData().size()>0) dataObj=reportTypeObj.getLstReportData().get(0);
             this.wresponse.print(TagAssistant.getInstance().showConditionBox(rrequest,cbean,dataObj,"-1",true,null));
@@ -220,17 +211,21 @@ public abstract class AbsPrintProvider
     protected void printDataPart(AbsReportType reportTypeObj,PrintTemplateElementBean ptElebean)
     {
         List<String> lstParts=(List<String>)ptElebean.getValueObj();
+        StringBuilder resultBuf=new StringBuilder();
         if(lstParts.size()==2)
         {
-            this.wresponse.print(reportTypeObj.showReportData());
+            reportTypeObj.showReportData(resultBuf);
+            this.wresponse.print(resultBuf.toString());
         }else
         {
             if(lstParts.get(2).equals("[title]"))
             {
-                this.wresponse.print(((AbsListReportType)reportTypeObj).showReportData(false));
+                ((AbsListReportType)reportTypeObj).showReportData(false,resultBuf);
+                this.wresponse.print(resultBuf.toString());
             }else if(lstParts.get(2).equals("[data]"))
             {
-                this.wresponse.print(((AbsListReportType)reportTypeObj).showReportData(true));
+                ((AbsListReportType)reportTypeObj).showReportData(true,resultBuf);
+                this.wresponse.print(resultBuf.toString());
             }else
             {
                 ColBean cbean=reportTypeObj.getReportBean().getDbean().getColBeanByColProperty(lstParts.get(2));
@@ -252,7 +247,7 @@ public abstract class AbsPrintProvider
                         {
                             this.wresponse.print(((AbsDetailReportType)reportTypeObj).showColData(cbean,false,true,null));
                         }else
-                        {
+                        {//list
                             this.wresponse.print(cbean.getLabel(rrequest));
                         }
                     }else

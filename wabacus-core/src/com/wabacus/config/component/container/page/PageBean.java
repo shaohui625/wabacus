@@ -33,7 +33,7 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.AbsContainerConfigBean;
-import com.wabacus.config.component.other.JavascriptFileBean;
+import com.wabacus.config.other.JavascriptFileBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
@@ -73,7 +73,7 @@ public class PageBean extends AbsContainerConfigBean
     
     private List<AbsPageInterceptor> lstInterceptors;
 
-    private boolean shouldProvideEncodePageUrl;
+    private boolean shouldProvideEncodePageUrl;//在运行时决定本页面是否需要提供编码后的URL，目前只有当本页面通过rrequest.forwardPageWithBack()方法跳转到其它页面后需要返回时，才需要编码本页面的URL，以便返回
     
     private boolean shouldIncludeAutoCreatedJs;
     
@@ -308,7 +308,7 @@ public class PageBean extends AbsContainerConfigBean
                         +rbeanSlave.getId()+"依赖的报表"+rbeanSlave.getDependParentId()+"不存在");
             }
             if(rbeanMaster.isListReportType())
-            {//如果主报表是列表报表，则子报表不能配置refreshid为其它容器，因为它们是在客户端单独加载的，不能和其它报表绑定加载
+            {
                 if(rbeanSlave.getRefreshid()!=null&&!rbeanSlave.getRefreshid().trim().equals("")
                         &&!rbeanSlave.getRefreshid().trim().equals(rbeanSlave.getId()))
                 {
@@ -336,7 +336,7 @@ public class PageBean extends AbsContainerConfigBean
             rbeanTempMaster=rbeanEntries.getValue();
             if(rbeanTempMaster.isListReportType())
             {
-                if(lstCreatedListReportBeans.contains(rbeanTempMaster)) continue;
+                if(lstCreatedListReportBeans.contains(rbeanTempMaster)) continue;//已经为此报表生成过js
                 lstCreatedListReportBeans.add(rbeanTempMaster);
                 alrbean=(AbsListReportBean)rbeanTempMaster.getExtendConfigDataForReportType(AbsListReportType.KEY);
                 if(alrbean==null)
@@ -486,7 +486,7 @@ public class PageBean extends AbsContainerConfigBean
             while(rbeanMaster!=null)
             {
                 if(rbeanMaster.getId().equals(rbeanSlave.getId()))
-                {
+                {//存在循环依赖
                     throw new WabacusConfigLoadingException("加载页面"+this.getPath()+"失败，其下报表存在循环依赖");
                 }
                 rbeanMaster=this.mRelateReports.get(rbeanMaster);
@@ -512,7 +512,7 @@ public class PageBean extends AbsContainerConfigBean
         Map<String,List<ReportBean>> mRelateConReportBeans=new HashMap<String,List<ReportBean>>();
         getAllRelateConditionReportBeans(this,sRelateConditionNames,mRelateConReportBeans);
         for(Entry<String,List<ReportBean>> entryTmp:mRelateConReportBeans.entrySet())
-        {//处理每个关联查询条件对应的报表
+        {
             updateRefreshContaineridForReportBeans(entryTmp.getValue());
             updateRelateReportidsForReportBeans(entryTmp.getValue());
         }
@@ -570,7 +570,7 @@ public class PageBean extends AbsContainerConfigBean
                 {
                     ReportBean rbeanTmp=(ReportBean)entryTmp.getValue();
                     if(rbeanTmp.getSbean()==null||rbeanTmp.getSbean().getLstConditions()==null) continue;
-                    if(rbeanTmp.isSlaveReportDependsonListReport()) continue;
+                    if(rbeanTmp.isSlaveReportDependsonListReport()) continue;//从报表不存在查询条件关联的情况
                     List<ConditionBean> lstConditions=rbeanTmp.getSbean().getLstConditions();
                     for(ConditionBean cbean:lstConditions)
                     {

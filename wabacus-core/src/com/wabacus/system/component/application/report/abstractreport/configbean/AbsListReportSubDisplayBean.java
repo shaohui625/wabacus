@@ -20,7 +20,6 @@ package com.wabacus.system.component.application.report.abstractreport.configbea
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +42,6 @@ import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.ClassPoolAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
-import com.wabacus.system.component.application.report.abstractreport.configbean.statistic.StatisticItemAndDataSetBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.statistic.StatisticItemBean;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.system.datatype.VarcharType;
@@ -70,11 +68,9 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
 
     private List<StatisticItemBean> lstStatitemBeans;
 
-    private List<StatisticItemAndDataSetBean> lstStatitemAndDatasetBeans;
-
     private List<AbsListReportSubDisplayRowBean> lstSubDisplayRowBeans;
 
-    private Map<String,AbsListReportRowGroupSubDisplayRowBean> mRowGroupSubDisplayRowBeans;
+    private Map<String,AbsListReportRowGroupSubDisplayRowBean> mRowGroupSubDisplayRowBeans;//为行分组（包括普通分组以及树形分组）配置的行统计
     
     private Map<String,Method> mPropertiesAndGetMethods;
     
@@ -122,16 +118,6 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
     public void setLstStatitemBeans(List<StatisticItemBean> lstStatitemBeans)
     {
         this.lstStatitemBeans=lstStatitemBeans;
-    }
-
-    public List<StatisticItemAndDataSetBean> getLstStatitemAndDatasetBeans()
-    {
-        return lstStatitemAndDatasetBeans;
-    }
-
-    public void setLstStatitemAndDatasetBeans(List<StatisticItemAndDataSetBean> lstStatitemAndDatasetBeans)
-    {
-        this.lstStatitemAndDatasetBeans=lstStatitemAndDatasetBeans;
     }
 
     public List<AbsListReportSubDisplayRowBean> getLstSubDisplayRowBeans()
@@ -199,18 +185,20 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
         ReportBean rbean=this.getOwner().getReportBean();
         buildSubDisplayPojoClass(rbean);
         initGetSetMethod(rbean);//初始化pojo的get/set方法，以便运行时可以直接使用
-        
-        //$ByQXO 
-        if(rbean.getDbean().isColselect())
+        if(hasManyScolsInRow())
         {
-           // rbean.getDbean().setColselect(!hasManyScolsInRow());
+            rbean.getDbean().setPageColselect(false);
+            rbean.getDbean().setDataexportColselect(false);
+            if(!rbean.getDbean().isAllColDisplaytypesEquals())
+            {
+                throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"失败，当前报表是行分组显示报表且统计信息显示在多个<scol/>中，因此必须保证所有列在导出文件和页面上的displaytype是一致的");
+            }
         }
-        //ByQXO$
         AbsListReportDisplayBean alrdbean=(AbsListReportDisplayBean)rbean.getDbean().getExtendConfigDataForReportType(AbsListReportType.KEY);
         if(this.lstSubDisplayRowBeans!=null)
         {
             for(AbsListReportSubDisplayRowBean sRowBeanTmp:this.lstSubDisplayRowBeans)
-            {//为每行统计记录上的统计列对应的成员变量增加get方法
+            {
                 validateSubDisplayColsConfig(sRowBeanTmp.getLstSubColBeans(),alrdbean);
             }
         }
@@ -226,8 +214,21 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
                 entry.getValue().validateRowGroupSubDisplayColsConfig(this,(DisplayBean)alrdbean.getOwner());
             }
         }
-        parseStatitemBeans();
-        buildStatisticSql();
+        if(this.lstStatitemBeans!=null&&this.lstStatitemBeans.size()>0)
+        {
+            for(StatisticItemBean statitemBeanTmp:this.lstStatitemBeans)
+            {
+                getStatitemDatasetValueBean(statitemBeanTmp).getProvider().addStaticItemBean(statitemBeanTmp);
+            }
+            for(ReportDataSetBean dsbeanTmp:rbean.getSbean().getLstDatasetBeans())
+            {
+                for(ReportDataSetValueBean dsvbeanTmp:dsbeanTmp.getLstValueBeans())
+                {
+                    dsvbeanTmp.getProvider().doPostLoadStatistic();
+                }
+            }
+//            {//配置了分组统计，则创建每个分组的统计数据的SQL语句后面的group by  having短语，以便运行时可以直接使用
+        }
     }
 
     private void buildSubDisplayPojoClass(ReportBean reportbean)
@@ -235,7 +236,7 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
         List<String> lstProperties=new ArrayList<String>();
         List<IDataType> lstDataTypes=new ArrayList<IDataType>();
         if(this.lstStatitemBeans!=null&&this.lstStatitemBeans.size()>0)
-        {
+        {//有统计数据
             for(StatisticItemBean statItemBeanTmp:this.lstStatitemBeans)
             {
                 if(lstProperties.contains(statItemBeanTmp.getProperty()))
@@ -305,14 +306,14 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
                     cclass,
                     "public void format("+ReportRequest.class.getName()+"  rrequest,"+ReportBean.class.getName()+" rbean,"+String.class.getName()
                             +" type){"+fbean.getFormatContent()+" \n}");//type参数用于表示当前是在统计整个报表，还是在统计某个分组，统计整个报表时，type为空，统计某个分组时，这里传入相应<rowgroup/>的column属性
-            this.pojoclass= ClassPoolAssistant.getInstance().generateClass(cclass);
-            pool.clearImportedPackages();
-            pool=null;
+            this.pojoclass=ConfigLoadManager.currentDynClassLoader.loadClass(classname,cclass.toBytecode());
         }catch(Exception e)
         {
             throw new WabacusConfigLoadingException("生成报表"+reportbean.getPath()+"的存放辅助显示信息的POJO类失败",e);
         }
-  
+        cclass.detach();
+        pool.clearImportedPackages();
+        pool=null;
     }
 
     private void getSColPropertiesAndTypes(ReportBean reportbean,List<String> lstProperties,List<IDataType> lstDataTypes,
@@ -361,7 +362,7 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
             if(this.lstSubDisplayRowBeans!=null&&this.lstSubDisplayRowBeans.size()>0)
             {
                 for(AbsListReportSubDisplayRowBean sRowBeanTmp:this.lstSubDisplayRowBeans)
-                {
+                {//为每行统计记录上的统计列对应的成员变量增加get方法
                     initSColGetMethod(reportbean,sRowBeanTmp.getLstSubColBeans(),mPropertiesAndGetMethods);
                 }
             }
@@ -396,17 +397,16 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
         }
     }
 
-    
     private boolean hasManyScolsInRow()
     {
-        
-        //        bolHasManyScolsInRow=false;
-        for(AbsListReportSubDisplayRowBean sRowBeanTmp:this.lstSubDisplayRowBeans)
+        if(this.lstSubDisplayRowBeans!=null)
         {
-            if(sRowBeanTmp.getLstSubColBeans()!=null&&sRowBeanTmp.getLstSubColBeans().size()>1)
+            for(AbsListReportSubDisplayRowBean sRowBeanTmp:this.lstSubDisplayRowBeans)
             {
-                
-                return true;
+                if(sRowBeanTmp.getLstSubColBeans()!=null&&sRowBeanTmp.getLstSubColBeans().size()>1)
+                {
+                    return true;
+                }
             }
         }
         if(mRowGroupSubDisplayRowBeans!=null&&mRowGroupSubDisplayRowBeans.size()>0)
@@ -416,46 +416,11 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
                 if(entry==null) continue;
                 if(entry.getValue().getLstSubColBeans()!=null&&entry.getValue().getLstSubColBeans().size()>1)
                 {
-                    
                     return true;
                 }
             }
         }
         return false;
-        
-    }
-
-    private void parseStatitemBeans()
-    {
-        if(this.lstStatitemBeans==null||this.lstStatitemBeans.size()==0) return;
-        this.lstStatitemAndDatasetBeans=new ArrayList<StatisticItemAndDataSetBean>();
-        Map<String,StatisticItemAndDataSetBean> mDatasetItemBeans=new HashMap<String,StatisticItemAndDataSetBean>();
-        String datasetidTmp;
-        StatisticItemAndDataSetBean itemAndDatasetBeanTmp;
-        ReportDataSetValueBean datasetBeanTmp;
-        for(StatisticItemBean statitemBeanTmp:this.lstStatitemBeans)
-        {
-            datasetidTmp=statitemBeanTmp.getDatasetid();
-            datasetBeanTmp=getStatitemDatasetValueBean(statitemBeanTmp);
-            datasetidTmp=datasetidTmp==null||datasetidTmp.trim().equals("")?Consts.DEFAULT_KEY:datasetidTmp.trim();
-            itemAndDatasetBeanTmp=mDatasetItemBeans.get(datasetidTmp);
-            if(itemAndDatasetBeanTmp==null)
-            {
-                itemAndDatasetBeanTmp=new StatisticItemAndDataSetBean();
-                itemAndDatasetBeanTmp.setDatasetbean(datasetBeanTmp);
-                mDatasetItemBeans.put(datasetidTmp,itemAndDatasetBeanTmp);
-                this.lstStatitemAndDatasetBeans.add(itemAndDatasetBeanTmp);
-            }
-            itemAndDatasetBeanTmp.addStaticItemBean(statitemBeanTmp);
-        }
-        /*
-         * 将this.lstStatitemAndDatasetBeans中的对象按它们在<sql/>中排好的执行次序进行排序
-         * 以便执行时所需的父数据集数据都存在
-         */
-        if(this.lstStatitemAndDatasetBeans.size()>1)
-        {
-            Collections.sort(this.lstStatitemAndDatasetBeans);
-        }
     }
 
     private ReportDataSetValueBean getStatitemDatasetValueBean(StatisticItemBean statitemBean)
@@ -466,7 +431,7 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
         ReportDataSetValueBean dsvbean=null;
         if(datasetid==null||datasetid.trim().equals(""))
         {
-            if(sbean.isMultiDataSetCols()||sbean.isMultiDatasetRows())
+            if(sbean.isMultiDataSetCols()||sbean.isMultiDatasetRows(false))
             {
                 throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+statitemBean.getProperty()
                         +"失败，此报表配置了多个数据集，因此必须为统计项配置的dataset指定统计的数据集");
@@ -488,7 +453,7 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
                 dsvbean=dsbean.getDatasetValueBeanById(valueid);
             }else
             {
-                if(reportbean.getSbean().isMultiDatasetRows())
+                if(reportbean.getSbean().isMultiDatasetRows(false))
                 {
                     throw new WabacusConfigLoadingException("加载报表"+reportbean.getPath()+"的统计项"+statitemBean.getProperty()
                             +"失败，此报表配置了多个<dataset/>，因此在指定统计项的dataset时，不能只指定<value/>的id，还需指定<dataset/>的id");
@@ -503,23 +468,6 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
         }
         return dsvbean;
     }
-    
-    private void buildStatisticSql()
-    {
-        ReportBean reportbean=this.getOwner().getReportBean();
-        if(this.lstStatitemAndDatasetBeans==null||this.lstStatitemAndDatasetBeans.size()==0) return;
-        for(StatisticItemAndDataSetBean beanTmp:this.lstStatitemAndDatasetBeans)
-        {
-            beanTmp.buildStatisticSql();
-        }
-        if(this.mRowGroupSubDisplayRowBeans!=null)
-        {
-            for(Entry<String,AbsListReportRowGroupSubDisplayRowBean> entryTmp:this.mRowGroupSubDisplayRowBeans.entrySet())
-            {
-                entryTmp.getValue().buildStatisticSqlGroupby(reportbean.getDbean());
-            }
-        }
-    }
 
     public void validateSubDisplayColsConfig(List<AbsListReportSubDisplayColBean> lstSubDisplayColBeans,AbsListReportDisplayBean alrdbean)
     {
@@ -529,12 +477,12 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
             String valuestyleproperty=lstSubDisplayColBeans.get(0).getValuestyleproperty(null,true);
             String colspan=Tools.getPropertyValueByName("colspan",valuestyleproperty,true);
             if(colspan!=null&&!colspan.trim().equals(""))
-            {
+            {//在valuestyleproperty中配置了colspan，则去掉里面的colspan，运行时会动态计算它的colspan数
                 lstSubDisplayColBeans.get(0).setValuestyleproperty(Tools.removePropertyValueByName("colspan",valuestyleproperty),true);
             }
         }else
         {
-            calColSpanAndStartColIdx(lstSubDisplayColBeans,alrdbean,alrdbean.getDefaultColumnCount());
+            calColSpanAndStartColIdx(lstSubDisplayColBeans,alrdbean,alrdbean.getDefaultPageColPositionBean().getTotalColCount());
         }
     }
 
@@ -553,7 +501,6 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
             if(colspan==null||colspan.trim().equals(""))
             {
                 valuestyleproperty=valuestyleproperty+" colspan=\""+colcount+"\"";
-                //lstSubDisplayColBeans.get(0).setValuestyleproperty(valuestyleproperty,true);
             }else
             {
                 int icolspan=Integer.parseInt(colspan);
@@ -589,8 +536,8 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
             }
             if(total_colspan!=colcount)
             {
-            //    throw new WabacusConfigLoadingException("加载报表"+alrdbean.getOwner().getReportBean().getPath()+"失败，配置的所有<scol/>的的colspan总数"
-              //          +total_colspan+"与要显示的总列数"+colcount+"不相等");
+                throw new WabacusConfigLoadingException("加载报表"+alrdbean.getOwner().getReportBean().getPath()+"失败，配置的所有<scol/>的的colspan总数"
+                        +total_colspan+"与要显示的总列数"+colcount+"不相等");
             }
         }
     }
@@ -605,7 +552,7 @@ public class AbsListReportSubDisplayBean extends AbsExtendConfigBean
             {
                 lstNew.add(rowbeanTmp.clone());
             }
-            newBean.setLstSubDisplayRowBeans(lstNew);
+            newBean.lstSubDisplayRowBeans=lstNew;
         }
         if(mRowGroupSubDisplayRowBeans!=null)
         {

@@ -56,6 +56,7 @@ import com.wabacus.system.component.application.report.abstractreport.SaveInfoDa
 import com.wabacus.system.component.application.report.configbean.ColDisplayData;
 import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditableReportEditDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
+import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportColDataBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.EditableReportInsertDataBean;
@@ -111,14 +112,8 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         super.initUrl(applicationConfigBean,rrequest);
         String accessmode=rrequest.getStringAttribute(applicationConfigBean.getId()+"_ACCESSMODE",getDefaultAccessMode()).toLowerCase();
         //        /**
-        
-        
-        
         //         */
-        
-        
-        
-        
+        //        }
         if(!accessmode.equals(""))
         {
             rrequest.addParamToUrl(applicationConfigBean.getId()+"_ACCESSMODE",accessmode,true);
@@ -143,7 +138,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             String edittype=rrequest.getStringAttribute("WX_EDITTYPE","");
             if(edittype.equals(Consts.UPDATE_MODE))
             {
-                rrequest.authorize(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts_Private.ADD_BUTTON+"}",Consts.PERMISSION_TYPE_DISPLAY,"false");//添加按钮将不显示出来
+                rrequest.authorize(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts_Private.ADD_BUTTON+"}",Consts.PERMISSION_TYPE_DISPLAY,"false");
                 rrequest.authorize(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts_Private.DELETE_BUTTON+"}",Consts.PERMISSION_TYPE_DISPLAY,"false");
             }
         }
@@ -166,7 +161,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         if(accessmode==null)
         {
             accessmode=rrequest.getStringAttribute(rbean.getId()+"_ACCESSMODE",getDefaultAccessMode()).toLowerCase();
-            if(!getLstAllAccessModes().contains(accessmode)) accessmode=getDefaultAccessMode();
+            if(!getLstAllAccessModes().contains(accessmode)) accessmode=getDefaultAccessMode();//如果传入的状态不是此报表类型能接受的，则采用默认状态访问报表
         }
         setNewAccessMode(accessmode);
     }
@@ -227,19 +222,23 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         }
         if(rtnVal==IInterceptor.WX_RETURNVAL_TERMINATE||rtnVal==IInterceptor.WX_RETURNVAL_SKIP) return rtnVal;
         String referedReportIdByEditablelist=rrequest.getStringAttribute("WX_REFEREDREPORTID","");
+        boolean shouldClosePopupPage=!"false".equalsIgnoreCase((String)rrequest.getAttribute(rbean.getId(),"closePopupPage"));
         if(referedReportIdByEditablelist.equals(rbean.getId()))
-        {
+        {//如果当前报表是被其它editablelist报表引用访问，则保存完后需要关闭掉弹出窗口，并刷新父报表的显示
             String srcpageid=rrequest.getStringAttribute("WX_SRCPAGEID","");
             String srcreportid=rrequest.getStringAttribute("WX_SRCREPORTID","");
             String srcedittype=rrequest.getStringAttribute("WX_EDITTYPE","");
             StringBuffer paramsBuf=new StringBuffer();
             paramsBuf.append("{pageid:\""+srcpageid+"\"");
             paramsBuf.append(",reportid:\""+srcreportid+"\"");
-            paramsBuf.append(",edittype:\""+srcedittype+"\"}");
+            paramsBuf.append(",edittype:\""+srcedittype+"\"");
+            paramsBuf.append(",closeme:\""+shouldClosePopupPage+"\"}");
             rrequest.getWResponse().addOnloadMethod("closeMeAndRefreshParentReport",paramsBuf.toString(),true);
-        }else if(editbean instanceof EditableReportInsertDataBean&&((EditableReportInsertDataBean)editbean).getMUpdateConditions()!=null
-                &&((EditableReportInsertDataBean)editbean).getMUpdateConditions().size()>0)
-        {//只有添加记录时用户配置了需要在新页面以UPDATE模式显示新添加的记录，则会满足条件，执行如下代码
+        }
+        if((!referedReportIdByEditablelist.equals(rbean.getId())||!shouldClosePopupPage)
+                &&(editbean instanceof EditableReportInsertDataBean&&((EditableReportInsertDataBean)editbean).getMUpdateConditions()!=null&&((EditableReportInsertDataBean)editbean)
+                        .getMUpdateConditions().size()>0))
+        {
             Map<String,String> mRowData=this.cacheDataBean.getLstEditedData(editbean).get(0);
             Map<String,String> mParamValues=null;
             if(this.cacheDataBean.getLstEditedParamValues(editbean)!=null&&this.cacheDataBean.getLstEditedParamValues(editbean).size()>0)
@@ -282,7 +281,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             updatetype="delete";
         }
         rtnVal=EditableReportAssistant.getInstance().processAfterSaveAction(rrequest,rbean,updatetype,rtnVal);
-        if(referedReportIdByEditablelist.equals(rbean.getId())) rtnVal=IInterceptor.WX_RETURNVAL_SUCCESS_NOTREFRESH;
+        if(referedReportIdByEditablelist.equals(rbean.getId())&&shouldClosePopupPage) rtnVal=IInterceptor.WX_RETURNVAL_SUCCESS_NOTREFRESH;
         return rtnVal;
     }
 
@@ -333,7 +332,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
     {
         super.initLoadReportData();
         if(this.rbean.isSlaveReportDependsonDetailReport()&&rrequest.getShowtype()==Consts.DISPLAY_ON_PAGE)
-        {
+        {//如果当前报表是依赖于细览报表，且当前是显示在页面上
             AbsReportType parentReportTypeObj=(AbsReportType)rrequest.getComponentTypeObj(this.rbean.getDependParentId(),null,false);
             if(parentReportTypeObj!=null&&parentReportTypeObj instanceof EditableDetailReportType &&parentReportTypeObj.getParentContainerType()!=null)
             {
@@ -356,11 +355,11 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         initLoadReportData();
         SqlBean sqlbean=rbean.getSbean();
         if(sqlbean.getLstDatasetBeans()!=null&&sqlbean.getLstDatasetBeans().size()>0
-                &&!rrequest.getStringAttribute(rbean.getId(),"CURRENT_ACCESSMODE",getDefaultAccessMode()).equals(Consts.ADD_MODE))//本次访问不是添加模式
+                &&!rrequest.getStringAttribute(rbean.getId(),"CURRENT_ACCESSMODE",getDefaultAccessMode()).equals(Consts.ADD_MODE))
         {
             super.loadReportData(false);
         }
-        if(!this.isLazyDataLoad())
+        if(!this.isLazyDisplayData())
         {
             if(!EditableReportAssistant.getInstance().isReadonlyAccessMode(this)&&(lstReportData==null||lstReportData.size()==0))
             {
@@ -373,7 +372,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
                     this.lstReportData.add(dataObj);
                 }else
                 {
-                    
+                    //setNewAccessMode(Consts.READONLY_MODE);
                 }
             }
             if(shouldInvokePostaction) doLoadReportDataPostAction();
@@ -430,20 +429,8 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
     {
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return super.initDisplayCol(cbean,dataObj);
         if(cbean.isNonValueCol()) return null;
-
-
-
-
-
-
-
-
-
-//            }else
+//                col_editvalue=getColOriginalValue(dataObj,cbean);
 //            {//取到通过updatecol引用的隐藏列数据
-
-
-
         AbsEditableReportEditDataBean editbean=this.realAccessMode.equals(Consts.ADD_MODE)?ersqlbean.getInsertbean():ersqlbean.getUpdatebean();
         String col_editvalue=getColOriginalValue(dataObj,cbean);
         if(col_editvalue==null) col_editvalue="";
@@ -452,7 +439,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
     
     protected String showHiddenCol(ColBean cbeanHidden,Object colDataObj)
     {
-        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbeanHidden.getDisplaytype())) return "";
+        if(!Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbeanHidden.getDisplaytype(true))) return "";
         if(!(colDataObj instanceof EditableReportColDataBean)) return super.showHiddenCol(cbeanHidden,colDataObj);
         EditableReportColDataBean ercdatabean=(EditableReportColDataBean)colDataObj;
         StringBuffer resultBuf=new StringBuffer();
@@ -521,8 +508,8 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
     public String showColData(ColBean cbean,boolean showpart,boolean showinputbox,String dynstyleproperty)
     {
         if(!showpart||rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return super.showColData(cbean,showpart,showinputbox,dynstyleproperty);
-        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) return "";
-        
+        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true))) return "";
+        //显示数据部分
         if(cbean.isNonValueCol()) return "";
         AbsReportDataPojo dataObj=null;
         if(this.lstReportData!=null&&this.lstReportData.size()>0)
@@ -539,7 +526,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             rrequest.setAttribute(rbean.getGuid()+"_showHiddenCols","true");
             for(ColBean cbeanTemp:rbean.getDbean().getLstCols())
             {//显示所有隐藏列的<font/>
-                if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbeanTemp.getDisplaytype()))
+                if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbeanTemp.getDisplaytype(true)))
                 {
                     colDataObj=this.initDisplayCol(cbeanTemp,dataObj);
                     resultBuf.append(showHiddenCol(cbeanTemp,colDataObj));
@@ -563,6 +550,15 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             col_displayvalue=colDisplayData.getValue();
             if(col_displayvalue==null||col_displayvalue.trim().equals("")) col_displayvalue="&nbsp;";
             resultBuf.append(col_displayvalue).append("</font>");
+        }else
+        {
+            EditableReportBean erbean=(EditableReportBean)rbean.getExtendConfigDataForReportType(KEY);
+            if(erbean==null)
+            {
+                erbean=new EditableReportBean(rbean);
+                rbean.setExtendConfigDataForReportType(KEY,erbean);
+            }
+            if(Tools.isEmpty(erbean.getConfigSavedatatype())) erbean.setSavedatatype("all");
         }
         return resultBuf.toString();
     }
@@ -587,7 +583,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         }
         if(this.realAccessMode.equals(Consts.ADD_MODE)
                 ||(this.realAccessMode.equals(Consts.UPDATE_MODE)&&ercbean!=null&&ercbean.isEditableForUpdate()))
-        {//如果当前是添加模式，则所有列（包括隐藏列）都没有旧值，只要显示value或value_name；或者是修改模式，且当前列是可编辑的
+        {
             resultBuf.append(" value_name=\"").append(ercdatabean.getValuename()).append("\"");
             resultBuf.append(" value=\"").append(Tools.htmlEncode(ercdatabean.getOldvalue())).append("\"");
         }
@@ -595,7 +591,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
         {
             String oldvaluename=ercdatabean.getValuename();
             if(ercbean!=null&&ercbean.isEditableForUpdate())
-            {
+            {//当前列是可编辑的
                 oldvaluename=oldvaluename+"__old";
             }
             resultBuf.append(" oldvalue_name=\"").append(oldvaluename).append("\"");
@@ -670,7 +666,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
     public boolean isReadonlyCol(ColBean cbean)
     {
         if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE) return true;
-        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype())) return true;
+        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbean.getDisplaytype(true))) return true;
         if(cbean.isNonValueCol()) return true;
         if(!this.realAccessMode.equals(Consts.ADD_MODE)&&!this.realAccessMode.equals(Consts.UPDATE_MODE)) return true;
         if(ersqlbean==null) return true;
@@ -701,7 +697,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             if(ersqlbean.getUpdatebean()==null) return false;
             if(rbean.getSbean().getLstDatasetBeans()!=null&&rbean.getSbean().getLstDatasetBeans().size()>0&&this.realAccessMode.equals(Consts.READ_MODE)
                     &&this.lstReportData!=null&&this.lstReportData.size()>0)
-            {
+            {//是浏览模式且配置了查询SQL语句且取到了要显示的数据
                 return true;
             }
         }else if(buttonType instanceof DeleteButton)
@@ -845,7 +841,7 @@ public class EditableDetailReportType extends DetailReportType implements IEdita
             reportbean.getButtonsBean().removeAllCertainTypeButtons(DeleteButton.class);
         }
         if(ersqlbean.getInsertbean()!=null||ersqlbean.getUpdatebean()!=null)
-        {//如果有添加修改功能
+        {
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(reportbean,SaveButton.class,Consts.SAVE_BUTTON_DEFAULT);
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(reportbean,CancelButton.class,Consts.CANCEL_BUTTON_DEFAULT);
             ComponentConfigLoadAssistant.getInstance().checkAndAddButtons(reportbean,ResetButton.class,Consts.RESET_BUTTON_DEFAULT);

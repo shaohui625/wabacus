@@ -108,7 +108,7 @@ public class DataTag extends AbsComponentTag
         isShowDetailColInputboxByClientSelf=showInputBoxSelf();
         if(isShowDetailColInputboxByClientSelf)
         {
-            TagAssistant.getInstance().printlnTag(out,rrequest,((AbsDetailReportType)displayComponentObj).showColData(colbean,true,false,null));
+            println(((AbsDetailReportType)displayComponentObj).showColData(colbean,true,false,null));
             return EVAL_BODY_INCLUDE;
         }
         return SKIP_BODY;
@@ -119,7 +119,7 @@ public class DataTag extends AbsComponentTag
         if(displayComponentObj==null) return EVAL_PAGE;
         if(isShowDetailColInputboxByClientSelf)
         {
-            TagAssistant.getInstance().printlnTag(out,rrequest,"</font>");
+            println("</font>");
         }else
         {
             Map<String,String> mAttributes=new HashMap<String,String>();
@@ -129,7 +129,7 @@ public class DataTag extends AbsComponentTag
             mAttributes.put("rowidx",rowidx);
             mAttributes.put("styleproperty",styleproperty);
             mAttributes.put("top",top);
-            TagAssistant.getInstance().printlnTag(out,rrequest,TagAssistant.getInstance().getReportDataPartDisplayValue(displayReportTypeObj,mAttributes));
+            println(TagAssistant.getInstance().getReportDataPartDisplayValue(displayReportTypeObj,mAttributes));
         }
         return EVAL_PAGE;
     }

@@ -39,26 +39,30 @@ public class SFileUploadTag extends AbsTagInTemplate
     {
         String maxsize=null;
         String allowtypes=null;
+        String disallowtypes=null;
         String uploadcount="1";
         String newfilename=null;
         String savepath=null;
         String rooturl=null;
         String popupparams=null;
+        String beforepopup=null;
         String initsize=null;
-        String interceptor=null;
+        String interceptor=null;//拦截器
         if(this.mTagAttributes!=null)
         {
             maxsize=this.mTagAttributes.get("maxsize");
             allowtypes=this.mTagAttributes.get("allowtypes");
+            disallowtypes=this.mTagAttributes.get("disallowtypes");
             uploadcount=this.mTagAttributes.get("uploadcount");
             newfilename=this.mTagAttributes.get("newfilename");
             savepath=this.mTagAttributes.get("savepath");
             rooturl=this.mTagAttributes.get("rooturl");
             popupparams=this.mTagAttributes.get("popupparams");
+            beforepopup=this.mTagAttributes.get("beforepopup");
             interceptor=this.mTagAttributes.get("interceptor");
             initsize=this.mTagAttributes.get("initsize");
         }
-        return TagAssistant.getInstance().getFileUploadDisplayValue(maxsize,allowtypes,uploadcount,
-                newfilename,savepath,rooturl,popupparams,initsize,interceptor,this.tagContent,rrequest.getRequest());
+        return TagAssistant.getInstance().getFileUploadDisplayValue(maxsize,allowtypes,disallowtypes,uploadcount,
+                newfilename,savepath,rooturl,popupparams,initsize,interceptor,this.tagContent,beforepopup,rrequest.getRequest());
     }
 }

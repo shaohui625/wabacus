@@ -29,7 +29,7 @@ import com.wabacus.config.component.AbsComponentConfigBean;
 import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.IApplicationConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.other.ButtonsBean;
+import com.wabacus.config.other.ButtonsBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.JavaScriptAssistant;
@@ -59,7 +59,7 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
     
     protected boolean scrollX;
     
-    protected boolean scrollY;
+    protected boolean scrollY;//是否显示纵向滚动条
 
 //    protected String contentHeight;//显示内容的高度（当有垂直滚动条时除掉了margin-top和margin-bottom部分的高度）
     
@@ -378,26 +378,10 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
                 }
             }
         }
-        processContainerButtonsEnd();//这个方法要放在所有子组件都doPostLoad()完成后再调用，因为很多报表按钮是在doPostLoad()方法时才会新建的。
+        processContainerButtonsEnd();
         JavaScriptAssistant.getInstance().createComponentOnloadScript(this);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//            int deltaSize=0;
 //            {
-
-
-
     }
 
     public void doPostLoadFinally()
@@ -478,7 +462,7 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
                         referedButtonObjTmp.setReferedHiddenButton(true);
                     }
                 }
-                buttonObjTmp.setReferedButtonObj(lstButtonsObjTmp.get(0));
+                buttonObjTmp.setReferedButtonObj(lstButtonsObjTmp.get(0));//记录下被引用的按钮，以便显示时可以直接调用此按钮进行显示，只要记录其中一个即可
             }else
             {
                 if(bbeansTmp.getButtonByName(referButton)==null)
@@ -492,7 +476,6 @@ public abstract class AbsContainerConfigBean extends AbsComponentConfigBean
                 }
                 buttonObjTmp.setReferedButtonObj(bbeansTmp.getButtonByName(referButton));
             }
-
         }
     }
     

@@ -113,11 +113,10 @@ public class LodopPrintProvider extends AbsPrintProvider
         List<String> lstParts=(List<String>)ptElebean.getValueObj();
         if(lstParts==null||lstParts.size()==0) return;
         if(lstParts.size()==1)
-        {
+        {//applicationid或者this，即打印某个应用整体
             printApplication(lstParts.get(0));
             return;
         }
-        
         AbsReportType reportTypeObj=rrequest.getDisplayReportTypeObj(lstParts.get(0));
         String partname=lstParts.get(1);
         if(Consts.HEADER_PART.equals(partname))

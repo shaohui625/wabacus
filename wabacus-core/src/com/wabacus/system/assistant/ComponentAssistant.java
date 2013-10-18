@@ -89,20 +89,10 @@ public class ComponentAssistant
     {
         if(!Consts_Private.SCROLLSTYLE_IMAGE.equals(scrollstyle)) return;
         if(!showScrollX&&!showScrollY) return;
-        
         String scrolljs="/webresources/script/wabacus_scroll.js";
-
-
 //            scrolljs="/webresources/script/wabacus_scroll.js";
-
-
-
-
-
-
-
+//            {
 //            scrolljs="/webresources/script/"+encode.toLowerCase()+"/wabacus_scroll.js";
-
         scrolljs=Config.webroot+"/"+scrolljs;
         scrolljs=Tools.replaceAll(scrolljs,"//","/");
         ccbean.getPageBean().addMyJavascriptFile(scrolljs,-1);
@@ -111,7 +101,7 @@ public class ComponentAssistant
         ccbean.getPageBean().addMyCss(css);
 
         if(showScrollX&&showScrollY)
-        {//显示纵横滚动条
+        {
             ccbean.addOnloadMethod(new OnloadMethodBean(Consts_Private.ONlOAD_IMGSCROLL,"showComponentScroll('"+ccbean.getGuid()+"','"+scrollHeight
                     +"',23)"));
         }else if(showScrollX)
@@ -131,9 +121,9 @@ public class ComponentAssistant
         StringBuffer resultBuf=new StringBuffer();
         if(Consts_Private.SCROLLSTYLE_NORMAL.equals(scrollstyle))
         {
-            resultBuf.append("<div style=\"margin:0;");
+            resultBuf.append("<div><div onmouseover=\"this.style.height='100%'\" style=\"margin:0;");
             if(showScrollX)
-            {
+            {//要显示横向滚动条
                 resultBuf.append("width:").append(scrollWidth).append(";overflow-x:auto;");
             }else
             {
@@ -162,18 +152,24 @@ public class ComponentAssistant
         return resultBuf.toString();
     }
 
-    public String showComponentScrollEndPart(boolean showScrollX,boolean showScrollY)
+    public String showComponentScrollEndPart(String scrollstyle,boolean showScrollX,boolean showScrollY)
     {
         if(!showScrollX&&!showScrollY) return "";
-        return "</div>";
+        if(Consts_Private.SCROLLSTYLE_NORMAL.equals(scrollstyle))
+        {
+            return "</div></div>";
+        }else
+        {
+            return "</div>";
+        }
     }
     
-    
-      public Class buildPageInterceptorClass(PageBean pbean,List<String> lstImports,String preaction,String beforesaveaction,String aftersaveaction,String postaction)
+    public Class buildPageInterceptorClass(PageBean pbean,List<String> lstImports,String preaction,String beforesaveaction,String aftersaveaction,String postaction)
     {
         try
         {
-            ClassPool pool=  ClassPoolAssistant.getInstance().createClassPool();
+            ClassPool pool=new ClassPool();
+            pool.appendSystemPath();
             pool.insertClassPath(new ClassClassPath(ComponentAssistant.class));
             String classname=Consts.BASE_PACKAGE_NAME+".Page_"+pbean.getId()+"_Interceptor";
             CtClass pt=pool.makeClass(classname);
@@ -206,8 +202,8 @@ public class ComponentAssistant
             CtMethod postMethod=CtNewMethod.make(sbuffer.toString(),pt);
             pt.addMethod(postMethod);
 
-            
-            final Class c=  ClassPoolAssistant.getInstance().generateClass(pt);
+            Class c=ConfigLoadManager.currentDynClassLoader.loadClass(classname,pt.toBytecode());
+            pt.detach();
             pool.clearImportedPackages();
             pool=null;
             return c;
@@ -266,8 +262,8 @@ public class ComponentAssistant
     
     public String showButton(IComponentConfigBean ccbean,AbsButtonType buttonObj,ReportRequest rrequest,String dynclickevent,String button)
     {
-        if(ccbean instanceof ReportBean && buttonObj.isReferedHiddenButton()) return "";
-        if(buttonObj.getReferedButtonObj()==null) return buttonObj.showButton(rrequest,dynclickevent,button);//如果没有引用其它按钮，则直接自己显示就可以了
+        if(ccbean instanceof ReportBean && buttonObj.isReferedHiddenButton()) return "";//如果当前按钮属于报表，且被容器引用显示，并不在源报表处显示
+        if(buttonObj.getReferedButtonObj()==null) return buttonObj.showButton(rrequest,dynclickevent,button);
         return buttonObj.getReferedButtonObj().showButton(rrequest,dynclickevent,button);
     }
     

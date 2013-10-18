@@ -182,7 +182,7 @@ public class ColumnMapBean
                 throw new WabacusConfigLoadingException("表"+diconfigbean.getTablename()+"没有列，不能对其进行传输");
             }
             Map<String,String> mAllColAndTypes=new HashMap<String,String>();
-            List<Map<String,String>> lstAllColsAndTypes=new ArrayList<Map<String,String>>();
+            List<Map<String,String>> lstAllColsAndTypes=new ArrayList<Map<String,String>>();//存放所有字段及类型，每个字段存在一个Map中，键为字段名，值为字段类型。
             Map<String,String> mTmp;
             for(int i=1;i<=colcount;i++)
             {
@@ -203,7 +203,7 @@ public class ColumnMapBean
                 {
                     importSbean.setSql("delete from "+diconfigbean.getTablename());
                 }else
-                {//append模式，且配置了keyfields，且数据文件中有数据，则删除数据文件中对应数据的记录（数据文件没数据时，客户端不会调用这个方法来构造删除SQL语句）
+                {
                     importSbean=createDelOldRecordsSql(mAllColAndTypes,lstAllColsAndTypes,dbtype,
                             Consts_Private.DATAIMPORTTYPE_APPEND);
                 }
@@ -241,7 +241,7 @@ public class ColumnMapBean
         {
             importSbean.setSql("delete from "+diconfigbean.getTablename());
         }else
-        {
+        {//append模式或者是append模式下动态指定的delete模式
             List<String> lstKeyfields=diconfigbean.getLstKeyfields();
             if(lstKeyfields==null||lstKeyfields.size()==0)
             {

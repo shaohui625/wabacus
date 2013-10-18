@@ -34,6 +34,7 @@ import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
 import com.wabacus.system.inputbox.option.TypepromptOptionBean;
 import com.wabacus.util.Tools;
 
@@ -136,7 +137,6 @@ public class TextBox extends AbsInputBox implements Cloneable
     protected String initDisplaySpanStart(ReportRequest rrequest)
     {
         if(this.typePromptBean==null) return super.initDisplaySpanStart(rrequest);
-        
         StringBuffer resultBuf=new StringBuffer();
         resultBuf.append(super.initDisplaySpanStart(rrequest));
         resultBuf.append(" typePrompt=\"").append(getTypePromptJsonString(rrequest,this.owner.getInputBoxId())).append("\"");
@@ -152,7 +152,6 @@ public class TextBox extends AbsInputBox implements Cloneable
         resultBuf.append("var typePrompt=null;if(inputboxSpanObj!=null){typePrompt=inputboxSpanObj.getAttribute('typePrompt');}");
         resultBuf.append("if(onfocusmethod!=null&&onfocusmethod!=''||typePrompt!=null&&typePrompt!=''){");
         resultBuf.append("  boxstr=boxstr+\" onfocus=\\\"try{\"+onfocusmethod;");
-        
         resultBuf.append("   if(typePrompt!=null&&typePrompt!=''){boxstr=boxstr+\"initializeTypePromptProperties(this,'\"+typePrompt+\"');\";}");
         resultBuf.append("  boxstr=boxstr+\"}catch(e){logErrorsAsJsFileLoad(e);}\\\"\";");
         resultBuf.append("}");
@@ -177,7 +176,7 @@ public class TextBox extends AbsInputBox implements Cloneable
     {
         super.loadInputBoxConfig(ownerbean,eleInputboxBean);
         if(eleInputboxBean==null) return;
-        
+        //加载输入联想配置
         XmlElementBean eleTypeprompt=eleInputboxBean.getChildElementByName("typeprompt");
         if(eleTypeprompt!=null)
         {
@@ -286,11 +285,10 @@ public class TextBox extends AbsInputBox implements Cloneable
             }
             tpColbeanTmp=new TypePromptColBean();
             tpColbeanTmp.setLabel(Config.getInstance().getResourceString(null,rbean.getPageBean(),label.trim(),true));
-            tpColbeanTmp.setAttrs(elePromptColBeanTmp.getMPropertiesClone());
             if(title!=null&&!title.trim().equals(""))
             {
                 tpColbeanTmp.setTitle(Config.getInstance().getResourceString(null,rbean.getPageBean(),title.trim(),true));
-                isShowTitle=true;//此输入联想需要显示标题行
+                isShowTitle=true;
             }
             if(hidden!=null) tpColbeanTmp.setHidden(hidden.toLowerCase().equals("true"));
             if(tpColbeanTmp.isHidden())
@@ -298,21 +296,17 @@ public class TextBox extends AbsInputBox implements Cloneable
                 tpColbeanTmp.setMatchmode(0);
             }else
             {
-                //$ByQXO 以支持其他匹配方式
-                matchmode=matchmode==null ? Config.getInstance().getSystemConfigValue("defaultPromptMatchMode","start") : matchmode.toLowerCase().trim();
-                tpColbeanTmp.getAttrs().put("matchmode",matchmode);
+                matchmode=matchmode==null?"":matchmode.toLowerCase().trim();
                 if("anywhere".equals(matchmode))
                 {
                     tpColbeanTmp.setMatchmode(2);
                 }else if("start".equals(matchmode))
                 {
                     tpColbeanTmp.setMatchmode(1);
-                }else if(!"none".equals(matchmode))
+                }else
                 {
-                    tpColbeanTmp.setMatchmode(2);  //ByQXOy为了使end start_or_end之式匹配起作用
+                    tpColbeanTmp.setMatchmode(0);
                 }
-                //ByQXO$
-                
                 if(tpColbeanTmp.getMatchmode()>0)
                 {
                     isHasMatchCol=true;
@@ -347,9 +341,9 @@ public class TextBox extends AbsInputBox implements Cloneable
         {
             if(eleOptionTmp==null) continue;
             TypepromptOptionBean ob=new TypepromptOptionBean(this);
-            String source=eleOptionTmp.attributeValue("source");
-            source=source==null?"":source.trim();
-            if(source.equals(""))
+            String dataset=eleOptionTmp.attributeValue("dataset");
+            dataset=dataset==null?"":dataset.trim();
+            if(dataset.equals(""))
             {
                 Map<String,String> mOption=new HashMap<String,String>();
                 String nameTmp,valueTmp;
@@ -362,7 +356,7 @@ public class TextBox extends AbsInputBox implements Cloneable
                     }
                     valueTmp=eleOptionTmp.attributeValue(nameTmp);
                     valueTmp=valueTmp==null?"":valueTmp.trim();
-                    mOption.put(nameTmp,valueTmp);
+                    mOption.put(nameTmp,valueTmp);//将此联想列的名和配置的常量值存入Map中
                     nameTmp=tcolbeanTmp.getValue();
                     if(nameTmp==null||nameTmp.trim().equals("")||nameTmp.equals(tcolbeanTmp.getLabel())) continue;
                     valueTmp=eleOptionTmp.attributeValue(nameTmp);
@@ -370,17 +364,21 @@ public class TextBox extends AbsInputBox implements Cloneable
                     mOption.put(nameTmp,valueTmp);
                 }
                 ob.setMPromptcolValues(mOption);
-            }else if(Tools.isDefineKey("@",source)||Tools.isDefineKey("#",source)||Tools.isDefineKey("class",source))
+            }else if(Tools.isDefineKey("$",dataset))
             {
-                ob.loadOptionDynDatasourceObj(eleOptionTmp,source);
-            }else if(Tools.isDefineKey("$",source))
-            {
-                loadTypePromptOptionsConfig(ownerbean,(List<XmlElementBean>)Config.getInstance().getResourceObject(null,rbean.getPageBean(),source,
+                loadTypePromptOptionsConfig(ownerbean,(List<XmlElementBean>)Config.getInstance().getResourceObject(null,rbean.getPageBean(),dataset,
                         true),lstObs);
                 continue;
             }else
             {
-                throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的输入联想选项的source："+eleOptionTmp.attributeValue("source")+"不合法");
+                AbsCommonDataSetValueProvider dsProvider=AbsCommonDataSetValueProvider.createCommonDataSetValueProviderObj(rbean,dataset);
+                if(dsProvider==null)
+                {
+                    throw new WabacusConfigLoadingException("报表"+rbean.getPath()+"配置的输入联想选项的dataset："+eleOptionTmp.attributeValue("dataset")+"不合法");
+                }
+                ob.setDatasetProvider(dsProvider);
+                dsProvider.setOwnerOptionBean(ob);
+                dsProvider.loadConfig(eleOptionTmp);
             }
             lstObs.add(ob);
         }
@@ -414,16 +412,7 @@ public class TextBox extends AbsInputBox implements Cloneable
                 optionBeanTmp.doPostLoad();
             }
             String typepromptjs="/webresources/script/wabacus_typeprompt.js";
-
-
 //                typepromptjs="/webresources/script/wabacus_typeprompt.js";
-
-
-
-
-
-
-
 //                typepromptjs="/webresources/script/"+encode.toLowerCase()+"/wabacus_typeprompt.js";
 //            }
             typepromptjs=Tools.replaceAll(Config.webroot+"/"+typepromptjs,"//","/");
@@ -436,7 +425,6 @@ public class TextBox extends AbsInputBox implements Cloneable
         super.processStylePropertyAfterMerged(reportTypeObj,ownerbean);
         if(this.typePromptBean!=null)
         {
-            
             this.styleproperty=Tools.removePropertyValueByName("onkeypress",this.styleproperty);
             if(this.typePromptBean.isSelectbox())
             {

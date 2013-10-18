@@ -87,7 +87,7 @@ public abstract class AbsRadioCheckBox extends AbsSelectBox
         resultBuf.append("      for(var i=0,len=childs.length;i<len;i++){ ");
         resultBuf.append("          if(iinlinecount>0&&i>0&&i%iinlinecount==0) boxstr=boxstr+\"<br>\";");
         resultBuf.append("          optionlabel=childs[i].getAttribute('label'); optionvalue=childs[i].getAttribute('value');");
-        resultBuf.append("          boxstr=boxstr+\"<input type='"+this.getInputboxInnerType()+"'  value=\\\"\"+optionvalue+\"\\\" label='\"+optionlabel+\"'\";");
+        resultBuf.append("          boxstr=boxstr+\"<input type='"+this.getInputboxInnerType()+"'  value=\\\"\"+optionvalue+\"\\\" label='\"+optionlabel+\"'\";");//新增label属性以便使用时能取到它
         resultBuf.append(getInputBoxCommonFilledProperties());
         resultBuf.append("          if(isSelectedValueForSelectedBox(boxValue,optionvalue,inputboxSpanObj)) boxstr=boxstr+\" checked\";");
         resultBuf.append("          boxstr=boxstr+\" onblur=\\\"try{\"+onblurmethod+\";fillGroupBoxValue(this,'"+this.typename
@@ -143,7 +143,6 @@ public abstract class AbsRadioCheckBox extends AbsSelectBox
         {
             this.inline_count=Integer.parseInt(inlinecount.trim());
         }
-        
     }
 
     protected String getDefaultStylePropertyForDisplayMode2()

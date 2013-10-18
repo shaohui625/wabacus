@@ -54,7 +54,7 @@ public class Consts
     
     public final static String DATAEXPORT_WORD="word";
     
-    public final static String DATAEXPORT_RICHEXCEL="richexcel";
+    public final static String DATAEXPORT_RICHEXCEL="richexcel";//导出富Excel文件
     
     public final static String DATAEXPORT_PLAINEXCEL="plainexcel";
     
@@ -112,7 +112,7 @@ public class Consts
     /***************************************************************************
      * 报表系统级资源项约定好的KEY
      **************************************************************************/
-    public final static String SEARCHBOX_PREX_KEY="searchbox.prex";//查询框前导
+    public final static String SEARCHBOX_PREX_KEY="searchbox.prex";
 
     public final static String NODATA_PROMPT_KEY="nodata.mess";
 
@@ -122,7 +122,7 @@ public class Consts
 
     public final static String WORD_LABEL="word.label";
     
-    public final static String RICHEXCEL_LABEL="richexcel.label";
+    public final static String RICHEXCEL_LABEL="richexcel.label";//显示“下载EXCEL”的label
     
     public final static String PLAINEXCEL_LABEL="plainexcel.label";
     
@@ -186,7 +186,7 @@ public class Consts
 
     public final static String LISTREPORT_NAVIGATE_DEFAULT="listreport.navigate.default";
     
-    public final static String DETAILREPORT_NAVIGATE_DEFAULT="detailreport.navigate.default";
+    public final static String DETAILREPORT_NAVIGATE_DEFAULT="detailreport.navigate.default";//默认数据细览报表的翻页导航栏静态模板资源项的KEY
     
     public final static String SEARCH_BUTTON_DEFAULT="search.button.default";
 
@@ -196,7 +196,7 @@ public class Consts
 
     public final static String DELETE_BUTTON_DEFAULT="delete.button.default";
 
-    public final static String SAVE_BUTTON_DEFAULT="save.button.default";//默认保存按钮资源项的KEY
+    public final static String SAVE_BUTTON_DEFAULT="save.button.default";
 
     public final static String CANCEL_BUTTON_DEFAULT="cancel.button.default";
 
@@ -206,7 +206,7 @@ public class Consts
     
     public final static String DATAIMPORT_BUTTON_DEFAULT="dataimport.button.default";
     
-    public final static Map<String,String> M_DATAEXPORT_DEFAULTBUTTONS=new HashMap<String,String>();
+    public final static Map<String,String> M_DATAEXPORT_DEFAULTBUTTONS=new HashMap<String,String>();//存放每个导出类型中相应默认按钮KEY
     static
     {
         M_DATAEXPORT_DEFAULTBUTTONS.put(DATAEXPORT_WORD,"word.button.default");
@@ -272,7 +272,7 @@ public class Consts
     
     public final static String ROWSELECT_RADIOBOX="radiobox";
     
-    public final static String ROWSELECT_SINGLE_RADIOBOX="single-radiobox";
+    public final static String ROWSELECT_SINGLE_RADIOBOX="single-radiobox";//提供单选框的单选功能，且点击单选框或记录行都能选中
     
     public final static List<String> lstAllRowSelectTypes=new ArrayList<String>();
     
@@ -296,7 +296,7 @@ public class Consts
     
     public final static String ROWORDER_INPUTBOX="inputbox";
     
-    public final static String ROWORDER_TOP="top";//通过置顶方式进行排序
+    public final static String ROWORDER_TOP="top";
     
     public final static List<String> lstAllRoworderTypes=new ArrayList<String>();
     
@@ -323,7 +323,7 @@ public class Consts
 
     public final static int CHKPERMISSION_EMPTY=-1;//没有为此组件/元素授此权限类型的权限值
 
-    public final static int CHKPERMISSION_UNSUPPORTEDTYPE=-2;
+    public final static int CHKPERMISSION_UNSUPPORTEDTYPE=-2;//权限类型为空或不支持的权限类型
 
     public final static int CHKPERMISSION_UNSUPPORTEDVALUE=-3;
     
@@ -338,25 +338,31 @@ public class Consts
     
     public final static String COL_DISPLAYTYPE_ALWAYS="always";
     
+    public final static List<String> lstAllColDisplayTypes=new ArrayList<String>();
+    static
+    {
+        lstAllColDisplayTypes.add(COL_DISPLAYTYPE_INITIAL);
+        lstAllColDisplayTypes.add(COL_DISPLAYTYPE_OPTIONAL);
+        lstAllColDisplayTypes.add(COL_DISPLAYTYPE_HIDDEN);
+        lstAllColDisplayTypes.add(COL_DISPLAYTYPE_ALWAYS);
+    }
     /**************************************************************************************
      * 处理完请求后向客户端返回的状态码
      *************************************************************************************/
     public final static int STATECODE_NONREFRESHPAGE=0;
-   
-    public final static int STATECODE_REFRESHPAGE=-99; //强制刷新
-    
-    public final static String RESPONSE_STATECODE_KEY = "$responsestatecode";
     
     public final static int STATECODE_FAILED=-1;
     
     public final static int STATECODE_SUCCESS=1;
     
+    //public final static int STATECODE_NONE=Integer.MAX_VALUE;//保留已有的状态码，即本次不改变状态码
+    
     /**************************************************************************************
      * 保存数据操作的类型
      *************************************************************************************/
-    public final static int UPDATETYPE_INSERT=1;
+    public final static int UPDATETYPE_INSERT=1;//当前是做添加记录的操作（即保存添加的记录）
 
-    public final static int UPDATETYPE_UPDATE=2;//当前是做修改记录的操作（即保存修改的记录）
+    public final static int UPDATETYPE_UPDATE=2;
 
     public final static int UPDATETYPE_DELETE=3;
 }

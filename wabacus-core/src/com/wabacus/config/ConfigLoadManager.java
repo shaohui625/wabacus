@@ -42,9 +42,9 @@ import org.dom4j.Element;
 import com.wabacus.config.component.ComponentConfigLoadManager;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.container.page.PageBean;
-import com.wabacus.config.component.other.JavascriptFileBean;
 import com.wabacus.config.database.datasource.AbsDataSource;
 import com.wabacus.config.database.datasource.DriverManagerDataSource;
+import com.wabacus.config.other.JavascriptFileBean;
 import com.wabacus.config.resource.AbsResource;
 import com.wabacus.config.resource.Resources;
 import com.wabacus.config.resource.StringRes;
@@ -60,8 +60,9 @@ import com.wabacus.system.commoninterface.IReportPersonalizePersistence;
 import com.wabacus.system.component.AbsComponentType;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
 import com.wabacus.system.component.application.report.abstractreport.IReportType;
-import com.wabacus.system.component.application.report.chart.FusionChartsReportType;
 import com.wabacus.system.component.container.AbsContainerType;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.AbsReportDataSetValueProvider;
 import com.wabacus.system.datatype.IDataType;
 import com.wabacus.system.inputbox.AbsInputBox;
 import com.wabacus.system.intercept.AbsPageInterceptor;
@@ -83,6 +84,8 @@ public class ConfigLoadManager
 
     public static List<ReportBean> lstExtendReports;
 
+    public static Map<String,XmlElementBean> mAllXmlTagObjects;//存放所有<report/>及以下标签配置对象对应的配置标签
+    
     public static int loadAllReportSystemConfigs()
     {
         try
@@ -119,7 +122,7 @@ public class ConfigLoadManager
             List<JavascriptFileBean> lstJsFiles=new UniqueArrayList<JavascriptFileBean>();
             lstJsFiles.addAll(loadJsfiles(root.element("global-jsfiles")));
             lstJsFiles.addAll(ConfigLoadAssistant.getInstance().getLstPopupComponentJs());
-            lstJsFiles.add(new JavascriptFileBean(Tools.replaceAll(Config.webroot+"/wabacus-generatejs/generate_system.js","//","/"),0));
+            lstJsFiles.add(new JavascriptFileBean(Tools.replaceAll(Config.webroot+"/wxtmpfiles/js/generate_system.js","//","/"),0));
             Config.getInstance().setLstGlobalJavascriptFiles(lstJsFiles);
             Config.getInstance().addGlobalCss(ConfigLoadAssistant.getInstance().getLstPopupComponentCss());
             Config.getInstance().setMLocalCss(new HashMap<String,List<String>>());
@@ -128,8 +131,11 @@ public class ConfigLoadManager
             loadInputBoxTypesConfig(root);
             loadDataTypesConfig(root);
             loadContainerTypesConfig(root);
-            loadReportTypesConfig(root);
+            loadReportTypesConfig(root);//加载报表配置文件
+            loadReportDatasetvalueProviders(root);
+            loadCommonDatasetvalueProviders(root);
             createSystemJS();
+            mAllXmlTagObjects=new HashMap<String,XmlElementBean>();
             mAllPagesConfig=new HashMap<String,PageBean>();
             mAllPageChildIds=new HashMap<String,List<String>>();
             lstExtendReports=new ArrayList<ReportBean>();
@@ -163,8 +169,6 @@ public class ConfigLoadManager
                         }
 
                         ReportBean rbTemp=(ReportBean)rbeanParent.clone(rbeanTemp.getId(),rbeanTemp.getParentContainer());
-
-
                         rbTemp.setEleReportBean(null);
                         rbTemp.getParentContainer().getMChildren().put(rbTemp.getId(),rbTemp);
                         ComponentConfigLoadManager.loadReportInfo(rbTemp,eleReportBean,rbeanParent);
@@ -210,6 +214,7 @@ public class ConfigLoadManager
             mAllPagesConfig=null;
             mAllPageChildIds=null;
             lstExtendReports=null;
+            mAllXmlTagObjects=null;
             log.info("wabacus应用启动完成!");
             return 1;
         }catch(Exception e)
@@ -227,7 +232,7 @@ public class ConfigLoadManager
             throw new WabacusConfigLoadingException("没有配置报表配置文件");
         }
         List lstReport=eleReport.elements("report-file");
-        List<String> lstReportConfigFiles=getListConfigFilePaths(lstReport);//获取到所有配置文件路径
+        List<String> lstReportConfigFiles=getListConfigFilePaths(lstReport);
         if(lstReportConfigFiles==null||lstReportConfigFiles.size()<=0)
         {
             throw new WabacusConfigLoadingException("没有配置报表配置文件");
@@ -241,8 +246,8 @@ public class ConfigLoadManager
             isClasspathTmp=Tools.isDefineKey("classpath",fileTmp);
             if(isClasspathTmp) fileTmp=Tools.getRealKeyByDefine("classpath",fileTmp);
             String jsFileName=convertFileNameByPath(fileTmp)+".js";
-            String jsFilePath=Tools.standardFilePath(Config.webroot_abspath+"\\wabacus-generatejs\\"+jsFileName);
-            String jsFileUrl=Config.webroot+"/wabacus-generatejs/"+jsFileName;
+            String jsFilePath=FilePathAssistant.getInstance().standardFilePath(Config.webroot_abspath+"\\wxtmpfiles\\js\\"+jsFileName);
+            String jsFileUrl=Config.webroot+"/wxtmpfiles/js/"+jsFileName;
             jsFileUrl=Tools.replaceAll(jsFileUrl,"//","/");
             if(!fileTmp.toLowerCase().endsWith(".xml"))
             {
@@ -311,7 +316,7 @@ public class ConfigLoadManager
             }else
             {
                 hasEncrypted=true;
-                passwordTmp=DesEncryptTools.encrypt(passwordTmp);
+                passwordTmp=DesEncryptTools.encrypt(passwordTmp);//加密
                 elePasswordTmp.setText("{3DES}"+passwordTmp);
             }
         }
@@ -406,22 +411,7 @@ public class ConfigLoadManager
     private static void createSystemJS()
     {
         if(!Config.should_createjs) return;
-        File fRoot=new File(Tools.standardFilePath(Config.webroot_abspath+"\\wabacus-generatejs"));
-        if(fRoot.exists()&&fRoot.isDirectory())
-        {
-            File[] filesArr=fRoot.listFiles();
-            if(filesArr!=null)
-            {
-                for(int i=0;i<filesArr.length;i++)
-                {
-                    filesArr[i].delete();
-                }
-            }
-        }else
-        {
-            fRoot.mkdir();
-        }
-        String jsFilePath=Tools.standardFilePath(Config.webroot_abspath+"\\wabacus-generatejs\\generate_system.js");
+        String jsFilePath=FilePathAssistant.getInstance().standardFilePath(Config.webroot_abspath+"\\wxtmpfiles\\js\\generate_system.js");
         String rowselectbgcolor=Config.getInstance().getSystemConfigValue("selectedrow-bgcolor","");
         StringBuffer scriptBuf=new StringBuffer();
         if(!rowselectbgcolor.trim().equals(""))
@@ -506,9 +496,7 @@ public class ConfigLoadManager
             scriptBuf.append("   var boxValue=updateDestTdObj.getAttribute('value');");
             scriptBuf.append("   if(boxValue==null){");
             scriptBuf.append("      boxValue='';");
-            //$ByQXO textarea时直接存放json数据时的转义问题
-            scriptBuf.append("   }else  if (type != 'textareabox') {");
-            //ByQXO$
+            scriptBuf.append("   }else{");
             scriptBuf.append("      boxValue=boxValue.replace(/</g,'&lt;');boxValue=boxValue.replace(/>/g,'&gt;');boxValue=boxValue.replace(/\\\'/g,'&#039;');boxValue=boxValue.replace(/\\\"/g,'&quot;');");
             scriptBuf.append("   }var boxId=name;if(boxId.lastIndexOf('__')>0) boxId=boxId.substring(0,boxId.lastIndexOf('__'));");
             scriptBuf.append("   var inputboxSpanObj=document.getElementById('span_'+boxId+'_span');");
@@ -526,7 +514,7 @@ public class ConfigLoadManager
             scriptBuf.append("   if(style_propertyvalue==null) style_propertyvalue='';");
             scriptBuf.append("   if(onfocusmethod==null) onfocusmethod='';if(onblurmethod==null) onblurmethod='';");
             scriptBuf.append("   if(jsvalidateOnblurMethod!=null&&jsvalidateOnblurMethod!=''){");
-            scriptBuf.append("       if(onblurmethod!=''&&onblurmethod.lastIndexOf(';')!=onblurmethod.length-1) onblurmethod=onblurmethod+';';");//如果已经有onblur事件，且没有以;结尾，则在末尾加上;，以便拼接两个函数
+            scriptBuf.append("       if(onblurmethod!=''&&onblurmethod.lastIndexOf(';')!=onblurmethod.length-1) onblurmethod=onblurmethod+';';");
             scriptBuf.append("       onblurmethod=onblurmethod+jsvalidateOnblurMethod;");
             scriptBuf.append("   }");
             scriptBuf.append("   if(onfocusmethod!=''&&onfocusmethod.lastIndexOf(';')!=onfocusmethod.length-1) onfocusmethod+=';';");
@@ -562,7 +550,7 @@ public class ConfigLoadManager
             scriptBuf.append("   if(parentTdObj==null) {wx_warn('没有取到输入框所属<td/>对象，设置其值失败');return;}");
             /*scriptBuf.append("   var oldValueName=parentTdObj.getAttribute('oldvalue_name');");
             scriptBuf.append("   if(oldValueName!=null&&oldValueName.indexOf(COL_NONDISPLAY_PERMISSION_PREX)==0){");
-            
+            //如果此输入框不在前台显示明文（目前只有密码框是这种输入框），则不能将此输入框的值设置到value属性中，保存的时候会直接从输入框中取
             scriptBuf.append("       if(reportfamily==ReportFamily.EDITABLELIST2||reportfamily==ReportFamily.LISTFORM){");
             scriptBuf.append("           addDataForSaving(reportguid,parentTdObj.parentNode);");
             scriptBuf.append("       }else if(reportfamily==ReportFamily.EDITABLEDETAIL2){");
@@ -605,24 +593,10 @@ public class ConfigLoadManager
             scriptBuf.append("  updateDestTdObj.setAttribute('value',value);");
 //            /**
 //             * 注意下面的oldvalue变量不能从<td/>的oldvalue属性中取，而必须从存放新值的value属性中取，因为假设第一次编辑新值时，与oldvalue不同，将此记录数据放入待保存队列中，并将新值设置到value属性中，
-
 //             */
-
 //            scriptBuf.append("   if(value!=oldvalue){");//编辑后的值与<td/>中原有的值不同，则要更新它
-
-
-
 //            scriptBuf.append("           if(childids!=null&&childids!=''){");//是树形分组节点或普通分组节点对应的列，则更新它所包括的所有数据行的相应分组列的值，以便保存时用上
-
-
-
-
-
-
-
-
-//            scriptBuf.append("       }");
-
+//            scriptBuf.append("       }else if(reportfamily==ReportFamily.EDITABLEDETAIL2){");
             scriptBuf.append("}");
             JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(jsFilePath,scriptBuf.toString());
         }
@@ -698,7 +672,7 @@ public class ConfigLoadManager
             idx=nameTemp.lastIndexOf(".");
             if(idx<=0) continue;
             String typetmp=nameTemp.substring(idx).toLowerCase();
-            nameTemp=nameTemp.substring(0,idx);
+            nameTemp=nameTemp.substring(0,idx);//不包括后缀（即文件类型）的文件名
             if(nameTemp.startsWith(Config.i18n_filename)&&typetmp.equals(".xml"))
             {
                 Map<String,Object> mResults=null;
@@ -753,7 +727,6 @@ public class ConfigLoadManager
                 throw new WabacusConfigLoadingException("配置的国际化资源文件"+Config.i18n_filename+"不存在",ioe);
             }
             log.warn("没有配置语言类型为"+localetype+"的国际化资源文件");
-            
         }catch(DocumentException de)
         {
             if(localetype==null||localetype.trim().equals(""))
@@ -761,7 +734,6 @@ public class ConfigLoadManager
                 throw new WabacusConfigLoadingException("配置的国际化资源文件"+Config.i18n_filename+"不合法",de);
             }
             log.warn("配置语言类型为"+localetype+"的国际化资源文件不合法");
-            
         }catch(Exception e)
         {
             if(localetype==null||localetype.trim().equals("")) localetype="EN";
@@ -792,7 +764,6 @@ public class ConfigLoadManager
                 if(eleCssFile==null) continue;
                 String cssfile=eleCssFile.getTextTrim();
                 if(cssfile==null||cssfile.trim().equals("")) continue;
-                
                 if(!cssfile.toLowerCase().trim().startsWith("http://"))
                 {
                     cssfile=Config.webroot+"/"+cssfile.trim();
@@ -845,27 +816,26 @@ public class ConfigLoadManager
 
     private static void initSystemConfig(Map<String,String> mBuiltInSystemConfig,Map<String,String> mSystemConfig)
     {
-        log.info("propertyOverrideLoader:"+Config.getInstance().getPropertyOverrideLoader());
         Config.webroot_abspath=Config.getInstance().getSystemConfigValue("webroot-abspath",Config.homeAbsPath);
-        Config.webroot_abspath=Tools.standardFilePath(Config.webroot_abspath);
+        Config.webroot_abspath=FilePathAssistant.getInstance().standardFilePath(Config.webroot_abspath);
 
         Config.should_createjs=Config.getInstance().getSystemConfigValue("js-create",true);
         if(Config.should_createjs)
         {
-            String createjs_path=Tools.standardFilePath(Config.webroot_abspath+"\\wabacus-generatejs\\");
+            String createjs_path=FilePathAssistant.getInstance().standardFilePath(Config.webroot_abspath+"\\wxtmpfiles\\js\\");
             File f=new File(createjs_path);
             if(f.exists())
             {
                 try
                 {
-                    Tools.delete(f,".js",false);
+                    FilePathAssistant.getInstance().delete(f,".js",false);
                 }catch(IOException e)
                 {
                     throw new WabacusConfigLoadingException("删除js文件创建路径失败",e);
                 }
             }
             log.info("报表javascript生成路径："+createjs_path);
-            f.mkdir();
+            FilePathAssistant.getInstance().checkAndCreateDirIfNotExist(Config.webroot_abspath+"\\wxtmpfiles\\js\\");
         }else
         {
             log.warn("由于js-create配置为false，不生成报表的javascript");
@@ -993,6 +963,8 @@ public class ConfigLoadManager
                 loadContainerTypesConfig(eleRoot);
                 loadReportTypesConfig(eleRoot);
                 loadInputBoxTypesConfig(eleRoot);
+                loadReportDatasetvalueProviders(eleRoot);
+                loadCommonDatasetvalueProviders(eleRoot);
                 loadDataTypesConfig(eleRoot);
                 Config.getInstance().addGlobalCss(loadCssfiles(eleRoot.element("global-cssfiles")));
                 Config.getInstance().setLstDefaultGlobalJavascriptFiles(loadJsfiles(eleRoot.element("global-jsfiles")));
@@ -1334,9 +1306,9 @@ public class ConfigLoadManager
             String filepathTmp=eleTmp.getTextTrim();
             if(filepathTmp==null||filepathTmp.trim().equals("")) continue;
             String pattern=eleTmp.attributeValue("pattern");
-            boolean isPattern=pattern!=null&&pattern.toLowerCase().trim().equals("true");//是否是正则表达式
+            boolean isPattern=pattern!=null&&pattern.toLowerCase().trim().equals("true");
             if(isPattern)
-            {
+            {//如果配置的是正则表达式
                 boolean isClasspathType=false;
                 if(Tools.isDefineKey("classpath",filepathTmp))
                 {
@@ -1349,7 +1321,7 @@ public class ConfigLoadManager
                 }else if(Tools.isDefineKey("absolute",filepathTmp))
                 {
                     filepathTmp=Tools.getRealKeyByDefine("absolute",filepathTmp).trim();
-                    filepathTmp=Tools.standardFilePath(filepathTmp);
+                    filepathTmp=FilePathAssistant.getInstance().standardFilePath(filepathTmp);
                 }else if(Tools.isDefineKey("relative",filepathTmp))
                 {
                     filepathTmp=Tools.getRealKeyByDefine("relative",filepathTmp).trim();
@@ -1375,9 +1347,9 @@ public class ConfigLoadManager
                 }else if(Tools.isDefineKey("absolute",filepathTmp))
                 {
                     filepathTmp=Tools.getRealKeyByDefine("absolute",filepathTmp).trim();
-                    filepathTmp=Tools.standardFilePath(filepathTmp);
+                    filepathTmp=FilePathAssistant.getInstance().standardFilePath(filepathTmp);
                 }else if(Tools.isDefineKey("relative",filepathTmp))
-                {
+                {//配置为相对应用根路径的相对路径
                     filepathTmp=Tools.getRealKeyByDefine("relative",filepathTmp).trim();
                     filepathTmp=WabacusAssistant.getInstance().getRealFilePath(Config.webroot_abspath,filepathTmp);
                 }else
@@ -1402,11 +1374,6 @@ public class ConfigLoadManager
             throw new WabacusConfigLoadingException("没有在wabacus.cfg.xml文件中配置数据源");
         }
         Map<String,AbsDataSource> mDataSources=new HashMap<String,AbsDataSource>();
-        
-        //$ByQXO 预先设置以便数据源间相互引用
-        Config.getInstance().setMDataSources(mDataSources);
-        //ByQXO$
-        
         Element eleDataSource=null;
         String name;
         for(int i=0;i<lstEleDatasource.size();i++)
@@ -1511,7 +1478,7 @@ public class ConfigLoadManager
 
     private static void loadContainerTypesConfig(Element root)
     {
-        Element eleContainertypes=XmlAssistant.getInstance().getSingleElementByName(root,"container-types");//root.element("pagetypes");
+        Element eleContainertypes=XmlAssistant.getInstance().getSingleElementByName(root,"container-types");
         if(eleContainertypes==null)  return;
         List lstContainertypes=eleContainertypes.elements("container-type");
         if(lstContainertypes==null||lstContainertypes.size()<=0) return;
@@ -1606,6 +1573,114 @@ public class ConfigLoadManager
         }
     }
 
+    private static void loadReportDatasetvalueProviders(Element eleRoot)
+    {
+        Element eleDatasetValueTypes=XmlAssistant.getInstance().getSingleElementByName(eleRoot,"report-datasetvalue-providers");
+        if(eleDatasetValueTypes==null) return;
+        String defaultdsvtype=eleDatasetValueTypes.attributeValue("default");
+        defaultdsvtype=defaultdsvtype==null?"":defaultdsvtype.trim();
+        Map<String,Object> mDatasetValueTypes=loadDatasetvalueTypes(eleDatasetValueTypes,AbsReportDataSetValueProvider.class);
+        if(mDatasetValueTypes==null) return;
+        Map<String,AbsReportDataSetValueProvider> mRealDatasetValueTypes=new HashMap<String,AbsReportDataSetValueProvider>();
+        for(Entry<String,Object> entryTmp:mDatasetValueTypes.entrySet())
+        {
+            mRealDatasetValueTypes.put(entryTmp.getKey(),(AbsReportDataSetValueProvider)entryTmp.getValue());
+        }
+        if(Config.getInstance().getMReportDatasetValueProviders()==null)
+        {
+            Config.getInstance().setMReportDatasetValueProviders(mRealDatasetValueTypes);
+        }else
+        {
+            Tools.copyMapData(mRealDatasetValueTypes,Config.getInstance().getMReportDatasetValueProviders(),false);
+        }
+        if(!defaultdsvtype.equals(""))
+        {
+            AbsReportDataSetValueProvider dsvTypeObj=Config.getInstance().getReportDatasetValueProvider(defaultdsvtype);
+            if(dsvTypeObj==null) throw new WabacusConfigLoadingException("配置的<report-datasetvalue-providers/>的default："+defaultdsvtype+"不存在");
+            Config.getInstance().getMReportDatasetValueProviders().put(Consts.DEFAULT_KEY,dsvTypeObj);
+        }
+    }
+    
+    private static void loadCommonDatasetvalueProviders(Element eleRoot)
+    {
+        Element eleDatasetValueTypes=XmlAssistant.getInstance().getSingleElementByName(eleRoot,"common-datasetvalue-providers");
+        if(eleDatasetValueTypes==null) return;
+        String defaultdsvtype=eleDatasetValueTypes.attributeValue("default");
+        defaultdsvtype=defaultdsvtype==null?"":defaultdsvtype.trim();
+        Map<String,Object> mDatasetValueTypes=loadDatasetvalueTypes(eleDatasetValueTypes,AbsCommonDataSetValueProvider.class);
+        if(mDatasetValueTypes==null) return;
+        Map<String,AbsCommonDataSetValueProvider> mRealDatasetValueTypes=new HashMap<String,AbsCommonDataSetValueProvider>();
+        String keyTmp;
+        for(Entry<String,Object> entryTmp:mDatasetValueTypes.entrySet())
+        {
+            keyTmp=entryTmp.getKey().trim();
+            if("class".equals(keyTmp)||"$".equals(keyTmp)||keyTmp.indexOf(" ")>0||keyTmp.indexOf(",")>=0||keyTmp.indexOf("=")>=0)
+            {
+                throw new WabacusConfigLoadingException("在<common-datasetvalue-providers/>的<datasetvalue-provider/>中配置的name："+keyTmp
+                        +"不合法，不能配置为$或class，也不能出现空格、逗号、等号");
+            }
+            mRealDatasetValueTypes.put(keyTmp,(AbsCommonDataSetValueProvider)entryTmp.getValue());
+        }
+        if(Config.getInstance().getMCommonDatasetValueProviders()==null)
+        {
+            Config.getInstance().setMCommonDatasetValueProviders(mRealDatasetValueTypes);
+        }else
+        {
+            Tools.copyMapData(mRealDatasetValueTypes,Config.getInstance().getMCommonDatasetValueProviders(),false);
+        }
+        if(!defaultdsvtype.equals(""))
+        {
+            AbsCommonDataSetValueProvider dsvTypeObj=Config.getInstance().getCommonDatasetValueProvider(defaultdsvtype);
+            if(dsvTypeObj==null) throw new WabacusConfigLoadingException("配置的<common-datasetvalue-providers/>的default："+defaultdsvtype+"不存在");
+            Config.getInstance().getMCommonDatasetValueProviders().put(Consts.DEFAULT_KEY,dsvTypeObj);
+        }
+    }
+    
+    private static Map<String,Object> loadDatasetvalueTypes(Element eleDatasetValueTypes,Class datasetTypeClass)
+    {
+        if(eleDatasetValueTypes==null) return null;
+        String defaultdsvtype=eleDatasetValueTypes.attributeValue("default");
+        defaultdsvtype=defaultdsvtype==null?"":defaultdsvtype.trim();
+        List lstEleDsvTypes=eleDatasetValueTypes.elements("datasetvalue-provider");
+        if(lstEleDsvTypes==null||lstEleDsvTypes.size()<=0) return null;
+        Map<String,Object> mDatasetValueTypes=new HashMap<String,Object>();
+        for(int i=0;i<lstEleDsvTypes.size();i++)
+        {
+            Element eleDsvType=(Element)lstEleDsvTypes.get(i);
+            if(eleDsvType==null) continue;
+            String name=eleDsvType.attributeValue("name");
+            String strclass=eleDsvType.attributeValue("class");
+            name=name==null?"":name.trim();
+            if(name.equals(""))
+            {
+                throw new WabacusConfigLoadingException("配置<datasetvalue-type/>的name属性不能为空");
+            }
+            if(mDatasetValueTypes.containsKey(name))
+            {
+                throw new WabacusConfigLoadingException("配置<datasetvalue-type/>的name属性："+name+"存在重复");
+            }
+            strclass=strclass==null?"":strclass.trim();
+            if(strclass.equals(""))
+            {
+                throw new WabacusConfigLoadingException("配置<datasetvalue-type/>的class属性不能为空");
+            }
+            Object datasetValueTypeObj=null;
+            try
+            {
+                datasetValueTypeObj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(strclass).newInstance();
+            }catch(Exception e)
+            {
+                throw new WabacusConfigLoadingException("配置<datasetvalue-type/>的class："+strclass+"类无法实例化");
+            }
+            if(!datasetTypeClass.isInstance(datasetValueTypeObj))
+            {
+                throw new WabacusConfigLoadingException("配置<datasetvalue-type/>的class："+strclass+"没有继承"+datasetTypeClass.getName()+"类");
+            }
+            mDatasetValueTypes.put(name,datasetValueTypeObj);
+        }
+        return mDatasetValueTypes;
+    }
+    
     public static Map convertPropertiesToResources(Properties props)
     {
         Map mResults=new HashMap();
@@ -1618,16 +1693,7 @@ public class ConfigLoadManager
         {
             String key=(String)itKeys.next();
             String value=(String)props.get(key);
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+            //                    value = new String(value.trim().getBytes("ISO-8859-1"), Config.encode);
             if(mResults.containsKey(key))
             {
                 throw new WabacusConfigLoadingException("配置的资源key"+key+"存在重复，加载配置文件失败");
@@ -1639,7 +1705,7 @@ public class ConfigLoadManager
 
     private static void loadAllSkinConfigProperties()
     {
-        File skinFileObj=new File(Tools.standardFilePath(Config.webroot_abspath+"\\webresources\\skin\\"));
+        File skinFileObj=new File(FilePathAssistant.getInstance().standardFilePath(Config.webroot_abspath+"\\webresources\\skin\\"));
         if(!skinFileObj.exists()||!skinFileObj.isDirectory()) return;
         File[] childFilesArr=skinFileObj.listFiles();
         if(childFilesArr.length==0) return;

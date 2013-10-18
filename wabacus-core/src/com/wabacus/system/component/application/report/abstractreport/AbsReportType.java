@@ -50,9 +50,10 @@ import com.wabacus.config.component.application.report.extendconfig.IConditionEx
 import com.wabacus.config.component.application.report.extendconfig.IDisplayExtendConfigLoad;
 import com.wabacus.config.component.application.report.extendconfig.IReportExtendConfigLoad;
 import com.wabacus.config.component.application.report.extendconfig.ISqlExtendConfigLoad;
-import com.wabacus.config.component.other.ButtonsBean;
+import com.wabacus.config.dataexport.AbsDataExportBean;
 import com.wabacus.config.dataexport.PDFExportBean;
 import com.wabacus.config.dataexport.PlainExcelExportBean;
+import com.wabacus.config.other.ButtonsBean;
 import com.wabacus.config.print.PrintSubPageBean;
 import com.wabacus.config.print.PrintTemplateElementBean;
 import com.wabacus.config.template.TemplateBean;
@@ -84,6 +85,8 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     
     protected CacheDataBean cacheDataBean;
     
+    protected AbsDataExportBean currentDataExportBean;//本次如果是做数据导出，这里存放相应本次导出类型的导出本报表的<dataexport/>配置对象
+    
     public AbsReportType(AbsContainerType parentContainerType,IComponentConfigBean comCfgBean,ReportRequest rrequest)
     {
         super(parentContainerType,comCfgBean,rrequest);
@@ -94,9 +97,6 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         }
     }
     
-    public CacheDataBean getCacheDataBean(){
-        return cacheDataBean;
-    }
     public ReportBean getReportBean()
     {
         return rbean;
@@ -110,6 +110,11 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     public void setLstReportData(List<AbsReportDataPojo> lstReportData)
     {
         this.lstReportData=lstReportData;
+    }
+
+    public AbsDataExportBean getCurrentDataExportBean()
+    {
+        return currentDataExportBean;
     }
 
     public void initUrl(IComponentConfigBean applicationConfigBean,ReportRequest rrequest)
@@ -129,8 +134,8 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         rrequest.addParamToUrl(reportid+"_MAXRECORDCOUNT","rrequest{"+reportid+"_MAXRECORDCOUNT}",true);
         rrequest.addParamToUrl(reportid+"_ALLDATASETS_RECORDCOUNT","rrequest{"+reportid+"_ALLDATASETS_RECORDCOUNT}",true);
         rrequest.addParamToUrl(reportbean.getId()+"_DYNDISPLAY_COLIDS","rrequest{"+reportbean.getId()+"_DYNDISPLAY_COLIDS}",true);
-        rrequest.addParamToUrl(reportbean.getId()+"_lazyload","rrequest{"+reportbean.getId()+"_lazyload}",true);
-        rrequest.addParamToUrl(reportbean.getId()+"_lazyloadmessage","rrequest{"+reportbean.getId()+"_lazyloadmessage}",true);
+        rrequest.addParamToUrl(reportbean.getId()+"_lazydisplaydata","rrequest{"+reportbean.getId()+"_lazydisplaydata}",true);
+        rrequest.addParamToUrl(reportbean.getId()+"_lazydisplaydata_prompt","rrequest{"+reportbean.getId()+"_lazydisplaydata_prompt}",true);
         SqlBean sbean=reportbean.getSbean();
         if(sbean==null) return;
         List<ConditionBean> lstConditions=sbean.getLstConditions();
@@ -148,8 +153,8 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         {
             initAllOtherParamsInUrl(rrequest,rbean);
             rrequest.getWResponse().addUpdateReportGuid(rbean.getGuid());
-            rrequest.addShouldAddToUrlAttributeName(rbean.getId(),rbean.getId()+"_lazyload");
-            rrequest.addShouldAddToUrlAttributeName(rbean.getId(),rbean.getId()+"_lazyloadmessage");
+            rrequest.addShouldAddToUrlAttributeName(rbean.getId(),rbean.getId()+"_lazydisplaydata");
+            rrequest.addShouldAddToUrlAttributeName(rbean.getId(),rbean.getId()+"_lazydisplaydata_prompt");
         }
         String dynDisplayColIdsAction=rrequest.getStringAttribute(rbean.getId()+"_DYNDISPLAY_COLIDS_ACTION","");
         String dynDisplayColIds="";
@@ -180,7 +185,11 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
             rrequest.addShouldAddToUrlAttributeName(rbean.getId(),rbean.getSbean().getLstConditionFromUrlNames());
             rbean.getSbean().initConditionValues(rrequest);
         }
-        initReportBeforeDoStart();
+        if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE&&rrequest.getShowtype()!=Consts.DISPLAY_ON_PRINT)
+        {
+            currentDataExportBean=this.getDataExportBeanOfMe();
+        }
+        initReportBeforeDoStart();//调用在拦截器的doStart()方法调用前的初始化方法
         if(rbean.getInterceptor()!=null)
         {
             rbean.getInterceptor().doStart(this.rrequest,this.rbean);
@@ -191,13 +200,14 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         {
             String parentReportNoData=rrequest.getStringAttribute(rbean.getId()+"_PARENTREPORT_NODATA","");
             if(parentReportNoData.toLowerCase().equals("true"))
-            {//如果父报表没有数据
+            {
                 rrequest.addParamToUrl(rbean.getId()+"_PARENTREPORT_NODATA","true",true);
                 //return;//主报表没有数据，仍要调用下面的loadReportData()方法，比如crosslist、editdetail、form报表类型需要在此方法中做其它处理
             }
         }
         currentSecretColValuesBean=new EditableReportSecretColValueBean();
         if(rrequest.getServerActionBean()!=null) rrequest.getServerActionBean().executeServerAction(this.getReportBean());
+        rrequest.releaseDBResources();
     }
 
     private void initAllOtherParamsInUrl(ReportRequest rrequest,ReportBean reportbean)
@@ -218,7 +228,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     protected void initReportAfterDoStart()
     {}
     
-    protected void initNavigateInfoFromRequest()
+    private void initNavigateInfoFromRequest()
     {
         String dynpageno=rrequest.getStringAttribute(rbean.getNavigate_reportid()+"_DYNPAGENO","");
         String pageno=rrequest.getStringAttribute(rbean.getNavigate_reportid()+"_PAGENO","1");
@@ -239,7 +249,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
             cacheDataBean.setPagesize(ipagesize);
         }else
         {
-            cacheDataBean.setPagesize(rbean.getLstPagesize().get(0));
+            cacheDataBean.setPagesize(rbean.getLstPagesize().get(0));//没有传入pagesize，则用配置的第一个pagesize
         }
         int iprevpagesize=cacheDataBean.getPagesize();
         if(!prevpagesize.equals(""))
@@ -324,20 +334,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         }else if(rrequest.getShowtype()!=Consts.DISPLAY_ON_PAGE)
         {
             cacheDataBean.setRefreshNavigateInfoType(-1);
-            int dataexportrecordcnt=-1;
-            if(rrequest.getLstComponentBeans()!=null)
-            {
-                List<String> lstTmp;
-                for(IComponentConfigBean ccbeanTmp:rrequest.getLstComponentBeans())
-                {
-                    if(ccbeanTmp.getDataExportsBean()==null) continue;
-                    lstTmp=ccbeanTmp.getDataExportsBean().getLstIncludeApplicationids(rrequest.getShowtype());
-                    if(lstTmp==null||!lstTmp.contains(rbean.getId())) continue;
-                    dataexportrecordcnt=ccbeanTmp.getDataExportsBean().getDataExportRecordcount(rbean.getId(),rrequest.getShowtype());
-                    break;
-                }
-            }
-            this.cacheDataBean.setConfigDataexportRecordcount(dataexportrecordcnt);
+            this.cacheDataBean.setConfigDataexportRecordcount(currentDataExportBean==null?-1:currentDataExportBean.getDataExportRecordcount(rbean.getId()));
         }
         this.cacheDataBean.initLoadReportDataType();
     }
@@ -380,7 +377,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                 rrequest.setAttribute(rbean.getId()+"_PARENTREPORT_NODATA","true");
                 return;
             }
-            
+            //如果父报表有数据，则清除掉下面两个值
             rrequest.addParamToUrl(rbean.getId()+"_PARENTREPORT_NODATA",null,true);
             rrequest.setAttribute(rbean.getId()+"_PARENTREPORT_NODATA","");
             
@@ -395,7 +392,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                     paramvalueTmp=dataObj.getColStringValue(cb);
                 }
                 if("".equals(paramvalueTmp))
-                {//如果这个参数没有值，则视为主报表没有数据（主要是针对editabledetail报表的添加模式，此时会有一条记录，但各列可能没有值，这样会导致从报表加载出所有数据）
+                {
                     rrequest.addParamToUrl(rbean.getId()+"_PARENTREPORT_NODATA","true",true);
                     rrequest.setAttribute(rbean.getId()+"_PARENTREPORT_NODATA","true");
                     return;
@@ -421,20 +418,17 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     public void loadReportData(boolean shouldInvokePostaction)
     {
         if(this.hasLoadedData) return;
-        
-        //$ByQXO 
-        if("true".equals(rrequest.getAttribute("no-response"))){
-            return;
-        }
         this.hasLoadedData=true;
         initLoadReportData();
         if(rbean.isSlaveReport()&&rrequest.getStringAttribute(rbean.getId()+"_PARENTREPORT_NODATA","").toLowerCase().equals("true"))
         {
             return;
         }
-        if(isLazyDataLoad()) return;
+        if(isLazyDisplayData()) return;
         this.lstReportData=ReportAssistant.getInstance().loadReportDataSet(rrequest,this,false);
+        if(this.lstReportData==null) this.lstReportData=new ArrayList<AbsReportDataPojo>();
         if(shouldInvokePostaction) doLoadReportDataPostAction();
+        rrequest.releaseDBResources();
     }
     
     protected void doLoadReportDataPostAction()
@@ -445,15 +439,14 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         }
     }
     
-    protected boolean isLazyDataLoad()
+    protected boolean isLazyDisplayData()
     {
-        String lazyload=rrequest.getStringAttribute(rbean.getId()+"_lazyload");
-        return lazyload!=null&&lazyload.trim().toLowerCase().equals("true");
+        return rrequest.getStringAttribute(rbean.getId()+"_lazydisplaydata","").toLowerCase().trim().equals("true");
     }
     
     public String getRowLabelstyleproperty()
     {
-        if(this.cacheDataBean.getDynRowLabelstyleproperty()!=null) return this.cacheDataBean.getDynRowLabelstyleproperty();
+        if(this.cacheDataBean.getDynRowLabelstyleproperty()!=null) return this.cacheDataBean.getDynRowLabelstyleproperty();//如果动态设置了，返回动态设置的
         return rbean.getDbean().getLabelstyleproperty(rrequest,false);
     }
     
@@ -470,7 +463,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     
     protected String showMetaData()
     {
-        StringBuffer resultBuf=new StringBuffer();
+        StringBuilder resultBuf=new StringBuilder();
         resultBuf.append(super.showMetaData());
         if(resultBuf.toString().trim().equals("")) return "";
         if(rbean.isSlaveReportDependsonListReport())
@@ -484,7 +477,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     
     protected String showMetaDataDisplayStringStart()
     {
-        StringBuffer resultBuf=new StringBuffer();
+        StringBuilder resultBuf=new StringBuilder();
         resultBuf.append(super.showMetaDataDisplayStringStart());
         resultBuf.append(" reportid=\"").append(rbean.getId()).append("\"");
         resultBuf.append(" reportfamily=\"").append(this.getReportFamily()).append("\"");
@@ -495,14 +488,14 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                 resultBuf.append(" isSlaveReport=\"true\"");
             }else
             {
-                resultBuf.append(" isSlaveDetailReport=\"true\"");//主报表为细览报表的从报表
+                resultBuf.append(" isSlaveDetailReport=\"true\"");
             }
         }
         if(rbean.getMDependChilds()!=null&&rbean.getMDependChilds().size()>0)
         {
             StringBuffer childReportidsBuf=new StringBuffer();
             for(String childReportidTmp:rbean.getMDependChilds().keySet())
-            {
+            {//取到依赖此细览报表的每个子报表
                 childReportidsBuf.append(childReportidTmp).append(";");
             }
             resultBuf.append(" dependingChildReportIds=\"").append(childReportidsBuf.toString()).append("\"");
@@ -558,13 +551,13 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         {
             resultBuf.append(" beforeSearchMethod=\"{method:").append(rbean.getSbean().getBeforeSearchMethod().trim()).append("}\"");
         }
-        if(this.isLazyDataLoad())
-        {
-            resultBuf.append(" lazydataload=\"true\"");
-            String lazydataloadmessage=rrequest.getStringAttribute(rbean.getId()+"_lazyloadmessage","");
+        if(this.isLazyDisplayData())
+        {//如果本次访问指定了延迟加载，则在metadata中记录此信息，因为后续有的操作仍需保留延迟加载的特征，比如列拖动、列选择、列排序、数据导出等功能
+            resultBuf.append(" lazydisplaydata=\"true\"");
+            String lazydataloadmessage=rrequest.getStringAttribute(rbean.getId()+"_lazydisplaydata_prompt","");
             if(!lazydataloadmessage.equals(""))
             {
-                resultBuf.append(" lazyloadmessage=\""+lazydataloadmessage+"\"");
+                resultBuf.append(" lazydisplaydata_prompt=\""+lazydataloadmessage+"\"");
             }
         }
         if(this.rbean.getMInputboxJsValidateBeans()!=null)
@@ -581,12 +574,12 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         return "";
     }
     
-    public abstract String getColSelectedMetadata();
+    protected abstract String getColSelectedMetadata();
     
     public void displayOnPage(AbsComponentTag displayTag)
     {
         if(!this.shouldDisplayMe())
-        {//如果没有显示权限，则返回空
+        {
             wresponse.println("&nbsp;");
             return;
         }
@@ -611,6 +604,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                     wresponse.println("<table  cellspacing='0' cellpadding='0' width=\""+width+"\" style=\"MARGIN:0;\">");
                     wresponse.println("<tr><td height=\""+rbean.getTop()+"\">&nbsp;</td></tr></table>");
                 }
+                wresponse.println(getRealHeaderFooterDisplayValue(rbean.getOuterHeaderTplBean(),"outerheader"));
                 wresponse.println("<table  cellspacing='0' cellpadding='0' width=\""+width+"\" id=\""+rbean.getGuid()+"\"");
                 if(rbean.getHeight()!=null&&!rbean.getHeight().trim().equals(""))
                 {
@@ -619,7 +613,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                 wresponse.println("><tr><td valign=\"top\">");
             }
             wresponse.println("<span id=\"WX_CONTENT_"+rbean.getGuid()+"\">");
-            wresponse.println("<form method=\"post\" onsubmit=\"return false\" AUTOCOMPLETE=\"off\"  name=\"frm"+rbean.getGuid()
+            wresponse.println("<form method=\"post\" onsubmit=\"return false\" AUTOCOMPLETE=\"off\"  name=\"frm_"+rbean.getGuid()
                     +"\"  style=\"margin:0px\">");
         }
         if((rrequest.getSlaveReportBean()==null&&!rbean.isSlaveReportDependsonListReport())
@@ -637,27 +631,29 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                     WabacusAssistant.getInstance().includeDynTpl(rrequest,this,rbean.getDynTplPath().trim());
                 }else
                 {
-                    wresponse.println(rbean.getTplBean().getDisplayValue(this.rrequest,this));
+                    rbean.getTplBean().printDisplayValue(rrequest,this);
+                    //wresponse.println(rbean.getTplBean().getDisplayValue(this.rrequest,this));
                 }
             }else
             {//被动态模板的<wx:report/>调用显示
                 if(displayTag.isDisplayByMySelf())
                 {//如果被自己的动态模板中的<wx:report/>调用显示
-                    wresponse.println(Config.getInstance().getDefaultReportTplBean().getDisplayValue(this.rrequest,this));
+                    Config.getInstance().getDefaultReportTplBean().printDisplayValue(this.rrequest,this);
+                    //wresponse.println(Config.getInstance().getDefaultReportTplBean().getDisplayValue(this.rrequest,this));//因为配置了动态模板，则不可能再配置有自己的静态模板，所以用全局默认静态模板
                 }else
                 {//被其它报表的动态模板的<wx:report/>调用显示
                     if(rbean.getDynTplPath()!=null&&!rbean.getDynTplPath().trim().equals(""))
                     {
                         if(rbean.getDynTplPath().trim().equals(Consts_Private.REPORT_TEMPLATE_NONE))
                         {
-                            wresponse.println(Config.getInstance().getDefaultReportTplBean().getDisplayValue(this.rrequest,this));
+                            Config.getInstance().getDefaultReportTplBean().printDisplayValue(this.rrequest,this);
                         }else
                         {
                             WabacusAssistant.getInstance().includeDynTpl(rrequest,this,rbean.getDynTplPath().trim());
                         }
                     }else
                     {
-                        wresponse.println(rbean.getTplBean().getDisplayValue(this.rrequest,this));
+                        rbean.getTplBean().printDisplayValue(this.rrequest,this);
                     }
                 }
             }
@@ -670,6 +666,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
             if(this.getParentContainerType()!=null)
             {
                 wresponse.println("</td></tr></table>");
+                wresponse.println(getRealHeaderFooterDisplayValue(rbean.getOuterFooterTplBean(),"outerfooter"));
                 if(rbean.getBottom()!=null&&!rbean.getBottom().trim().equals(""))
                 {
                     wresponse.println("<table  cellspacing='0' cellpadding='0' width=\""+width+"\" style=\"MARGIN:0;\">");
@@ -677,6 +674,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                 }
             }
         }
+        rrequest.releaseDBResources();
     }
 
     protected String getReportDataWidthOnPage()
@@ -687,8 +685,6 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
             return width;
         }
 //        width=this.getParentContainerType().getChildDisplayWidth(rbean);
-
-
         return "100%";
     }
     
@@ -716,18 +712,19 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         }
         if(templateObj instanceof TemplateBean)
         {
-            wresponse.println(((TemplateBean)templateObj).getDisplayValue(this.rrequest,this));
+            ((TemplateBean)templateObj).printDisplayValue(this.rrequest,this);
         }else if(templateObj!=null&&!templateObj.toString().trim().equals(""))
         {
             WabacusAssistant.getInstance().includeDynTpl(rrequest,this,templateObj.toString().trim());
         }else
         {
-            wresponse.println(Config.getInstance().getDefaultDataExportTplBean().getDisplayValue(this.rrequest,this));
+            Config.getInstance().getDefaultDataExportTplBean().printDisplayValue(this.rrequest,this);
         }
         if(isFirstime)
         {
             wresponse.println("</td></tr></table>");
         }
+        rrequest.releaseDBResources();
     }
     
     public String getReportDataInJsonString()
@@ -774,7 +771,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
             for(ColBean cbeanTmp:lstAllColBeans)
             {
                 if(cbeanTmp.isControlCol()||cbeanTmp.getProperty()==null||cbeanTmp.getProperty().trim().equals("")) continue;
-                if(dsbean.getDatasetValueBeanById(cbeanTmp.getDatasetValueId())==null) continue;//当前<dataset/>不查本<col/>的数据
+                if(dsbean.getDatasetValueBeanOfCbean(cbeanTmp)==null) continue;//当前<dataset/>不查本<col/>的数据
                 resultBuf.append("\""+cbeanTmp.getProperty()).append("\":{");
                 resultBuf.append("\"label\":\"").append(Tools.jsParamEncode(cbeanTmp.getLabel(rrequest))).append("\",");
                 resultBuf.append("\"column\":\"").append(cbeanTmp.getColumn()).append("\",");
@@ -795,6 +792,22 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         return rbean.getDbean().getLstCols();
     }
     
+    private AbsDataExportBean getDataExportBeanOfMe()
+    {
+        List<String> lstTmp;
+        AbsDataExportBean exportBeanTmp;
+        for(IComponentConfigBean ccbeanTmp:rrequest.getLstComponentBeans())
+        {//本次导出的所有组件
+            if(ccbeanTmp.getDataExportsBean()==null) continue;
+            lstTmp=ccbeanTmp.getDataExportsBean().getLstIncludeApplicationids(rrequest.getShowtype());
+            if(lstTmp==null||!lstTmp.contains(rbean.getId())) continue;
+            exportBeanTmp=ccbeanTmp.getDataExportsBean().getDataExportBean(rrequest.getShowtype());
+            if(exportBeanTmp!=null) return exportBeanTmp;
+        }
+        //如果导出本报表的所有组件都没有配置<dataexport/>控制它的导出行为，则用本报表自己的<dataexport/>配置的信息控制
+        return rbean.getDataExportsBean()!=null?rbean.getDataExportsBean().getDataExportBean(rrequest.getShowtype()):null;
+    }
+    
     protected abstract boolean isHiddenCol(ColBean cbean);
     
     protected PlainExcelExportBean pedebean;
@@ -807,16 +820,17 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     
     protected int excelRowIdx=0;
     
-    public Workbook displayOnPlainExcel(Workbook workbook)
+    protected int excelGlobalRowIdx=0;
+    
+    protected int titleRowCount=0;
+    
+    public void displayOnPlainExcel(Workbook workbook)
     {
-        if(!rrequest.checkPermission(rbean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY)) return workbook;
+        if(!rrequest.checkPermission(rbean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY)) return;
         if(rrequest.checkPermission(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_PLAINEXCEL+"}",Consts.PERMISSION_TYPE_DISABLED)
                 ||!rrequest.checkPermission(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_PLAINEXCEL+"}",Consts.PERMISSION_TYPE_DISPLAY))
-            return workbook;
-        if(rbean.getDataExportsBean()!=null)
-        {
-            pedebean=(PlainExcelExportBean)rbean.getDataExportsBean().getDataExportBean(Consts.DISPLAY_ON_PLAINEXCEL);
-        }
+            return;
+        pedebean=(PlainExcelExportBean)this.currentDataExportBean;
         if(pedebean!=null)
         {
             this.sheetsize=pedebean.getPlainexcelsheetsize();
@@ -824,8 +838,8 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         {
             this.sheetsize=Config.getInstance().getPlainexcelSheetsize();
         }
-        return showReportOnPlainExcel(workbook);
-        
+        showReportOnPlainExcel(workbook);
+        rrequest.releaseDBResources();
     }
     
     protected void createNewSheet(Workbook workbook,int defaultcolumnwidth)
@@ -835,19 +849,19 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         if(title==null||title.trim().equals("")) title="Sheet_"+(sheetIdx+100);
         sheetIdx++;
         excelSheet=workbook.createSheet(title);
-//        excelSheet.setDefaultColumnWidth(defaultcolumnwidth);
+        excelSheet.setDefaultColumnWidth(defaultcolumnwidth);
         excelRowIdx=0;
     }
     
-    public abstract Workbook showReportOnPlainExcel(Workbook workbook);
+    public abstract void showReportOnPlainExcel(Workbook workbook);
 
     protected PDFExportBean pdfbean;
     
     protected Document document;
     
-    protected float pdfwidth;//配置的报表导出到PDF时的显示宽度
+    protected float pdfwidth;
     
-    protected int pdfpagesize;
+    protected int pdfpagesize;//配置的导出到PDF时每页显示的记录数
     
     protected boolean isFullpagesplit;
     
@@ -859,13 +873,12 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     {
         if(!rrequest.checkPermission(rbean.getId(),null,null,Consts.PERMISSION_TYPE_DISPLAY)) return null;
         if(rrequest.checkPermission(rbean.getId(),Consts.BUTTON_PART,"type{"+Consts.DATAEXPORT_PDF+"}",Consts.PERMISSION_TYPE_DISABLED)) return null;
-        if(this.lstReportData==null||this.lstReportData.size()==0) return null;
         if(rrequest.isPdfPrintAction())
         {
             pdfbean=rbean.getPdfPrintBean();
         }else if(rbean.getDataExportsBean()!=null)
         {//是PDF导出，且配置有PDF的<dataexport/>
-            pdfbean=(PDFExportBean)rbean.getDataExportsBean().getDataExportBean(Consts.DATAEXPORT_PDF);
+            pdfbean=(PDFExportBean)this.currentDataExportBean;
         }
         document=new Document();
         if(pdfbean!=null)
@@ -877,7 +890,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         }else
         {//如果没有配置pdf的<dataexport/>，则用报表的页大小
             pdfpagesize=rbean.getLstPagesize().get(0);
-            isFullpagesplit=true;
+            isFullpagesplit=true;//默认每页都显示所有内容
         }
         if(pdfwidth<=10f) pdfwidth=535f;
         try
@@ -903,10 +916,11 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                 }
             }
             if(pdfbean!=null&&pdfbean.getInterceptorObj()!=null)
-            {//如果配置了拦截器
+            {
                 pdfbean.getInterceptorObj().afterDisplayReportWithoutTemplate(document,this);
             }
             document.close();
+            rrequest.releaseDBResources();
             return baosResult;
         }catch(Exception e)
         {
@@ -944,7 +958,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
             if(this.pdfrowindex==0)
             {
                 if(pdfbean!=null&&pdfbean.getInterceptorObj()!=null)
-                {
+                {//如果配置了拦截器
                     pdfbean.getInterceptorObj().beforeDisplayPdfPageWithoutTemplate(document,this);
                 }
                 showTitleOnPdf();
@@ -990,21 +1004,12 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         PdfPCell cell=new PdfPCell(new Paragraph(value,dataheadFont));
         cell.setColspan(colspan);
         cell.setRowspan(rowspan);
-
 //        {
-
-
-
-
-
-
-
         cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
-        
         cell.setHorizontalAlignment(align);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         if(pdfbean!=null&&pdfbean.getInterceptorObj()!=null)
-        {
+        {//如果配置了拦截器
             pdfbean.getInterceptorObj().displayPerColDataWithoutTemplate(this,configbean,-1,value,cell);
         }
         pdfDataTable.addCell(cell);
@@ -1022,15 +1027,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         PdfPCell cell=new PdfPCell(new Paragraph(value,dataFont));
         cell.setColspan(colspan);
         cell.setRowspan(rowspan);
-
-
-//            Image img = Image.getInstance("D:\\1283840200000.jpg");
-
-
-
-
-
-        
+//        }
         cell.setHorizontalAlignment(align);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         if(pdfbean!=null&&pdfbean.getInterceptorObj()!=null)
@@ -1059,7 +1056,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         }
         if(lstPrintPagebeans==null||lstPrintPagebeans.size()==0)
         {//没有传入在<print></print>中配置的模板，则用全局默认打印模板
-            this.wresponse.println(Config.getInstance().getDefaultReportPrintTplBean().getDisplayValue(rrequest,this));
+            Config.getInstance().getDefaultReportPrintTplBean().printDisplayValue(rrequest,this);
         }else
         {
             PrintTemplateElementBean ptEleBean;
@@ -1070,7 +1067,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                     ptEleBean=entryTmp.getValue();
                     if(ptEleBean.getType()==PrintTemplateElementBean.ELEMENT_TYPE_STATICTPL)
                     {
-                        this.wresponse.println(((TemplateBean)ptEleBean.getValueObj()).getDisplayValue(rrequest,this));
+                        ((TemplateBean)ptEleBean.getValueObj()).printDisplayValue(rrequest,this);
                     }else if(ptEleBean.getType()==PrintTemplateElementBean.ELEMENT_TYPE_DYNTPL)
                     {
                         WabacusAssistant.getInstance().includeDynTpl(rrequest,this,(String)ptEleBean.getValueObj());
@@ -1087,14 +1084,25 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     protected int[] getDisplayRowInfo()
     {
         if(lstReportData==null) return new int[]{0,0};
-        int startidx=0;
-        int displayRowcount=this.lstReportData.size();
+        int startidx=0,displayRowcount=this.lstReportData.size();
         if(rrequest.getShowtype()==Consts.DISPLAY_ON_PRINT&&this.cacheDataBean.getPrintPagesize()>0)
         {
             startidx=this.cacheDataBean.getPrintPageno()*this.cacheDataBean.getPrintPagesize();
             if(startidx>=displayRowcount) return new int[] { 0, 0 };
             displayRowcount=startidx+this.cacheDataBean.getPrintPagesize();
             if(displayRowcount>this.lstReportData.size()) displayRowcount=this.lstReportData.size();
+        }else if(rbean.isLazyLoadReportData(rrequest))
+        {
+            if(this.cacheDataBean.getRecordcount()<=0)
+            {
+                displayRowcount=0;
+            }else if(this.cacheDataBean.isLoadAllReportData())
+            {
+                displayRowcount=this.cacheDataBean.getRecordcount();
+            }else
+            {//显示一页数据
+                displayRowcount=this.cacheDataBean.getPagesize();
+            }
         }
         return new int[]{startidx,displayRowcount};
     }
@@ -1155,7 +1163,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
         String searchbox_outer_style=Config.getInstance().getResources().getString(rrequest,rbean.getPageBean(),Consts.SEARCHBOX_OUTERSTYLE_KEY,false);
         if(searchbox_outer_style!=null&&!searchbox_outer_style.trim().equals(""))
         {
-            searchbox=Tools.replaceAll(searchbox_outer_style,"%SEARCHBOX_CONTENT%",searchbox);//将搜索栏内容占位符替换成真正的显示内容
+            searchbox=Tools.replaceAll(searchbox_outer_style,"%SEARCHBOX_CONTENT%",searchbox);
         }
         return searchbox;
     }
@@ -1188,13 +1196,12 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                         tmpBuf.append("</td></tr>");
                     }
                     if(!tmpBuf.toString().trim().equals(""))
-                    {
+                    {//当前查询条件参与本次显示
                         if(hasDisplayConditionInThisRow)
                         {
                             resultBuf.append("</td></tr>");
                         }
                         resultBuf.append(tmpBuf.toString());
-                        
                         resultBuf.append("<tr><td align='left'>");
                         hasDisplayConditionInThisRow=false;
                     }else if(conbeanTmp.isBr()&&hasDisplayConditionInThisRow)
@@ -1213,7 +1220,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                         resultBuf.append(WabacusAssistant.getInstance().getSpacingDisplayString(conbeanTmp.getRight()));
                     }
                     if(conbeanTmp.isBr()&&hasDisplayConditionInThisRow)
-                    {//如果显示完当前查询条件输入框后，进行换行
+                    {
                         resultBuf.append("</td></tr><tr><td align='left'>");
                         hasDisplayConditionInThisRow=false;
                     }
@@ -1235,7 +1242,7 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
             if(!buttonStr.equals(""))
             {
                 if(resultBuf.length()==0||resultBuf.toString().endsWith("</td></tr>"))
-                {
+                {//没有显示查询条件输入框
                     resultBuf.append("<tr><td align='left'>");
                 }
                 resultBuf.append(WabacusAssistant.getInstance().getSpacingDisplayString(bbeans.getButtonspacing()));
@@ -1345,6 +1352,11 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
     
     protected abstract String getDefaultNavigateKey();
 
+    public boolean isSupportHorizontalDataset(ReportBean reportbean)
+    {
+        return true;
+    }
+    
     public String getReportFamily()
     {
         return "";
@@ -1432,11 +1444,17 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
             List<String> lstProperties=new ArrayList<String>();
             if(lstColBeans!=null&&lstColBeans.size()>0)
             {
-                boolean isAllAlwayOrNeverCol=true;//是否全部是displaytype为always或never的<col/>
+                boolean isPageAllAlwayOrNeverCol=true,isDataexportAllAlwayOrNeverCol=true;//是否全部是displaytype为always或never的<col/>
                 for(ColBean cbean:lstColBeans)
                 {
-                    if(Consts.COL_DISPLAYTYPE_INITIAL.equals(cbean.getDisplaytype())||Consts.COL_DISPLAYTYPE_OPTIONAL.equals(cbean.getDisplaytype()))
-                        isAllAlwayOrNeverCol=false;
+                    if(Consts.COL_DISPLAYTYPE_INITIAL.equals(cbean.getDisplaytype(true))||Consts.COL_DISPLAYTYPE_OPTIONAL.equals(cbean.getDisplaytype(true)))
+                    {
+                        isPageAllAlwayOrNeverCol=false;
+                    }
+                    if(Consts.COL_DISPLAYTYPE_INITIAL.equals(cbean.getDisplaytype(false))||Consts.COL_DISPLAYTYPE_OPTIONAL.equals(cbean.getDisplaytype(false)))
+                    {
+                        isDataexportAllAlwayOrNeverCol=false;
+                    }
                     if(cbean.getProperty()==null||cbean.getProperty().trim().equals("")) continue;
                     if(cbean.isNonValueCol()||cbean.isSequenceCol()||cbean.isControlCol()) continue;
                     if(lstProperties.contains(cbean.getProperty()))
@@ -1445,7 +1463,8 @@ public abstract class AbsReportType extends AbsApplicationType implements IRepor
                     }
                     lstProperties.add(cbean.getProperty());
                 }
-                if(isAllAlwayOrNeverCol) dbean.setColselect(false);
+                if(isPageAllAlwayOrNeverCol) dbean.setPageColselect(false);//这种情况就不提供列选择功能
+                if(isDataexportAllAlwayOrNeverCol) dbean.setDataexportColselect(false);
             }
         }
         return 1;

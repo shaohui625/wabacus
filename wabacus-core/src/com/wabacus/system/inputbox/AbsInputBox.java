@@ -73,7 +73,7 @@ public abstract class AbsInputBox implements Cloneable
 
     private String afterdescription;
 
-    private Map<String,String> mDynAfterdescriptionParts;
+    private Map<String,String> mDynAfterdescriptionParts;//标题afterdescription中的动态部分，key为此动态值的在afterdescription中的占位符，值为request{xxx}、session{key}、url{key}等等形式，用于运行时得到真正值
 
     private String tip;
 
@@ -85,7 +85,7 @@ public abstract class AbsInputBox implements Cloneable
 
     private String jsvalidatetype;
 
-    private String servervalidate;//服务器端校验
+    private String servervalidate;
 
     private String servervalidatetype;
 
@@ -97,7 +97,7 @@ public abstract class AbsInputBox implements Cloneable
 
     private AutoCompleteBean autoCompleteBean;
 
-    private List<String> lstChildids;
+    private List<String> lstChildids;//依赖当前输入框数据的所有下拉框ID
 
     protected int fillmode=1;
 
@@ -421,49 +421,15 @@ public abstract class AbsInputBox implements Cloneable
         return inputboxid;
     }
 
-    
     //    {
-    
-    
-    
-    
-    
     //            {//没有在styleproperty中指定onkeypress事件，则加上默认的事件
-    
     //                {//如果要显示输入框边框，由按回车键时，跳到下一个输入框（一般是输入框显示在表单中的情况）
-    
-    
     //                {//如果不显示输入框边框，说明输入框只是做为其它可编辑元素的一部分，此时按回车键时，失去焦点即可（一般是editablelist2/editabledetail2的情况）
-    
-    
-    
-    
-    
-    
-    //            resultStr=resultStr+"if(displaymode==1){boxstr=boxstr+\" onkeypress='return onInputBoxKeyPress(event)' \";}";
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    //                }
+    //    }
     //        {//如果是被getDisplayStringValue()调用
-    
-    
-    
-    
-    
     //                classname="cls-inputbox-textbox2";
-    
-    
     //        {//如果是被filledInContainer()调用
-    
-    
-    
-    
     protected String addReadonlyToStyleProperty1(String style_property)
     {
         if(style_property==null)
@@ -501,7 +467,6 @@ public abstract class AbsInputBox implements Cloneable
                 this.autoCompleteBean.loadConfig(eleAutocompleteBean);
             }else
             {//是查询条件上的自动填充输入框，则不用加载<autocomplete/>里面的配置，只要生成一个此对象标识一下有这个功能
-                
             }
         }
         String beforedescription=eleInputboxBean.attributeValue("beforedescription");
@@ -645,7 +610,7 @@ public abstract class AbsInputBox implements Cloneable
 
         if(this.autoCompleteBean!=null) this.autoCompleteBean.doPostLoad();
         if(this.autoCompleteBean!=null)
-        {
+        {//这里之所以再判断一下，是因为上面的doPostLoad(this)方法可能将此对象设置为null。下面将在本输入框输入值后自动填充其它输入框的事件加入styleproperty中
             owner.getReportBean().addInputboxWithAutoComplete(this);
             ColBean cbOwner=(ColBean)((EditableReportColBean)owner).getOwner();
             styleproperty=Tools.mergeHtmlTagPropertyString(styleproperty,
@@ -732,7 +697,7 @@ public abstract class AbsInputBox implements Cloneable
         {
             this.owner.setServerValidateBean(svbean);
             if(!VALIDATE_TYPE_ONSUBMIT.equals(this.servervalidatetype))
-            {//当前校验不是只在提交时进行校验，即在onblur时也要进行校验
+            {
                 this.owner.getReportBean().addServerValidateBeanOnBlur(this.owner.getInputBoxId(),svbean);
                 String onblur="onblur=\"wx_onblurValidate('"+this.owner.getReportBean().getGuid()+"',this,";
                 onblur+=(this.owner instanceof ConditionBean)+",true,";
@@ -800,7 +765,7 @@ public abstract class AbsInputBox implements Cloneable
             this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,"title=\""+this.tip+"\"",1);
         }
         if(!(this.owner instanceof ConditionBean))
-        {
+        {//不是查询条件上的输入框
             this.styleproperty=Tools.mergeHtmlTagPropertyString(this.styleproperty,"onblur=\"try{addInputboxDataForSaving('"
                     +this.getOwner().getReportBean().getGuid()+"',this);}catch(e){logErrorsAsJsFileLoad(e);}\"",1);
         }

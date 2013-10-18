@@ -26,10 +26,12 @@ import java.util.Map;
 import com.wabacus.config.component.application.report.AbsConfigBean;
 import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.DisplayBean;
+import com.wabacus.config.component.application.report.SqlBean;
 import com.wabacus.config.component.application.report.extendconfig.AbsExtendConfigBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.system.assistant.ListReportAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsListReportType;
+import com.wabacus.system.component.application.report.configbean.ListReportColPositionBean;
 import com.wabacus.util.Consts;
 import com.wabacus.util.Tools;
 
@@ -39,11 +41,9 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
     
     private boolean containsClickOrderBy;
     
-    private String defaultFirstColid;
+    private ListReportColPositionBean defaultPageColPositionBean;
     
-    private String defaultLastColId;
-    
-    private int defaultColumnCount;
+    private ListReportColPositionBean defaultDataExportColPositionBean;
     
     private int rowgrouptype;
 
@@ -57,7 +57,7 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
     
     private List<String> lstTreeclosedimgs;
     
-    private List<String> lstTreexpandimgs;
+    private List<String> lstTreexpandimgs;//各层树枝节点展开时显示的前缀图片
     
     private String treeleafimg;
     
@@ -69,7 +69,7 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
 
     private List<Map<String,String>> lstRowgroupColsAndOrders;
 
-    private List<ColBean> lstRoworderValueCols;//存放本报表中所有配置了rowordervalue为true的列
+    private List<ColBean> lstRoworderValueCols;
     
     private Map<String,AbsListReportFilterBean> mAllFilterBeans;
     
@@ -94,34 +94,14 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
         this.containsClickOrderBy=containsClickOrderBy;
     }
 
-    public String getDefaultFirstColid()
+    public ListReportColPositionBean getDefaultPageColPositionBean()
     {
-        return defaultFirstColid;
+        return defaultPageColPositionBean;
     }
 
-    public void setDefaultFirstColid(String defaultFirstColid)
+    public ListReportColPositionBean getDefaultDataExportColPositionBean()
     {
-        this.defaultFirstColid=defaultFirstColid;
-    }
-
-    public String getDefaultLastColId()
-    {
-        return defaultLastColId;
-    }
-
-    public void setDefaultLastColId(String defaultLastColId)
-    {
-        this.defaultLastColId=defaultLastColId;
-    }
-
-    public int getDefaultColumnCount()
-    {
-        return defaultColumnCount;
-    }
-
-    public void setDefaultColumnCount(int defaultColumnCount)
-    {
-        this.defaultColumnCount=defaultColumnCount;
+        return defaultDataExportColPositionBean;
     }
 
     public String getRowgroupDatasetId()
@@ -135,7 +115,7 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
         {
             this.rowgroupDatasetId=rowgroupDatasetId;
         }else
-        {
+        {//已经加载过参与分组的列
             this.rowgroupDatasetId=this.rowgroupDatasetId==null?"":this.rowgroupDatasetId.trim();
             rowgroupDatasetId=rowgroupDatasetId==null?"":rowgroupDatasetId.trim();
             if(!rowgroupDatasetId.equals(this.rowgroupDatasetId))
@@ -352,7 +332,6 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
         this.lstRowgroupColsColumn=null;
         this.lstRowgroupColsAndOrders=null;
         this.rowgrouptype=0;
-
     }
 
     public AbsExtendConfigBean clone(AbsConfigBean owner)
@@ -376,16 +355,14 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
     public void doPostLoad()
     {
         DisplayBean dbean=(DisplayBean)this.getOwner();
-        String[] strs=ListReportAssistant.getInstance().calColPosition(null,this,dbean.getLstCols(),null);
-        this.defaultFirstColid=strs[0];
-        this.defaultLastColId=strs[1];
-        this.setDefaultColumnCount(Integer.parseInt(strs[2]));
+        this.defaultPageColPositionBean=ListReportAssistant.getInstance().calColPosition(null,this,dbean.getLstCols(),null,true);
+        this.defaultDataExportColPositionBean=ListReportAssistant.getInstance().calColPosition(null,this,dbean.getLstCols(),null,false);
         AbsListReportColBean alrcbean;
         AbsListReportBean alrbean=(AbsListReportBean)dbean.getReportBean().getExtendConfigDataForReportType(AbsListReportType.KEY);
         boolean isFirstCol=true;
         for(ColBean cbean:dbean.getLstCols())
         {
-            if(cbean.getDisplaytype().equals(Consts.COL_DISPLAYTYPE_HIDDEN)) continue;
+            if(cbean.getDisplaytype(true).equals(Consts.COL_DISPLAYTYPE_HIDDEN)) continue;
             String borderstyle=cbean.getBorderStylePropertyOnColBean();
             if(borderstyle!=null&&!borderstyle.trim().equals(""))
             {
@@ -403,11 +380,12 @@ public class AbsListReportDisplayBean extends AbsExtendConfigBean
             isFirstCol=false;
             alrcbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
             if(alrcbean==null) continue;
-            if(alrcbean.isRequireClickOrderby())
+            SqlBean sbean=dbean.getReportBean().getSbean();
+            if(alrcbean.isRequireClickOrderby()&&cbean.getLstDatasetValueids()!=null)
             {
-                if(cbean.getDatasetValueId()!=null&&!cbean.getDatasetValueId().trim().equals(""))
+                for(String belongDsidTmp:cbean.getLstDatasetValueids())
                 {
-                    if(dbean.getReportBean().getSbean().isExistDependentDataset(cbean.getDatasetValueId()))
+                    if(sbean.isExistDependentDataset(belongDsidTmp))
                     {
                         throw new WabacusConfigLoadingException("加载报表"+cbean.getReportBean().getPath()+"的列"+cbean.getLabel(null)
                                 +"失败，当前列是从子数据集中取数据，不能为它配置列排序功能");

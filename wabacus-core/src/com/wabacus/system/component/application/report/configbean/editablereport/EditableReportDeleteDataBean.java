@@ -42,7 +42,7 @@ public class EditableReportDeleteDataBean extends AbsEditableReportEditDataBean
 
     protected void setParamBeanInfoOfColBean(ColBean cbUpdateSrc,EditableReportParamBean paramBean,String configColProperty,String reportTypeKey)
     {
-        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbUpdateSrc.getDisplaytype()))
+        if(Consts.COL_DISPLAYTYPE_HIDDEN.equals(cbUpdateSrc.getDisplaytype(true)))
         {
             if(configColProperty.endsWith("__old")) configColProperty=configColProperty.substring(0,configColProperty.length()-"__old".length());
         }else if(configColProperty.endsWith("__old"))

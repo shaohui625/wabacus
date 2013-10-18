@@ -55,7 +55,7 @@ public class PDFExportBean extends AbsDataExportBean
     
     private boolean isPrint;
     
-    private AbsPdfInterceptor interceptorObj;
+    private AbsPdfInterceptor interceptorObj;//拦截器对象
     
     public PDFExportBean(IComponentConfigBean owner,String type)
     {
@@ -217,13 +217,10 @@ public class PDFExportBean extends AbsDataExportBean
             {
                 AbsButtonType buttonObj=Config.getInstance().getResourceButton(null,this.owner,
                         Consts.M_PRINT_DEFAULTBUTTONS.get(Consts.PRINTTYPE_PRINT),PrintButton.class);
-                if(buttonObj.getName()==null||buttonObj.getName().trim().equals(""))
-                {
-                    buttonObj.setName(PrintButton.class.getName()+"."+(int)(Math.random()*10000));
-                }
+                buttonObj.setDefaultNameIfNoName();
                 if(this.owner instanceof AbsContainerConfigBean)
                 {
-                    buttonObj.setPosition("top");//对于容器，默认位置在顶部
+                    buttonObj.setPosition("top");
                 }
                 ComponentConfigLoadManager.addButtonToPositions(this.owner,buttonObj);
             }

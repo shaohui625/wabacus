@@ -25,41 +25,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import com.wabacus.config.ConfigLoadManager;
-import com.wabacus.config.component.IComponentConfigBean;
 import com.wabacus.config.component.application.report.ReportBean;
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
-import com.wabacus.config.component.application.report.SqlBean;
-import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.IConnection;
-import com.wabacus.system.ReportRequest;
-import com.wabacus.system.buttons.AbsButtonType;
-import com.wabacus.system.component.application.report.configbean.crosslist.CrossListReportDynDatasetBean;
-import com.wabacus.system.component.application.report.configbean.editablereport.AbsEditSqlActionBean;
-import com.wabacus.system.component.application.report.configbean.editablereport.DeleteSqlActionBean;
-import com.wabacus.system.component.application.report.configbean.editablereport.EditActionGroupBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.InsertSqlActionBean;
 import com.wabacus.system.component.application.report.configbean.editablereport.UpdateSqlActionBean;
-import com.wabacus.system.dataset.IReportDataSet;
-import com.wabacus.system.dataset.ISqlDataSetBuilder;
+import com.wabacus.system.dataset.report.value.sqlconvertor.AbsConvertSQLevel;
 import com.wabacus.system.datatype.IDataType;
-import com.wabacus.system.inputbox.option.SQLOptionDatasource;
-import com.wabacus.system.inputbox.option.TypepromptOptionBean;
 import com.wabacus.util.Tools;
 
 public abstract class AbsDatabaseType
 {
-    private static Log log=LogFactory.getLog(AbsDatabaseType.class);
+    public abstract String constructSplitPageSql(AbsConvertSQLevel convertSqlObj);
 
-    public abstract String constructSplitPageSql(ReportDataSetValueBean svbean);
-
-    public abstract String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby);
+    public abstract String constructSplitPageSql(AbsConvertSQLevel convertSqlObj,String dynorderby);
 
     public abstract String getSequenceValueByName(String sequencename);
     
@@ -316,97 +295,4 @@ public abstract class AbsDatabaseType
                     pstmt.setString(iindex,str2);
             }
         }*/
-    
-//$ByQXO 数据存储可扩展性修改
-   public abstract String parseDeleteSql(DeleteSqlActionBean actionBean,String reportTypeKey,String actionscript);
-
-
-   public  abstract void updateData(Map<String,String> mRowData,
-            Map<String,String> mParamValues,ReportBean rbean,
-            ReportRequest rrequest,AbsEditSqlActionBean actionBean) throws SQLException;
-
-   public   void updateDataForDeleteSqlAction(Map<String,String> mRowData,
-           Map<String,String> mParamValues,ReportBean rbean,
-           ReportRequest rrequest,AbsEditSqlActionBean actionBean) throws SQLException{
-       updateData(mRowData,mParamValues,rbean,rrequest,actionBean);
-   }
-   
-   
-    public abstract Object getSequnceValue(IConnection conn,String seqname) throws SQLException;
-    
-    public abstract ISqlDataSetBuilder getISQLTypeBuilder(ReportDataSetValueBean bean,String statementtype);
-    public abstract void parseActionscripts(EditActionGroupBean eagbean,String reportTypeKey);
-    
-    public abstract void parseConditionInSql(ReportDataSetValueBean bean,String value);
-    
-    public abstract void doPostLoadSql(ReportDataSetValueBean rdsbean,boolean isListReportType);
-    
-    public abstract void constructSqlForListType(SqlBean sqlbean); //.../report/abstractreport/AbsListReportType.constructSqlForListType
-    
-    public abstract void doPostLoadSQLOptionDatasource(TypepromptOptionBean tpBean);
-    
-    
-    public abstract  Object getPromptDataList(ReportRequest rrequest, ReportBean rbean,
-            SQLOptionDatasource typeObj, String typedata);
-    
-    public abstract String parseAndTrimScript(String content);
-    
-    public  String parseButtonsClickevent(IComponentConfigBean ccbean,AbsButtonType buttonObj,String clickevent){
-        if(clickevent.indexOf('\"')>=0)
-        {
-            throw new WabacusConfigLoadingException("加载组件"+ccbean.getPath()+"的按钮"+buttonObj.getName()+"失败，按钮事件中不能用双引号，只能用单引用，如果有多级，可以加上转义字符\\");
-        }
-        return parseAndTrimScript(clickevent.trim());        
-    }
-    
-    public void doPostLoadCrossListReportDynDatasetBean (CrossListReportDynDatasetBean crdBean){
-        crdBean.doPostLoadCrossListReportDynDatasetBean(crdBean);
-    }
-    
-    
-    
-    public void doPostLoadReportDataSetValueBean(ReportDataSetValueBean valuebean,String sqlValue){
-        sqlValue=parseAndTrimScript(sqlValue);
-        final ReportBean reportBean=valuebean.getReportBean();
-        if(sqlValue==null||sqlValue.trim().equals(""))
-        {
-            throw new WabacusConfigLoadingException("加载报表"+reportBean.getPath()+"的<sql/>下的<value/>配置失败，没有为<value/>标签配置查询数据的SQL语句或JAVA类");
-        }
-        sqlValue=sqlValue.trim();
-        while(sqlValue.endsWith(";"))
-        {
-            sqlValue=sqlValue.substring(0,sqlValue.length()-1).trim();
-        }
-        if(Tools.isDefineKey("class",sqlValue))
-        {
-            Object datasetObj=null;
-            try
-            {
-                datasetObj=ConfigLoadManager.currentDynClassLoader.loadClassByCurrentLoader(Tools.getRealKeyByDefine("class",sqlValue)).newInstance();
-            }catch(Exception e)
-            {
-                throw new WabacusConfigLoadingException("为报表"+reportBean.getPath()+"配置的数据集类"+sqlValue+"无法实例化",e);
-            }
-            if(!(datasetObj instanceof IReportDataSet))
-            {
-                throw new WabacusConfigLoadingException("为报表"+reportBean.getPath()+"配置的数据集类"+sqlValue+"没有实现"
-                        +IReportDataSet.class.getName()+"接口");
-            }
-            valuebean.setCustomizeDatasetObj((IReportDataSet)datasetObj);
-        }else
-        {
-            if(sqlValue.startsWith("{")&&sqlValue.endsWith("}")) sqlValue=sqlValue.substring(1,sqlValue.length()-1).trim();
-            valuebean.setValue(sqlValue);
-        }
-    }
-    
-//    protected String formatSqlString(String sqlValue)
-//    {
-//        sqlValue=Tools.formatStringBlank(sqlValue);
-//        return sqlValue;
-//    }
-    
-    //ByQXO$
-
-
 }

@@ -21,6 +21,10 @@ package com.wabacus.system.component.application.report.abstractreport.configbea
 import java.util.ArrayList;
 import java.util.List;
 
+import com.wabacus.config.component.application.report.ReportBean;
+import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.util.Tools;
+
 public class AbsListReportSubDisplayRowBean implements Cloneable
 {
     private int displaytype=AbsListReportSubDisplayBean.SUBROW_DISPLAYTYPE_REPORT;
@@ -34,9 +38,39 @@ public class AbsListReportSubDisplayRowBean implements Cloneable
         return displaytype;
     }
 
-    public void setDisplaytype(int displaytype)
+    public void setDisplaytype(ReportBean rbean,String displaytype)
     {
-        this.displaytype=displaytype;
+        boolean isDisplayPerpage=false, isDisplayReport=false;
+        displaytype=displaytype.toLowerCase().trim();
+        if(!displaytype.equals(""))
+        {
+            List<String> lstTmp=Tools.parseStringToList(displaytype,"|",false);
+            for(String tmp:lstTmp)
+            {
+                tmp=tmp.trim();
+                if(tmp.equals("")) continue;
+                if(tmp.equals("page"))
+                {
+                    isDisplayPerpage=true;
+                }else if(tmp.equals("report"))
+                {
+                    isDisplayReport=true;
+                }else
+                {
+                    throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"的统计显示行<subrow/>失败，其displaytype属性配置不合法");
+                }
+            }
+        }
+        if(isDisplayPerpage&&isDisplayReport)
+        {
+            this.displaytype=AbsListReportSubDisplayBean.SUBROW_DISPLAYTYPE_PAGEREPORT;
+        }else if(isDisplayPerpage)
+        {
+            this.displaytype=AbsListReportSubDisplayBean.SUBROW_DISPLAYTYPE_PAGE;
+        }else
+        {
+            this.displaytype=AbsListReportSubDisplayBean.SUBROW_DISPLAYTYPE_REPORT;
+        }
     }
 
     public int getDisplayposition()
@@ -44,9 +78,39 @@ public class AbsListReportSubDisplayRowBean implements Cloneable
         return displayposition;
     }
 
-    public void setDisplayposition(int displayposition)
+    public void setDisplayposition(ReportBean rbean,String displayposition)
     {
-        this.displayposition=displayposition;
+        boolean isTop=false, isBottom=false;
+        displayposition=displayposition.toLowerCase().trim();
+        if(!displayposition.equals(""))
+        {
+            List<String> lstTmp=Tools.parseStringToList(displayposition,"|",false);
+            for(String tmp:lstTmp)
+            {
+                tmp=tmp.trim();
+                if(tmp.equals("")) continue;
+                if(tmp.equals("top"))
+                {
+                    isTop=true;
+                }else if(tmp.equals("bottom"))
+                {
+                    isBottom=true;
+                }else
+                {
+                    throw new WabacusConfigLoadingException("加载报表"+rbean.getPath()+"的统计显示行<subrow/>失败，其displayposition属性配置不合法");
+                }
+            }
+        }
+        if(isTop&&isBottom)
+        {
+            this.displayposition=AbsListReportSubDisplayBean.SUBROW_POSITION_BOTH;
+        }else if(isTop)
+        {
+            this.displayposition=AbsListReportSubDisplayBean.SUBROW_POSITION_TOP;
+        }else
+        {
+            this.displayposition=AbsListReportSubDisplayBean.SUBROW_POSITION_BOTTOM;
+        }
     }
 
     public List<AbsListReportSubDisplayColBean> getLstSubColBeans()

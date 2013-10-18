@@ -57,13 +57,8 @@ public class ShortType extends AbsDataType
         }
     }
 
-    
-    
-    
-    
     public Class getJavaTypeClass()
     {
-        
         return Short.class;
     }
 

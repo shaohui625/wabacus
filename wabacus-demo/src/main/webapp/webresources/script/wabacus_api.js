@@ -39,6 +39,9 @@ function refreshComponentDisplay(pageid,componentid,isReset)
 	if(isReset===true)
 	{
 		url=resetComponentUrl(pageid,componentid,url,null);
+	}else
+	{
+		url=resetComponentUrl(pageid,componentid,url,'navigate.false');
 	}
 	refreshComponent(url);
 }
@@ -103,6 +106,18 @@ function onInputBoxKeyPress(event)
 function getListReportSelectedTrObjs(pageid,reportid,isOnlyCurrentPage,isNeedOrder)
 {
 	return getListReportSelectedTrObjsImpl(pageid,reportid,isOnlyCurrentPage,isNeedOrder);
+}
+
+/**
+ * 获取某个报表所有选中行的各列数据，对于只读的列表报表（即list报表类型），只能获取到配置了rowselectvalue="true"的列的数据
+ * @param pageid 报表所在页面ID
+ * @param reportid 报表id
+ * @param includeNewTr 是否包含新添加的记录行
+ * @return 返回本报表被选中行的对象数组，且按行号从小到大排好序
+ */
+function getListReportSelectedTrDatas(pageid,reportid,isOnlyCurrentPage,isNeedOrder,includeNewTr)
+{
+	return getListReportSelectedTrDatasImpl(pageid,reportid,isOnlyCurrentPage,isNeedOrder,includeNewTr);
 }
 
 /**
@@ -718,12 +733,19 @@ function wx_win(message,paramsObj)
  * 在弹出页面中如果要引用父页面，则分两种情况：
  * 	如果是ymPrompt提示组件，则用parent引用到源页面对象
  *		如果是artDialog提示组件，则用artDialog.open.origin引用到源页面提示组件
- * @param url：要显示的新页面URL
+ * @param url：要弹出的新页面URL
+ * @param paramsObj 弹出窗口控制参数
+ * @param beforeCallBackMethod 弹出前客户端回调JS函数
  */
 //function wx_winpage(url,title,width,height,maxbtn,minbtn,handler)
-function wx_winpage(url,paramsObj)
+function wx_winpage(url,paramsObj,beforeCallBackMethod)
 {
 	if(!isExistPromptObj()) return;
+	if(beforeCallBackMethod!=null)
+	{
+		url=beforeCallBackMethod(url);
+		if(url==null||url=='') return;//不弹出
+	}
 	if(paramsObj==null) paramsObj=new Object();
 	if(WXConfig.prompt_dialog_type=='ymprompt')
 	{

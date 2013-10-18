@@ -18,15 +18,13 @@
  */
 package com.wabacus.config.database.type;
 
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.system.assistant.ReportAssistant;
+import com.wabacus.system.dataset.report.value.SQLReportDataSetValueProvider;
+import com.wabacus.system.dataset.report.value.sqlconvertor.AbsConvertSQLevel;
 import com.wabacus.system.datatype.BigdecimalType;
 import com.wabacus.system.datatype.BlobType;
 import com.wabacus.system.datatype.BooleanType;
@@ -42,77 +40,36 @@ import com.wabacus.system.datatype.ShortType;
 import com.wabacus.system.datatype.TimestampType;
 import com.wabacus.system.datatype.VarcharType;
 import com.wabacus.util.Tools;
-//$ByQXO
-public class SQLSERVER2K extends AbstractJdbcDatabaseType
-{//ByQXO$
+
+public class SQLSERVER2K extends AbsDatabaseType
+{
     private static Log log=LogFactory.getLog(SQLSERVER2K.class);
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj)
     {
-        String sql=svbean.getSqlWithoutOrderby();
-        String orderby=svbean.getOrderby();
-        if(orderby==null||orderby.trim().equals("")||sql==null||sql.indexOf("%orderby%")<=0)
+        String sql=convertSqlObj.getConvertedSql();
+        String orderby=convertSqlObj.getOrderby();
+        if(orderby==null||orderby.trim().equals("")||sql==null||sql.indexOf(SQLReportDataSetValueProvider.orderbyPlaceHolder)<=0)
         {
-            throw new WabacusConfigLoadingException("报表"+svbean.getReportBean().getPath()+"配置的查询数据脚本："+svbean.getValue()
+            throw new WabacusConfigLoadingException("报表"+convertSqlObj.getReportBean().getPath()+"配置的查询数据脚本："+convertSqlObj.getOriginalSql()
                     +"没有order by子句，无法在SQLSERVER2000数据库上进行分页");
         }
-        String[] orderbyarr=getPageSplitOrderByArray(svbean,orderby);
-        sql=Tools.replaceAll(sql,"%orderby%","");
-        
-        sql="select * from (select top %PAGESIZE% * from (select top %END% * from ("+sql+") as jd_temp_tbl1 "+orderbyarr[0]+") as jd_temp_tbl2 "
+        String[] orderbyarr=convertSqlObj.getOrderByAndInverseArray(orderby);
+        sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder,"");
+        sql="select * from (select top "+SQLReportDataSetValueProvider.pagesizePlaceHolder+" * from (select top "+SQLReportDataSetValueProvider.endRowNumPlaceHolder+" * from ("+sql+") as jd_temp_tbl1 "+orderbyarr[0]+") as jd_temp_tbl2 "
                 +orderbyarr[1]+") as jd_temp_tbl3 "+orderbyarr[0];
         return sql;
     }
 
-    public String constructSplitPageSql(ReportDataSetValueBean svbean,String dynorderby)
+    public String constructSplitPageSql(AbsConvertSQLevel convertSqlObj,String dynorderby)
     {
-        String sql=svbean.getSqlWithoutOrderby();
-        dynorderby=ReportAssistant.getInstance().mixDynorderbyAndRowgroupCols(svbean.getReportBean(),dynorderby);
-        String[] orderbyarr=getPageSplitOrderByArray(svbean,dynorderby);
-        sql=Tools.replaceAll(sql,"%orderby%","");
-        
-        sql="select * from (select top %PAGESIZE% * from (select top %END% * from ("+sql+") as jd_temp_tbl1 "+orderbyarr[0]+") as jd_temp_tbl2 "
+        String sql=convertSqlObj.getConvertedSql();
+        dynorderby=convertSqlObj.mixDynorderbyAndConfigOrderbyCols(dynorderby);
+        String[] orderbyarr=convertSqlObj.getOrderByAndInverseArray(dynorderby);
+        sql=Tools.replaceAll(sql,SQLReportDataSetValueProvider.orderbyPlaceHolder,"");
+        sql="select * from (select top "+SQLReportDataSetValueProvider.pagesizePlaceHolder+" * from (select top "+SQLReportDataSetValueProvider.endRowNumPlaceHolder+" * from ("+sql+") as jd_temp_tbl1 "+orderbyarr[0]+") as jd_temp_tbl2 "
                 +orderbyarr[1]+") as jd_temp_tbl3 "+orderbyarr[0];
         return sql;
-    }
-
-    private String[] getPageSplitOrderByArray(ReportDataSetValueBean svbean,String orderby)
-    {
-        List<String> lstOrderByColumns=Tools.parseStringToList(orderby,",");
-        StringBuffer sbufferOrder=new StringBuffer();
-        StringBuffer sbufferOrder_reverse=new StringBuffer();
-        for(String orderbyTmp:lstOrderByColumns)
-        {
-            if(orderbyTmp==null||orderbyTmp.trim().equals("")) continue;
-            orderbyTmp=orderbyTmp.trim();
-            List<String> lstTemp=Tools.parseStringToList(orderbyTmp," ");
-            if(sbufferOrder.length()>0&&sbufferOrder_reverse.length()>0)
-            {
-                sbufferOrder.append(",");
-                sbufferOrder_reverse.append(",");
-            }
-            if(lstTemp.size()==1)
-            {
-                sbufferOrder.append(lstTemp.get(0)).append(" asc");
-                sbufferOrder_reverse.append(lstTemp.get(0)).append(" desc");
-            }else if(lstTemp.size()==2)
-            {
-                String ordertype=lstTemp.get(1).trim().toLowerCase();
-                if(ordertype.equals("desc"))
-                {
-                    sbufferOrder.append(lstTemp.get(0)).append(" desc");
-                    sbufferOrder_reverse.append(lstTemp.get(0)).append(" asc");
-                }else
-                {
-                    sbufferOrder.append(lstTemp.get(0)).append(" asc");
-                    sbufferOrder_reverse.append(lstTemp.get(0)).append(" desc");
-                }
-            }else
-            {
-                throw new WabacusConfigLoadingException("报表"+svbean.getReportBean().getPath()+"配置的SQL语句中order by子句"+orderby+"不合法");
-            }
-        }
-        return new String[] { "order by "+sbufferOrder.toString(), "order by "+sbufferOrder_reverse.toString() };
     }
 
     public String getSequenceValueByName(String sequencename)

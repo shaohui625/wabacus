@@ -23,16 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.wabacus.config.component.application.report.ConditionBean;
-import com.wabacus.config.component.application.report.ReportDataSetValueBean;
-import com.wabacus.system.component.application.report.CrossListReportType;
-import com.wabacus.system.dataset.IDynamicColGroupDataSet;
+import com.wabacus.system.ReportRequest;
+import com.wabacus.system.dataset.common.AbsCommonDataSetValueProvider;
 
-public class TestCrossListDynColGroupDataset2 implements IDynamicColGroupDataSet
+public class TestCrossListDynColGroupDataset2 extends AbsCommonDataSetValueProvider
 {
 
-    public List<Map<String,String>> getDynamicColGroupDataSet(CrossListReportType crossListReportTypeObj,ReportDataSetValueBean datasetbean,
-            List<ConditionBean> lstDatasetConditions)
+    public List<Map<String,String>> getDynamicColGroupDataSet(ReportRequest rrequest)
     {
         //此类只演示单行标题的动态列
         List<Map<String,String>> lstResults=new ArrayList<Map<String,String>>();
@@ -63,5 +60,23 @@ public class TestCrossListDynColGroupDataset2 implements IDynamicColGroupDataSet
         mTmp.put("col_column","birthday");
         lstResults.add(mTmp);
         return lstResults;
+    }
+
+    public Map<String,String> getAutoCompleteColumnsData(ReportRequest arg0,Map<String,String> arg1)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public List<Map<String,String>> getLstSelectBoxOptions(ReportRequest arg0,Map<String,String> arg1)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public List<Map<String,String>> getLstTypePromptOptions(ReportRequest arg0,String arg1)
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

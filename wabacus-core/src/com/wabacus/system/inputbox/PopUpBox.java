@@ -145,13 +145,12 @@ public class PopUpBox extends AbsPopUpBox
     public String filledInContainer(String onblur)
     {
         StringBuffer resultBuf=new StringBuffer();
-        
+        //从inputboxSpanObj中得到所需的参数
         resultBuf.append("if(inputboxSpanObj==null){wx_warn('显示弹出窗口输入框失败，没有取到弹出窗口页面所需的参数'); return false;}");
         resultBuf.append("var paramsOfGetPageUrl=inputboxSpanObj.getAttribute('paramsOfGetPageUrl');");
         resultBuf.append("var onclick_propertyvalue=inputboxSpanObj.getAttribute('onclick_propertyvalue');");
         resultBuf.append("if(onclick_propertyvalue==null) onclick_propertyvalue='';");
         resultBuf.append("onclick_propertyvalue=\"popupPageByPopupInputbox('\"+name+\"','\"+paramsOfGetPageUrl+\"');\"+onclick_propertyvalue;");
-        
         resultBuf.append("if(inputboxSpanObj.getAttribute('sourcebox')=='textareabox'){boxstr=\"<textarea\";}else{boxstr=\"<input type='text' value=\\\"\"+boxValue+\"\\\"\";}");
         resultBuf.append(getInputBoxCommonFilledProperties());
         resultBuf.append("if(onfocusmethod!=null&&onfocusmethod!='') boxstr=boxstr+\" onfocus=\\\"try{\"+onfocusmethod+\"}catch(e){logErrorsAsJsFileLoad(e);}\\\"\";");

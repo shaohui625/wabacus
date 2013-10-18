@@ -124,7 +124,6 @@ public class DefaultPrintProviderConfigBean extends AbsPrintProviderConfigBean
             styleproperty=Tools.getPropertyValueByName("style",this.paperstyleproperty,false);
         }
         String widthInStyle=Tools.getPropertyValueFromStyle("width",styleproperty);
-        
         String pagewidth=null;
         if(this.lstPrintPagesizes!=null&&this.lstPrintPagesizes.size()>0)
         {
@@ -133,12 +132,11 @@ public class DefaultPrintProviderConfigBean extends AbsPrintProviderConfigBean
                 throw new WabacusConfigLoadingException("加载组件"+this.owner.getPath()+"的打印配置失败，为其<print/>配置了printpagesize后，不能再在paperstyleproperty中指定width");
             }
             pagewidth=mPrintPagesize.get(this.lstPrintPagesizes.get(0)+"_WIDTH");
-            
             this.paperwidth=pagewidth;
         }else
         {
             if(widthInStyle!=null&&!widthInStyle.trim().equals(""))
-            {
+            {//在paperstyleproperty中配置了宽度
                 this.paperwidth=widthInStyle;
             }else
             {
@@ -159,7 +157,7 @@ public class DefaultPrintProviderConfigBean extends AbsPrintProviderConfigBean
             if(styleproperty==null) styleproperty="";
             if(!styleproperty.equals("")&&!styleproperty.endsWith(";")) styleproperty=styleproperty+";";
             if(pagewidth!=null&&!pagewidth.trim().equals(""))
-            {//需要加默认宽度
+            {
                 styleproperty=styleproperty+"width:"+pagewidth+";";
             }
             if(defaultborder!=null&&!defaultborder.trim().equals(""))
@@ -184,7 +182,6 @@ public class DefaultPrintProviderConfigBean extends AbsPrintProviderConfigBean
         resultBuf.append("  code=code+content+\"</body>\";");
         resultBuf.append("  var printwin=window.open('','win_"+this.owner.getId()+"','');");
         resultBuf.append("  printwin.opener = null;printwin.document.write(code);printwin.document.close();");
-        
         resultBuf.append("}");
         JavaScriptAssistant.getInstance().writeJsMethodToJsFiles(this.owner.getPageBean(),resultBuf.toString());
     }

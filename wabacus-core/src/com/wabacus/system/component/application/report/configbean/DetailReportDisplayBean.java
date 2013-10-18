@@ -41,7 +41,9 @@ public class DetailReportDisplayBean extends AbsExtendConfigBean
 
     private String valuealign=null;
 
-    private Map<String,DetailReportColPositionBean> mColDefaultPositions;
+    private Map<String,DetailReportColPositionBean> mColDefaultPagePositions;
+    
+    private Map<String,DetailReportColPositionBean> mColDefaultDataExportPositions;
     
     public DetailReportDisplayBean(AbsConfigBean owner)
     {
@@ -128,13 +130,23 @@ public class DetailReportDisplayBean extends AbsExtendConfigBean
         this.printvaluewidth=printvaluewidth;
     }
 
-    public Map<String,DetailReportColPositionBean> getMColDefaultPositions()
+    public Map<String,DetailReportColPositionBean> getMColDefaultPagePositions()
     {
-        return mColDefaultPositions;
+        return mColDefaultPagePositions;
     }
 
-    public void setMColDefaultPositions(Map<String,DetailReportColPositionBean> mColDefaultPositions)
+    public void setMColDefaultPagePositions(Map<String,DetailReportColPositionBean> colDefaultPagePositions)
     {
-        this.mColDefaultPositions=mColDefaultPositions;
+        mColDefaultPagePositions=colDefaultPagePositions;
+    }
+
+    public Map<String,DetailReportColPositionBean> getMColDefaultDataExportPositions()
+    {
+        return mColDefaultDataExportPositions;
+    }
+
+    public void setMColDefaultDataExportPositions(Map<String,DetailReportColPositionBean> colDefaultDataExportPositions)
+    {
+        mColDefaultDataExportPositions=colDefaultDataExportPositions;
     }
 }

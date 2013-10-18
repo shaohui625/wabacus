@@ -57,9 +57,9 @@ public class EditableListReportInsertDataBean extends EditableReportInsertDataBe
         return "";
     }
 
-    public String assembleAccessPageUrl(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
+    public String getPopupPageUrlAndParams(ReportRequest rrequest,EditableListReportType reportTypeObj,AbsReportDataPojo dataObj)
     {
-        return this.realInsertBean.assembleAccessPageUrl(rrequest,reportTypeObj,dataObj);
+        return this.realInsertBean.getPopupPageUrlAndParams(rrequest,reportTypeObj,dataObj);
     }
 
     public void doPostLoadFinally()

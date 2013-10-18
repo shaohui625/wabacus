@@ -74,7 +74,6 @@ public class StandardExcelAssistant
         cs.setFillForegroundColor(HSSFColor.LIGHT_CORNFLOWER_BLUE.index);
         Font font=workbook.createFont();
         font.setBoldweight(Font.BOLDWEIGHT_NORMAL);
-        
         font.setFontHeightInPoints((short)10);
         cs.setFont(font);
         //cs.setUserStyleName("wabacus_title_rowstyle");//暂时没用上此属性
@@ -92,7 +91,6 @@ public class StandardExcelAssistant
         cs.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
         Font font=workbook.createFont();
         font.setBoldweight(Font.BOLDWEIGHT_NORMAL);
-        
         font.setFontHeightInPoints((short)10);
         cs.setFont(font);
         return cs;
@@ -121,7 +119,6 @@ public class StandardExcelAssistant
         Row rowTmp=sheet.getRow(region.getFirstRow());
         Cell cellTmp=rowTmp.getCell(region.getFirstColumn());
         cellTmp.setCellStyle(cellStyle);
-        
         cellTmp.setCellValue(cellvalue);
         sheet.addMergedRegion(region);
     }
@@ -202,7 +199,7 @@ public class StandardExcelAssistant
             cell.setCellStyle(cellStyleWithFormat);
             return true;
         }else
-        {
+        {//其它的类型都做为字符串形式写到Excel文件中
             cell.setCellValue(typeObj.value2label(objValue));
         }
         return false;

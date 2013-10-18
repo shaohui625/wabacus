@@ -24,11 +24,11 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,19 +37,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.fileupload.DiskFileUpload;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.itextpdf.text.Document;
 import com.itextpdf.text.pdf.PdfCopy;
@@ -60,18 +61,19 @@ import com.wabacus.config.component.application.report.ColBean;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.component.application.report.ReportDataSetValueBean;
-import com.wabacus.config.component.application.report.SqlBean;
-import com.wabacus.config.component.other.JavascriptFileBean;
-import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.config.dataexport.PDFExportBean;
 import com.wabacus.config.dataexport.WordRichExcelExportBean;
+import com.wabacus.config.other.JavascriptFileBean;
 import com.wabacus.config.print.AbsPrintProviderConfigBean;
 import com.wabacus.config.typeprompt.TypePromptBean;
 import com.wabacus.exception.WabacusRuntimeException;
-import com.wabacus.exception.WabacusRuntimeWarningException;
+import com.wabacus.exception.WabacusRuntimeTerminateException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.WabacusResponse;
+import com.wabacus.system.WabacusUtils;
+import com.wabacus.system.assistant.ComponentAssistant;
 import com.wabacus.system.assistant.EditableReportAssistant;
+import com.wabacus.system.assistant.FilePathAssistant;
 import com.wabacus.system.assistant.PdfAssistant;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.IComponentType;
@@ -80,7 +82,7 @@ import com.wabacus.system.component.application.report.abstractreport.AbsReportT
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportColBean;
 import com.wabacus.system.component.application.report.abstractreport.configbean.AbsListReportFilterBean;
 import com.wabacus.system.component.application.report.chart.FusionChartsReportType;
-import com.wabacus.system.dataset.IReportDataSet;
+import com.wabacus.system.component.container.page.PageType;
 import com.wabacus.system.fileupload.AbsFileUpload;
 import com.wabacus.system.fileupload.DataImportReportUpload;
 import com.wabacus.system.fileupload.DataImportTagUpload;
@@ -120,7 +122,7 @@ public class WabacusFacade
         }
         WabacusResponse wresponse=new WabacusResponse(null);
         displayReport(rrequest,wresponse,pageid);
-        StringBuffer resultBuf=wresponse.getOutBuf();
+        StringBuilder resultBuf=wresponse.getOutBuf();
         if(resultBuf==null) return "";
         return resultBuf.toString();
     }
@@ -134,27 +136,20 @@ public class WabacusFacade
             rrequest.setWResponse(wresponse);
             wresponse.setRRequest(rrequest);
             rrequest.init(pageid);
-            
-            //$ByQXO 
-            if("true".equals(rrequest.getAttribute("no-response"))){
-                return;
-            }
-            //ByQXO$
             if(rrequest.getSlaveReportTypeObj()!=null)
             {
                 rrequest.getSlaveReportTypeObj().displayOnPage(null);
             }else
             {
+                if(!rrequest.isLoadedByAjax()&&rrequest.getRefreshComponentTypeObj() instanceof PageType)
+                {
+                    wresponse.println(((PageType)rrequest.getRefreshComponentTypeObj()).showOuterHeader());
+                }
                 rrequest.getRefreshComponentTypeObj().displayOnPage(null);
             }
             log.debug(rrequest.getCurrentStatus());
-        }catch(WabacusRuntimeWarningException wrwe)
+        }catch(WabacusRuntimeTerminateException wrwe)
         {
-            String logwarnmess=wresponse.getMessageCollector().getLogWarnsMessages();
-            if(logwarnmess!=null&&!logwarnmess.trim().equals(""))
-            {
-                log.warn("显示页面"+pageid+"时，"+logwarnmess);
-            }
             if(wresponse.getStatecode()==Consts.STATECODE_FAILED)
             {
                 success=false;
@@ -163,33 +158,29 @@ public class WabacusFacade
         }catch(Exception wre)
         {
             wresponse.setStatecode(Consts.STATECODE_FAILED);
-            String errormess=wresponse.getMessageCollector().getLogErrorsMessages();
-            if(errormess!=null&&!errormess.trim().equals(""))
-            {
-                log.error("显示页面"+pageid+"失败，"+errormess,wre);
-            }else
-            {
-                log.error("显示页面"+pageid+"失败",wre);
-            }
+            log.error("显示页面"+pageid+"失败",wre);
             success=false;
             errorinfo=wresponse.assembleResultsInfo(wre);
         }finally
         {
             rrequest.destroy(success);
         }
-        
-        //$ByQXO 
-        if("true".equals(rrequest.getAttribute("no-response"))){
-            return;
+        if(!rrequest.isLoadedByAjax()&&rrequest.getRefreshComponentTypeObj() instanceof PageType)
+        {
+            wresponse.println(((PageType)rrequest.getRefreshComponentTypeObj()).showOuterHeader());
+            wresponse.println(((PageType)rrequest.getRefreshComponentTypeObj()).showStartWebResources());
+            wresponse.println(((PageType)rrequest.getRefreshComponentTypeObj()).showEndWebResources());
         }
-        //ByQXO$
-        
         if(errorinfo!=null&&!errorinfo.trim().equals(""))
         {
             wresponse.println(errorinfo,true);
         }else
         {
             wresponse.println(rrequest.getWResponse().assembleResultsInfo(null));
+        }
+        if(!rrequest.isLoadedByAjax()&&rrequest.getRefreshComponentTypeObj() instanceof PageType)
+        {
+            wresponse.println(((PageType)rrequest.getRefreshComponentTypeObj()).showOuterFooter());
         }
     }
 
@@ -209,7 +200,7 @@ public class WabacusFacade
             rrequest.setWResponse(wresponse);
             wresponse.setRRequest(rrequest);
             rrequest.init(pageid);
-            wresponse.initOutput(getDataExportFilename(rrequest));
+            wresponse.initOutput(rrequest.getDataExportFilename());
             IComponentType ccTypeObjTmp;
             Object dataExportTplObjTmp;
             WordRichExcelExportBean debeanTmp;
@@ -224,45 +215,46 @@ public class WabacusFacade
                 }
                 ccTypeObjTmp.displayOnExportDataFile(dataExportTplObjTmp,true);
             }
-        }catch(WabacusRuntimeWarningException wrwe)
+        }catch(WabacusRuntimeTerminateException wrwe)
         {
-            String logwarnmess=rrequest.getWResponse().getMessageCollector().getLogWarnsMessages();
-            if(logwarnmess!=null&&!logwarnmess.trim().equals(""))
-            {
-                log.warn("导出页面"+rrequest.getPagebean().getId()+"下的报表时，"+logwarnmess);
-            }
             if(wresponse.getStatecode()==Consts.STATECODE_FAILED)
             {
                 success=false;
                 errorinfo=wresponse.assembleResultsInfo(wrwe);
+                try
+                {
+                    if(!Tools.isEmpty(errorinfo)) wresponse.println(errorinfo,true);
+                }catch(Exception e)
+                {
+                    log.error("导出页面"+pageid+"下的应用"+rrequest.getStringAttribute("INCLUDE_APPLICATIONIDS","")+"数据失败",e);
+                }
             }
         }catch(Exception wre)
         {
             wresponse.setStatecode(Consts.STATECODE_FAILED);
-            String errormess=rrequest.getWResponse().getMessageCollector().getLogErrorsMessages();
-            if(errormess!=null&&!errormess.trim().equals(""))
-            {
-                log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败，"+errormess,wre);
-            }else
-            {
-                log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败，",wre);
-            }
+            log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败，",wre);
             success=false;
             errorinfo=rrequest.getWResponse().assembleResultsInfo(wre);
-        }finally
-        {
-            rrequest.destroy(success);
-        }
-        if(errorinfo!=null&&!errorinfo.trim().equals(""))
-        {
             try
             {
-                wresponse.println(errorinfo,true);
+                if(!Tools.isEmpty(errorinfo)) wresponse.println(errorinfo,true);
             }catch(Exception e)
             {
                 log.error("导出页面"+pageid+"下的应用"+rrequest.getStringAttribute("INCLUDE_APPLICATIONIDS","")+"数据失败",e);
             }
+        }finally
+        {
+            if(rrequest.isExportToLocalFile())
+            {//放在这里处理主要是为了报表和页面后置动作中能取到导出的数据文件
+                wresponse.writeBufDataToLocalFile();
+                if(rrequest.isDataexport_localstroagezip())
+                {
+                    tarDataFile(rrequest);
+                }
+            }
+            rrequest.destroy(success);
         }
+        doPostDataExport(rrequest,wresponse);
     }
 
     public static void exportReportDataOnPlainExcel(HttpServletRequest request,HttpServletResponse response)
@@ -278,8 +270,6 @@ public class WabacusFacade
         WabacusResponse wresponse=new WabacusResponse(null);
         exportReportDataOnPlainExcel(pageid,rrequest,wresponse);
     }
-    
-    private static transient Boolean supportExcel2003 ;
 
     private static void exportReportDataOnPlainExcel(String pageid,ReportRequest rrequest,WabacusResponse wresponse)
     {
@@ -293,31 +283,31 @@ public class WabacusFacade
             {
                 throw new WabacusRuntimeException("导出页面"+pageid+"上的数据失败，plainexcel导出方式只能导出报表，不能导出其它应用");
             }
-            if( null == supportExcel2003){
-                supportExcel2003 = Config.getInstance().getSystemConfigValue("supportExcel2003",true);
-            }
-            Workbook workbook =  supportExcel2003  ? new HSSFWorkbook(): new XSSFWorkbook();
+            Workbook workbook=new HSSFWorkbook();
             AbsReportType reportTypeObjTmp;
             for(ReportBean rbTmp:rrequest.getLstAllReportBeans())
             {
                 reportTypeObjTmp=(AbsReportType)rrequest.getComponentTypeObj(rbTmp,null,false);
-                Workbook workbook1 = reportTypeObjTmp.displayOnPlainExcel(workbook);
-                if( null != workbook1){
-                    workbook = workbook1;
-                }
+                reportTypeObjTmp.displayOnPlainExcel(workbook);
             }
-            String title=WabacusAssistant.getInstance().encodeAttachFilename(rrequest.getRequest(),getDataExportFilename(rrequest));
-            wresponse.getResponse().setHeader("Content-disposition","attachment;filename="+title+ ( workbook instanceof HSSFWorkbook  ? ".xls":".xlsx"));
-            BufferedOutputStream bos=new BufferedOutputStream(wresponse.getResponse().getOutputStream());
+            BufferedOutputStream bos=null;
+            if(rrequest.isExportToLocalFile())
+            {
+                bos=new BufferedOutputStream(new FileOutputStream(new File(rrequest.getDataExportFilepath())));
+            }else
+            {
+                String title=WabacusAssistant.getInstance().encodeAttachFilename(rrequest.getRequest(),rrequest.getDataExportFilename());
+                wresponse.getResponse().setHeader("Content-disposition","attachment;filename="+title+".xls");
+                bos=new BufferedOutputStream(wresponse.getResponse().getOutputStream());
+            }
             workbook.write(bos);
             bos.close();
-        }catch(WabacusRuntimeWarningException wrwe)
-        {
-            String logwarnmess=rrequest.getWResponse().getMessageCollector().getLogWarnsMessages();
-            if(logwarnmess!=null&&!logwarnmess.trim().equals(""))
+            if(rrequest.isExportToLocalFile()&&rrequest.isDataexport_localstroagezip())
             {
-                log.warn("导出页面"+rrequest.getPagebean().getId()+"下的报表时，"+logwarnmess);
+                tarDataFile(rrequest);
             }
+        }catch(WabacusRuntimeTerminateException wrwe)
+        {
             if(wresponse.getStatecode()==Consts.STATECODE_FAILED)
             {
                 success=false;
@@ -325,19 +315,13 @@ public class WabacusFacade
         }catch(Exception wre)
         {
             wresponse.setStatecode(Consts.STATECODE_FAILED);
-            String errormess=rrequest.getWResponse().getMessageCollector().getLogErrorsMessages();
-            if(errormess!=null&&!errormess.trim().equals(""))
-            {
-                log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败，"+errormess,wre);
-            }else
-            {
-                log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败",wre);
-            }
+            log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败",wre);
             success=false;
         }finally
         {
             rrequest.destroy(success);
         }
+        doPostDataExport(rrequest,wresponse);
     }
 
     public static void exportReportDataOnPDF(HttpServletRequest request,HttpServletResponse response,int showtype)
@@ -375,7 +359,7 @@ public class WabacusFacade
                     pdfbeanTmp=(PDFExportBean)ccbeanTmp.getDataExportsBean().getDataExportBean(Consts.DATAEXPORT_PDF);
                 }
                 if(pdfbeanTmp!=null&&pdfbeanTmp.getPdftemplate()!=null&&!pdfbeanTmp.getPdftemplate().trim().equals(""))
-                {//如果此组件配置了pdf模板
+                {
                     PdfAssistant.getInstance()
                             .addPdfPageToDocument(pdfCopy,PdfAssistant.getInstance().showReportDataOnPdfWithTpl(rrequest,ccbeanTmp));
                 }
@@ -384,28 +368,33 @@ public class WabacusFacade
             for(ReportBean rbTmp:rrequest.getLstAllReportBeans())
             {
                 reportTypeObjTmp=(AbsReportType)rrequest.getComponentTypeObj(rbTmp,null,false);
-                if(rrequest.isReportInPdfTemplate(rbTmp.getId())) continue;
+                if(rrequest.isReportInPdfTemplate(rbTmp.getId())) continue;//如果当前报表是在某个有PDF模板的组件中导出，则不在这里导，而是在上面导出
                 PdfAssistant.getInstance().addPdfPageToDocument(pdfCopy,reportTypeObjTmp.displayOnPdf());
             }
             document.close();
-            if(!ispdfprint)
+            BufferedOutputStream bos=null;
+            if(rrequest.isExportToLocalFile())
             {
-                String title=WabacusAssistant.getInstance().encodeAttachFilename(rrequest.getRequest(),getDataExportFilename(rrequest));
-                wresponse.getResponse().setHeader("Content-disposition","attachment;filename="+title+".pdf");
+                bos=new BufferedOutputStream(new FileOutputStream(new File(rrequest.getDataExportFilepath())));
+            }else
+            {
+                if(!ispdfprint)
+                {
+                    String title=WabacusAssistant.getInstance().encodeAttachFilename(rrequest.getRequest(),rrequest.getDataExportFilename());
+                    wresponse.getResponse().setHeader("Content-disposition","attachment;filename="+title+".pdf");
+                }
+                wresponse.getResponse().setContentLength(baosResult.size());
+                bos=new BufferedOutputStream(wresponse.getResponse().getOutputStream());
             }
-            wresponse.getResponse().setContentLength(baosResult.size());
-            ServletOutputStream out=wresponse.getResponse().getOutputStream();
-            baosResult.writeTo(out);
-            out.flush();
-            out.close();
+            baosResult.writeTo(bos);
+            bos.close();
             baosResult.close();
-        }catch(WabacusRuntimeWarningException wrwe)
-        {
-            String logwarnmess=rrequest.getWResponse().getMessageCollector().getLogWarnsMessages();
-            if(logwarnmess!=null&&!logwarnmess.trim().equals(""))
+            if(rrequest.isExportToLocalFile()&&rrequest.isDataexport_localstroagezip())
             {
-                log.warn("导出页面"+rrequest.getPagebean().getId()+"下的报表时，"+logwarnmess);
+                tarDataFile(rrequest);
             }
+        }catch(WabacusRuntimeTerminateException wrwe)
+        {
             if(wresponse.getStatecode()==Consts.STATECODE_FAILED)
             {
                 success=false;
@@ -413,45 +402,101 @@ public class WabacusFacade
         }catch(Exception wre)
         {
             wresponse.setStatecode(Consts.STATECODE_FAILED);
-            String errormess=rrequest.getWResponse().getMessageCollector().getLogErrorsMessages();
-            if(errormess!=null&&!errormess.trim().equals(""))
-            {
-                log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败，"+errormess,wre);
-            }else
-            {
-                log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败",wre);
-            }
+            log.error("导出页面"+rrequest.getPagebean().getId()+"下的报表失败",wre);
             success=false;
         }finally
         {
             rrequest.destroy(success);
         }
+        doPostDataExport(rrequest,wresponse);
     }
 
-    private static String getDataExportFilename(ReportRequest rrequest)
+    private static void doPostDataExport(ReportRequest rrequest,WabacusResponse wresponse)
     {
-        StringBuffer filenameBuf=new StringBuffer();
-        if(rrequest.getLstComponentBeans()==null||rrequest.getLstComponentBeans().size()==0) return "NoData";
-        String filenameTmp;
-        for(IComponentConfigBean ccbeanTmp:rrequest.getLstComponentBeans())
+        if(!rrequest.isExportToLocalFile()) return;
+        if(rrequest.isDataexport_localstroagedownload())
         {
-            filenameTmp=null;
-            if(ccbeanTmp.getDataExportsBean()!=null)
+            try
             {
-                filenameTmp=ccbeanTmp.getDataExportsBean().getFilename(rrequest);
+                wresponse.getResponse().sendRedirect(rrequest.getDataExportFileurl());
+            }catch(IOException e)
+            {
+                outputMessageToPage(rrequest,wresponse,"<br/></br><div id='div1' class='cls-dataexport-failed'>下载文件"+rrequest.getDataExportFileurl()+"失败，请尝试直接访问此URL进行下载</div>");
             }
-            if(filenameTmp==null||filenameTmp.trim().equals(""))
-            {//如果此组件没有在<dataexports/>中配置filename，则用标题做为文件名
-                filenameTmp=ccbeanTmp.getTitle(rrequest);
-            }
-            if(filenameTmp==null||filenameTmp.trim().equals("")) continue;
-            filenameBuf.append(filenameTmp).append(",");
+        }else
+        {
+            outputMessageToPage(rrequest,wresponse,"<br/><br/><div id='div1' class='cls-dataexport-success'>导出数据文件成功</div><div id='div2' class='cls-dataexport-path'>存放路径："
+                    +rrequest.getDataExportFilepath()+"</div>");
         }
-        if(filenameBuf.length()==0) return "DataExport";
-        if(filenameBuf.charAt(filenameBuf.length()-1)==',') filenameBuf.deleteCharAt(filenameBuf.length()-1);
-        return filenameBuf.toString();
     }
-
+    
+    private static void outputMessageToPage(ReportRequest rrequest,WabacusResponse wresponse,String content)
+    {
+        try
+        {
+            PrintWriter out=wresponse.getResponse().getWriter();
+            out
+                    .println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
+            out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset="+Config.encode+"\">");
+            List<String> lstCsses=ComponentAssistant.getInstance().initDisplayCss(rrequest);
+            if(!Tools.isEmpty(lstCsses))
+            {
+                for(String cssTmp:lstCsses)
+                {
+                    out.println("<LINK rel=\"stylesheet\" type=\"text/css\" href=\""+cssTmp+"\"/>");
+                }
+            }
+            out.println(content);
+        }catch(IOException e)
+        {
+            throw new WabacusRuntimeException("初始化页面输出失败",e);
+        }
+    }
+    
+    private static void tarDataFile(ReportRequest rrequest)
+    {
+        String originFilePath=rrequest.getDataExportFilepath();
+        if(Tools.isEmpty(originFilePath)||originFilePath.indexOf(".")<0) return;
+        String fileurl=rrequest.getDataExportFileurl();
+        String zipFilePath=originFilePath.substring(0,originFilePath.lastIndexOf("."))+".zip";
+        if(!Tools.isEmpty(fileurl)&&fileurl.indexOf(".")>0)
+        {
+            fileurl=fileurl.substring(0,fileurl.lastIndexOf("."))+".zip";
+        }
+        rrequest.setDataExportFilepath(zipFilePath);
+        rrequest.setDataExportFileurl(fileurl);
+        tarFileToZip(originFilePath,zipFilePath);
+    }
+    
+    private static void tarFileToZip(String originFilePath,String zipFilePath)
+    {
+        if(Tools.isEmpty(originFilePath)||Tools.isEmpty(zipFilePath)) return;
+        int idx=originFilePath.lastIndexOf(File.separator);
+        String fileName=idx>0?originFilePath.substring(idx+File.separator.length()):originFilePath;
+        idx=fileName.lastIndexOf("_");
+        if(idx>0) fileName=fileName.substring(idx+1).trim();
+        try
+        {
+            FileOutputStream fout=new FileOutputStream(zipFilePath);
+            ZipOutputStream zipout=new ZipOutputStream(fout);
+            FileInputStream fis=new FileInputStream(originFilePath);
+            zipout.putNextEntry(new ZipEntry(fileName));
+            byte[] buffer=new byte[1024];
+            int len;
+            while((len=fis.read(buffer))!=-1)
+            {
+                zipout.write(buffer,0,len);
+            }
+            zipout.closeEntry(); 
+            fis.close();
+            zipout.close();
+            fout.close();
+        }catch(Exception e)
+        {
+            throw new WabacusRuntimeException("压缩文件"+originFilePath+"到zip失败",e);
+        }
+    }
+    
     public static void printComponents(HttpServletRequest request,HttpServletResponse response)
     {
         ReportRequest rrequest=new ReportRequest(request,Consts.DISPLAY_ON_PRINT);
@@ -486,13 +531,8 @@ public class WabacusFacade
             printProvider.doPrint();
             wresponse.addOnloadMethod(rrequest.getLstComponentBeans().get(0).getPrintBean().getPrintJsMethodName(),"",true);
             wresponse.println(rrequest.getWResponse().assembleResultsInfo(null));
-        }catch(WabacusRuntimeWarningException wrwe)
+        }catch(WabacusRuntimeTerminateException wrwe)
         {
-            String logwarnmess=rrequest.getWResponse().getMessageCollector().getLogWarnsMessages();
-            if(logwarnmess!=null&&!logwarnmess.trim().equals(""))
-            {
-                log.warn("打印页面"+pageid+"下的应用时，"+logwarnmess);
-            }
             if(wresponse.getStatecode()==Consts.STATECODE_FAILED)
             {
                 success=false;
@@ -501,14 +541,7 @@ public class WabacusFacade
         }catch(Exception wre)
         {
             wresponse.setStatecode(Consts.STATECODE_FAILED);
-            String errormess=rrequest.getWResponse().getMessageCollector().getLogErrorsMessages();
-            if(errormess!=null&&!errormess.trim().equals(""))
-            {
-                log.error("打印页面"+pageid+"下的应用失败，"+errormess,wre);
-            }else
-            {
-                log.error("打印页面"+pageid+"下的应用失败，",wre);
-            }
+            log.error("打印页面"+pageid+"下的应用失败，",wre);
             success=false;
             errorinfo=rrequest.getWResponse().assembleResultsInfo(wre);
         }finally
@@ -540,65 +573,60 @@ public class WabacusFacade
             rrequest.setWResponse(wresponse);
             rrequest.initGetFilterDataList();
             rbean=rrequest.getLstAllReportBeans().get(0);
-            
-            
+            //            StringBuffer columnsBuf=new StringBuffer();
             String colproperty=rrequest.getStringAttribute("FILTER_COLPROP","");
             ColBean cbean=rbean.getDbean().getColBeanByColProperty(colproperty);
             if(cbean==null)
             {
                 throw new WabacusRuntimeException("取过滤数据时，根据"+colproperty+"没有取到指定的<col/>配置信息");
             }
-            List<ReportDataSetValueBean> lstDatasetBeans=rbean.getSbean().getLstDatasetValueBeansByValueid(cbean.getDatasetValueId());
-            List<IReportDataSet> lstDatasetObjs=getLstDatasetObjs(rbean.getSbean(),lstDatasetBeans);
+            List<ReportDataSetValueBean> lstDsvbeans=rbean.getSbean().getLstDatasetValueBeansOfCbean(cbean);
             AbsListReportColBean alrcbean=(AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY);
             AbsListReportFilterBean alfbean=alrcbean.getFilterBean();
             if(rbean.getInterceptor()!=null)
             {
                 rrequest.setAttribute(rbean.getId()+"_WABACUS_FILTERBEAN",alfbean);
             }
+            AbsListReportFilterBean filterBean=rrequest.getCdb(rbean.getId()).getFilteredBean();
+            ColBean cbeanFiltered=filterBean==null?null:(ColBean)filterBean.getOwner();
+            String[][] allfilterOptionsArr=getFilterDataArray(rrequest,lstDsvbeans,cbean,null);
+            if(allfilterOptionsArr==null||allfilterOptionsArr.length==0)
+            {
+                resultBuf.append("<item><value>[nodata]</value><label>无选项数据</label></item>");
+                return resultBuf.toString();
+            }
             List<String> lstSelectedData=new ArrayList<String>();
             if(!alfbean.isConditionRelate())
             {
-                String[][] selectedValsArr=getFilterDataArray(rrequest,lstDatasetBeans,lstDatasetObjs,cbean,true);
-
-
-//                    return "<item><value>[error]</value><label><![CDATA[没有获取到列过滤选项数据]]></label></item>";
-
-                if(selectedValsArr!=null&&selectedValsArr.length>0)
+                String[][] selectedOptionsArr=cbeanFiltered==null?allfilterOptionsArr:getFilterDataArray(rrequest,lstDsvbeans,cbean,cbeanFiltered);
+                if(selectedOptionsArr!=null&&selectedOptionsArr.length>0)
                 {
-                    for(int i=0;i<selectedValsArr[0].length;i++)
+                    for(int i=0;i<selectedOptionsArr[0].length;i++)
                     {
-                        lstSelectedData.add(selectedValsArr[0][i]);
+                        lstSelectedData.add(selectedOptionsArr[0][i]);
                     }
                 }
+                log.debug(lstSelectedData);
             }else
-            {//与查询条件相关联的列
+            {
                 String filterval=rrequest.getStringAttribute(alfbean.getConditionname(),"");
                 if(!filterval.equals(""))
                 {
                     resultBuf.append("<item><value><![CDATA[(ALL_DATA)]]></value><label>(全部)</label></item>");
                 }
             }
-            log.debug(lstSelectedData);
-            String[][] selectedValsArr=getFilterDataArray(rrequest,lstDatasetBeans,lstDatasetObjs,cbean,false);
-//            if(selectedValsArr==null) return "<item><value>[error]</value><label><![CDATA[获取列过滤选项数据失败]]></label></item>";
-            if(selectedValsArr==null||selectedValsArr.length==0)
-            {
-                resultBuf.append("<item><value>[nodata]</value><label>无选项数据</label></item>");
-                return resultBuf.toString();
-            }
-            for(int i=0;i<selectedValsArr[0].length;i++)
+            for(int i=0;i<allfilterOptionsArr[0].length;i++)
             {
                 resultBuf.append("<item>");
                 resultBuf.append("<value");
-                if(lstSelectedData.contains(selectedValsArr[0][i]))
+                if(lstSelectedData.contains(allfilterOptionsArr[0][i]))
                 {
                     resultBuf.append(" isChecked=\"true\"");
                 }
-                resultBuf.append("><![CDATA["+selectedValsArr[0][i]+"]]></value>");
-                if(selectedValsArr[1]!=null&&!"[BLANK]".equals(selectedValsArr[1][i]))
+                resultBuf.append("><![CDATA["+allfilterOptionsArr[0][i]+"]]></value>");
+                if(allfilterOptionsArr[1]!=null&&!"[BLANK]".equals(allfilterOptionsArr[1][i]))
                 {
-                    resultBuf.append("<label><![CDATA["+selectedValsArr[1][i]+"]]></label>");
+                    resultBuf.append("<label><![CDATA["+allfilterOptionsArr[1][i]+"]]></label>");
                 }
                 resultBuf.append("</item>");
             }
@@ -609,55 +637,59 @@ public class WabacusFacade
         {
             if(rrequest!=null) rrequest.destroy(false);
         }
-        
         return resultBuf.toString();
     }
 
-    private static List<IReportDataSet> getLstDatasetObjs(SqlBean sbean,List<ReportDataSetValueBean> lstDatasetBeans)
-    {
-        List<IReportDataSet> lstDatasetObjs=new ArrayList<IReportDataSet>();
-        ReportDataSetValueBean datasetbean;
-        IReportDataSet datasetObj=null;
-        for(int i=0;i<lstDatasetBeans.size();i++)
-        {
-            datasetbean=lstDatasetBeans.get(i);
-            //$ByQXO 数据存储可扩展性修改
-            if(datasetbean.getCustomizeDatasetObj()!=null)
-            {
-                datasetObj=datasetbean.getCustomizeDatasetObj();
-            }else{
-                datasetObj =datasetbean.getISQLTypeBuilder(sbean).createAllResultSetISQLType();
-            }
-            //ByQXO$
-            lstDatasetObjs.add(datasetObj);
-        }
-        return lstDatasetObjs;
-    }
-
-    private static String[][] getFilterDataArray(ReportRequest rrequest,List<ReportDataSetValueBean> lstDatasetbeans,
-            List<IReportDataSet> lstDatasetObjs,ColBean cbean,boolean isGetSelectedData) throws Exception
+    private static String[][] getFilterDataArray(ReportRequest rrequest,List<ReportDataSetValueBean> lstDsvbeans,ColBean cbean,ColBean cbeanFiltered)
     {
         ReportBean rbean=cbean.getReportBean();
-        Map<String,List<String>> mSelectedFilterValues=null;
-        ColBean cbeanFiltered=null;
-        if(isGetSelectedData)
-        {
-            mSelectedFilterValues=getMFilterColAndFilterValues(rrequest,rbean);
-            AbsListReportFilterBean filterBean=rrequest.getCdb(rbean.getId()).getFilteredBean();
-            if(filterBean!=null) cbeanFiltered=(ColBean)filterBean.getOwner();
-        }
         int maxOptionsCount=Config.getInstance().getSystemConfigValue("colfilter-maxnum-options",-1);
+        AbsListReportFilterBean alfbean=((AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY)).getFilterBean();
         List<String[]> lstFilterOptionsData=new ArrayList<String[]>();
-        int i=0;
-        for(ReportDataSetValueBean dsvbeanTmp:lstDatasetbeans)
+        List<String> lstOneDatasetValueOptions=null;
+        outer: for(ReportDataSetValueBean dsvbeanTmp:lstDsvbeans)
         {
-            getOneDatasetFilterDataArray(rrequest,dsvbeanTmp,lstDatasetObjs.get(i),cbean,isGetSelectedData&&cbeanFiltered!=null
-                    &&cbeanFiltered.isMatchDataSet(dsvbeanTmp)?mSelectedFilterValues:null,lstFilterOptionsData);
-            if(maxOptionsCount>0&&maxOptionsCount<=lstFilterOptionsData.size()) break;
-            i++;
+            lstOneDatasetValueOptions=dsvbeanTmp.getProvider().getColFilterDataSet(rrequest,cbean,
+                    cbeanFiltered!=null&&cbeanFiltered.isMatchDataSet(dsvbeanTmp),maxOptionsCount);
+            if(rbean.getInterceptor()!=null)
+            {
+                lstOneDatasetValueOptions=(List)rbean.getInterceptor().afterLoadData(rrequest,rbean,alfbean,lstOneDatasetValueOptions);
+            }
+            if(lstOneDatasetValueOptions==null||lstOneDatasetValueOptions.size()==0) continue;
+            String[] strValueArr=lstOneDatasetValueOptions.toArray(new String[lstOneDatasetValueOptions.size()]);
+            String[] strLabelArr=null;
+            if(alfbean.getFormatMethod()!=null&&alfbean.getFormatClass()!=null)
+            {
+                try
+                {
+                    strLabelArr=(String[])alfbean.getFormatMethod().invoke(alfbean.getFormatClass(),new Object[] { rbean, strValueArr });
+                }catch(Exception e)
+                {
+                    log.warn("调用报表"+rbean.getPath()+"的列"+cbean.getColumn()+"上配置的针对列过滤数据进行格式化方法失败",e);
+                }
+            }
+            if(strLabelArr==null||strLabelArr.length!=strValueArr.length)
+            {
+                strLabelArr=null;
+            }
+            String[] strArrayTmp;
+            for(int i=0;i<strValueArr.length;i++)
+            {
+                strArrayTmp=new String[2];
+                strArrayTmp[0]=strValueArr[i];
+                if(strLabelArr!=null)
+                {//用户在格式化方法中返回了专门用于显示的标题部分
+                    strArrayTmp[1]=strLabelArr[i];
+                }else
+                {
+                    strArrayTmp[1]="[BLANK]";
+                }
+                lstFilterOptionsData.add(strArrayTmp);
+                if(maxOptionsCount>0&&maxOptionsCount<=lstFilterOptionsData.size()) break outer;
+            }
         }
         String[][] strArrayResults=new String[2][lstFilterOptionsData.size()];
-        i=0;
+        int i=0;
         for(String[] optionArrTmp:lstFilterOptionsData)
         {
             strArrayResults[0][i]=optionArrTmp[0];
@@ -665,91 +697,6 @@ public class WabacusFacade
             i++;
         }
         return strArrayResults;
-    }
-    
-    private static Map<String,List<String>> getMFilterColAndFilterValues(ReportRequest rrequest,ReportBean rbean)
-    {
-        AbsListReportFilterBean filterBean=rrequest.getCdb(rbean.getId()).getFilteredBean();
-        if(filterBean==null) return null;
-        ColBean cbTmp=(ColBean)filterBean.getOwner();
-        String filterval=rrequest.getStringAttribute(filterBean.getId(),"");
-        if(filterval.equals("")) return null;
-        Map<String,List<String>> mResults=new HashMap<String,List<String>>();
-        mResults.put(cbTmp.getColumn(),Tools.parseStringToList(filterval,";;",false));
-        return mResults;
-    }
-    
-    private static void getOneDatasetFilterDataArray(ReportRequest rrequest,ReportDataSetValueBean datasetbean,IReportDataSet datasetObj,ColBean cbean,
-            Map<String,List<String>> mSelectedFilterValues,List<String[]> lstFilterOptionsData) throws Exception
-    {
-        ReportBean rbean=cbean.getReportBean();
-        int maxOptionsCount=Config.getInstance().getSystemConfigValue("colfilter-maxnum-options",-1);
-        AbsDatabaseType dbtype=rrequest.getDbType(datasetbean.getDatasource());
-        Object objTmp=datasetObj.getColFilterDataSet(rrequest,cbean,datasetbean,mSelectedFilterValues);
-        if(objTmp==null||rrequest.getWResponse().getMessageCollector().hasErrors()||rrequest.getWResponse().getMessageCollector().hasWarnings())
-        {
-            return;
-        }
-        List<String> lstFilterDataLocal=null;
-        if(objTmp instanceof ResultSet)
-        {
-            lstFilterDataLocal=new ArrayList<String>();
-            ResultSet rs=(ResultSet)objTmp;
-            Object valObj;
-            String strvalue;
-            int optioncnt=0;
-            while(rs.next())
-            {
-                valObj=cbean.getDatatypeObj().getColumnValue(rs,cbean.getColumn(),dbtype);
-                strvalue=cbean.getDatatypeObj().value2label(valObj);
-                if(strvalue==null||strvalue.trim().equals("")) continue;
-                if(!lstFilterDataLocal.contains(strvalue)) lstFilterDataLocal.add(strvalue);
-                if(maxOptionsCount>0&&(++optioncnt+lstFilterOptionsData.size())==maxOptionsCount)
-                {
-                    break;
-                }
-            }
-            rs.close();
-        }else
-        {
-            if(!(objTmp instanceof List)) throw new WabacusRuntimeException("加载报表"+rbean.getPath()+"的列过滤数据失败，数据集返回的数据类型不合法，即不是ResultSet也不是List类型");
-            lstFilterDataLocal=(List<String>)objTmp;
-            if(maxOptionsCount>0)
-            {
-                while(lstFilterDataLocal.size()+lstFilterOptionsData.size()>maxOptionsCount)
-                    lstFilterDataLocal.remove(lstFilterDataLocal.size()-1);
-            }
-        }
-        if(lstFilterDataLocal==null||lstFilterDataLocal.size()==0) return;
-        AbsListReportFilterBean alfbean=((AbsListReportColBean)cbean.getExtendConfigDataForReportType(AbsListReportType.KEY)).getFilterBean();
-        if(rbean.getInterceptor()!=null)
-        {
-            lstFilterDataLocal=(List)rbean.getInterceptor().afterLoadData(rrequest,rbean,alfbean,lstFilterDataLocal);
-        }
-        String[] strValueArr=lstFilterDataLocal.toArray(new String[lstFilterDataLocal.size()]);
-        String[] strLabelArr=null;
-        if(alfbean.getFormatMethod()!=null&&alfbean.getFormatClass()!=null)
-        {
-            strLabelArr=(String[])alfbean.getFormatMethod().invoke(alfbean.getFormatClass(),new Object[] { rbean, strValueArr });
-        }
-        if(strLabelArr==null||strLabelArr.length!=strValueArr.length)
-        {
-            strLabelArr=null;
-        }
-        String[] strArrayTmp;
-        for(int i=0;i<strValueArr.length;i++)
-        {
-            strArrayTmp=new String[2];
-            strArrayTmp[0]=strValueArr[i];
-            if(strLabelArr!=null)
-            {
-                strArrayTmp[1]=strLabelArr[i];
-            }else
-            {
-                strArrayTmp[1]="[BLANK]";
-            }
-            lstFilterOptionsData.add(strArrayTmp);
-        }
     }
     
     public static String getTypePromptDataList(HttpServletRequest request,HttpServletResponse response)
@@ -790,7 +737,7 @@ public class WabacusFacade
                 if(ConditionBean.LABELPOSITION_INNER.equals(cbTmp.getLabelposition())&&inputvalue.equals(cbTmp.getLabel(rrequest))) inputvalue="";
             }
             if(inputvalue.equals("")&&!promptBean.isSelectbox())
-            {//如果没有取到用户输入的字符，则不给出提示信息，返回空
+            {
                 return "";
             }else
             {
@@ -808,7 +755,6 @@ public class WabacusFacade
                     resultBuf.append("/>");
                 }
             }
-            
         }catch(Exception e)
         {
             throw new WabacusRuntimeException("加载输入联想数据失败",e);
@@ -885,7 +831,6 @@ public class WabacusFacade
         }
         if(resultBuf.length()>0&&resultBuf.charAt(resultBuf.length()-1)==',') resultBuf.deleteCharAt(resultBuf.length()-1);
         if(resultBuf.length()>0) return "{"+resultBuf.toString()+"}";
-        
         return resultBuf.toString();
     }
 
@@ -924,9 +869,9 @@ public class WabacusFacade
             String conditionparams=request.getParameter("AUTOCOMPLETE_COLCONDITION_VALUES");
             List<Map<String,String>> lstConditionParamsValue=EditableReportAssistant.getInstance().parseSaveDataStringToList(conditionparams);
             if(lstConditionParamsValue==null||lstConditionParamsValue.size()==0) return "";
-            rrequest.setAttribute("COL_CONDITION_VALUES",lstConditionParamsValue.get(0));
+            rrequest.setAttribute("COL_CONDITION_VALUES",lstConditionParamsValue.get(0));//将存放参与条件的各列值的Map对象存入rrequest中以供拦截器的加载数据前后置动作使用
             AutoCompleteBean accbean=rrequest.getAutoCompleteSourceInputBoxObj().getAutoCompleteBean();
-            Map<String,String> mAutoCompleteData=accbean.getDatasetObj().getAutoCompleteColumnsData(rrequest,accbean,lstConditionParamsValue.get(0));
+            Map<String,String> mAutoCompleteData=accbean.getDatasetProvider().getAutoCompleteColumnsData(rrequest,lstConditionParamsValue.get(0));
             if(rbean.getInterceptor()!=null)
             {
                 mAutoCompleteData=(Map<String,String>)rbean.getInterceptor().afterLoadData(rrequest,rbean,accbean,mAutoCompleteData);
@@ -958,7 +903,7 @@ public class WabacusFacade
         return resultBuf.toString();
     }
 
-    public static void showUploadFilePage(HttpServletRequest request,PrintWriter out) throws IOException
+    public static void showUploadFilePage(HttpServletRequest request,PrintWriter out)
     {
         String contentType=request.getHeader("Content-type");
         String fileuploadtype=null;
@@ -977,31 +922,19 @@ public class WabacusFacade
             return;
         }
         importWebresources(out);
-        
-        final StringBuffer formContent=new  StringBuffer ();
-        fileUpload.showUploadForm(formContent);
-        
-        String uploadUrl = Config.showreport_url;
-        CharSequence appendUrlParams =(CharSequence) request.getAttribute("appendUrlParams");
-        if(appendUrlParams !=null){
-            uploadUrl += "?"+appendUrlParams;
-        }        
-        out.println("<form  action=\""+uploadUrl
-                +" \" style=\"margin:0px\" method=\"post\" onsubmit=\"return doFileUploadAction()\" enctype=\"multipart/form-data\" name=\"fileuploadform\">");
+        out.println("<form  action=\""+Config.showreport_url
+                +"\" style=\"margin:0px\" method=\"post\" onsubmit=\"return doFileUploadAction()\" enctype=\"multipart/form-data\" name=\"fileuploadform\">");
         out.println("<input type='hidden' name='FILEUPLOADTYPE' value='"+fileuploadtype+"'/>");
-    
-        out.append(formContent);
-        
+        fileUpload.showUploadForm(out);
         out.println("</form>");
         out.println("<div id=\"LOADING_IMG_ID\" class=\"cls-loading-img\"></div>");
     }
 
-    public static void uploadFile(HttpServletRequest request,HttpServletResponse response) throws IOException
+    public static void uploadFile(HttpServletRequest request,HttpServletResponse response)
     {
         PrintWriter out=null;
         try
         {
-            response.setContentType("text/html;charset=UTF-8");
             out=response.getWriter();
         }catch(IOException e1)
         {
@@ -1022,7 +955,13 @@ public class WabacusFacade
             out.print("</font></td></tr></table>");
             return;
         }*/
-        DiskFileUpload fileUploadObj=new DiskFileUpload();
+        DiskFileItemFactory factory=new DiskFileItemFactory();
+        factory.setSizeThreshold(4096);
+        String repositoryPath=FilePathAssistant.getInstance().standardFilePath(Config.webroot_abspath+File.separator+"wxtmpfiles"+File.separator+"upload"+File.separator);
+        FilePathAssistant.getInstance().checkAndCreateDirIfNotExist(repositoryPath);
+        factory.setRepository(new File(repositoryPath));
+        ServletFileUpload fileUploadObj=new ServletFileUpload();
+        fileUploadObj.setFileItemFactory(factory);
         fileUploadObj.setHeaderEncoding(Config.encode);
         List lstFieldItems=null;
         String errorinfo=null;
@@ -1042,7 +981,7 @@ public class WabacusFacade
         Iterator itFieldItems=lstFieldItems.iterator();
         FileItem item;
         while(itFieldItems.hasNext())
-        {//将所有普通表单字段先取出放入mFormFieldValues中供后面传文件时使用
+        {
             item=(FileItem)itFieldItems.next();
             if(item.isFormField())
             {
@@ -1076,7 +1015,7 @@ public class WabacusFacade
         out.println("  try{hideLoadingMessage();}catch(e){}");
         out.println("</script>");
         if(isPromtAuto)
-        {
+        {//开发人员没有在拦截器的拦截方法中阻止框架的提示
             if(errorinfo==null||errorinfo.trim().equals(""))
             {
                 out.println("<script language='javascript'>");
@@ -1095,6 +1034,17 @@ public class WabacusFacade
                 request.setAttribute("WX_FILE_UPLOAD_FIELDVALUES",fileUpload.getMFormFieldValues());
             }
             showUploadFilePage(request,out);
+        }else if(!isPromtAuto)
+        {
+            out.println("<script language='javascript'>");
+            if(Config.getInstance().getSystemConfigValue("prompt-dialog-type","artdialog").equals("artdialog"))
+            {
+                out.println("art.dialog.close();");
+            }else
+            {
+                out.println("parent.closePopupWin();");
+            }
+            out.println("</script>");
         }
     }
 
@@ -1176,7 +1126,7 @@ public class WabacusFacade
                 realserverfilepath=Config.getInstance().getResourceString(null,null,serverfilepath,true);
             }else
             {
-                realserverfilepath=Tools.decodeFilePath(serverfilepath);
+                realserverfilepath=WabacusUtils.decodeFilePath(serverfilepath);
             }
             if(realserverfilepath==null||realserverfilepath.trim().equals(""))
             {
@@ -1192,14 +1142,13 @@ public class WabacusFacade
                 bis=new BufferedInputStream(ConfigLoadManager.currentDynClassLoader.getResourceAsStream(realserverfilepath));
                 response.setContentLength(bis.available());
             }else
-            {
-                File downloadFileObj=new File(Tools.standardFilePath(realserverfilepath+File.separator+serverfilename));
+            {//绝对路径或相对路径（不过经过parseConfigPathToRealPath()已经全部转变成了绝对路径）
+                File downloadFileObj=new File(FilePathAssistant.getInstance().standardFilePath(realserverfilepath+File.separator+serverfilename));
                 if(!downloadFileObj.exists()||downloadFileObj.isDirectory())
                 {
                     bos.write(("没有找到要下载的文件"+serverfilename).getBytes());
                     return;
                 }
-                
                 response.setContentLength((int)downloadFileObj.length());
                 bis=new BufferedInputStream(new FileInputStream(downloadFileObj));
             }
@@ -1322,7 +1271,7 @@ public class WabacusFacade
         ReportRequest rrequest=null;
         try
         {
-            rrequest=new ReportRequest(request,-1);
+            rrequest=new ReportRequest(request,Consts.DISPLAY_ON_PAGE);
             WabacusResponse wresponse=new WabacusResponse(response);
             rrequest.setWResponse(wresponse);
             rrequest.initGetChartDataString();

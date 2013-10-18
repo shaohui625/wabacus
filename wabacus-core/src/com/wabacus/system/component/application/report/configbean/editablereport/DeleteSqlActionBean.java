@@ -18,15 +18,20 @@
  */
 package com.wabacus.system.component.application.report.configbean.editablereport;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.config.database.type.AbsDatabaseType;
 import com.wabacus.system.ReportRequest;
+import com.wabacus.system.assistant.WabacusAssistant;
 
 public class DeleteSqlActionBean extends AbsEditSqlActionBean
 {
@@ -39,22 +44,40 @@ public class DeleteSqlActionBean extends AbsEditSqlActionBean
 
     public void parseActionscript(String reportTypeKey,String actionscript)
     {
-        //$ByQXO move to AbstractJdbcDatabaseType.parseActionscript
-        final AbsDatabaseType dbtype=this.ownerGroupBean.getDbType();        
-        sql = dbtype.parseDeleteSql(this,reportTypeKey,actionscript);
-        ownerGroupBean.addActionBean(this);        
-        //ByQXO$
+        actionscript=this.parseAndRemoveReturnParamname(actionscript);
+        this.lstParamBeans=new ArrayList<EditableReportParamBean>();
+        this.sql=this.ownerGroupBean.getOwnerUpdateBean().parseStandardEditSql(actionscript,lstParamBeans,reportTypeKey);
+        this.ownerGroupBean.addActionBean(this);
     }
 
     public void updateData(ReportRequest rrequest,ReportBean rbean,Map<String,String> mRowData,Map<String,String> mParamValues)
             throws SQLException
     {
-    
+        PreparedStatement pstmt=null;
         AbsDatabaseType dbtype=rrequest.getDbType(this.ownerGroupBean.getDatasource());
-        
-        //$ByQXO
-        dbtype.updateDataForDeleteSqlAction(mRowData,mParamValues,rbean,rrequest,this);
-        //ByQXO$
+        Connection conn=rrequest.getConnection(this.ownerGroupBean.getDatasource());
+        try
+        {
+            if(Config.show_sql)
+            {
+                log.info("Execute sql:"+sql);
+            }
+            pstmt=conn.prepareStatement(sql);
+            if(lstParamBeans!=null&&lstParamBeans.size()>0)
+            {
+                EditableReportParamBean paramBean;
+                for(int j=0;j<lstParamBeans.size();j++)
+                {
+                    paramBean=lstParamBeans.get(j);
+                    paramBean.getDataTypeObj().setPreparedStatementValue(j+1,
+                            getParamValue(mRowData,mParamValues,rbean,rrequest,paramBean),pstmt,dbtype);
+                }
+            }
+            int rtnVal=pstmt.executeUpdate();
+            storeReturnValue(rrequest,mParamValues,String.valueOf(rtnVal));
+        }finally
+        {
+            WabacusAssistant.getInstance().release(null,pstmt);
+        }
     }
-    
 }

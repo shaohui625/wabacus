@@ -134,7 +134,7 @@ public class HtmlTemplateApp extends AbsApplicationType
         }
         if(htmlConfigBean.getTplBean().getLstTagChildren()!=null&&htmlConfigBean.getTplBean().getLstTagChildren().size()>0)
         {
-            wresponse.println(htmlConfigBean.getTplBean().getDisplayValue(rrequest,realDisplayComTypeObj));
+            htmlConfigBean.getTplBean().printDisplayValue(rrequest,realDisplayComTypeObj);
         }else
         {
             String tplcontent=this.htmlConfigBean.getTplBean().getContent();
@@ -154,7 +154,7 @@ public class HtmlTemplateApp extends AbsApplicationType
                         wresponse.println(obj.toString());
                     }else
                     {
-                        wresponse.println(((TemplateBean)obj).getDisplayValue(rrequest,realDisplayComTypeObj));
+                        ((TemplateBean)obj).printDisplayValue(rrequest,realDisplayComTypeObj);
                     }
                 }
             }

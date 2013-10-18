@@ -22,6 +22,7 @@ import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ConditionBean;
 import com.wabacus.config.xml.XmlElementBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
+import com.wabacus.exception.WabacusRuntimeException;
 import com.wabacus.system.ReportRequest;
 import com.wabacus.system.assistant.WabacusAssistant;
 import com.wabacus.system.component.application.report.abstractreport.AbsReportType;
@@ -33,6 +34,8 @@ public class FileBox extends AbsPopUpBox implements Cloneable
     private long maxsize=-1;
 
     private String allowTypes;
+    
+    private String disallowtypes;
 
     private String savePath;//文件保存路径，格式为：absolute{path}/relative{path}之一
 
@@ -44,7 +47,11 @@ public class FileBox extends AbsPopUpBox implements Cloneable
     
     private int deletetype=1;
 
-    private AbsFileUploadInterceptor interceptor;
+    private int uploadcount=1;
+    
+    private String seperator;
+    
+    private AbsFileUploadInterceptor interceptor;//拦截器对象
     
     public FileBox(String typename)
     {
@@ -71,6 +78,11 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         return allowTypes;
     }
 
+    public String getDisallowtypes()
+    {
+        return disallowtypes;
+    }
+
     public String getNewfilename()
     {
         return newfilename;
@@ -91,6 +103,16 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         return interceptor;
     }
 
+    public int getUploadcount()
+    {
+        return uploadcount;
+    }
+
+    public String getSeperator()
+    {
+        return seperator;
+    }
+
     protected String doGetDisplayStringValue(ReportRequest rrequest,String value,String style_property,boolean isReadonly)
     {
         StringBuffer resultBuf=new StringBuffer();
@@ -106,7 +128,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         {//利用<img/>显示图片，并加上进入文件上传的超链接
             String imgurl=value;
             if(value==null||value.trim().equals("")) imgurl=Config.webroot+"webresources/skin/nopicture.gif";
-            resultBuf.append("<img  src=\"").append(imgurl).append("\" srcpath=\"").append(value).append("\"");
+            resultBuf.append("<img alt=\"图片不存在\" src=\"").append(imgurl).append("\" srcpath=\"").append(value).append("\"");
         }else
         {
             resultBuf.append("<input  type='text'  value=\""+value+"\"");
@@ -130,7 +152,6 @@ public class FileBox extends AbsPopUpBox implements Cloneable
     public String filledInContainer(String onblur)
     {
         StringBuffer resultBuf=new StringBuffer();
-        
         resultBuf.append("var displaytype=null;onclick_propertyvalue=null;");
         resultBuf.append("if(inputboxSpanObj!=null){ ");
         resultBuf.append("var paramsOfGetPageUrl=inputboxSpanObj.getAttribute('paramsOfGetPageUrl');");
@@ -139,11 +160,10 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         resultBuf.append("if(displaytype==null||displaytype=='') displaytype='textbox';");
         resultBuf.append("if(onclick_propertyvalue==null) onclick_propertyvalue='';");
         resultBuf.append("onclick_propertyvalue=\"popupPageByFileUploadInputbox('\"+name+\"','\"+paramsOfGetPageUrl+\"','\"+displaytype+\"');\"+onclick_propertyvalue;");
-        
         resultBuf.append("if(displaytype=='image'){");//以<img/>显示上传的图片形式
         resultBuf.append(" var imgurl=boxValue;if(imgurl==null||imgurl=='') imgurl=WXConfig.webroot+'webresources/skin/nopicture.gif';");
-        resultBuf.append("  boxstr=\"<img  src=\\\"\"+imgurl+\"\\\" srcpath=\\\"\"+boxValue+\"\\\"\";");
-        resultBuf.append("}else{");//以文本框形式显示文件路径
+        resultBuf.append("  boxstr=\"<img alt=\\\"图片不存在\\\" src=\\\"\"+imgurl+\"\\\" srcpath=\\\"\"+boxValue+\"\\\"\";");
+        resultBuf.append("}else{");
         resultBuf.append("  boxstr=\"<input type='text' value=\\\"\"+boxValue+\"\\\"\";");
         resultBuf.append("}");
         resultBuf.append(getInputBoxCommonFilledProperties());
@@ -159,7 +179,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         resultBuf.append("if(displaytype=='image'){");
         resultBuf.append("  boxstr=boxstr+\" id= '\"+name+\"' name='\"+name+\"'");
         resultBuf.append("  typename='"+this.typename+"' \"+styleproperty;");
-        resultBuf.append("  boxstr=boxstr+\" style=\\\"\"+style_propertyvalue+\"\\\"\";");
+        resultBuf.append("  boxstr=boxstr+\" style=\\\"\"+style_propertyvalue+\"\\\"\";");//加上从styleproperty中抽取出来的style=""属性值
         resultBuf.append("}else{");
         resultBuf.append(super.getInputBoxCommonFilledProperties());
         resultBuf.append("}");
@@ -217,6 +237,7 @@ public class FileBox extends AbsPopUpBox implements Cloneable
             }
         }
         this.allowTypes=eleInputboxBean.attributeValue("allowedtypes");
+        this.disallowtypes=eleInputboxBean.attributeValue("disallowtypes");
         String savepath=eleInputboxBean.attributeValue("savepath");
         if(savepath!=null&&!savepath.trim().equals(""))
         {
@@ -274,6 +295,22 @@ public class FileBox extends AbsPopUpBox implements Cloneable
         if(displaytype!=null&&displaytype.equals("image")&&(this.rooturl==null||this.rooturl.equals("")))
         {
             throw new WabacusConfigLoadingException("报表"+ownerbean.getReportBean().getPath()+"配置的文件上传输入框的显示类型为image时，必须配置rooturl属性");
+        }
+        String uploadcount=eleInputboxBean.attributeValue("uploadcount");
+        int iuploadcount=1;
+        if(uploadcount!=null&&!uploadcount.trim().equals(""))
+        {
+            iuploadcount=Integer.parseInt(uploadcount);
+        }
+        if(iuploadcount<=0)
+        {
+            throw new WabacusRuntimeException("显示文件上传标签失败，指定的文件上传输入框个数小于0");
+        }
+        this.uploadcount=iuploadcount;
+        if(this.uploadcount>1)
+        {
+            this.seperator=eleInputboxBean.attributeValue("seperator");
+            if(Tools.isEmpty(this.seperator)) this.seperator=";";
         }
         String delete=eleInputboxBean.attributeValue("deletetype");
         if(delete!=null)
@@ -361,18 +398,5 @@ public class FileBox extends AbsPopUpBox implements Cloneable
             owner.getReportBean().addUploadFileBox(fbNew);
         }
         return fbNew;
-    }
-
-    public String getFilePathOrUrl(String name)
-    {
-        if(name==null) return "";
-        if(this.rooturl==null||this.rooturl.trim().equals(""))
-        {
-            return this.savePath+name;
-        }else
-        {
-            while(name.startsWith("/")) name=name.substring(1);
-            return this.rooturl+name;
-        }
     }
 }

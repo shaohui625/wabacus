@@ -44,7 +44,7 @@ public class HeaderTag extends AbsComponentTag
     public int doMyEndTag() throws JspException,IOException
     {
         if(this.displayComponentObj==null) return EVAL_PAGE;
-        TagAssistant.getInstance().printlnTag(out,rrequest,TagAssistant.getInstance().getHeaderFooterDisplayValue(this.displayComponentObj,top,true));
+        println(TagAssistant.getInstance().getHeaderFooterDisplayValue(this.displayComponentObj,top,true));
         return EVAL_PAGE;
     }
 
