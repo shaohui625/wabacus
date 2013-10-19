@@ -10,7 +10,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>wabacus-demo</artifactId>
 	<packaging>war</packaging>
-	<version>4.1.2-enhance-fix1-b35</version>
+	<version>4.2.0</version>
 	<name>wabacus-demo</name>
 		<properties>
 				<com.fasterxml.jackson.version>2.2.2</com.fasterxml.jackson.version>
