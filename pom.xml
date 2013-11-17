@@ -10,7 +10,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.googlecode.wabacus</groupId>
 	<artifactId>wabacus</artifactId>
-	<version>4.1.2-enhance-fix1-b35</version>
+	<version>4.1.2-enhance-fix1-b36</version>
   <packaging>pom</packaging>
   <name>wabacus</name>
   	<description>wabacus['wæbəkəs]框架---------JAVA通用快速开发平台(The Rapid Platform For J2EE Development)</description>
