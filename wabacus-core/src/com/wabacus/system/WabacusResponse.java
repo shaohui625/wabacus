@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspWriter;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -308,7 +309,7 @@ public final class WabacusResponse
             final String confirmessage=this.messageCollector.getConfirmmessage();
             if(confirmessage!=null&&!confirmessage.trim().equals(""))
             {
-                resultBuf.append("confirmessage:\"").append(confirmessage).append("\"");
+                resultBuf.append("confirmessage:\"").append(StringEscapeUtils.escapeJavaScript(confirmessage)).append("\"");
                 resultBuf.append(",confirmkey:\"").append(this.messageCollector.getConfirmkey()).append("\"");
                 resultBuf.append(",confirmurl:\"").append(this.messageCollector.getConfirmurl()).append("\"");
             }else
@@ -333,6 +334,9 @@ public final class WabacusResponse
                 final String errorMsgRetainSecond =  Config.getInstance().getSystemConfigValue("errorMsgRetainSecond","2");
                 resultBuf.append("errorMsgRetainSecond:\"").append(errorMsgRetainSecond).append("\",");
                    
+                final String warnMsgRetainSecond =  Config.getInstance().getSystemConfigValue("warnMsgRetainSecond","2");
+                resultBuf.append("warnMsgRetainSecond:\"").append(warnMsgRetainSecond).append("\",");
+                
                 String wabacusRedirectUrl = (String) this.getRRequest().getAttribute("wabacusRedirectUrl");
                 if( null != wabacusRedirectUrl){
                     resultBuf.append("redirectUrl:\"").append(wabacusRedirectUrl).append("\",");                    
