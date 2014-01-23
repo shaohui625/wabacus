@@ -375,6 +375,10 @@ public abstract class AbstractExprDatabaseType extends AbstractNoSqlDatabaseType
 
     public AbstractWabacusScriptExprContext eval(String script, Map vars,
             AbstractWabacusScriptExprContext ctx) {
+        
+        if(script != null){ //此处代码用于解决：当前两报表拥有相同脚本，由于mvel的缓存机制可能导致第一个报表运行相同脚本时引用的方法名却是第一个报表类的
+            script += "\n//"+ctx.getReportPojoClass().getName();
+        }
         if (Config.show_sql) {
             LOG.info("Execute query expr:\n {}", script);
         }
