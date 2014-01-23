@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import com.wabacus.config.Config;
 import com.wabacus.config.component.application.report.ReportBean;
 import com.wabacus.exception.WabacusConfigLoadingException;
@@ -152,8 +154,8 @@ public class ServerValidateBean
             {
                 StringBuffer paramsBuf=new StringBuffer();
                 paramsBuf.append("{inputboxid:\"").append(this.ownerInputbox.getOwner().getInputBoxId()).append("\"");
-                paramsBuf.append(",value:\"").append(boxvalue).append("\"");
-                paramsBuf.append(",errormess:\"").append(errormsgBuf.toString()).append("\"");
+                paramsBuf.append(",value:\"").append(StringEscapeUtils.escapeJavaScript(boxvalue)).append("\"");
+                paramsBuf.append(",errormess:\"").append(StringEscapeUtils.escapeJavaScript(errormsgBuf.toString())).append("\"");
                 paramsBuf.append(",validatetype:\"onsubmit\"");
                 paramsBuf.append(",isSuccess:false");
                 paramsBuf.append(",serverDataObj:{");
